@@ -22,3 +22,4 @@ def __getattr__(name):
         return TabICLUnsupervised
 
     raise AttributeError(f"module 'tabicl' has no attribute {name}")
+from .model.tabicl import TabICL
