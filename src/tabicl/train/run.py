@@ -244,7 +244,7 @@ class Trainer:
                 replay_small=self.config.replay_small,
                 prior_type=self.config.prior_type,
                 device=self.config.prior_device,
-                n_jobs=1,  # Set to 1 to avoid nested parallelism during DDP
+                n_jobs=self.config.prior_n_jobs,
             )
         else:
             # Load pre-generated prior data from disk
@@ -266,8 +266,8 @@ class Trainer:
             dataset,
             batch_size=None,  # No additional batching since PriorDataset handles batching internally
             shuffle=False,
-            num_workers=1,
-            prefetch_factor=4,
+            num_workers=self.config.dataloader_num_workers,
+            prefetch_factor=self.config.dataloader_prefetch_factor,
             pin_memory=True if self.config.prior_device == "cpu" else False,
             pin_memory_device=self.config.device if self.config.prior_device == "cpu" else "",
         )
@@ -293,6 +293,11 @@ class Trainer:
             )
         else:
             self.amp_ctx = nullcontext()
+
+    def sync_device(self):
+        """Synchronize CUDA work so wall-clock timers reflect actual GPU time."""
+        if "cuda" in self.config.device:
+            torch.cuda.synchronize(self.config.device)
 
     def get_latest_checkpoint(self):
         """Returns the latest checkpoint from `checkpoint_dir`
@@ -565,10 +570,16 @@ class Trainer:
         seq_len, train_size = self.validate_micro_batch(micro_seq_len, micro_train_size)
         micro_X, micro_y = self.align_micro_batch(micro_X, micro_y, micro_d, seq_len)
 
+        micro_times = {"h2d_time": 0.0, "forward_time": 0.0, "backward_time": 0.0}
+
         # Move to device
-        micro_X = micro_X.to(self.config.device)
-        micro_y = micro_y.to(self.config.device)
-        micro_d = micro_d.to(self.config.device)
+        self.sync_device()
+        with Timer() as h2d_timer:
+            micro_X = micro_X.to(self.config.device)
+            micro_y = micro_y.to(self.config.device)
+            micro_d = micro_d.to(self.config.device)
+            self.sync_device()
+        micro_times["h2d_time"] = h2d_timer.elapsed
 
         y_train = micro_y[:, :train_size]
         y_test = micro_y[:, train_size:]
@@ -577,21 +588,31 @@ class Trainer:
         if self.ddp:
             self.model.require_backward_grad_sync = micro_batch_idx == num_micro_batches - 1
 
-        with self.amp_ctx:
-            pred = self.model(micro_X, y_train, micro_d)  # (B, test_size, max_classes)
-            pred = pred.flatten(end_dim=-2)
-            true = y_test.long().flatten()
-            loss = F.cross_entropy(pred, true)
+        self.sync_device()
+        with Timer() as forward_timer:
+            with self.amp_ctx:
+                pred = self.model(micro_X, y_train, micro_d)  # (B, test_size, max_classes)
+                pred = pred.flatten(end_dim=-2)
+                true = y_test.long().flatten()
+                loss = F.cross_entropy(pred, true)
+            self.sync_device()
+        micro_times["forward_time"] = forward_timer.elapsed
 
         # Scale loss for gradient accumulation and backpropagate
         scaled_loss = loss / num_micro_batches
-        self.scaler.scale(scaled_loss).backward()
+        self.sync_device()
+        with Timer() as backward_timer:
+            self.scaler.scale(scaled_loss).backward()
+            self.sync_device()
+        micro_times["backward_time"] = backward_timer.elapsed
 
         with torch.no_grad():
             micro_results = {}
             micro_results["ce"] = scaled_loss.item()
             accuracy = (pred.argmax(dim=1) == true).sum() / len(true)
             micro_results["accuracy"] = accuracy.item() / num_micro_batches
+            for key, value in micro_times.items():
+                micro_results[key] = value / num_micro_batches
 
         return micro_results
 
@@ -621,16 +642,25 @@ class Trainer:
         """
         self.model.train()
         self.optimizer.zero_grad(set_to_none=True)
+        results = {
+            "ce": 0.0,
+            "accuracy": 0.0,
+            "pad_time": 0.0,
+            "h2d_time": 0.0,
+            "forward_time": 0.0,
+            "backward_time": 0.0,
+            "optimizer_time": 0.0,
+        }
 
         # Pad nested tensors to the same size
-        batch = [t.to_padded_tensor(padding=0.0) if t.is_nested else t for t in batch]
+        with Timer() as pad_timer:
+            batch = [t.to_padded_tensor(padding=0.0) if t.is_nested else t for t in batch]
+        results["pad_time"] = pad_timer.elapsed
 
         # Split the batch into micro-batches along the first dimension
         num_micro_batches = math.ceil(self.config.batch_size / self.config.micro_batch_size)
         micro_batches = [torch.split(t, self.config.micro_batch_size, dim=0) for t in batch]
         micro_batches = list(zip(*micro_batches))
-
-        results = {"ce": 0.0, "accuracy": 0.0}
         failed_batches = 0
 
         for idx, micro_batch in enumerate(micro_batches):
@@ -654,17 +684,21 @@ class Trainer:
             )
 
         # Clip the gradient
-        if self.config.gradient_clipping > 0:
-            self.scaler.unscale_(self.optimizer)
-            nn.utils.clip_grad_norm_(self.model.parameters(), self.config.gradient_clipping)
+        self.sync_device()
+        with Timer() as optimizer_timer:
+            if self.config.gradient_clipping > 0:
+                self.scaler.unscale_(self.optimizer)
+                nn.utils.clip_grad_norm_(self.model.parameters(), self.config.gradient_clipping)
 
-        # Update parameters
-        self.scaler.step(self.optimizer)
-        self.scaler.update()
+            # Update parameters
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
 
-        # Update the learning rate
-        self.optimizer.zero_grad(set_to_none=True)
-        self.scheduler.step()
+            # Update the learning rate
+            self.optimizer.zero_grad(set_to_none=True)
+            self.scheduler.step()
+            self.sync_device()
+        results["optimizer_time"] = optimizer_timer.elapsed
 
         return results
 

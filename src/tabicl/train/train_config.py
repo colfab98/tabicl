@@ -158,6 +158,24 @@ def build_parser():
         "--prior_type", default="mix_scm", type=str, help="Prior type: dummy, mlp_scm, tree_scm, mix_scm"
     )
     parser.add_argument("--prior_device", default="cpu", type=str, help="Device for prior data generation")
+    parser.add_argument(
+        "--prior_n_jobs",
+        type=int,
+        default=1,
+        help="Number of CPU jobs used inside the prior generator when creating priors on the fly.",
+    )
+    parser.add_argument(
+        "--dataloader_num_workers",
+        type=int,
+        default=1,
+        help="Number of DataLoader workers used to fetch/generated training batches.",
+    )
+    parser.add_argument(
+        "--dataloader_prefetch_factor",
+        type=int,
+        default=4,
+        help="Number of batches prefetched by each DataLoader worker.",
+    )
 
     ###########################################################################
     ##### Model Architecture Config ###########################################
