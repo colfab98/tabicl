@@ -29,7 +29,7 @@ import torch
 import torch.nn.functional as F
 from torch import Tensor
 from torch.nested import nested_tensor
-from torch.utils.data import IterableDataset
+from torch.utils.data import IterableDataset, get_worker_info
 
 from .mlp_scm import MLPSCM
 from .tree_scm import TreeSCM
@@ -670,15 +670,17 @@ class SCMPrior(Prior):
                     param_list.append(params)
 
         # Use joblib to generate datasets in parallel.
-        # Note: the 'loky' backend does not support nested parallelism during DDP, whereas the 'threading' backend does.
-        # However, 'threading' does not respect `inner_max_num_threads`.
-        # Therefore, we stick with the 'loky' backend for parallelism, but this requires generating
-        # the prior datasets separately from the training process and loading them from disk,
-        # rather than generating them on-the-fly.
+        # When PriorDataset runs inside a DataLoader worker, we're already in a multiprocessing
+        # context, so loky would be downgraded to n_jobs=1. In that nested case we switch to the
+        # threading backend to preserve on-the-fly parallelism and DataLoader overlap.
         if self.n_jobs > 1 and self.device == "cpu":
-            with joblib.parallel_config(
-                n_jobs=self.n_jobs, backend="loky", inner_max_num_threads=self.num_threads_per_generate
-            ):
+            worker_info = get_worker_info()
+            backend = "threading" if worker_info is not None else "loky"
+            parallel_config = {"n_jobs": self.n_jobs, "backend": backend}
+            if backend == "loky":
+                parallel_config["inner_max_num_threads"] = self.num_threads_per_generate
+
+            with joblib.parallel_config(**parallel_config):
                 results = joblib.Parallel()(joblib.delayed(self.generate_dataset)(params) for params in param_list)
         else:
             results = [self.generate_dataset(params) for params in param_list]
@@ -716,7 +718,7 @@ class SCMPrior(Prior):
             The selected prior type name.
         """
         if self.prior_type == "mix_scm":
-            return np.random.choice(["mlp_scm", "tree_scm"], p=self.fixed_hp.get("mix_probas", [0.7, 0.3]))
+            return np.random.choice(["mlp_scm", "tree_scm"], p=self.fixed_hp.get("mix_probs", [0.7, 0.3]))
         else:
             return self.prior_type
 

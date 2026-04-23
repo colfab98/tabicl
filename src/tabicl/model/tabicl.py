@@ -330,15 +330,27 @@ class TabICL(nn.Module):
         if d is not None and len(d.unique()) == 1 and d[0] == H:
             d = None
 
+        # Feature-grouped column embedding does not consume per-table d directly.
+        # Keep d for row masking, remapping it when grouping changes the number of column tokens.
+        d_col = d
+        d_row = d
+        if self.col_embedder.feature_group:
+            d_col = None
+            if d_row is not None:
+                mode = "same" if self.col_embedder.feature_group is True else self.col_embedder.feature_group
+                if mode == "valid":
+                    size = self.col_embedder.feature_group_size
+                    d_row = torch.div(d_row + size - 1, size, rounding_mode="floor")
+
         # Column-wise embedding -> Row-wise interaction
         representations = self.row_interactor(
             self.col_embedder(
                 X,
                 y_train=y_train,
-                d=d,
+                d=d_col,
                 embed_with_test=embed_with_test,
             ),
-            d=d,
+            d=d_row,
         )
 
         # Dataset-wise in-context learning

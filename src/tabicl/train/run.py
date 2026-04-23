@@ -174,7 +174,6 @@ class Trainer:
             "col_num_blocks": self.config.col_num_blocks,
             "col_nhead": self.config.col_nhead,
             "col_num_inds": self.config.col_num_inds,
-            "col_feature_group": False,
             "row_num_blocks": self.config.row_num_blocks,
             "row_nhead": self.config.row_nhead,
             "row_num_cls": self.config.row_num_cls,
@@ -261,16 +260,20 @@ class Trainer:
         if self.master_process:
             print(dataset)
 
+        # PyTorch only allows prefetch_factor when DataLoader multiprocessing is enabled.
+        dataloader_kwargs = {
+            "dataset": dataset,
+            "batch_size": None,  # No additional batching since PriorDataset handles batching internally
+            "shuffle": False,
+            "num_workers": self.config.dataloader_num_workers,
+            "pin_memory": True if self.config.prior_device == "cpu" else False,
+            "pin_memory_device": self.config.device if self.config.prior_device == "cpu" else "",
+        }
+        if self.config.dataloader_num_workers > 0:
+            dataloader_kwargs["prefetch_factor"] = self.config.dataloader_prefetch_factor
+
         # Create dataloader for efficient loading and prefetching
-        self.dataloader = DataLoader(
-            dataset,
-            batch_size=None,  # No additional batching since PriorDataset handles batching internally
-            shuffle=False,
-            num_workers=self.config.dataloader_num_workers,
-            prefetch_factor=self.config.dataloader_prefetch_factor,
-            pin_memory=True if self.config.prior_device == "cpu" else False,
-            pin_memory_device=self.config.device if self.config.prior_device == "cpu" else "",
-        )
+        self.dataloader = DataLoader(**dataloader_kwargs)
 
     def configure_optimizer(self):
         """Configure optimizer and scheduler."""

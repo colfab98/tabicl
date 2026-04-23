@@ -74,8 +74,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("loss_curve.png"),
-        help="Output image path (default: loss_curve.png)",
+        default=None,
+        help="Output image path. If omitted and one .err file is given, use <err_stem>_loss.svg next to the log.",
     )
     parser.add_argument("--title", default="Training Cross-Entropy", help="Plot title")
     parser.add_argument(
@@ -191,6 +191,14 @@ def main() -> None:
     if plotted == 0:
         raise SystemExit("No valid loss curves found in the provided files.")
 
+    output = args.output
+    if output is None:
+        if len(args.err_files) == 1:
+            err_file = args.err_files[0]
+            output = err_file.with_name(f"{err_file.stem}_loss.svg")
+        else:
+            output = Path("loss_curve.svg")
+
     if plt is not None:
         plt.figure(figsize=(10, 5))
         for label, steps, losses in series:
@@ -203,15 +211,13 @@ def main() -> None:
         if plotted > 1:
             plt.legend()
         plt.tight_layout()
-        plt.savefig(args.output, dpi=160)
+        plt.savefig(output, dpi=160)
     else:
-        output = args.output
         if output.suffix.lower() not in {".svg"}:
             output = output.with_suffix(".svg")
         save_svg(series, output, args.title, args.trend_window)
-        args.output = output
 
-    print(f"Saved plot to {args.output}")
+    print(f"Saved plot to {output}")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=tabicl_s1mini_generic_v4
+#SBATCH --job-name=tabicl_s1mini_generic_v8
 #SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=24:00:00
@@ -37,7 +37,7 @@ torchrun --standalone --nproc_per_node=1 /home/fcolanto/projects/tabicl/src/tabi
             --scheduler cosine_warmup \
             --warmup_proportion 0.02 \
             --gradient_clipping 1.0 \
-            --prior_type mlp_scm \
+            --prior_type mix_scm \
             --prior_device cpu \
             --prior_n_jobs "${PRIOR_N_JOBS}" \
             --dataloader_num_workers "${DATALOADER_NUM_WORKERS}" \
