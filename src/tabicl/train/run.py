@@ -24,6 +24,7 @@ import wandb
 from tabicl import TabICL
 from tabicl.prior.dataset import PriorDataset
 from tabicl.prior.genload import LoadPriorDataset
+from tabicl.prior.prior_config import DEFAULT_FIXED_HP
 from tabicl.train.optim import get_scheduler
 from tabicl.train.train_config import build_parser
 
@@ -227,6 +228,22 @@ class Trainer:
         """Set up a tabular dataset generator for synthetic data during training."""
 
         if self.config.prior_dir is None:
+            scm_fixed_hp = dict(DEFAULT_FIXED_HP)
+
+            # Optional CLI overrides for informed and mixed SCM behavior.
+            if self.config.mix_probs is not None:
+                scm_fixed_hp["mix_probs"] = tuple(self.config.mix_probs)
+            if self.config.informed_mix_probs is not None:
+                scm_fixed_hp["informed_mix_probs"] = tuple(self.config.informed_mix_probs)
+            if self.config.informed_feature_block_strength is not None:
+                scm_fixed_hp["informed_feature_block_strength"] = self.config.informed_feature_block_strength
+            if self.config.informed_interaction_strength is not None:
+                scm_fixed_hp["informed_interaction_strength"] = self.config.informed_interaction_strength
+            if self.config.informed_history_strength is not None:
+                scm_fixed_hp["informed_history_strength"] = self.config.informed_history_strength
+            if self.config.informed_intervention_strength is not None:
+                scm_fixed_hp["informed_intervention_strength"] = self.config.informed_intervention_strength
+
             # Generate prior data on the fly
             dataset = PriorDataset(
                 batch_size=self.config.batch_size,
@@ -242,8 +259,10 @@ class Trainer:
                 max_train_size=self.config.max_train_size,
                 replay_small=self.config.replay_small,
                 prior_type=self.config.prior_type,
+                scm_fixed_hp=scm_fixed_hp,
                 device=self.config.prior_device,
                 n_jobs=self.config.prior_n_jobs,
+                informed_prior_ratio=self.config.informed_prior_ratio,
             )
         else:
             # Load pre-generated prior data from disk

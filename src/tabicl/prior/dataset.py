@@ -482,6 +482,7 @@ class SCMPrior(Prior):
         sampled_hp: Dict[str, Any] = DEFAULT_SAMPLED_HP,
         n_jobs: int = -1,
         num_threads_per_generate: int = 1,
+        informed_prior_ratio: float = 0.5,
         device: str = "cpu",
     ):
         super().__init__(
@@ -505,6 +506,9 @@ class SCMPrior(Prior):
         self.sampled_hp = sampled_hp
         self.n_jobs = n_jobs
         self.num_threads_per_generate = num_threads_per_generate
+        if not 0.0 <= informed_prior_ratio <= 1.0:
+            raise ValueError("informed_prior_ratio must be in [0, 1].")
+        self.informed_prior_ratio = informed_prior_ratio
         self.device = device
 
     def hp_sampling(self) -> Dict[str, Any]:
@@ -517,6 +521,124 @@ class SCMPrior(Prior):
         """
         hp_sampler = HpSamplerList(self.sampled_hp, device=self.device)
         return hp_sampler.sample()
+
+    @staticmethod
+    def _normalize_two_way_probs(probs: Any, fallback: Tuple[float, float]) -> np.ndarray:
+        """Normalize and validate a two-way probability vector."""
+        raw = probs if probs is not None else fallback
+        values = np.array(raw, dtype=float).reshape(-1)
+        if values.size != 2:
+            values = np.array(fallback, dtype=float)
+        values = np.clip(values, a_min=0.0, a_max=None)
+        total = values.sum()
+        if total <= 0:
+            values = np.array(fallback, dtype=float)
+            total = values.sum()
+        return values / total
+
+    def _get_prior_mix_probs(self, informed: bool = False) -> np.ndarray:
+        """Return sampling probabilities for (mlp_scm, tree_scm)."""
+        if informed:
+            return self._normalize_two_way_probs(self.fixed_hp.get("informed_mix_probs"), fallback=(0.9, 0.1))
+        return self._normalize_two_way_probs(self.fixed_hp.get("mix_probs"), fallback=(0.7, 0.3))
+
+    @staticmethod
+    def _split_informed_blocks(num_features: int) -> Dict[str, slice]:
+        """Split features into coarse domain blocks."""
+        names = ["material", "environment", "electrochem", "history", "intervention"]
+        if num_features <= 0:
+            return {}
+        n_blocks = min(len(names), num_features)
+        # Weighted split with gentle emphasis on material/environment.
+        base = np.array([0.28, 0.27, 0.20, 0.15, 0.10], dtype=float)[:n_blocks]
+        base = base / base.sum()
+        counts = np.maximum(1, np.round(base * num_features).astype(int))
+        while counts.sum() > num_features:
+            idx = int(np.argmax(counts))
+            if counts[idx] > 1:
+                counts[idx] -= 1
+            else:
+                break
+        while counts.sum() < num_features:
+            idx = int(np.argmin(counts))
+            counts[idx] += 1
+
+        blocks: Dict[str, slice] = {}
+        start = 0
+        for name, width in zip(names[:n_blocks], counts.tolist()):
+            end = min(num_features, start + width)
+            if end > start:
+                blocks[name] = slice(start, end)
+            start = end
+            if start >= num_features:
+                break
+        if start < num_features:
+            blocks["intervention"] = slice(start, num_features)
+        return blocks
+
+    def apply_informed_structure(self, X: Tensor, y: Tensor, params: Dict[str, Any]) -> Tuple[Tensor, Tensor]:
+        """Inject block-wise and interaction structure for informed synthetic priors."""
+        num_features = int(params["num_features"])
+        if num_features <= 1:
+            return X, y
+
+        blocks = self._split_informed_blocks(num_features)
+        if not blocks:
+            return X, y
+
+        X = X.clone()
+        y = y.clone()
+
+        block_strength = float(self.fixed_hp.get("informed_feature_block_strength", 0.30))
+        block_strength = float(np.clip(block_strength, 0.0, 0.95))
+        interaction_strength = float(self.fixed_hp.get("informed_interaction_strength", 0.35))
+        history_strength = float(self.fixed_hp.get("informed_history_strength", 0.70))
+        history_strength = float(np.clip(history_strength, 0.0, 0.99))
+        intervention_strength = float(self.fixed_hp.get("informed_intervention_strength", 0.20))
+
+        # Features in the same block share a latent component.
+        for feature_slice in blocks.values():
+            if feature_slice.stop - feature_slice.start <= 1:
+                continue
+            shared = torch.randn(X.shape[0], 1, device=X.device, dtype=X.dtype)
+            X[:, feature_slice] = (1.0 - block_strength) * X[:, feature_slice] + block_strength * shared
+
+        def block_mean(name: str) -> Optional[Tensor]:
+            feature_slice = blocks.get(name)
+            if feature_slice is None or feature_slice.stop <= feature_slice.start:
+                return None
+            return X[:, feature_slice].mean(dim=-1, keepdim=True)
+
+        material = block_mean("material")
+        environment = block_mean("environment")
+        electrochem = block_mean("electrochem")
+        history = block_mean("history")
+        intervention = block_mean("intervention")
+
+        # Coupled material x environment signal.
+        if material is not None and environment is not None:
+            coupled = torch.tanh(material * environment)
+            y = y + interaction_strength * coupled.squeeze(-1)
+            electro_slice = blocks.get("electrochem")
+            if electro_slice is not None and electro_slice.stop > electro_slice.start:
+                X[:, electro_slice] = X[:, electro_slice] + 0.5 * interaction_strength * coupled
+
+        # Path dependence via autoregressive history features.
+        history_slice = blocks.get("history")
+        if history_slice is not None and history_slice.stop > history_slice.start and X.shape[0] > 2:
+            hist = X[:, history_slice].clone()
+            for t in range(1, hist.shape[0]):
+                hist[t] = history_strength * hist[t - 1] + (1.0 - history_strength) * hist[t]
+            X[:, history_slice] = hist
+            y = y + 0.2 * hist.mean(dim=-1)
+
+        # Interventions reduce damage conditionally on environment severity.
+        if intervention is not None and environment is not None:
+            intervention_gate = torch.sigmoid(intervention).squeeze(-1)
+            env_severity = torch.relu(environment).squeeze(-1)
+            y = y - intervention_strength * intervention_gate * env_severity
+
+        return torch.nan_to_num(X), torch.nan_to_num(y)
 
     @torch.no_grad()
     def generate_dataset(self, params: Dict[str, Any]) -> Tuple[Tensor, Tensor, Tensor]:
@@ -549,6 +671,8 @@ class SCMPrior(Prior):
 
         while True:
             X, y = prior_cls(**params)()
+            if params.get("informed_mode", False):
+                X, y = self.apply_informed_structure(X, y, params)
             X, y = Reg2Cls(params)(X, y)
 
             # Add batch dim for single dataset to be compatible with delete_unique_features and sanity_check
@@ -641,7 +765,7 @@ class SCMPrior(Prior):
                     break
 
                 # Subgroups share prior type, number of features, and sampled HPs
-                subgp_prior_type = self.get_prior()
+                subgp_prior_type, subgp_informed_mode = self.get_prior()
                 subgp_num_features = round(np.random.uniform(self.min_features, gp_max_features))
                 subgp_sampled_hp = {k: v() if callable(v) else v for k, v in group_sampled_hp.items()}
 
@@ -663,6 +787,7 @@ class SCMPrior(Prior):
                         "max_features": gp_max_features if self.seq_len_per_gp else self.max_features,
                         **subgp_sampled_hp,  # sampled HPs for this group
                         "prior_type": subgp_prior_type,
+                        "informed_mode": subgp_informed_mode,
                         "num_features": subgp_num_features,
                         "num_classes": ds_num_classes,
                         "device": self.device,
@@ -706,21 +831,23 @@ class SCMPrior(Prior):
 
         return X, y, d, seq_lens, train_sizes
 
-    def get_prior(self) -> str:
-        """Determine which prior type to use for generation.
-
-        For 'mix_scm' prior type, randomly selects between available priors
-        based on configured probabilities.
+    def get_prior(self) -> Tuple[str, bool]:
+        """Determine which base prior to use and whether informed structure is enabled.
 
         Returns
         -------
-        str
-            The selected prior type name.
+        tuple[str, bool]
+            (selected prior type, informed_mode)
         """
         if self.prior_type == "mix_scm":
-            return np.random.choice(["mlp_scm", "tree_scm"], p=self.fixed_hp.get("mix_probs", [0.7, 0.3]))
-        else:
-            return self.prior_type
+            return np.random.choice(["mlp_scm", "tree_scm"], p=self._get_prior_mix_probs(informed=False)), False
+        if self.prior_type == "informed_scm":
+            return np.random.choice(["mlp_scm", "tree_scm"], p=self._get_prior_mix_probs(informed=True)), True
+        if self.prior_type == "hybrid_scm":
+            informed_mode = bool(np.random.random() < self.informed_prior_ratio)
+            probs = self._get_prior_mix_probs(informed=informed_mode)
+            return np.random.choice(["mlp_scm", "tree_scm"], p=probs), informed_mode
+        return self.prior_type, False
 
 
 class DummyPrior(Prior):
@@ -887,14 +1014,20 @@ class PriorDataset(IterableDataset):
         specific distributions to ensure model robustness on smaller datasets.
 
     prior_type : str, default="mlp_scm"
-        Type of prior: 'mlp_scm' (default), 'tree_scm', 'mix_scm', or 'dummy'.
+        Type of prior: 'mlp_scm' (default), 'tree_scm', 'mix_scm',
+        'informed_scm', 'hybrid_scm', or 'dummy'.
 
         1. SCM-based: Structural causal models with complex feature relationships
          - 'mlp_scm': MLP-based causal models
          - 'tree_scm': Tree-based causal models
          - 'mix_scm': Probabilistic mix of the above models
+         - 'informed_scm': SCM + informed block/coupling structure
+         - 'hybrid_scm': Mix of generic and informed SCM samples
 
         2. Dummy: Randomly generated datasets for debugging
+
+    informed_prior_ratio : float, default=0.5
+        For 'hybrid_scm', probability of sampling an informed subgroup.
 
     scm_fixed_hp : dict, default=DEFAULT_FIXED_HP
         Fixed parameters for SCM-based priors.
@@ -932,6 +1065,7 @@ class PriorDataset(IterableDataset):
         scm_sampled_hp: Dict[str, Any] = DEFAULT_SAMPLED_HP,
         n_jobs: int = -1,
         num_threads_per_generate: int = 1,
+        informed_prior_ratio: float = 0.5,
         device: str = "cpu",
     ):
         super().__init__()
@@ -948,7 +1082,7 @@ class PriorDataset(IterableDataset):
                 max_train_size=max_train_size,
                 device=device,
             )
-        elif prior_type in ["mlp_scm", "tree_scm", "mix_scm"]:
+        elif prior_type in ["mlp_scm", "tree_scm", "mix_scm", "informed_scm", "hybrid_scm"]:
             self.prior = SCMPrior(
                 batch_size=batch_size,
                 batch_size_per_gp=batch_size_per_gp,
@@ -968,11 +1102,14 @@ class PriorDataset(IterableDataset):
                 sampled_hp=scm_sampled_hp,
                 n_jobs=n_jobs,
                 num_threads_per_generate=num_threads_per_generate,
+                informed_prior_ratio=informed_prior_ratio,
                 device=device,
             )
         else:
             raise ValueError(
-                f"Unknown prior type '{prior_type}'. Available options: 'mlp_scm', 'tree_scm', 'mix_scm', or 'dummy'."
+                "Unknown prior type "
+                f"'{prior_type}'. Available options: 'mlp_scm', 'tree_scm', 'mix_scm', "
+                "'informed_scm', 'hybrid_scm', or 'dummy'."
             )
 
         self.batch_size = batch_size

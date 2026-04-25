@@ -4,6 +4,11 @@ from .activations import get_activations
 DEFAULT_FIXED_HP = {
     # SCMPrior
     "mix_probs": (0.7, 0.3),
+    "informed_mix_probs": (0.9, 0.1),
+    "informed_feature_block_strength": 0.30,
+    "informed_interaction_strength": 0.35,
+    "informed_history_strength": 0.70,
+    "informed_intervention_strength": 0.20,
     # TreeSCM
     "tree_model": "xgboost",
     "tree_depth_lambda": 0.5,

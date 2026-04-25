@@ -155,7 +155,56 @@ def build_parser():
         help="If True, occasionally sample smaller sequence lengths to ensure model robustness on smaller datasets",
     )
     parser.add_argument(
-        "--prior_type", default="mix_scm", type=str, help="Prior type: dummy, mlp_scm, tree_scm, mix_scm"
+        "--prior_type",
+        default="mix_scm",
+        type=str,
+        help="Prior type: dummy, mlp_scm, tree_scm, mix_scm, informed_scm, hybrid_scm",
+    )
+    parser.add_argument(
+        "--informed_prior_ratio",
+        type=float,
+        default=0.5,
+        help="For prior_type=hybrid_scm, probability of sampling informed subgroups (0 to 1).",
+    )
+    parser.add_argument(
+        "--mix_probs",
+        type=float,
+        nargs=2,
+        default=None,
+        metavar=("MLP_PROB", "TREE_PROB"),
+        help="Optional override for mix_scm probabilities (mlp_scm, tree_scm).",
+    )
+    parser.add_argument(
+        "--informed_mix_probs",
+        type=float,
+        nargs=2,
+        default=None,
+        metavar=("MLP_PROB", "TREE_PROB"),
+        help="Optional override for informed_scm/hybrid_scm probabilities (mlp_scm, tree_scm).",
+    )
+    parser.add_argument(
+        "--informed_feature_block_strength",
+        type=float,
+        default=None,
+        help="Optional override for informed block-level feature coupling strength.",
+    )
+    parser.add_argument(
+        "--informed_interaction_strength",
+        type=float,
+        default=None,
+        help="Optional override for informed material-environment interaction strength.",
+    )
+    parser.add_argument(
+        "--informed_history_strength",
+        type=float,
+        default=None,
+        help="Optional override for informed autoregressive history coupling strength.",
+    )
+    parser.add_argument(
+        "--informed_intervention_strength",
+        type=float,
+        default=None,
+        help="Optional override for informed intervention damping strength.",
     )
     parser.add_argument("--prior_device", default="cpu", type=str, help="Device for prior data generation")
     parser.add_argument(
