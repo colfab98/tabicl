@@ -1,0 +1,23 @@
+dataset_id: nace_nist_corr_data
+title: NACE/NIST CORR-DATA Database
+documented_at: 2026-04-26
+status: downloaded_inspected
+
+sources:
+  dataset_url: https://data.commerce.gov/corr-data
+  direct_zip_url: https://opendata.nist.gov/1851/CORR-DATA_Database.zip
+  doi: 10.18434/M3TH4R
+
+raw_files:
+  - path: raw/CORR-DATA_Database.zip
+    role: primary_data_archive
+    size_bytes: 354591
+    sha256: 013d9c5d7d4b9433d8a679c8b793d17f487463e0472b466d289450290d0da95c
+    internal_files:
+      - CORR-DATA_Database.csv
+      - about-CORR-DATA_Database.txt
+      - columnDefinitions.txt
+
+notes:
+  - Archive was inspected in place without extraction or modification.
+  - `about-CORR-DATA_Database.txt` reports over 24,000 records from over 250 source documents.

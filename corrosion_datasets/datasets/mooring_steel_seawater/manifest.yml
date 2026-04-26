@@ -1,0 +1,25 @@
+dataset_id: mooring_steel_seawater
+title: The effect of environmental variables on corrosion of high-strength low-alloy mooring steel immersed in seawater
+documented_at: 2026-04-26
+status: downloaded_inspected
+
+sources:
+  dataset_url: https://data.mendeley.com/datasets/dhp7t3h3rz/4
+  paper_url: https://www.sciencedirect.com/science/article/pii/S0951833917300655
+
+raw_files:
+  - path: raw/Data for The effect of environmental variables on corrosion of high–strength low–alloy mooring steel immersed in seawater.zip
+    role: primary_data_archive
+    size_bytes: 4482351
+    sha256: c54dc805df0507565f808f4da828150d052f60fa10bcc46f9cd3a8d0641fcbdd
+    internal_files:
+      - Data for The effect of environmental variables on corrosion of highтАУstrength lowтАУalloy mooring steel immersed in seawater/OCP R4 S31 Omax.xlsx
+      - Data for The effect of environmental variables on corrosion of highтАУstrength lowтАУalloy mooring steel immersed in seawater/Optical microscopy analysis of the R4 samples after immersion corrosion tests .docx
+  - path: raw/1-s2.0-S0951833917300655-main.pdf
+    role: paper_pdf
+    size_bytes: 3071902
+    sha256: 61bf37fbc88ece27200d2f1a73ee96526e012d1626964475c9e6bd9f786c1546
+
+notes:
+  - Archive was inspected in place without extraction or modification.
+  - ZIP internal filenames display mojibake for the dash characters, but the data file itself was readable.

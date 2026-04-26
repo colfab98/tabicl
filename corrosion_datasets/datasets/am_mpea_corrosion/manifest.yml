@@ -1,0 +1,26 @@
+dataset_id: am_mpea_corrosion
+title: Additively Manufactured Multi Principal Element Alloy Corrosion Database
+documented_at: 2026-04-26
+status: downloaded_inspected
+
+sources:
+  dataset_url: https://data.mendeley.com/datasets/cfz68tkwfk/3
+  paper_url: https://www.nature.com/articles/s41529-025-00701-8
+  paper_doi: 10.1038/s41529-025-00701-8
+
+raw_files:
+  - path: raw/Additively Manufactured Multi Principal Element Alloy Corrosion Database.zip
+    role: primary_data_archive
+    size_bytes: 38006
+    sha256: c83256395e72b9ba4f0010497c28e2ed7e97493be66513c1316cc305101f8858
+    internal_files:
+      - Additively Manufactured Multi Principal Element Alloy Corrosion Database/Mendeley_AM_MPEA_corrosion_database.xlsx
+      - Additively Manufactured Multi Principal Element Alloy Corrosion Database/AM_MPEA_corrosion_database_V3.xlsx
+  - path: raw/s41529-025-00701-8.pdf
+    role: paper_pdf
+    size_bytes: 7102203
+    sha256: 5270378f54e4a5e6d7e22aa66b5b90d49eb2b05682d203dc868de06b891efcc2
+
+notes:
+  - `AM_MPEA_corrosion_database_V3.xlsx` appears to be the primary/current workbook in the archive.
+  - Raw archive was inspected without extraction or modification.

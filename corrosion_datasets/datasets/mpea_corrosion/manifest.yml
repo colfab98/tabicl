@@ -1,0 +1,23 @@
+dataset_id: mpea_corrosion
+title: MPEA Corrosion Database
+documented_at: 2026-04-26
+status: downloaded_inspected
+
+sources:
+  dataset_url: https://data.mendeley.com/datasets/nskb9khgsm/1
+  paper_url: https://www.nature.com/articles/s41529-025-00700-9
+  paper_doi: 10.1038/s41529-025-00700-9
+
+raw_files:
+  - path: raw/Mendeley_MPEA_corrosion_database.xlsx
+    role: primary_workbook
+    size_bytes: 119518
+    sha256: 595200617e007db3281115d0dc7764fd86f337203b6fc1a2ab34bf3b88800e69
+  - path: raw/s41529-025-00700-9.pdf
+    role: paper_pdf
+    size_bytes: 4197121
+    sha256: 365b58f32c532f9a9812ddbcd954969eda734c13b68d49aa2a39447c4a905f60
+
+notes:
+  - Raw files were user-downloaded before documentation; exact download timestamp was not recorded.
+  - Workbook was inspected without modifying the raw file.

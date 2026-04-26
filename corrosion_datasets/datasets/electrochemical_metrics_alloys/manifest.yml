@@ -1,0 +1,23 @@
+dataset_id: electrochemical_metrics_alloys
+title: Electrochemical Metrics for Corrosion Resistant Alloys
+documented_at: 2026-04-26
+status: downloaded_inspected
+
+sources:
+  dataset_url: https://figshare.com/articles/dataset/Electrochemical_Metrics_for_Corrosion_Resistant_Alloys/13038257
+  paper_url: https://www.nature.com/articles/s41597-021-00840-y
+  paper_doi: 10.1038/s41597-021-00840-y
+
+raw_files:
+  - path: raw/CRA_database_Scientific_Data_Publication_12102020.xlsx
+    role: primary_workbook
+    size_bytes: 305468
+    sha256: d0ce5e9c4b42e0b5a20dbd5c4896791703c5f433ae19bc032674d5848d9d1438
+  - path: raw/s41597-021-00840-y (1).pdf
+    role: paper_pdf
+    size_bytes: 2446934
+    sha256: 13eae04679d14dfa2df758c1fa87c350751db055b560ee85200a9c0f8148c535
+
+notes:
+  - Raw files were user-downloaded before documentation; exact download timestamp was not recorded.
+  - Workbook was inspected without modifying or extracting the raw file.

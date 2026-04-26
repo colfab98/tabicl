@@ -138,3 +138,14 @@ docs/tutorials/
 
 checkpoints/
 smoke_test_run/
+
+# Corrosion dataset metadata is tracked; source payloads stay local.
+/corrosion_datasets/datasets/*/raw/**
+!/corrosion_datasets/datasets/*/raw/
+!/corrosion_datasets/datasets/*/raw/.gitkeep
+/corrosion_datasets/datasets/**/*.[cC][sS][vV]
+/corrosion_datasets/datasets/**/*.[tT][sS][vV]
+/corrosion_datasets/datasets/**/*.[xX][lL][sS]
+/corrosion_datasets/datasets/**/*.[xX][lL][sS][xX]
+/corrosion_datasets/datasets/**/*.[zZ][iI][pP]
+/corrosion_datasets/datasets/**/*.[pP][dD][fF]

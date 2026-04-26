@@ -1,0 +1,22 @@
+dataset_id: steel_mortar_corrosion
+title: Dataset of Steel Corrosion in Cementitious Mortar Due to Carbonation and Chlorides
+documented_at: 2026-04-26
+status: downloaded_inspected
+
+sources:
+  dataset_url: https://datahub.hku.hk/articles/dataset/Dataset_of_Steel_Corrosion_in_Cementitious_Mortar_Due_to_Carbonation_and_Chlorides/25422139
+  paper_url: https://www.sciencedirect.com/science/article/pii/S2352340924005626
+
+raw_files:
+  - path: raw/Dataset of Steel Corrosion in Cementitious Mortar Due to Carbonation and Chlorides.xlsx
+    role: primary_workbook
+    size_bytes: 63496
+    sha256: d847ce6507504ccd5b97861b39c11097b93275de4d69816c016653475890605f
+  - path: raw/1-s2.0-S2352340924005626-main.pdf
+    role: paper_pdf
+    size_bytes: 1966033
+    sha256: 7b4337f2dd2327bdcee69a332c8d2060af4a2cd6f2f2da0ea48a058040427522
+
+notes:
+  - Raw files were user-downloaded before documentation; exact download timestamp was not recorded.
+  - Workbook was inspected without modifying the raw file.

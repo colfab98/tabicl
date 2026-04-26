@@ -1,0 +1,65 @@
+documented_at: 2026-04-26
+purpose: >
+  Source inventory for external corrosion datasets used to reason about
+  high-level prior structure without tuning on DatacorTech test results.
+
+datasets:
+  electrochemical_metrics_alloys:
+    title: Electrochemical Metrics for Corrosion Resistant Alloys
+    dataset_url: https://figshare.com/articles/dataset/Electrochemical_Metrics_for_Corrosion_Resistant_Alloys/13038257
+    paper_url: https://www.nature.com/articles/s41597-021-00840-y
+    paper_doi: 10.1038/s41597-021-00840-y
+    local_folder: datasets/electrochemical_metrics_alloys
+    status: downloaded_inspected
+
+  mpea_corrosion:
+    title: MPEA Corrosion Database
+    dataset_url: https://data.mendeley.com/datasets/nskb9khgsm/1
+    paper_url: https://www.nature.com/articles/s41529-025-00700-9
+    paper_doi: 10.1038/s41529-025-00700-9
+    local_folder: datasets/mpea_corrosion
+    status: downloaded_inspected
+
+  am_mpea_corrosion:
+    title: Additively Manufactured Multi Principal Element Alloy Corrosion Database
+    dataset_url: https://data.mendeley.com/datasets/cfz68tkwfk/3
+    paper_url: https://www.nature.com/articles/s41529-025-00701-8
+    paper_doi: 10.1038/s41529-025-00701-8
+    local_folder: datasets/am_mpea_corrosion
+    status: downloaded_inspected
+
+  316l_pitting_passivity:
+    title: 316L Pitting and Passivity Descriptors / Polarisation Curves
+    descriptor_dataset_url: https://data.mendeley.com/datasets/5x4dmc38bg/1
+    curve_dataset_url: https://data.mendeley.com/datasets/7j6b6y48jw/1
+    local_folder: datasets/316l_pitting_passivity
+    status: downloaded_inspected
+
+  steel_mortar_corrosion:
+    title: Dataset of Steel Corrosion in Cementitious Mortar Due to Carbonation and Chlorides
+    dataset_url: https://datahub.hku.hk/articles/dataset/Dataset_of_Steel_Corrosion_in_Cementitious_Mortar_Due_to_Carbonation_and_Chlorides/25422139
+    paper_url: https://www.sciencedirect.com/science/article/pii/S2352340924005626
+    local_folder: datasets/steel_mortar_corrosion
+    status: downloaded_inspected
+
+  nace_nist_corr_data:
+    title: NACE/NIST CORR-DATA Database
+    dataset_url: https://data.commerce.gov/corr-data
+    direct_zip_url: https://opendata.nist.gov/1851/CORR-DATA_Database.zip
+    doi: 10.18434/M3TH4R
+    local_folder: datasets/nace_nist_corr_data
+    status: downloaded_inspected
+
+  mooring_steel_seawater:
+    title: The effect of environmental variables on corrosion of high-strength low-alloy mooring steel immersed in seawater
+    dataset_url: https://data.mendeley.com/datasets/dhp7t3h3rz/4
+    paper_url: https://www.sciencedirect.com/science/article/pii/S0951833917300655
+    local_folder: datasets/mooring_steel_seawater
+    status: downloaded_inspected
+
+  pipeline_steel_pitting:
+    title: Pipeline Steel Pitting Judgment Dataset
+    article_url: https://www.frontiersin.org/journals/materials/articles/10.3389/fmats.2021.733813/full
+    expected_supplement: Table1.XLSX / Supplementary Table S1
+    local_folder: datasets/pipeline_steel_pitting
+    status: pending_missing_supplement

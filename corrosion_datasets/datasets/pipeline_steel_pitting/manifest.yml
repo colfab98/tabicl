@@ -1,0 +1,14 @@
+dataset_id: pipeline_steel_pitting
+title: Pipeline Steel Pitting Judgment Dataset
+documented_at: 2026-04-26
+status: pending_missing_supplement
+
+sources:
+  article_url: https://www.frontiersin.org/journals/materials/articles/10.3389/fmats.2021.733813/full
+  expected_supplement: Table1.XLSX / Supplementary Table S1
+
+raw_files: []
+
+notes:
+  - The supplementary workbook was not found/downloaded in this pass.
+  - Leave this dataset out of cross-dataset conclusions until the raw table is available.

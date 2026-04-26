@@ -1,0 +1,22 @@
+dataset_id: 316l_pitting_passivity
+title: 316L Pitting and Passivity Descriptors / Polarisation Curves
+documented_at: 2026-04-26
+status: downloaded_inspected
+
+sources:
+  descriptor_dataset_url: https://data.mendeley.com/datasets/5x4dmc38bg/1
+  curve_dataset_url: https://data.mendeley.com/datasets/7j6b6y48jw/1
+
+raw_files:
+  - path: raw/Epit and Epass descriptors of 316L stainless steel estimated by Machine Learning.zip
+    role: descriptor_archive
+    size_bytes: 29403
+    sha256: 7425166294c989fc34cc50efce617b7915d17bd2be9024671e7fc4c2949aec16
+  - path: raw/Micro-scale potentiodynamic polarisation (log(j)) curves of 316L stainless steel.zip
+    role: curve_archive
+    size_bytes: 3581021
+    sha256: 468ca6f95952e7ed671ea8b69d014ca998945f71f9d5cd2167665626cc923c2a
+
+notes:
+  - Archives were inspected in place without extraction or modification.
+  - Material variation is intentionally limited: the alloy is fixed 316L stainless steel.
