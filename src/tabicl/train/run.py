@@ -243,6 +243,10 @@ class Trainer:
                 scm_fixed_hp["informed_history_strength"] = self.config.informed_history_strength
             if self.config.informed_intervention_strength is not None:
                 scm_fixed_hp["informed_intervention_strength"] = self.config.informed_intervention_strength
+            if self.config.informed_physical_marginal_prob is not None:
+                scm_fixed_hp["informed_physical_marginal_prob"] = self.config.informed_physical_marginal_prob
+            if self.config.informed_physical_marginal_profile is not None:
+                scm_fixed_hp["informed_physical_marginal_profile"] = self.config.informed_physical_marginal_profile
 
             # Generate prior data on the fly
             dataset = PriorDataset(

@@ -543,6 +543,119 @@ class SCMPrior(Prior):
         return self._normalize_two_way_probs(self.fixed_hp.get("mix_probs"), fallback=(0.7, 0.3))
 
     @staticmethod
+    def _rank_uniform(values: Tensor) -> Tensor:
+        """Map a latent feature column to empirical quantiles in (0, 1)."""
+        if values.numel() <= 1:
+            return torch.full_like(values, 0.5)
+        clean = torch.nan_to_num(values, nan=0.0, posinf=0.0, neginf=0.0)
+        order = torch.argsort(clean)
+        ranks = torch.empty_like(clean)
+        ranks[order] = torch.arange(1, clean.numel() + 1, device=clean.device, dtype=clean.dtype)
+        return ranks / float(clean.numel() + 1)
+
+    @staticmethod
+    def _log_uniform_from_rank(u: Tensor, low: float, high: float) -> Tensor:
+        return torch.exp(math.log(low) + u * (math.log(high) - math.log(low)))
+
+    @staticmethod
+    def _piecewise_ph_from_rank(u: Tensor) -> Tensor:
+        acidic = (u / 0.20).clamp(0.0, 1.0) * 6.0
+        near_neutral = 6.0 + ((u - 0.20) / 0.60).clamp(0.0, 1.0) * 3.0
+        alkaline = 9.0 + ((u - 0.80) / 0.20).clamp(0.0, 1.0) * 5.0
+        return torch.where(u < 0.20, acidic, torch.where(u < 0.80, near_neutral, alkaline))
+
+    @classmethod
+    def _corrosion_marginal_values(cls, values: Tensor, family: str) -> Tensor:
+        """Transform one latent column into a broad corrosion-like marginal family."""
+        u = cls._rank_uniform(values).clamp(1e-6, 1.0 - 1e-6)
+
+        if family == "ph":
+            return cls._piecewise_ph_from_rank(u)
+        if family == "chloride":
+            return cls._log_uniform_from_rank(u, 1e-3, 1e5)
+        if family == "salinity":
+            return cls._log_uniform_from_rank(u, 1e-3, 3.5e1)
+        if family == "temperature":
+            return -10.0 + 130.0 * u
+        if family == "potential":
+            return -1.5 + 3.0 * u
+        if family == "current_density":
+            return cls._log_uniform_from_rank(u, 1e-9, 1e-1)
+        if family == "resistance":
+            return cls._log_uniform_from_rank(u, 1e-2, 1e6)
+        if family == "exposure_time":
+            return cls._log_uniform_from_rank(u, 1e-2, 1e5)
+        if family == "cycle_count":
+            return torch.floor(cls._log_uniform_from_rank(u, 1.0, 1e6))
+        if family == "material_fraction":
+            return 100.0 * u
+        if family == "material_property":
+            return cls._log_uniform_from_rank(u, 1e-2, 1e3)
+        if family == "prior_damage":
+            return u
+        if family == "intervention_binary":
+            return (u > 0.5).to(dtype=values.dtype)
+        if family == "intervention_category":
+            n_categories = int(np.random.choice([2, 3, 4]))
+            return torch.floor(u * n_categories).clamp(max=n_categories - 1)
+        if family == "intervention_dose":
+            return u
+
+        raise ValueError(f"Unknown corrosion marginal family: {family}")
+
+    @staticmethod
+    def _apply_composition_marginal(X: Tensor, feature_slice: slice) -> None:
+        width = feature_slice.stop - feature_slice.start
+        if width <= 1:
+            return
+        logits = torch.nan_to_num(X[:, feature_slice], nan=0.0, posinf=0.0, neginf=0.0)
+        sharpness = float(np.random.uniform(0.6, 1.8))
+        X[:, feature_slice] = torch.softmax(logits * sharpness, dim=-1) * 100.0
+
+    def apply_informed_physical_marginals(self, X: Tensor, blocks: Dict[str, slice]) -> Tensor:
+        """Apply broad physical marginal shapes to informed corrosion-like feature blocks."""
+        marginal_prob = float(self.fixed_hp.get("informed_physical_marginal_prob", 0.0))
+        marginal_prob = float(np.clip(marginal_prob, 0.0, 1.0))
+        if marginal_prob <= 0.0 or np.random.random() >= marginal_prob:
+            return X
+
+        profile = str(self.fixed_hp.get("informed_physical_marginal_profile", "corrosion_broad")).lower()
+        if profile in {"none", "off", "disabled"}:
+            return X
+        if profile not in {"corrosion_broad", "broad", "corrosion"}:
+            raise ValueError(f"Unknown informed physical marginal profile: {profile}")
+
+        X = X.clone()
+
+        material_slice = blocks.get("material")
+        if material_slice is not None and material_slice.stop > material_slice.start:
+            start = material_slice.start
+            if material_slice.stop - material_slice.start >= 2 and np.random.random() < 0.70:
+                width = material_slice.stop - material_slice.start
+                comp_width = min(width, max(2, int(round(width * np.random.uniform(0.50, 1.00)))))
+                self._apply_composition_marginal(X, slice(start, start + comp_width))
+                start += comp_width
+            for col in range(start, material_slice.stop):
+                family = str(np.random.choice(["material_fraction", "material_property"]))
+                X[:, col] = self._corrosion_marginal_values(X[:, col], family)
+
+        block_families = {
+            "environment": ["ph", "chloride", "salinity", "temperature"],
+            "electrochem": ["potential", "current_density", "resistance"],
+            "history": ["exposure_time", "cycle_count", "prior_damage"],
+            "intervention": ["intervention_binary", "intervention_category", "intervention_dose"],
+        }
+        for block_name, families in block_families.items():
+            feature_slice = blocks.get(block_name)
+            if feature_slice is None or feature_slice.stop <= feature_slice.start:
+                continue
+            for col in range(feature_slice.start, feature_slice.stop):
+                family = str(np.random.choice(families))
+                X[:, col] = self._corrosion_marginal_values(X[:, col], family)
+
+        return X
+
+    @staticmethod
     def _split_informed_blocks(num_features: int) -> Dict[str, slice]:
         """Split features into coarse domain blocks."""
         names = ["material", "environment", "electrochem", "history", "intervention"]
@@ -637,6 +750,8 @@ class SCMPrior(Prior):
             intervention_gate = torch.sigmoid(intervention).squeeze(-1)
             env_severity = torch.relu(environment).squeeze(-1)
             y = y - intervention_strength * intervention_gate * env_severity
+
+        X = self.apply_informed_physical_marginals(X, blocks)
 
         return torch.nan_to_num(X), torch.nan_to_num(y)
 

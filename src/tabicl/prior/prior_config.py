@@ -9,6 +9,8 @@ DEFAULT_FIXED_HP = {
     "informed_interaction_strength": 0.35,
     "informed_history_strength": 0.70,
     "informed_intervention_strength": 0.20,
+    "informed_physical_marginal_prob": 0.0,
+    "informed_physical_marginal_profile": "corrosion_broad",
     # TreeSCM
     "tree_model": "xgboost",
     "tree_depth_lambda": 0.5,
