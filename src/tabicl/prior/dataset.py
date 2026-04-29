@@ -620,7 +620,7 @@ class SCMPrior(Prior):
             return X
 
         profile = str(self.fixed_hp.get("informed_physical_marginal_profile", "corrosion_broad")).lower()
-        if profile in {"none", "off", "disabled"}:
+        if profile in {"false", "none", "off", "disabled"}:
             return X
         if profile not in {"corrosion_broad", "broad", "corrosion"}:
             raise ValueError(f"Unknown informed physical marginal profile: {profile}")
@@ -655,38 +655,53 @@ class SCMPrior(Prior):
 
         return X
 
-    @staticmethod
-    def _split_informed_blocks(num_features: int) -> Dict[str, slice]:
+    def _split_informed_blocks(self, num_features: int) -> Dict[str, slice]:
         """Split features into coarse domain blocks."""
         names = ["material", "environment", "electrochem", "history", "intervention"]
         if num_features <= 0:
             return {}
-        n_blocks = min(len(names), num_features)
-        # Weighted split with gentle emphasis on material/environment.
-        base = np.array([0.28, 0.27, 0.20, 0.15, 0.10], dtype=float)[:n_blocks]
-        base = base / base.sum()
-        counts = np.maximum(1, np.round(base * num_features).astype(int))
-        while counts.sum() > num_features:
-            idx = int(np.argmax(counts))
-            if counts[idx] > 1:
-                counts[idx] -= 1
-            else:
-                break
-        while counts.sum() < num_features:
-            idx = int(np.argmin(counts))
+
+        allocation = np.asarray(
+            self.fixed_hp.get("informed_block_allocation", (0.70, 0.18, 0.10, 0.02, 0.0)), dtype=float
+        )
+        if allocation.shape != (len(names),):
+            raise ValueError(
+                "informed_block_allocation must contain five weights in "
+                "material, environment, electrochem, history, intervention order."
+            )
+        if not np.all(np.isfinite(allocation)) or np.any(allocation < 0.0):
+            raise ValueError("informed_block_allocation weights must be finite and non-negative.")
+        if allocation.sum() <= 0.0:
+            raise ValueError("At least one informed_block_allocation weight must be positive.")
+
+        weights = allocation / allocation.sum()
+        raw_counts = weights * num_features
+        counts = np.floor(raw_counts).astype(int)
+        counts[weights <= 0.0] = 0
+
+        remaining = int(num_features - counts.sum())
+        if remaining > 0:
+            for idx in np.argsort(-(raw_counts - counts)):
+                if weights[idx] <= 0.0:
+                    continue
+                counts[idx] += 1
+                remaining -= 1
+                if remaining == 0:
+                    break
+        while remaining > 0:
+            idx = int(np.argmax(weights))
             counts[idx] += 1
+            remaining -= 1
 
         blocks: Dict[str, slice] = {}
         start = 0
-        for name, width in zip(names[:n_blocks], counts.tolist()):
+        for name, width in zip(names, counts.tolist()):
             end = min(num_features, start + width)
             if end > start:
                 blocks[name] = slice(start, end)
             start = end
             if start >= num_features:
                 break
-        if start < num_features:
-            blocks["intervention"] = slice(start, num_features)
         return blocks
 
     def apply_informed_structure(self, X: Tensor, y: Tensor, params: Dict[str, Any]) -> Tuple[Tensor, Tensor]:

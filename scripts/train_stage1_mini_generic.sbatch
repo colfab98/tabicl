@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=tabicl_s1mini_generic_v16
+#SBATCH --job-name=tabicl_s1mini_generic_v19
 #SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=24:00:00
@@ -40,12 +40,13 @@ torchrun --standalone --nproc_per_node=1 /home/fcolanto/projects/tabicl/src/tabi
             --prior_type hybrid_scm \
             --informed_prior_ratio 0.5 \
             --mix_probs 0.7 0.3 \
-            --informed_mix_probs 0.9 0.1 \
-            --informed_feature_block_strength 0.20 \
+            --informed_mix_probs 0.7 0.3 \
+            --informed_block_allocation 0.70 0.18 0.10 0.02 0.0 \
+            --informed_feature_block_strength 0.2 \
             --informed_interaction_strength 0.25 \
-            --informed_history_strength 0.50 \
-            --informed_intervention_strength 0.10 \
-            --informed_physical_marginal_prob 0.35 \
+            --informed_history_strength 0.20 \
+            --informed_intervention_strength 0.05 \
+            --informed_physical_marginal_prob 0.30 \
             --informed_physical_marginal_profile corrosion_broad \
             --prior_device cpu \
             --prior_n_jobs "${PRIOR_N_JOBS}" \

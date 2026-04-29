@@ -10,6 +10,7 @@ if [ -z "$RUN_OR_CKPT" ] || [ -z "$CHECKPOINT" ]; then
   echo "Examples:"
   echo "  $0 v15 600"
   echo "  $0 v12,v13,v14,v15 2500"
+  echo "  $0 v12,v13,v14,v15 all"
   echo "  $0 v15 step-3350"
   echo "  $0 /path/to/step-3350.ckpt step-3350 custom_label"
   exit 1
@@ -19,6 +20,10 @@ mkdir -p /home/"$USER"/tmp
 
 PASS_MODEL_LABEL=1
 if [[ "$RUN_OR_CKPT" == *.ckpt || "$RUN_OR_CKPT" == /* ]]; then
+  if [ "$CHECKPOINT" = "all" ]; then
+    echo "Checkpoint 'all' requires run suffixes, not an explicit checkpoint path." >&2
+    exit 1
+  fi
   CKPT_ARGS=(--local-ckpt-path "$RUN_OR_CKPT")
   CKPT_BASENAME="$(basename "$RUN_OR_CKPT" .ckpt)"
   RUN_LABEL="$(basename "$(dirname "$RUN_OR_CKPT")")"
@@ -44,12 +49,17 @@ elif [[ "$RUN_OR_CKPT" == *,* ]]; then
     exit 1
   fi
   CKPT_ARGS+=(--checkpoint "$CHECKPOINT")
-  CKPT_LABEL="$CHECKPOINT"
-  CKPT_LABEL="${CKPT_LABEL%.ckpt}"
-  CKPT_LABEL="${CKPT_LABEL#step-}"
+  if [ "$CHECKPOINT" = "all" ]; then
+    CKPT_LABEL="all_common"
+  else
+    CKPT_LABEL="$CHECKPOINT"
+    CKPT_LABEL="${CKPT_LABEL%.ckpt}"
+    CKPT_LABEL="${CKPT_LABEL#step-}"
+    CKPT_LABEL="step${CKPT_LABEL}"
+  fi
   JOINED_RUNS="${RUN_LABELS[*]}"
   JOINED_RUNS="${JOINED_RUNS// /_}"
-  LABEL="${MODEL_LABEL:-compare_${JOINED_RUNS}_step${CKPT_LABEL}}"
+  LABEL="${MODEL_LABEL:-compare_${JOINED_RUNS}_${CKPT_LABEL}}"
   PASS_MODEL_LABEL=0
 else
   if [ "$CHECKPOINT" = "latest" ]; then
@@ -57,10 +67,16 @@ else
     exit 1
   fi
   CKPT_ARGS=(--run "$RUN_OR_CKPT" --checkpoint "$CHECKPOINT")
-  CKPT_LABEL="$CHECKPOINT"
-  CKPT_LABEL="${CKPT_LABEL%.ckpt}"
-  CKPT_LABEL="${CKPT_LABEL#step-}"
-  LABEL="${MODEL_LABEL:-${RUN_OR_CKPT}_step${CKPT_LABEL}}"
+  if [ "$CHECKPOINT" = "all" ]; then
+    CKPT_LABEL="all_common"
+    PASS_MODEL_LABEL=0
+  else
+    CKPT_LABEL="$CHECKPOINT"
+    CKPT_LABEL="${CKPT_LABEL%.ckpt}"
+    CKPT_LABEL="${CKPT_LABEL#step-}"
+    CKPT_LABEL="step${CKPT_LABEL}"
+  fi
+  LABEL="${MODEL_LABEL:-${RUN_OR_CKPT}_${CKPT_LABEL}}"
 fi
 
 EVAL_ARGS=("${CKPT_ARGS[@]}")

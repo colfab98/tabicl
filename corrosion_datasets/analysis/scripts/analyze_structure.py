@@ -61,6 +61,39 @@ RATING_TO_SEVERITY = {
     "d": 3.0,
 }
 
+NUMERIC_COLUMN_EXCLUDE_RE = re.compile(
+    r"\b("
+    r"alloy name|alloy formula|formula|phases? present|phase|"
+    r"material group|material family|material$|uns|"
+    r"test solution|test environment|test electrolyte|electrolyte$|environment$|"
+    r"test method|heat treatment|microstructures?|condition/comment|comment|"
+    r"processing|am process|reference|doi|source|id|maps"
+    r")\b",
+    re.IGNORECASE,
+)
+
+EMBEDDED_NUMERIC_COLUMN_RE = re.compile(
+    r"\b("
+    r"duration|days?|time|scan rate|temperature|concentration|chloride|"
+    r"salinity|oxygen|humidity|saturation|water content|pore solution|ph|"
+    r"rate|rating|potential|resistivity|current|density|window|ratio|"
+    r"porosity|proportion|binder|entropy|vec"
+    r")\b",
+    re.IGNORECASE,
+)
+
+UNIT_SUFFIX_RE = re.compile(
+    r"^[\s,;/()°%+\-.]*"
+    r"(?:"
+    r"m|mol|molar|wt|vol|ppm|ppb|ppt|"
+    r"c|f|k|d|day|days|h|hr|hrs|hour|hours|min|s|sec|"
+    r"v|mv|a|ma|ua|µa|ohm|cm2|cm|mm|yr|year|years|"
+    r"max|min|approx|approximately|about"
+    r")*"
+    r"[\s,;/()°%+\-.]*$",
+    re.IGNORECASE,
+)
+
 
 @dataclass
 class Table:
@@ -89,30 +122,48 @@ def unique_columns(columns: list[str]) -> list[str]:
     return out
 
 
-def to_float(value: Any) -> float:
+def normalize_numeric_text(text: str) -> str:
+    text = text.strip().replace("−", "-").replace("–", "-").replace("—", "-")
+    text = "".join(ch for ch in text if ch not in {"\u202a", "\u202b", "\u202c", "\u202d", "\u202e"})
+    # Only treat commas as thousands separators in conventional numeric groups.
+    text = re.sub(r"(?<=\d),(?=\d{3}(?:\D|$))", "", text)
+    return text
+
+
+def to_float(value: Any, *, allow_embedded_number: bool = False, allow_rating: bool = False) -> float:
     if value is None:
         return math.nan
     if isinstance(value, (int, float)):
         return float(value)
-    text = clean_name(value).replace(",", "")
+    text = normalize_numeric_text(clean_name(value))
     if text.lower() in NA_STRINGS:
         return math.nan
-    text = text.replace("−", "-").replace("–", "-").replace("—", "-")
     # Ratings in CORR-DATA are ordered from resistant to poor.
     lower = text.lower()
-    if lower and lower[0] in RATING_TO_SEVERITY and re.match(r"^[abcd]\b", lower):
+    if allow_rating and lower and lower[0] in RATING_TO_SEVERITY and re.match(r"^[abcd]\b", lower):
         return RATING_TO_SEVERITY[lower[0]]
     # Common range form, e.g. 200-400.
     m = re.match(r"^\s*([+-]?\d+(?:\.\d+)?)\s*-\s*([+-]?\d+(?:\.\d+)?)\s*$", text)
     if m:
         return (float(m.group(1)) + float(m.group(2))) / 2.0
+    m = re.match(r"^\s*[<>=~]*\s*([+-]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*$", text)
+    if m:
+        return float(m.group(1))
     try:
         return float(text)
     except ValueError:
         pass
-    # Accept values such as "0.05 max", "414 d", "5 ppm F-".
+    if not allow_embedded_number:
+        return math.nan
+    # Accept scalar values with simple measurement suffixes, such as
+    # "0.05 max" or "414 d", while rejecting IDs/prose like "S30400".
+    if not re.match(r"^\s*[<>=~]*\s*[+-]?\d", text):
+        return math.nan
     found = re.findall(r"[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", text)
     if len(found) == 1:
+        tail = text[text.find(found[0]) + len(found[0]) :]
+        if not UNIT_SUFFIX_RE.match(tail):
+            return math.nan
         return float(found[0])
     return math.nan
 
@@ -440,8 +491,8 @@ def load_steel_mortar() -> list[Table]:
                 "Notes",
             ]
             pos = {
-                "material": [0, 1, 2, 3, 4, 7, 8],
-                "environment": [5, 6, 9, 10, 11],
+                "material": [0, 1, 2, 3, 4, 8],
+                "environment": [5, 6, 7, 9, 10, 11],
                 "target": [12, 13, 14, 15],
                 "metadata": [16],
             }
@@ -465,8 +516,8 @@ def load_steel_mortar() -> list[Table]:
                 "Notes",
             ]
             pos = {
-                "material": [0, 1, 2, 3, 6, 7],
-                "environment": [4, 5, 8, 9, 10],
+                "material": [0, 1, 2, 3, 7],
+                "environment": [4, 5, 6, 8, 9, 10],
                 "target": [11, 12, 13, 14],
                 "metadata": [15],
             }
@@ -602,8 +653,42 @@ def load_all_tables() -> list[Table]:
     return tables
 
 
+def is_numeric_measurement_column(table: Table, column: str) -> bool:
+    group = table.groups.get(column, "metadata")
+    if group in {"metadata", "exclude"}:
+        return False
+    if group == "intervention":
+        return False
+    if NUMERIC_COLUMN_EXCLUDE_RE.search(column):
+        return False
+    return True
+
+
+def allows_embedded_number(table: Table, column: str) -> bool:
+    if not is_numeric_measurement_column(table, column):
+        return False
+    return bool(EMBEDDED_NUMERIC_COLUMN_RE.search(column))
+
+
+def allows_rating(table: Table, column: str) -> bool:
+    group = table.groups.get(column, "metadata")
+    return group == "target" and "rating" in column.lower()
+
+
 def numeric_vector(table: Table, column: str) -> np.ndarray:
-    return np.array([to_float(row.get(column)) for row in table.rows], dtype=float)
+    if not is_numeric_measurement_column(table, column):
+        return np.full(len(table.rows), math.nan, dtype=float)
+    return np.array(
+        [
+            to_float(
+                row.get(column),
+                allow_embedded_number=allows_embedded_number(table, column),
+                allow_rating=allows_rating(table, column),
+            )
+            for row in table.rows
+        ],
+        dtype=float,
+    )
 
 
 def text_vector(table: Table, column: str) -> list[str]:
@@ -972,28 +1057,28 @@ def recommendations(results: dict[str, Any]) -> dict[str, Any]:
     return {
         "informed_feature_block_strength": {
             "evidence": feature_groups,
-            "suggested_range": [0.20, 0.45],
-            "suggested_default": 0.30,
-            "interpretation": "Observed within-block numeric dependence is usually moderate, supporting the current conservative default rather than a large increase.",
+            "suggested_range": [0.20, 0.35],
+            "suggested_default": 0.25,
+            "interpretation": "Observed within-block numeric dependence is moderate but not a calibrated prior strength; use a soft block signal rather than increasing it aggressively.",
         },
         "informed_interaction_strength": {
             "material_environment_correlation": mat_env,
             "interaction_cv_delta": interaction_delta,
-            "suggested_range": [0.25, 0.55],
-            "suggested_default": 0.35,
-            "interpretation": "Material-environment coupling is structurally present; interaction probes should be reviewed per target before increasing above the current default.",
+            "suggested_range": [0.10, 0.35],
+            "suggested_default": 0.25,
+            "interpretation": "Material-environment coupling is structurally sensible, but simple interaction gains are small and mixed; keep this moderate.",
         },
         "informed_history_strength": {
             "history_autocorrelation": history_corr,
-            "suggested_range": [0.50, 0.80],
-            "suggested_default": 0.70,
-            "interpretation": "Time-series evidence is narrow but strongly path-dependent where available, so the current high default is plausible but not broadly calibrated.",
+            "suggested_range": [0.00, 0.50],
+            "suggested_default": 0.25,
+            "interpretation": "Time-series evidence is narrow and mixed; path dependence is a corrosion motif, but a universal strong autoregressive component is not supported.",
         },
         "informed_intervention_strength": {
             "target_association": intervention_assoc,
-            "suggested_range": [0.10, 0.30],
-            "suggested_default": 0.20,
-            "interpretation": "Processing/intervention labels are informative in MPEA/AM-MPEA, but mostly categorical and dataset-specific, so keep this conservative.",
+            "suggested_range": [0.05, 0.20],
+            "suggested_default": 0.10,
+            "interpretation": "Processing/intervention labels are sometimes informative, but the evidence is sparse and categorical, so keep this weak and conditional.",
         },
         "informed_prior_ratio": {
             "evidence": {"n": 0, "mean": math.nan, "median": math.nan, "q75": math.nan},
@@ -1101,7 +1186,8 @@ def write_markdown(results: dict[str, Any], path: Path) -> None:
         "## Caveats",
         "",
         "- This is structural evidence, not DatacorTech model selection.",
-        "- Numeric correlations use pairwise complete Spearman correlations and ignore many text/categorical fields except for target association via eta squared.",
+        "- Numeric correlations use pairwise complete Spearman correlations over column-gated scalar measurement fields.",
+        "- Text identifiers, formulas, process labels, prose methods, and categorical environment labels are excluded from numeric evidence; bounded categorical target association is still estimated with eta squared.",
         "- The physical-range-prior question is still separate: this pass mostly addresses block and interaction settings.",
         "- Recommended values should become a small pre-specified ablation grid, not a final claim that one value is optimal.",
     ]

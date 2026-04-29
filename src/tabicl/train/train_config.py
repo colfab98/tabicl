@@ -7,6 +7,12 @@ def str2bool(value):
     return value.lower() == "true"
 
 
+def false_or_float(value):
+    if isinstance(value, str) and value.lower() == "false":
+        return 0.0
+    return float(value)
+
+
 def train_size_type(value):
     """Custom type function to handle both int and float train sizes."""
     value = float(value)
@@ -162,7 +168,7 @@ def build_parser():
     )
     parser.add_argument(
         "--informed_prior_ratio",
-        type=float,
+        type=false_or_float,
         default=0.5,
         help="For prior_type=hybrid_scm, probability of sampling informed subgroups (0 to 1).",
     )
@@ -183,32 +189,43 @@ def build_parser():
         help="Optional override for informed_scm/hybrid_scm probabilities (mlp_scm, tree_scm).",
     )
     parser.add_argument(
-        "--informed_feature_block_strength",
+        "--informed_block_allocation",
         type=float,
+        nargs=5,
+        default=None,
+        metavar=("MATERIAL", "ENVIRONMENT", "ELECTROCHEM", "HISTORY", "INTERVENTION"),
+        help=(
+            "Optional informed feature block allocation weights in material, environment, "
+            "electrochem, history, intervention order."
+        ),
+    )
+    parser.add_argument(
+        "--informed_feature_block_strength",
+        type=false_or_float,
         default=None,
         help="Optional override for informed block-level feature coupling strength.",
     )
     parser.add_argument(
         "--informed_interaction_strength",
-        type=float,
+        type=false_or_float,
         default=None,
         help="Optional override for informed material-environment interaction strength.",
     )
     parser.add_argument(
         "--informed_history_strength",
-        type=float,
+        type=false_or_float,
         default=None,
         help="Optional override for informed autoregressive history coupling strength.",
     )
     parser.add_argument(
         "--informed_intervention_strength",
-        type=float,
+        type=false_or_float,
         default=None,
         help="Optional override for informed intervention damping strength.",
     )
     parser.add_argument(
         "--informed_physical_marginal_prob",
-        type=float,
+        type=false_or_float,
         default=None,
         help=(
             "Optional probability that an informed synthetic dataset receives corrosion-like "
