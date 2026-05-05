@@ -27,6 +27,7 @@ import pandas as pd
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
+    cohen_kappa_score,
     f1_score,
     matthews_corrcoef,
     roc_auc_score,
@@ -60,8 +61,22 @@ METRIC_COLUMNS = (
     "test_f1_macro",
     "test_mcc",
     "test_auroc",
+    "test_roc_auc_ovr_macro",
+    "test_ordinal_mae",
+    "test_ordinal_rmse",
+    "test_adjacent_accuracy",
+    "test_quadratic_weighted_kappa",
+    "test_spearman_pred_class",
+    "test_expected_class_mae",
+    "test_expected_class_spearman",
 )
 PRIMARY_METRIC = "test_balanced_accuracy"
+ORDINAL_PRIMARY_METRIC = "test_quadratic_weighted_kappa"
+LOWER_IS_BETTER_METRICS = {
+    "test_ordinal_mae",
+    "test_ordinal_rmse",
+    "test_expected_class_mae",
+}
 PRIMARY_TARGET_PATTERNS = (
     "corrosion rate",
     "pitting potential",
@@ -81,8 +96,14 @@ class EvalTask:
     table: str
     target: str
     threshold: float
+    target_binning: str
+    target_bins: int
+    bin_edges: list[float]
+    class_labels: list[str]
+    class_counts: dict[str, int]
     X: pd.DataFrame
     y: pd.Series
+    y_ordinal: pd.Series
     feature_groups_used: list[str]
     dropped_feature_columns: list[str]
     quality_flags: list[str]
@@ -151,6 +172,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--test-size", type=float, default=0.25)
     parser.add_argument("--random-state", type=int, default=42)
     parser.add_argument("--target-mode", choices=("primary", "all"), default="primary")
+    parser.add_argument(
+        "--target-binning",
+        choices=("median_binary", "quantile_multiclass"),
+        default="median_binary",
+        help=(
+            "How continuous targets are converted for classifier evaluation. "
+            "median_binary preserves the existing low/high median split; "
+            "quantile_multiclass creates ordered quantile bins."
+        ),
+    )
+    parser.add_argument(
+        "--target-bins",
+        type=int,
+        default=2,
+        help="Number of target bins when --target-binning quantile_multiclass is used.",
+    )
     parser.add_argument("--dataset", action="append", help="Limit to dataset id. Can be passed multiple times.")
     parser.add_argument("--task", action="append", help="Limit to exact task id. Can be passed multiple times.")
     parser.add_argument("--min-samples", type=int, default=40)
@@ -214,6 +251,29 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--print-json-lines", action="store_true", help="Print each result/error row as JSONL while running.")
     parser.add_argument("--list-tasks", action="store_true", help="List generated tasks and exit before loading any model.")
     return parser.parse_args([arg for arg in sys.argv[1:] if arg != ""])
+
+
+def validate_args(args: argparse.Namespace) -> None:
+    if args.target_binning == "median_binary" and args.target_bins != 2:
+        raise ValueError("--target-bins must be 2 when --target-binning median_binary is used.")
+    if args.target_binning == "quantile_multiclass" and args.target_bins < 3:
+        raise ValueError("--target-bins must be at least 3 when --target-binning quantile_multiclass is used.")
+
+
+def primary_metric_for_args(args: argparse.Namespace) -> str:
+    if args.target_binning == "quantile_multiclass":
+        return ORDINAL_PRIMARY_METRIC
+    return PRIMARY_METRIC
+
+
+def metric_sort_specs_for_args(args: argparse.Namespace) -> list[tuple[str, bool]]:
+    if args.target_binning == "quantile_multiclass":
+        return [
+            (ORDINAL_PRIMARY_METRIC, False),
+            ("test_ordinal_mae", True),
+            (PRIMARY_METRIC, False),
+        ]
+    return [(PRIMARY_METRIC, False), ("test_mcc", False)]
 
 
 def expand_runs(args: argparse.Namespace) -> list[str]:
@@ -303,7 +363,7 @@ def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEv
     common_steps = sorted(
         step
         for step in set.intersection(*(set(paths) for paths in by_run.values()))
-        if step >= args.min_checkpoint_step
+        if step >= args.min_checkpoint_step and step % 1000 == 0
     )
     if not common_steps:
         run_list = ", ".join(runs)
@@ -435,7 +495,52 @@ def finite_target_values(table: Table, target_col: str) -> np.ndarray:
     return values[np.isfinite(values)]
 
 
-def choose_target_columns(table: Table, mode: str, min_samples: int, min_class_count: int) -> list[str]:
+def make_target_bins(
+    values: np.ndarray,
+    *,
+    target_binning: str,
+    target_bins: int,
+) -> tuple[np.ndarray, np.ndarray, list[float], list[str]] | None:
+    values = np.asarray(values, dtype=float)
+    if values.ndim != 1 or len(values) == 0 or not np.isfinite(values).all():
+        return None
+
+    if target_binning == "median_binary":
+        threshold = float(np.nanmedian(values))
+        ordinals = (values > threshold).astype(int)
+        labels = np.where(ordinals == 1, "high", "low")
+        return labels, ordinals, [threshold], ["low", "high"]
+
+    if target_binning != "quantile_multiclass":
+        raise ValueError(f"Unknown target binning mode: {target_binning}")
+
+    if target_bins < 3:
+        raise ValueError("--target-bins must be at least 3 for quantile_multiclass.")
+
+    quantiles = [i / target_bins for i in range(1, target_bins)]
+    edges = np.quantile(values, quantiles)
+    edges = np.asarray(edges, dtype=float)
+    unique_edges = np.unique(edges[np.isfinite(edges)])
+    if len(unique_edges) != target_bins - 1:
+        return None
+
+    ordinals = np.digitize(values, unique_edges, right=True).astype(int)
+    if len(np.unique(ordinals)) != target_bins:
+        return None
+    class_labels = [f"bin_{idx}" for idx in range(target_bins)]
+    labels = np.asarray([class_labels[idx] for idx in ordinals], dtype=object)
+    return labels, ordinals, [float(edge) for edge in unique_edges], class_labels
+
+
+def choose_target_columns(
+    table: Table,
+    mode: str,
+    min_samples: int,
+    min_class_count: int,
+    *,
+    target_binning: str,
+    target_bins: int,
+) -> list[str]:
     candidates: list[tuple[int, int, str]] = []
     for col in table.columns:
         if table.groups.get(col) != "target":
@@ -443,10 +548,12 @@ def choose_target_columns(table: Table, mode: str, min_samples: int, min_class_c
         values = finite_target_values(table, col)
         if len(values) < min_samples:
             continue
-        threshold = float(np.nanmedian(values))
-        labels = values > threshold
-        class_counts = np.bincount(labels.astype(int), minlength=2)
-        if int(class_counts.min()) < min_class_count:
+        binned = make_target_bins(values, target_binning=target_binning, target_bins=target_bins)
+        if binned is None:
+            continue
+        _, ordinals, _, class_labels = binned
+        class_counts = np.bincount(ordinals, minlength=len(class_labels))
+        if len(class_counts) != len(class_labels) or int(class_counts.min()) < min_class_count:
             continue
         lower_name = col.lower()
         priority = next((i for i, pattern in enumerate(PRIMARY_TARGET_PATTERNS) if pattern in lower_name), 99)
@@ -529,6 +636,8 @@ def build_task(
     table: Table,
     target_col: str,
     *,
+    target_binning: str,
+    target_bins: int,
     feature_groups: tuple[str, ...],
     max_category_cardinality: int,
     min_numeric_finite_ratio: float,
@@ -546,10 +655,16 @@ def build_task(
     if int(valid_target.sum()) < min_samples:
         return None
 
-    threshold = float(np.nanmedian(target_values[valid_target]))
-    y_values = np.where(target_values > threshold, "high", "low")
-    class_counts = pd.Series(y_values[valid_target]).value_counts()
-    if len(class_counts) != 2 or int(class_counts.min()) < min_class_count:
+    binned = make_target_bins(
+        target_values[valid_target],
+        target_binning=target_binning,
+        target_bins=target_bins,
+    )
+    if binned is None:
+        return None
+    y_values, y_ordinals, bin_edges, class_labels = binned
+    class_counts = pd.Series(y_values).value_counts()
+    if len(class_counts) != len(class_labels) or int(class_counts.min()) < min_class_count:
         return None
 
     features: dict[str, pd.Series] = {}
@@ -576,31 +691,47 @@ def build_task(
         return None
 
     X = pd.DataFrame(features).loc[valid_target].reset_index(drop=True)
-    y = pd.Series(y_values[valid_target], name=target_col).reset_index(drop=True)
+    y = pd.Series(y_values, name=target_col).reset_index(drop=True)
+    y_ordinal = pd.Series(y_ordinals, name=f"{target_col}__ordinal").reset_index(drop=True)
     class_counts = y.value_counts()
-    if len(X) < min_samples or len(class_counts) != 2 or int(class_counts.min()) < min_class_count:
+    if len(X) < min_samples or len(class_counts) != len(class_labels) or int(class_counts.min()) < min_class_count:
         return None
     if max_samples_per_task and len(X) > max_samples_per_task:
-        X, _, y, _ = train_test_split(
+        X, _, y, _, y_ordinal, _ = train_test_split(
             X,
             y,
+            y_ordinal,
             train_size=max_samples_per_task,
             stratify=y,
             random_state=random_state,
         )
         X = X.reset_index(drop=True)
         y = y.reset_index(drop=True)
+        y_ordinal = y_ordinal.reset_index(drop=True)
+        class_counts = y.value_counts()
+        if len(class_counts) != len(class_labels) or int(class_counts.min()) < min_class_count:
+            return None
 
     task_id = f"{table.dataset}__{slugify(table.table)}__{slugify(target_col)}"
     quality_flags = assess_task_quality(table, X, y)
+    ordered_class_counts = {
+        label: int(class_counts.get(label, 0))
+        for label in class_labels
+    }
     return EvalTask(
         task_id=task_id,
         dataset=table.dataset,
         table=table.table,
         target=target_col,
-        threshold=threshold,
+        threshold=float(bin_edges[0]) if len(bin_edges) == 1 else math.nan,
+        target_binning=target_binning,
+        target_bins=len(class_labels),
+        bin_edges=bin_edges,
+        class_labels=class_labels,
+        class_counts=ordered_class_counts,
         X=X,
         y=y,
+        y_ordinal=y_ordinal,
         feature_groups_used=sorted(set(feature_groups)),
         dropped_feature_columns=dropped,
         quality_flags=quality_flags,
@@ -627,11 +758,20 @@ def make_tasks(args: argparse.Namespace) -> list[EvalTask]:
     for table in tables:
         if selected_datasets and table.dataset not in selected_datasets:
             continue
-        target_cols = choose_target_columns(table, args.target_mode, args.min_samples, args.min_class_count)
+        target_cols = choose_target_columns(
+            table,
+            args.target_mode,
+            args.min_samples,
+            args.min_class_count,
+            target_binning=args.target_binning,
+            target_bins=args.target_bins,
+        )
         for target_col in target_cols:
             task = build_task(
                 table,
                 target_col,
+                target_binning=args.target_binning,
+                target_bins=args.target_bins,
                 feature_groups=feature_groups_tuple,
                 max_category_cardinality=args.max_category_cardinality,
                 min_numeric_finite_ratio=args.min_numeric_finite_ratio,
@@ -696,6 +836,87 @@ def positive_probability(estimator: Any, X: pd.DataFrame, positive_label: str = 
     return proba[:, classes.index(positive_label)]
 
 
+def class_to_ordinal(task: EvalTask) -> dict[str, int]:
+    return {label: index for index, label in enumerate(task.class_labels)}
+
+
+def labels_to_ordinals(labels: pd.Series | np.ndarray, task: EvalTask) -> np.ndarray:
+    mapping = class_to_ordinal(task)
+    values = [mapping.get(str(label), math.nan) for label in labels]
+    return np.asarray(values, dtype=float)
+
+
+def spearman_safe(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    if len(y_true) < 2 or len(y_pred) < 2:
+        return math.nan
+    if len(np.unique(y_true[np.isfinite(y_true)])) < 2 or len(np.unique(y_pred[np.isfinite(y_pred)])) < 2:
+        return math.nan
+    value = pd.Series(y_true).corr(pd.Series(y_pred), method="spearman")
+    return float(value) if value is not None and np.isfinite(value) else math.nan
+
+
+def aligned_probability_matrix(estimator: Any, X: pd.DataFrame, task: EvalTask) -> np.ndarray | None:
+    if not hasattr(estimator, "predict_proba"):
+        return None
+    proba = np.asarray(estimator.predict_proba(X), dtype=float)
+    if not np.isfinite(proba).all():
+        return None
+    estimator_classes = [str(cls) for cls in estimator.classes_]
+    if any(label not in estimator_classes for label in task.class_labels):
+        return None
+    aligned = np.zeros((proba.shape[0], len(task.class_labels)), dtype=float)
+    for index, label in enumerate(task.class_labels):
+        aligned[:, index] = proba[:, estimator_classes.index(label)]
+    return aligned
+
+
+def ordinal_metrics(
+    *,
+    y_true_ord: np.ndarray,
+    y_pred_ord: np.ndarray,
+    proba_aligned: np.ndarray | None,
+    n_classes: int,
+) -> dict[str, float]:
+    valid = np.isfinite(y_true_ord) & np.isfinite(y_pred_ord)
+    if not valid.any():
+        return {
+            "test_ordinal_mae": math.nan,
+            "test_ordinal_rmse": math.nan,
+            "test_adjacent_accuracy": math.nan,
+            "test_quadratic_weighted_kappa": math.nan,
+            "test_spearman_pred_class": math.nan,
+            "test_expected_class_mae": math.nan,
+            "test_expected_class_spearman": math.nan,
+        }
+
+    true_ord = y_true_ord[valid].astype(int)
+    pred_ord = y_pred_ord[valid].astype(int)
+    diff = pred_ord - true_ord
+    metrics = {
+        "test_ordinal_mae": float(np.mean(np.abs(diff))),
+        "test_ordinal_rmse": float(np.sqrt(np.mean(diff.astype(float) ** 2))),
+        "test_adjacent_accuracy": float(np.mean(np.abs(diff) <= 1)),
+        "test_quadratic_weighted_kappa": float(
+            cohen_kappa_score(true_ord, pred_ord, labels=list(range(n_classes)), weights="quadratic")
+        ),
+        "test_spearman_pred_class": spearman_safe(true_ord.astype(float), pred_ord.astype(float)),
+        "test_expected_class_mae": math.nan,
+        "test_expected_class_spearman": math.nan,
+    }
+
+    if proba_aligned is not None and len(proba_aligned) == len(y_true_ord):
+        ordinal_axis = np.arange(n_classes, dtype=float)
+        expected = proba_aligned @ ordinal_axis
+        expected_valid = np.isfinite(y_true_ord) & np.isfinite(expected)
+        if expected_valid.any():
+            expected_true = y_true_ord[expected_valid].astype(float)
+            expected_pred = expected[expected_valid].astype(float)
+            metrics["test_expected_class_mae"] = float(np.mean(np.abs(expected_pred - expected_true)))
+            metrics["test_expected_class_spearman"] = spearman_safe(expected_true, expected_pred)
+
+    return metrics
+
+
 def evaluate_estimator(
     *,
     model_label: str,
@@ -705,9 +926,10 @@ def evaluate_estimator(
     test_size: float,
     random_state: int,
 ) -> dict[str, Any]:
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, y_test, _, y_test_ordinal = train_test_split(
         task.X,
         task.y,
+        task.y_ordinal,
         test_size=test_size,
         stratify=task.y,
         random_state=random_state,
@@ -715,17 +937,40 @@ def evaluate_estimator(
     estimator = estimator_factory()
     estimator.fit(X_train, y_train)
     y_pred = pd.Series(estimator.predict(X_test)).astype(str)
+    y_true_ord = y_test_ordinal.to_numpy(dtype=float)
+    y_pred_ord = labels_to_ordinals(y_pred, task)
 
-    y_score = None
+    proba_aligned = aligned_probability_matrix(estimator, X_test, task)
     auroc = math.nan
-    if hasattr(estimator, "predict_proba"):
-        y_score = positive_probability(estimator, X_test, positive_label="high")
-        if np.isfinite(y_score).all():
-            y_true_binary = (y_test.astype(str).to_numpy() == "high").astype(int)
+    roc_auc_ovr_macro = math.nan
+    if proba_aligned is not None:
+        if len(task.class_labels) == 2:
+            y_score = proba_aligned[:, 1]
+            y_true_binary = (y_test.astype(str).to_numpy() == task.class_labels[1]).astype(int)
             auroc = float(roc_auc_score(y_true_binary, y_score))
+            roc_auc_ovr_macro = auroc
+        else:
+            y_true_ord_int = y_true_ord.astype(int)
+            roc_auc_ovr_macro = float(
+                roc_auc_score(
+                    y_true_ord_int,
+                    proba_aligned,
+                    labels=list(range(len(task.class_labels))),
+                    multi_class="ovr",
+                    average="macro",
+                )
+            )
+            auroc = roc_auc_ovr_macro
+
+    ord_metrics = ordinal_metrics(
+        y_true_ord=y_true_ord,
+        y_pred_ord=y_pred_ord,
+        proba_aligned=proba_aligned,
+        n_classes=len(task.class_labels),
+    )
 
     model_source = getattr(estimator, "model_path_", "")
-    return {
+    row = {
         "model": model_label,
         "model_kind": model_kind,
         "model_source": str(model_source),
@@ -734,21 +979,30 @@ def evaluate_estimator(
         "table": task.table,
         "target": task.target,
         "target_threshold_median": task.threshold,
+        "target_binning": task.target_binning,
+        "target_bins": task.target_bins,
+        "target_bin_edges": ",".join(format_metric(edge) for edge in task.bin_edges),
         "n_samples": int(len(task.X)),
         "n_train": int(len(X_train)),
         "n_test": int(len(X_test)),
         "n_features": int(task.X.shape[1]),
-        "positive_label": "high",
-        "positive_rate": float((task.y == "high").mean()),
+        "n_classes": int(len(task.class_labels)),
+        "class_labels": ",".join(task.class_labels),
+        "class_counts": ",".join(f"{label}:{task.class_counts.get(label, 0)}" for label in task.class_labels),
+        "positive_label": task.class_labels[-1],
+        "positive_rate": float((task.y == task.class_labels[-1]).mean()),
         "task_quality_flags": ",".join(task.quality_flags),
         "test_accuracy": float(accuracy_score(y_test, y_pred)),
         "test_balanced_accuracy": float(balanced_accuracy_score(y_test, y_pred)),
         "test_f1_macro": float(f1_score(y_test, y_pred, average="macro")),
         "test_mcc": float(matthews_corrcoef(y_test, y_pred)),
         "test_auroc": auroc,
+        "test_roc_auc_ovr_macro": roc_auc_ovr_macro,
         "feature_groups": ",".join(task.feature_groups_used),
         "dropped_feature_columns": ";".join(task.dropped_feature_columns),
     }
+    row.update(ord_metrics)
+    return row
 
 
 def ordered_unique(values: list[str]) -> list[str]:
@@ -817,10 +1071,16 @@ def make_wide_results_dataframe(rows: list[dict[str, Any]]) -> pd.DataFrame:
         "table",
         "target",
         "target_threshold_median",
+        "target_binning",
+        "target_bins",
+        "target_bin_edges",
         "n_samples",
         "n_train",
         "n_test",
         "n_features",
+        "n_classes",
+        "class_labels",
+        "class_counts",
         "positive_rate",
         "task_quality_flags",
     ]
@@ -848,14 +1108,20 @@ def make_wide_results_dataframe(rows: list[dict[str, Any]]) -> pd.DataFrame:
                 if np.isfinite(value):
                     values.append((model, value))
             if values:
-                best_model, best_value = max(values, key=lambda item: item[1])
+                choose_best = min if metric in LOWER_IS_BETTER_METRICS else max
+                best_model, best_value = choose_best(values, key=lambda item: item[1])
                 record[f"best_model__{metric}"] = best_model
                 record[f"best_value__{metric}"] = best_value
         records.append(record)
     return pd.DataFrame(records)
 
 
-def make_summary_dataframe(rows: list[dict[str, Any]], errors: list[dict[str, Any]]) -> pd.DataFrame:
+def make_summary_dataframe(
+    rows: list[dict[str, Any]],
+    errors: list[dict[str, Any]],
+    *,
+    metric_sort_specs: list[tuple[str, bool]] | None = None,
+) -> pd.DataFrame:
     if not rows and not errors:
         return pd.DataFrame()
 
@@ -914,7 +1180,7 @@ def make_summary_dataframe(rows: list[dict[str, Any]], errors: list[dict[str, An
                     values = pd.to_numeric(group[metric], errors="coerce")
                     if not values.notna().any():
                         continue
-                    best_value = values.max()
+                    best_value = values.min() if metric in LOWER_IS_BETTER_METRICS else values.max()
                     winners = group.loc[values == best_value, "model"].astype(str)
                     for winner in set(winners):
                         win_counts[metric][winner] += 1
@@ -994,15 +1260,22 @@ def make_summary_dataframe(rows: list[dict[str, Any]], errors: list[dict[str, An
             records.append(record)
 
     summary = pd.DataFrame(records)
-    metric_sort_cols = [f"mean_{PRIMARY_METRIC}", "mean_test_mcc"]
-    metric_sort_cols = [col for col in metric_sort_cols if col in summary.columns]
+    if metric_sort_specs is None:
+        metric_sort_specs = [(PRIMARY_METRIC, False), ("test_mcc", False)]
+    metric_sort_cols = [f"mean_{metric}" for metric, _ in metric_sort_specs]
+    metric_sort_pairs = [
+        (col, ascending)
+        for col, (_, ascending) in zip(metric_sort_cols, metric_sort_specs)
+        if col in summary.columns
+    ]
     if has_checkpoint and "checkpoint_step" in summary.columns:
-        sort_cols = ["checkpoint_step"] + metric_sort_cols
-        ascending = [True] + [False] * len(metric_sort_cols)
+        sort_cols = ["checkpoint_step"] + [col for col, _ in metric_sort_pairs]
+        ascending = [True] + [ascending for _, ascending in metric_sort_pairs]
         summary = summary.sort_values(sort_cols, ascending=ascending, na_position="last")
-    elif metric_sort_cols:
-        sort_cols = metric_sort_cols
-        summary = summary.sort_values(sort_cols, ascending=False, na_position="last")
+    elif metric_sort_pairs:
+        sort_cols = [col for col, _ in metric_sort_pairs]
+        ascending = [ascending for _, ascending in metric_sort_pairs]
+        summary = summary.sort_values(sort_cols, ascending=ascending, na_position="last")
     return summary.reset_index(drop=True)
 
 
@@ -1014,16 +1287,31 @@ def ensure_unique_job_labels(jobs: list[dict[str, Any]]) -> None:
 
 
 def print_result_row(row: dict[str, Any]) -> None:
-    print(
-        f"  {row['model']:<24} "
-        f"bal_acc={format_metric(row.get('test_balanced_accuracy'))} "
-        f"mcc={format_metric(row.get('test_mcc'))} "
-        f"auroc={format_metric(row.get('test_auroc'))}"
-    )
+    if int(row.get("target_bins", 2) or 2) > 2:
+        print(
+            f"  {row['model']:<24} "
+            f"qwk={format_metric(row.get('test_quadratic_weighted_kappa'))} "
+            f"ord_mae={format_metric(row.get('test_ordinal_mae'))} "
+            f"bal_acc={format_metric(row.get('test_balanced_accuracy'))} "
+            f"auroc_ovr={format_metric(row.get('test_roc_auc_ovr_macro'))}"
+        )
+    else:
+        print(
+            f"  {row['model']:<24} "
+            f"bal_acc={format_metric(row.get('test_balanced_accuracy'))} "
+            f"mcc={format_metric(row.get('test_mcc'))} "
+            f"auroc={format_metric(row.get('test_auroc'))}"
+        )
 
 
-def print_summary(rows: list[dict[str, Any]], errors: list[dict[str, Any]]) -> pd.DataFrame:
-    summary = make_summary_dataframe(rows, errors)
+def print_summary(
+    rows: list[dict[str, Any]],
+    errors: list[dict[str, Any]],
+    *,
+    primary_metric: str = PRIMARY_METRIC,
+    metric_sort_specs: list[tuple[str, bool]] | None = None,
+) -> pd.DataFrame:
+    summary = make_summary_dataframe(rows, errors, metric_sort_specs=metric_sort_specs)
     if summary.empty:
         print("\nNo successful evaluation rows.")
         return summary
@@ -1031,15 +1319,18 @@ def print_summary(rows: list[dict[str, Any]], errors: list[dict[str, Any]]) -> p
     display_cols = []
     if "checkpoint_name" in summary.columns:
         display_cols.extend(["checkpoint_name", "checkpoint_step"])
+    metric_display_cols = [f"mean_{primary_metric}", f"weighted_mean_{primary_metric}"]
+    if primary_metric != PRIMARY_METRIC:
+        metric_display_cols.extend(["mean_test_ordinal_mae", "weighted_mean_test_ordinal_mae"])
+        metric_display_cols.extend([f"mean_{PRIMARY_METRIC}", f"weighted_mean_{PRIMARY_METRIC}"])
     display_cols.extend([
         "model",
         "n_success",
         "n_errors",
-        f"mean_{PRIMARY_METRIC}",
-        f"weighted_mean_{PRIMARY_METRIC}",
+        *metric_display_cols,
         "mean_test_mcc",
         "mean_test_auroc",
-        f"wins_{PRIMARY_METRIC}",
+        f"wins_{primary_metric}",
     ])
     display_cols = [col for col in display_cols if col in summary.columns]
     print("\nPer-model summary")
@@ -1054,9 +1345,14 @@ def print_task_list(tasks: list[EvalTask]) -> None:
             "dataset": task.dataset,
             "table": task.table,
             "target": task.target,
+            "target_binning": task.target_binning,
+            "target_bins": task.target_bins,
+            "bin_edges": ",".join(format_metric(edge) for edge in task.bin_edges),
             "n_samples": len(task.X),
             "n_features": task.X.shape[1],
-            "positive_rate": float((task.y == "high").mean()),
+            "n_classes": len(task.class_labels),
+            "class_counts": ",".join(f"{label}:{task.class_counts.get(label, 0)}" for label in task.class_labels),
+            "positive_rate": float((task.y == task.class_labels[-1]).mean()),
             "threshold": task.threshold,
             "quality_flags": ",".join(task.quality_flags),
         }
@@ -1198,6 +1494,9 @@ def write_checkpoint_trend_plots(summary: pd.DataFrame, output_dir: Path, metric
 
 def main() -> None:
     args = parse_args()
+    validate_args(args)
+    primary_metric = primary_metric_for_args(args)
+    metric_sort_specs = metric_sort_specs_for_args(args)
     tasks = make_tasks(args)
     if args.list_tasks:
         print_task_list(tasks)
@@ -1273,7 +1572,8 @@ def main() -> None:
             quality = f", quality_flags={','.join(task.quality_flags)}" if task.quality_flags else ""
             print(
                 f"\nTask {task.task_id}: "
-                f"n={len(task.X)}, features={task.X.shape[1]}, target={task.target!r}{quality}"
+                f"n={len(task.X)}, features={task.X.shape[1]}, target={task.target!r}, "
+                f"bins={task.target_bins}{quality}"
             )
             for job in jobs:
                 try:
@@ -1330,7 +1630,12 @@ def main() -> None:
     for output_path in (output_json, output_csv, output_wide_csv, output_summary_csv):
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    summary_df = print_summary(rows, errors)
+    summary_df = print_summary(
+        rows,
+        errors,
+        primary_metric=primary_metric,
+        metric_sort_specs=metric_sort_specs,
+    )
     wide_df = make_wide_results_dataframe(rows)
     output_plot_dir: Path | None = None
     plot_paths: list[Path] = []
@@ -1371,6 +1676,10 @@ def main() -> None:
         "checkpoint": args.checkpoint,
         "min_checkpoint_step": args.min_checkpoint_step,
         "target_mode": args.target_mode,
+        "target_binning": args.target_binning,
+        "target_bins": args.target_bins,
+        "primary_metric": primary_metric,
+        "metric_sort_specs": metric_sort_specs,
         "test_size": args.test_size,
         "random_state": args.random_state,
         "max_samples_per_task": args.max_samples_per_task,

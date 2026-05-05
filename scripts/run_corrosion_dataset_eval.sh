@@ -4,15 +4,21 @@ set -euo pipefail
 RUN_OR_CKPT="${1:-}"
 CHECKPOINT="${2:-}"
 MODEL_LABEL="${3:-}"
+TARGET_BINS="${4:-2}"
 
 if [ -z "$RUN_OR_CKPT" ] || [ -z "$CHECKPOINT" ]; then
-  echo "Usage: $0 <run_suffix_or_checkpoint_path[,run_suffix...]> <checkpoint_step_or_name> [job_or_model_label]"
+  echo "Usage: $0 <run_suffix_or_checkpoint_path[,run_suffix...]> <checkpoint_step_or_name> [job_or_model_label] [target_bins]"
   echo "Examples:"
-  echo "  $0 v15 600"
-  echo "  $0 v12,v13,v14,v15 2500"
-  echo "  $0 v12,v13,v14,v15 all"
-  echo "  $0 v15 step-3350"
-  echo "  $0 /path/to/step-3350.ckpt step-3350 custom_label"
+  echo "  $0 v15 600 v15_step600_bins3 3"
+  echo "  $0 v15 600 v15_step600_bins5 5"
+  echo "  $0 v12,v13,v14,v15 2500 compare_bins3 3"
+  echo "  $0 v12,v13,v14,v15 all compare_all_bins5 5"
+  echo "  $0 /path/to/step-3350.ckpt step-3350 custom_bins3 3"
+  exit 1
+fi
+
+if ! [[ "$TARGET_BINS" =~ ^[0-9]+$ ]] || [ "$TARGET_BINS" -lt 2 ]; then
+  echo "target_bins must be an integer >= 2." >&2
   exit 1
 fi
 
@@ -27,15 +33,18 @@ if [[ "$RUN_OR_CKPT" == *.ckpt || "$RUN_OR_CKPT" == /* ]]; then
   CKPT_ARGS=(--local-ckpt-path "$RUN_OR_CKPT")
   CKPT_BASENAME="$(basename "$RUN_OR_CKPT" .ckpt)"
   RUN_LABEL="$(basename "$(dirname "$RUN_OR_CKPT")")"
-  LABEL="${MODEL_LABEL:-${RUN_LABEL}_${CKPT_BASENAME}}"
+  LABEL="${MODEL_LABEL:-${RUN_LABEL}_${CKPT_BASENAME}_bins${TARGET_BINS}}"
+
 elif [[ "$RUN_OR_CKPT" == *,* ]]; then
   if [ "$CHECKPOINT" = "latest" ]; then
     echo "Do not use 'latest'. Pass an explicit checkpoint, e.g. 600 or step-600." >&2
     exit 1
   fi
+
   IFS=',' read -r -a RUNS <<< "$RUN_OR_CKPT"
   CKPT_ARGS=()
   RUN_LABELS=()
+
   for RUN in "${RUNS[@]}"; do
     RUN="${RUN//[[:space:]]/}"
     if [ -z "$RUN" ]; then
@@ -44,11 +53,14 @@ elif [[ "$RUN_OR_CKPT" == *,* ]]; then
     CKPT_ARGS+=(--run "$RUN")
     RUN_LABELS+=("$RUN")
   done
+
   if [ "${#RUN_LABELS[@]}" -eq 0 ]; then
     echo "No run suffixes found in '$RUN_OR_CKPT'." >&2
     exit 1
   fi
+
   CKPT_ARGS+=(--checkpoint "$CHECKPOINT")
+
   if [ "$CHECKPOINT" = "all" ]; then
     CKPT_LABEL="all_common"
   else
@@ -57,16 +69,20 @@ elif [[ "$RUN_OR_CKPT" == *,* ]]; then
     CKPT_LABEL="${CKPT_LABEL#step-}"
     CKPT_LABEL="step${CKPT_LABEL}"
   fi
+
   JOINED_RUNS="${RUN_LABELS[*]}"
   JOINED_RUNS="${JOINED_RUNS// /_}"
-  LABEL="${MODEL_LABEL:-compare_${JOINED_RUNS}_${CKPT_LABEL}}"
+  LABEL="${MODEL_LABEL:-compare_${JOINED_RUNS}_${CKPT_LABEL}_bins${TARGET_BINS}}"
   PASS_MODEL_LABEL=0
+
 else
   if [ "$CHECKPOINT" = "latest" ]; then
     echo "Do not use 'latest'. Pass an explicit checkpoint, e.g. 600 or step-600." >&2
     exit 1
   fi
+
   CKPT_ARGS=(--run "$RUN_OR_CKPT" --checkpoint "$CHECKPOINT")
+
   if [ "$CHECKPOINT" = "all" ]; then
     CKPT_LABEL="all_common"
     PASS_MODEL_LABEL=0
@@ -76,13 +92,22 @@ else
     CKPT_LABEL="${CKPT_LABEL#step-}"
     CKPT_LABEL="step${CKPT_LABEL}"
   fi
-  LABEL="${MODEL_LABEL:-${RUN_OR_CKPT}_${CKPT_LABEL}}"
+
+  LABEL="${MODEL_LABEL:-${RUN_OR_CKPT}_${CKPT_LABEL}_bins${TARGET_BINS}}"
 fi
 
 EVAL_ARGS=("${CKPT_ARGS[@]}")
+
 if [ "$PASS_MODEL_LABEL" = "1" ]; then
   EVAL_ARGS+=(--local-model-label "$LABEL")
 fi
+
+if [ "$TARGET_BINS" = "2" ]; then
+  EVAL_ARGS+=(--target-binning median_binary --target-bins 2)
+else
+  EVAL_ARGS+=(--target-binning quantile_multiclass --target-bins "$TARGET_BINS")
+fi
+
 printf -v EVAL_ARGS_STR "%q " "${EVAL_ARGS[@]}"
 
 JOB_NAME="tabicl_corrosion_${LABEL}"
@@ -101,8 +126,8 @@ set -euo pipefail
 cd /home/${USER}/projects/tabicl
 source .venv/bin/activate
 
-python scripts/eval_corrosion_datasets.py \
-  ${EVAL_ARGS_STR}\
-  --target-mode primary \
+python scripts/eval_corrosion_datasets.py \\
+  ${EVAL_ARGS_STR}\\
+  --target-mode primary \\
   --compare-pretrained-tabicl
 EOF

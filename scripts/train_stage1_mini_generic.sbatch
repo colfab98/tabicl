@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=tabicl_s1mini_generic_v19
-#SBATCH --gpus=1
+#SBATCH --job-name=tabicl_s1mini_generic_test5
+#SBATCH --gpus=2
 #SBATCH --mem=32G
-#SBATCH --time=24:00:00
+#SBATCH --time=48:00:00
 #SBATCH --output=/home/%u/tmp/%x.%j.out
 #SBATCH --error=/home/%u/tmp/%x.%j.err
 
@@ -20,7 +20,7 @@ cd ~/projects/tabicl
 source .venv/bin/activate
 
 
-torchrun --standalone --nproc_per_node=1 /home/fcolanto/projects/tabicl/src/tabicl/train/run.py \
+torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabicl/train/run.py \
             --wandb_log False \
             --wandb_project TabICL \
             --wandb_name Stage1 \
@@ -42,9 +42,9 @@ torchrun --standalone --nproc_per_node=1 /home/fcolanto/projects/tabicl/src/tabi
             --mix_probs 0.7 0.3 \
             --informed_mix_probs 0.7 0.3 \
             --informed_block_allocation 0.70 0.18 0.10 0.02 0.0 \
-            --informed_feature_block_strength 0.2 \
-            --informed_interaction_strength 0.25 \
-            --informed_history_strength 0.20 \
+            --informed_feature_block_strength 0.35 \
+            --informed_interaction_strength 0.30 \
+            --informed_history_strength 0.1 \
             --informed_intervention_strength 0.05 \
             --informed_physical_marginal_prob 0.30 \
             --informed_physical_marginal_profile corrosion_broad \
@@ -72,5 +72,5 @@ torchrun --standalone --nproc_per_node=1 /home/fcolanto/projects/tabicl/src/tabi
             --ff_factor 2 \
             --norm_first True \
             --checkpoint_dir "/home/fcolanto/projects/tabicl/checkpoints/${RUN_NAME}" \
-            --save_temp_every 50 \
-            --save_perm_every 250
+            --save_temp_every 100 \
+            --save_perm_every 500
