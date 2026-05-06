@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=tabicl_s1mini_generic_test5
+#SBATCH --job-name=tabicl_s1mini_regression_test5
 #SBATCH --gpus=2
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
@@ -55,7 +55,8 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --batch_size_per_gp 4 \
             --min_features 2 \
             --max_features 100 \
-            --max_classes 10 \
+            --max_classes 0 \
+            --num_quantiles 999 \
             --max_seq_len 1024 \
             --min_train_size 0.1 \
             --max_train_size 0.9 \

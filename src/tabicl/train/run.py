@@ -171,6 +171,7 @@ class Trainer:
 
         self.model_config = {
             "max_classes": self.config.max_classes,
+            "num_quantiles": self.config.num_quantiles,
             "embed_dim": self.config.embed_dim,
             "col_num_blocks": self.config.col_num_blocks,
             "col_nhead": self.config.col_nhead,
@@ -326,6 +327,15 @@ class Trainer:
         """Synchronize CUDA work so wall-clock timers reflect actual GPU time."""
         if "cuda" in self.config.device:
             torch.cuda.synchronize(self.config.device)
+
+    def regression_distribution(self, pred):
+        """Build the regression predictive distribution from raw quantile outputs."""
+        quantile_dist = getattr(self.raw_model, "quantile_dist", None)
+        if quantile_dist is None and hasattr(self.raw_model, "_orig_mod"):
+            quantile_dist = getattr(self.raw_model._orig_mod, "quantile_dist", None)
+        if quantile_dist is None:
+            raise AttributeError("Regression model is missing quantile_dist.")
+        return quantile_dist(pred)
 
     def get_latest_checkpoint(self):
         """Returns the latest checkpoint from `checkpoint_dir`
@@ -619,10 +629,15 @@ class Trainer:
         self.sync_device()
         with Timer() as forward_timer:
             with self.amp_ctx:
-                pred = self.model(micro_X, y_train, micro_d)  # (B, test_size, max_classes)
-                pred = pred.flatten(end_dim=-2)
-                true = y_test.long().flatten()
-                loss = F.cross_entropy(pred, true)
+                pred = self.model(micro_X, y_train, micro_d)
+                if self.config.max_classes == 0:
+                    dist = self.regression_distribution(pred)
+                    true = y_test.float()
+                    loss = dist.crps(true).mean()
+                else:
+                    pred = pred.flatten(end_dim=-2)
+                    true = y_test.long().flatten()
+                    loss = F.cross_entropy(pred, true)
             self.sync_device()
         micro_times["forward_time"] = forward_timer.elapsed
 
@@ -636,9 +651,16 @@ class Trainer:
 
         with torch.no_grad():
             micro_results = {}
-            micro_results["ce"] = scaled_loss.item()
-            accuracy = (pred.argmax(dim=1) == true).sum() / len(true)
-            micro_results["accuracy"] = accuracy.item() / num_micro_batches
+            if self.config.max_classes == 0:
+                median = dist.icdf(torch.tensor(0.5, device=pred.device, dtype=pred.dtype))
+                diff = median - true
+                micro_results["crps"] = scaled_loss.item()
+                micro_results["median_mae"] = torch.mean(torch.abs(diff)).item() / num_micro_batches
+                micro_results["median_rmse"] = torch.sqrt(torch.mean(diff**2)).item() / num_micro_batches
+            else:
+                micro_results["ce"] = scaled_loss.item()
+                accuracy = (pred.argmax(dim=1) == true).sum() / len(true)
+                micro_results["accuracy"] = accuracy.item() / num_micro_batches
             for key, value in micro_times.items():
                 micro_results[key] = value / num_micro_batches
 
@@ -671,14 +693,16 @@ class Trainer:
         self.model.train()
         self.optimizer.zero_grad(set_to_none=True)
         results = {
-            "ce": 0.0,
-            "accuracy": 0.0,
             "pad_time": 0.0,
             "h2d_time": 0.0,
             "forward_time": 0.0,
             "backward_time": 0.0,
             "optimizer_time": 0.0,
         }
+        if self.config.max_classes == 0:
+            results.update({"crps": 0.0, "median_mae": 0.0, "median_rmse": 0.0})
+        else:
+            results.update({"ce": 0.0, "accuracy": 0.0})
 
         # Pad nested tensors to the same size
         with Timer() as pad_timer:

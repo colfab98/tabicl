@@ -1,0 +1,21 @@
+dataset_id: ni_crevice_repassivation
+title: Crevice corrosion repassivation potentials of Ni-based alloys in NaCl + inhibitor solutions
+documented_at: 2026-05-06
+status: downloaded_inspected
+
+sources:
+  dataset_url: https://data.mendeley.com/datasets/yykwcgsjkh/1
+  doi: 10.17632/yykwcgsjkh.1
+  paper_url: https://www.sciencedirect.com/science/article/pii/S2352492826005337
+  paper_doi: 10.1016/j.mtcomm.2026.115149
+  direct_file_url: https://data.mendeley.com/public-files/datasets/yykwcgsjkh/files/85fe71c4-7877-4913-8c80-0f1a1c0c16a1/file_downloaded
+
+raw_files:
+  - path: raw/Research_data_Saenzetal.docx
+    role: primary_data_document
+    size_bytes: 70990
+    sha256: 70d102da10407b397d67b41a6007dfd397c31b07fa575390b5a7f9ef50ff39af
+
+notes:
+  - Raw data are published as a DOCX table.
+  - Loader extracts the first DOCX table without modifying the raw file.

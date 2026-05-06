@@ -105,6 +105,8 @@ class Prior:
         self.min_features = min_features
         self.max_features = max_features
 
+        if max_classes < 0 or max_classes == 1:
+            raise ValueError("max_classes must be 0 for regression or >= 2 for classification.")
         self.max_classes = max_classes
         self.min_seq_len = min_seq_len
         self.max_seq_len = max_seq_len
@@ -382,6 +384,52 @@ class Prior:
                     break
 
             if not succeeded:  # No valid split was found after all attempts
+                return False
+
+        return True
+
+    @staticmethod
+    def regression_sanity_check(
+        X: Tensor,
+        y: Tensor,
+        train_size: int,
+        n_attempts: int = 10,
+        min_unique: int = 2,
+        min_std: float = 1e-6,
+    ) -> bool:
+        """Verify that regression train and test splits contain usable targets."""
+
+        def is_valid_split(yi: Tensor) -> bool:
+            if train_size <= 0 or train_size >= yi.shape[0]:
+                return False
+            if not torch.isfinite(yi).all():
+                return False
+
+            y_train = yi[:train_size]
+            y_test = yi[train_size:]
+            if torch.unique(y_train).numel() < min_unique or torch.unique(y_test).numel() < min_unique:
+                return False
+
+            return bool(
+                torch.std(y_train.float(), unbiased=False) > min_std
+                and torch.std(y_test.float(), unbiased=False) > min_std
+            )
+
+        for i, (xi, yi) in enumerate(zip(X, y)):
+            if is_valid_split(yi):
+                continue
+
+            succeeded = False
+            for _ in range(n_attempts):
+                perm = torch.randperm(yi.shape[0], device=yi.device)
+                yi_perm = yi[perm]
+                xi_perm = xi[perm]
+                if is_valid_split(yi_perm):
+                    X[i], y[i] = xi_perm, yi_perm
+                    succeeded = True
+                    break
+
+            if not succeeded:
                 return False
 
         return True
@@ -809,9 +857,13 @@ class SCMPrior(Prior):
             X, y = X.unsqueeze(0), y.unsqueeze(0)
             d = torch.tensor([params["num_features"]], device=self.device, dtype=torch.long)
 
-            # Only keep valid datasets with sufficient features and balanced classes
+            # Only keep valid datasets with sufficient features and usable targets.
             X, d = self.delete_unique_features(X, d)
-            if (d > 0).all() and self.sanity_check(X, y, params["train_size"]):
+            if params["num_classes"] == 0:
+                valid_target = self.regression_sanity_check(X, y, params["train_size"])
+            else:
+                valid_target = self.sanity_check(X, y, params["train_size"])
+            if (d > 0).all() and valid_target:
                 return X.squeeze(0), y.squeeze(0), d.squeeze(0)
 
     @torch.no_grad()
@@ -901,8 +953,10 @@ class SCMPrior(Prior):
 
                 # Generate parameters for each dataset in this subgroup
                 for ds_idx in range(actual_subgp_size):
-                    # Each dataset has its own number of classes
-                    if np.random.random() > 0.5:
+                    # Each classification dataset has its own class count; regression uses 0.
+                    if self.max_classes == 0:
+                        ds_num_classes = 0
+                    elif np.random.random() > 0.5:
                         ds_num_classes = np.random.randint(2, self.max_classes + 1)
                     else:
                         ds_num_classes = 2
@@ -1085,8 +1139,11 @@ class DummyPrior(Prior):
 
         X = torch.randn(batch_size, seq_len, self.max_features, device=self.device)
 
-        num_classes = np.random.randint(2, self.max_classes + 1)
-        y = torch.randint(0, num_classes, (batch_size, seq_len), device=self.device)
+        if self.max_classes == 0:
+            y = torch.randn(batch_size, seq_len, device=self.device)
+        else:
+            num_classes = np.random.randint(2, self.max_classes + 1)
+            y = torch.randint(0, num_classes, (batch_size, seq_len), device=self.device)
 
         d = torch.full((batch_size,), self.max_features, device=self.device)
         seq_lens = torch.full((batch_size,), seq_len, device=self.device)

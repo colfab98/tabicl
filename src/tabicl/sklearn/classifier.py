@@ -408,8 +408,14 @@ class TabICLClassifier(ClassifierMixin, TabICLBaseEstimator):
         assert "state_dict" in checkpoint, "The checkpoint doesn't contain the model state."
 
         self.model_path_ = model_path_
-        self.model_ = TabICL(**checkpoint["config"])
-        self.model_config_ = checkpoint["config"]
+        config = checkpoint["config"]
+        if config.get("max_classes", 10) == 0:
+            raise ValueError(
+                "TabICLClassifier requires a classification checkpoint with config['max_classes'] > 0. "
+                f"Got max_classes=0 from {model_path_}."
+            )
+        self.model_ = TabICL(**config)
+        self.model_config_ = config
         self.model_.load_state_dict(checkpoint["state_dict"])
         self.model_.eval()
 

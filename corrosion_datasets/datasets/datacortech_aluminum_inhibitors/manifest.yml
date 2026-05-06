@@ -1,0 +1,27 @@
+dataset_id: datacortech_aluminum_inhibitors
+title: DATACORTECH data and code
+documented_at: 2026-05-06
+status: downloaded_inspected
+
+sources:
+  dataset_url: https://data.mendeley.com/datasets/wh7m9kyst3/1
+  doi: 10.17632/wh7m9kyst3.1
+  paper_url: https://www.nature.com/articles/s41529-024-00489-z
+  paper_doi: 10.1038/s41529-024-00489-z
+  initial_file_url: https://data.mendeley.com/public-files/datasets/wh7m9kyst3/files/3b0bc9c4-9d48-4b91-91d0-510e0e4fdc8b/file_downloaded
+  final_file_url: https://data.mendeley.com/public-files/datasets/wh7m9kyst3/files/7b58505d-25f5-452e-aae6-10d782f518e1/file_downloaded
+
+raw_files:
+  - path: raw/Datacortech_initial_data.xlsx
+    role: numeric_efficiency_workbook
+    size_bytes: 349869
+    sha256: c3f28ebb8a9d8f618cee4337d3e55701e4f1cdf47ca5d0417dc07e36729684f3
+  - path: raw/Datacortech_final_data.xlsx
+    role: descriptor_workbook_with_binary_label
+    size_bytes: 1767381
+    sha256: 7647c520e11e24cb1192eb843a0fabe0a73b82531c290ee577c2c934cc9fbe13
+
+notes:
+  - The final DATACORTECH workbook uses a binary `Efficiency` label (`Inhibitor`/`No`) and is not itself a regression target.
+  - The loader uses numeric `Efficiency` from the initial workbook and joins molecular descriptors from the final workbook by compound number when available.
+  - The final workbook copy matches an existing local copy at `/home/fcolanto/projects/pfn-augmentation/data/Datacortech_final_data.xlsx`.

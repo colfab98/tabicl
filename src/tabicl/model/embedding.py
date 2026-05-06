@@ -374,8 +374,8 @@ class ColEmbedding(nn.Module):
         else:
             assert y_train is not None, "y_train must be provided when target_aware=True."
 
-            # Determine if mixed-radix ensemble is needed
-            num_classes = int(y_train.max().item()) + 1
+            # Determine if mixed-radix ensemble is needed for classification.
+            num_classes = int(y_train.max().item()) + 1 if self.max_classes > 0 else 0
             needs_mixed_radix = self.max_classes > 0 and num_classes > self.max_classes
 
             if not needs_mixed_radix:

@@ -10,7 +10,8 @@ python -m tabicl.train.run \
   --batch_size_per_gp 1 \
   --min_features 2 \
   --max_features 8 \
-  --max_classes 3 \
+  --max_classes 0 \
+  --num_quantiles 99 \
   --min_seq_len 32 \
   --max_seq_len 64 \
   --min_train_size 0.5 \

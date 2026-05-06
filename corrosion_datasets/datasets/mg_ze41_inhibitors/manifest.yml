@@ -1,0 +1,21 @@
+dataset_id: mg_ze41_inhibitors
+title: Predicting the Inhibition Efficiencies of Magnesium Dissolution Modulators using Sparse Machine Learning Models
+documented_at: 2026-05-06
+status: downloaded_inspected
+
+sources:
+  dataset_url: https://zenodo.org/records/5564824
+  doi: 10.5281/zenodo.5564824
+  paper_doi: 10.1038/s41524-021-00658-7
+  direct_file_url: https://zenodo.org/records/5564824/files/ze41_mol_desc_db_red.csv?download=1
+
+raw_files:
+  - path: raw/ze41_mol_desc_db_red.csv
+    role: primary_feature_table
+    size_bytes: 478197
+    sha256: 30ad0dc3d4c6407b66284d6ea53380874b98a5443498b7bff74bb0744bfad8b9
+
+notes:
+  - Raw CSV is semicolon-delimited and uses comma decimal notation.
+  - Loader normalizes decimal commas to decimal points in numeric cells.
+  - `LinIE ZE41` is a transformed target-like column and is excluded from features.

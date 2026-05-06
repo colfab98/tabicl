@@ -30,11 +30,14 @@ from sklearn.metrics import (
     cohen_kappa_score,
     f1_score,
     matthews_corrcoef,
+    mean_absolute_error,
+    mean_squared_error,
     roc_auc_score,
+    r2_score,
 )
 from sklearn.model_selection import train_test_split
 
-from tabicl import TabICLClassifier
+from tabicl import TabICLClassifier, TabICLRegressor
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -56,6 +59,13 @@ EVAL_UNIT_SUFFIX_RE = (
     r"[\s,;/()°%+\-.]*$"
 )
 METRIC_COLUMNS = (
+    "test_mae",
+    "test_rmse",
+    "test_r2",
+    "test_spearman",
+    "test_pearson",
+    "test_nmae_iqr",
+    "test_nrmse_iqr",
     "test_accuracy",
     "test_balanced_accuracy",
     "test_f1_macro",
@@ -72,14 +82,23 @@ METRIC_COLUMNS = (
 )
 PRIMARY_METRIC = "test_balanced_accuracy"
 ORDINAL_PRIMARY_METRIC = "test_quadratic_weighted_kappa"
+REGRESSION_PRIMARY_METRIC = "test_spearman"
 LOWER_IS_BETTER_METRICS = {
+    "test_mae",
+    "test_rmse",
+    "test_nmae_iqr",
+    "test_nrmse_iqr",
     "test_ordinal_mae",
     "test_ordinal_rmse",
     "test_expected_class_mae",
 }
 PRIMARY_TARGET_PATTERNS = (
     "corrosion rate",
+    "inhibition efficiency",
+    "efficiency",
     "pitting potential",
+    "repassivation",
+    "er.crev",
     "corrosion current",
     "epit",
     "ecorr",
@@ -174,10 +193,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--target-mode", choices=("primary", "all"), default="primary")
     parser.add_argument(
         "--target-binning",
-        choices=("median_binary", "quantile_multiclass"),
-        default="median_binary",
+        choices=("continuous", "median_binary", "quantile_multiclass"),
+        default="continuous",
         help=(
-            "How continuous targets are converted for classifier evaluation. "
+            "How continuous targets are evaluated. "
+            "continuous keeps native regression targets; "
             "median_binary preserves the existing low/high median split; "
             "quantile_multiclass creates ordered quantile bins."
         ),
@@ -187,6 +207,12 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=2,
         help="Number of target bins when --target-binning quantile_multiclass is used.",
+    )
+    parser.add_argument(
+        "--regression-output",
+        choices=("mean", "median"),
+        default="median",
+        help="Point prediction extracted from TabICLRegressor for continuous-target evaluation.",
     )
     parser.add_argument("--dataset", action="append", help="Limit to dataset id. Can be passed multiple times.")
     parser.add_argument("--task", action="append", help="Limit to exact task id. Can be passed multiple times.")
@@ -220,7 +246,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include-electrochem-features", action="store_true")
     parser.add_argument("--compare-pretrained-tabicl", dest="compare_pretrained_tabicl", action="store_true", default=True)
     parser.add_argument("--no-compare-pretrained-tabicl", dest="compare_pretrained_tabicl", action="store_false")
-    parser.add_argument("--pretrained-checkpoint-version", type=str, default="tabicl-classifier-v2-20260212.ckpt")
+    parser.add_argument(
+        "--pretrained-checkpoint-version",
+        type=str,
+        default=None,
+        help=(
+            "Optional pretrained checkpoint filename. Defaults to the TabICL regressor "
+            "checkpoint for continuous evaluation and the classifier checkpoint for binned evaluation."
+        ),
+    )
     parser.add_argument("--baseline-auto-download", action="store_true", default=True)
     parser.add_argument("--no-baseline-auto-download", dest="baseline_auto_download", action="store_false")
     parser.add_argument("--compare-tabpfn", action="store_true", help="Try to evaluate TabPFNClassifier if tabpfn is installed.")
@@ -254,6 +288,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def validate_args(args: argparse.Namespace) -> None:
+    if args.target_binning == "continuous":
+        return
     if args.target_binning == "median_binary" and args.target_bins != 2:
         raise ValueError("--target-bins must be 2 when --target-binning median_binary is used.")
     if args.target_binning == "quantile_multiclass" and args.target_bins < 3:
@@ -261,12 +297,20 @@ def validate_args(args: argparse.Namespace) -> None:
 
 
 def primary_metric_for_args(args: argparse.Namespace) -> str:
+    if args.target_binning == "continuous":
+        return REGRESSION_PRIMARY_METRIC
     if args.target_binning == "quantile_multiclass":
         return ORDINAL_PRIMARY_METRIC
     return PRIMARY_METRIC
 
 
 def metric_sort_specs_for_args(args: argparse.Namespace) -> list[tuple[str, bool]]:
+    if args.target_binning == "continuous":
+        return [
+            (REGRESSION_PRIMARY_METRIC, False),
+            ("test_nmae_iqr", True),
+            ("test_rmse", True),
+        ]
     if args.target_binning == "quantile_multiclass":
         return [
             (ORDINAL_PRIMARY_METRIC, False),
@@ -548,13 +592,14 @@ def choose_target_columns(
         values = finite_target_values(table, col)
         if len(values) < min_samples:
             continue
-        binned = make_target_bins(values, target_binning=target_binning, target_bins=target_bins)
-        if binned is None:
-            continue
-        _, ordinals, _, class_labels = binned
-        class_counts = np.bincount(ordinals, minlength=len(class_labels))
-        if len(class_counts) != len(class_labels) or int(class_counts.min()) < min_class_count:
-            continue
+        if target_binning != "continuous":
+            binned = make_target_bins(values, target_binning=target_binning, target_bins=target_bins)
+            if binned is None:
+                continue
+            _, ordinals, _, class_labels = binned
+            class_counts = np.bincount(ordinals, minlength=len(class_labels))
+            if len(class_counts) != len(class_labels) or int(class_counts.min()) < min_class_count:
+                continue
         lower_name = col.lower()
         priority = next((i for i, pattern in enumerate(PRIMARY_TARGET_PATTERNS) if pattern in lower_name), 99)
         candidates.append((priority, -len(values), col))
@@ -628,8 +673,35 @@ def assess_task_quality(table: Table, X: pd.DataFrame, y: pd.Series) -> list[str
         flags.append("coarse_heterogeneous_corpus")
     elif table.dataset == "am_mpea_corrosion":
         flags.append("small_identity_like_material_table")
+    elif table.dataset == "datacor_aluminum_inhibitors":
+        flags.append("small_inhibitor_descriptor_table")
+    elif table.dataset == "datacortech_aluminum_inhibitors":
+        flags.append("literature_compiled_inhibitor_efficiency")
+    elif table.dataset in {"mg_az91_inhibitors", "mg_ze41_inhibitors"}:
+        flags.append("small_descriptor_heavy_inhibitor_table")
+    elif table.dataset == "ni_crevice_repassivation":
+        flags.append("docx_extracted_condition_table")
 
     return sorted(set(flags))
+
+
+def regression_stratify_labels(values: np.ndarray, max_bins: int = 10) -> np.ndarray | None:
+    """Create coarse quantile labels only for preserving target coverage in splits."""
+    values = np.asarray(values, dtype=float)
+    if values.ndim != 1 or len(values) < 2 or not np.isfinite(values).all():
+        return None
+
+    n_bins = min(max_bins, max(2, len(values) // 10))
+    for bins in range(n_bins, 1, -1):
+        edges = np.quantile(values, [i / bins for i in range(1, bins)])
+        edges = np.unique(edges[np.isfinite(edges)])
+        if len(edges) != bins - 1:
+            continue
+        labels = np.digitize(values, edges, right=True).astype(int)
+        counts = np.bincount(labels, minlength=bins)
+        if len(counts) == bins and int(counts.min()) >= 2:
+            return labels
+    return None
 
 
 def build_task(
@@ -655,17 +727,25 @@ def build_task(
     if int(valid_target.sum()) < min_samples:
         return None
 
-    binned = make_target_bins(
-        target_values[valid_target],
-        target_binning=target_binning,
-        target_bins=target_bins,
-    )
-    if binned is None:
-        return None
-    y_values, y_ordinals, bin_edges, class_labels = binned
-    class_counts = pd.Series(y_values).value_counts()
-    if len(class_counts) != len(class_labels) or int(class_counts.min()) < min_class_count:
-        return None
+    finite_targets = target_values[valid_target]
+    if target_binning == "continuous":
+        y_values = finite_targets.astype(float)
+        y_ordinals = finite_targets.astype(float)
+        bin_edges: list[float] = []
+        class_labels: list[str] = []
+        class_counts = pd.Series(dtype=int)
+    else:
+        binned = make_target_bins(
+            finite_targets,
+            target_binning=target_binning,
+            target_bins=target_bins,
+        )
+        if binned is None:
+            return None
+        y_values, y_ordinals, bin_edges, class_labels = binned
+        class_counts = pd.Series(y_values).value_counts()
+        if len(class_counts) != len(class_labels) or int(class_counts.min()) < min_class_count:
+            return None
 
     features: dict[str, pd.Series] = {}
     dropped: list[str] = []
@@ -694,22 +774,28 @@ def build_task(
     y = pd.Series(y_values, name=target_col).reset_index(drop=True)
     y_ordinal = pd.Series(y_ordinals, name=f"{target_col}__ordinal").reset_index(drop=True)
     class_counts = y.value_counts()
-    if len(X) < min_samples or len(class_counts) != len(class_labels) or int(class_counts.min()) < min_class_count:
+    if len(X) < min_samples:
         return None
+    if target_binning != "continuous":
+        if len(class_counts) != len(class_labels) or int(class_counts.min()) < min_class_count:
+            return None
     if max_samples_per_task and len(X) > max_samples_per_task:
+        stratify = regression_stratify_labels(y.to_numpy(dtype=float)) if target_binning == "continuous" else y
         X, _, y, _, y_ordinal, _ = train_test_split(
             X,
             y,
             y_ordinal,
             train_size=max_samples_per_task,
-            stratify=y,
+            stratify=stratify,
             random_state=random_state,
         )
         X = X.reset_index(drop=True)
         y = y.reset_index(drop=True)
         y_ordinal = y_ordinal.reset_index(drop=True)
         class_counts = y.value_counts()
-        if len(class_counts) != len(class_labels) or int(class_counts.min()) < min_class_count:
+        if target_binning != "continuous" and (
+            len(class_counts) != len(class_labels) or int(class_counts.min()) < min_class_count
+        ):
             return None
 
     task_id = f"{table.dataset}__{slugify(table.table)}__{slugify(target_col)}"
@@ -725,10 +811,10 @@ def build_task(
         target=target_col,
         threshold=float(bin_edges[0]) if len(bin_edges) == 1 else math.nan,
         target_binning=target_binning,
-        target_bins=len(class_labels),
+        target_bins=len(class_labels) if class_labels else 0,
         bin_edges=bin_edges,
         class_labels=class_labels,
-        class_counts=ordered_class_counts,
+        class_counts=ordered_class_counts if target_binning != "continuous" else {},
         X=X,
         y=y,
         y_ordinal=y_ordinal,
@@ -813,6 +899,28 @@ def make_tabicl_classifier(
     return TabICLClassifier(**kwargs)
 
 
+def make_tabicl_regressor(
+    *,
+    model_path: str | None,
+    checkpoint_version: str,
+    device: str,
+    n_estimators: int,
+    random_state: int,
+    allow_auto_download: bool,
+) -> TabICLRegressor:
+    kwargs: dict[str, Any] = {
+        "device": device,
+        "n_estimators": n_estimators,
+        "random_state": random_state,
+        "allow_auto_download": allow_auto_download,
+    }
+    if model_path is None:
+        kwargs["checkpoint_version"] = checkpoint_version
+    else:
+        kwargs["model_path"] = model_path
+    return TabICLRegressor(**kwargs)
+
+
 def make_tabpfn_classifier(device: str, random_state: int) -> Any:
     try:
         from tabpfn import TabPFNClassifier
@@ -826,6 +934,21 @@ def make_tabpfn_classifier(device: str, random_state: int) -> Any:
             return TabPFNClassifier(device=device)
         except TypeError:
             return TabPFNClassifier()
+
+
+def make_tabpfn_regressor(device: str, random_state: int) -> Any:
+    try:
+        from tabpfn import TabPFNRegressor
+    except ImportError as exc:
+        raise RuntimeError("tabpfn is not installed in this environment") from exc
+
+    try:
+        return TabPFNRegressor(device=device, random_state=random_state)
+    except TypeError:
+        try:
+            return TabPFNRegressor(device=device)
+        except TypeError:
+            return TabPFNRegressor()
 
 
 def positive_probability(estimator: Any, X: pd.DataFrame, positive_label: str = "high") -> np.ndarray:
@@ -852,6 +975,15 @@ def spearman_safe(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     if len(np.unique(y_true[np.isfinite(y_true)])) < 2 or len(np.unique(y_pred[np.isfinite(y_pred)])) < 2:
         return math.nan
     value = pd.Series(y_true).corr(pd.Series(y_pred), method="spearman")
+    return float(value) if value is not None and np.isfinite(value) else math.nan
+
+
+def pearson_safe(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    if len(y_true) < 2 or len(y_pred) < 2:
+        return math.nan
+    if len(np.unique(y_true[np.isfinite(y_true)])) < 2 or len(np.unique(y_pred[np.isfinite(y_pred)])) < 2:
+        return math.nan
+    value = pd.Series(y_true).corr(pd.Series(y_pred), method="pearson")
     return float(value) if value is not None and np.isfinite(value) else math.nan
 
 
@@ -925,7 +1057,64 @@ def evaluate_estimator(
     task: EvalTask,
     test_size: float,
     random_state: int,
+    regression_output: str = "median",
 ) -> dict[str, Any]:
+    if task.target_binning == "continuous":
+        y_values = task.y.astype(float)
+        stratify = regression_stratify_labels(y_values.to_numpy(dtype=float))
+        X_train, X_test, y_train, y_test = train_test_split(
+            task.X,
+            y_values,
+            test_size=test_size,
+            stratify=stratify,
+            random_state=random_state,
+        )
+        estimator = estimator_factory()
+        estimator.fit(X_train, y_train)
+        y_pred = np.asarray(estimator.predict(X_test, output_type=regression_output), dtype=float)
+        y_true = y_test.to_numpy(dtype=float)
+
+        mae = float(mean_absolute_error(y_true, y_pred))
+        rmse = float(math.sqrt(mean_squared_error(y_true, y_pred)))
+        target_iqr = float(np.subtract(*np.percentile(y_train.to_numpy(dtype=float), [75, 25])))
+        nmae_iqr = mae / target_iqr if target_iqr > 0 else math.nan
+        nrmse_iqr = rmse / target_iqr if target_iqr > 0 else math.nan
+
+        model_source = getattr(estimator, "model_path_", "")
+        return {
+            "model": model_label,
+            "model_kind": model_kind,
+            "model_source": str(model_source),
+            "task_id": task.task_id,
+            "dataset": task.dataset,
+            "table": task.table,
+            "target": task.target,
+            "target_threshold_median": math.nan,
+            "target_binning": task.target_binning,
+            "target_bins": 0,
+            "target_bin_edges": "",
+            "regression_output": regression_output,
+            "n_samples": int(len(task.X)),
+            "n_train": int(len(X_train)),
+            "n_test": int(len(X_test)),
+            "n_features": int(task.X.shape[1]),
+            "n_classes": 0,
+            "class_labels": "",
+            "class_counts": "",
+            "positive_label": "",
+            "positive_rate": math.nan,
+            "task_quality_flags": ",".join(task.quality_flags),
+            "test_mae": mae,
+            "test_rmse": rmse,
+            "test_r2": float(r2_score(y_true, y_pred)),
+            "test_spearman": spearman_safe(y_true, y_pred),
+            "test_pearson": pearson_safe(y_true, y_pred),
+            "test_nmae_iqr": nmae_iqr,
+            "test_nrmse_iqr": nrmse_iqr,
+            "feature_groups": ",".join(task.feature_groups_used),
+            "dropped_feature_columns": ";".join(task.dropped_feature_columns),
+        }
+
     X_train, X_test, y_train, y_test, _, y_test_ordinal = train_test_split(
         task.X,
         task.y,
@@ -1040,6 +1229,12 @@ def derived_csv_path(output_csv: Path, suffix: str) -> Path:
     return output_csv.with_name(f"{output_csv.stem}_{suffix}{output_csv.suffix}")
 
 
+def default_plot_dir(args: argparse.Namespace, output_csv: Path) -> Path:
+    if args.target_binning == "continuous":
+        return output_csv.with_name("corrosion_eval_compare_regression")
+    return output_csv.with_name(f"corrosion_eval_compare_bins{args.target_bins}")
+
+
 def to_float_or_nan(value: Any) -> float:
     try:
         return float(value)
@@ -1074,6 +1269,7 @@ def make_wide_results_dataframe(rows: list[dict[str, Any]]) -> pd.DataFrame:
         "target_binning",
         "target_bins",
         "target_bin_edges",
+        "regression_output",
         "n_samples",
         "n_train",
         "n_test",
@@ -1287,6 +1483,15 @@ def ensure_unique_job_labels(jobs: list[dict[str, Any]]) -> None:
 
 
 def print_result_row(row: dict[str, Any]) -> None:
+    if row.get("target_binning") == "continuous":
+        print(
+            f"  {row['model']:<24} "
+            f"spearman={format_metric(row.get('test_spearman'))} "
+            f"nmae_iqr={format_metric(row.get('test_nmae_iqr'))} "
+            f"mae={format_metric(row.get('test_mae'))} "
+            f"rmse={format_metric(row.get('test_rmse'))}"
+        )
+        return
     if int(row.get("target_bins", 2) or 2) > 2:
         print(
             f"  {row['model']:<24} "
@@ -1320,7 +1525,10 @@ def print_summary(
     if "checkpoint_name" in summary.columns:
         display_cols.extend(["checkpoint_name", "checkpoint_step"])
     metric_display_cols = [f"mean_{primary_metric}", f"weighted_mean_{primary_metric}"]
-    if primary_metric != PRIMARY_METRIC:
+    if primary_metric == REGRESSION_PRIMARY_METRIC:
+        metric_display_cols.extend(["mean_test_nmae_iqr", "weighted_mean_test_nmae_iqr"])
+        metric_display_cols.extend(["mean_test_rmse", "weighted_mean_test_rmse"])
+    elif primary_metric != PRIMARY_METRIC:
         metric_display_cols.extend(["mean_test_ordinal_mae", "weighted_mean_test_ordinal_mae"])
         metric_display_cols.extend([f"mean_{PRIMARY_METRIC}", f"weighted_mean_{PRIMARY_METRIC}"])
     display_cols.extend([
@@ -1352,7 +1560,7 @@ def print_task_list(tasks: list[EvalTask]) -> None:
             "n_features": task.X.shape[1],
             "n_classes": len(task.class_labels),
             "class_counts": ",".join(f"{label}:{task.class_counts.get(label, 0)}" for label in task.class_labels),
-            "positive_rate": float((task.y == task.class_labels[-1]).mean()),
+            "positive_rate": float((task.y == task.class_labels[-1]).mean()) if task.class_labels else math.nan,
             "threshold": task.threshold,
             "quality_flags": ",".join(task.quality_flags),
         }
@@ -1497,6 +1705,12 @@ def main() -> None:
     validate_args(args)
     primary_metric = primary_metric_for_args(args)
     metric_sort_specs = metric_sort_specs_for_args(args)
+    is_regression_eval = args.target_binning == "continuous"
+    pretrained_checkpoint_version = args.pretrained_checkpoint_version or (
+        "tabicl-regressor-v2-20260212.ckpt"
+        if is_regression_eval
+        else "tabicl-classifier-v2-20260212.ckpt"
+    )
     tasks = make_tasks(args)
     if args.list_tasks:
         print_task_list(tasks)
@@ -1521,43 +1735,80 @@ def main() -> None:
         jobs: list[dict[str, Any]] = []
         for spec in checkpoint_eval.local_specs:
             model_path = str(spec.checkpoint_path)
-            jobs.append(
-                {
-                    "model_label": spec.label,
-                    "model_kind": "local_tabicl",
-                    "factory": lambda model_path=model_path: make_tabicl_classifier(
-                        model_path=model_path,
-                        checkpoint_version=args.pretrained_checkpoint_version,
-                        device=args.device,
-                        n_estimators=args.n_estimators,
-                        random_state=args.random_state,
-                        allow_auto_download=False,
-                    ),
-                }
-            )
+            if is_regression_eval:
+                jobs.append(
+                    {
+                        "model_label": spec.label,
+                        "model_kind": "local_tabicl_regressor",
+                        "factory": lambda model_path=model_path: make_tabicl_regressor(
+                            model_path=model_path,
+                            checkpoint_version=pretrained_checkpoint_version,
+                            device=args.device,
+                            n_estimators=args.n_estimators,
+                            random_state=args.random_state,
+                            allow_auto_download=False,
+                        ),
+                    }
+                )
+            else:
+                jobs.append(
+                    {
+                        "model_label": spec.label,
+                        "model_kind": "local_tabicl_classifier",
+                        "factory": lambda model_path=model_path: make_tabicl_classifier(
+                            model_path=model_path,
+                            checkpoint_version=pretrained_checkpoint_version,
+                            device=args.device,
+                            n_estimators=args.n_estimators,
+                            random_state=args.random_state,
+                            allow_auto_download=False,
+                        ),
+                    }
+                )
 
         if args.compare_pretrained_tabicl:
-            jobs.append(
-                {
-                    "model_label": "pretrained_tabicl_v2",
-                    "model_kind": "pretrained_tabicl",
-                    "factory": lambda: make_tabicl_classifier(
-                        model_path=None,
-                        checkpoint_version=args.pretrained_checkpoint_version,
-                        device=args.device,
-                        n_estimators=args.n_estimators,
-                        random_state=args.random_state,
-                        allow_auto_download=args.baseline_auto_download,
-                    ),
-                }
-            )
+            if is_regression_eval:
+                jobs.append(
+                    {
+                        "model_label": "pretrained_tabicl_v2",
+                        "model_kind": "pretrained_tabicl_regressor",
+                        "factory": lambda: make_tabicl_regressor(
+                            model_path=None,
+                            checkpoint_version=pretrained_checkpoint_version,
+                            device=args.device,
+                            n_estimators=args.n_estimators,
+                            random_state=args.random_state,
+                            allow_auto_download=args.baseline_auto_download,
+                        ),
+                    }
+                )
+            else:
+                jobs.append(
+                    {
+                        "model_label": "pretrained_tabicl_v2",
+                        "model_kind": "pretrained_tabicl_classifier",
+                        "factory": lambda: make_tabicl_classifier(
+                            model_path=None,
+                            checkpoint_version=pretrained_checkpoint_version,
+                            device=args.device,
+                            n_estimators=args.n_estimators,
+                            random_state=args.random_state,
+                            allow_auto_download=args.baseline_auto_download,
+                        ),
+                    }
+                )
 
         if args.compare_tabpfn:
+            tabpfn_factory = (
+                (lambda: make_tabpfn_regressor(args.device, args.random_state))
+                if is_regression_eval
+                else (lambda: make_tabpfn_classifier(args.device, args.random_state))
+            )
             jobs.append(
                 {
                     "model_label": "pretrained_tabpfn",
-                    "model_kind": "pretrained_tabpfn",
-                    "factory": lambda: make_tabpfn_classifier(args.device, args.random_state),
+                    "model_kind": "pretrained_tabpfn_regressor" if is_regression_eval else "pretrained_tabpfn_classifier",
+                    "factory": tabpfn_factory,
                 }
             )
         ensure_unique_job_labels(jobs)
@@ -1573,7 +1824,7 @@ def main() -> None:
             print(
                 f"\nTask {task.task_id}: "
                 f"n={len(task.X)}, features={task.X.shape[1]}, target={task.target!r}, "
-                f"bins={task.target_bins}{quality}"
+                f"mode={task.target_binning}{'' if is_regression_eval else f', bins={task.target_bins}'}{quality}"
             )
             for job in jobs:
                 try:
@@ -1584,6 +1835,7 @@ def main() -> None:
                         task=task,
                         test_size=args.test_size,
                         random_state=args.random_state,
+                        regression_output=args.regression_output,
                     )
                     if include_checkpoint_columns:
                         row["checkpoint_name"] = checkpoint_eval.checkpoint_name
@@ -1643,7 +1895,7 @@ def main() -> None:
         output_plot_dir = (
             args.output_plot_dir.expanduser().resolve()
             if args.output_plot_dir is not None
-            else output_csv.with_name(f"{output_csv.stem}_plots")
+            else default_plot_dir(args, output_csv)
         )
         plot_metrics = list(args.plot_metric or METRIC_COLUMNS)
         plot_paths = write_checkpoint_trend_plots(summary_df, output_plot_dir, plot_metrics)
@@ -1678,6 +1930,8 @@ def main() -> None:
         "target_mode": args.target_mode,
         "target_binning": args.target_binning,
         "target_bins": args.target_bins,
+        "regression_output": args.regression_output,
+        "pretrained_checkpoint_version": pretrained_checkpoint_version,
         "primary_metric": primary_metric,
         "metric_sort_specs": metric_sort_specs,
         "test_size": args.test_size,

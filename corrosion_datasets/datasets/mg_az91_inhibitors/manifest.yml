@@ -1,0 +1,19 @@
+dataset_id: mg_az91_inhibitors
+title: Predicting corrosion inhibition efficiencies of small organic molecules using data-driven techniques
+documented_at: 2026-05-06
+status: downloaded_inspected
+
+sources:
+  dataset_url: https://zenodo.org/records/8135985
+  doi: 10.5281/zenodo.8135985
+  direct_file_url: https://zenodo.org/records/8135985/files/Features.csv?download=1
+
+raw_files:
+  - path: raw/Features.csv
+    role: primary_feature_table
+    size_bytes: 475700
+    sha256: b5fafcb91b9f97c4e0881951c5b746fbc29552a054b775a36edbbc85c7e67c59
+
+notes:
+  - Raw CSV is semicolon-delimited.
+  - Loader adds a constant `substrate_alloy` column with value `AZ91`.

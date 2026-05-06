@@ -127,7 +127,18 @@ def build_parser():
     parser.add_argument("--batch_size_per_gp", type=int, default=4, help="Batch size per group")
     parser.add_argument("--min_features", type=int, default=5, help="The minimum number of features")
     parser.add_argument("--max_features", type=int, default=100, help="The maximum number of features")
-    parser.add_argument("--max_classes", type=int, default=10, help="The maximum number of classes")
+    parser.add_argument(
+        "--max_classes",
+        type=int,
+        default=10,
+        help="The maximum number of classes. Use 0 for regression.",
+    )
+    parser.add_argument(
+        "--num_quantiles",
+        type=int,
+        default=999,
+        help="Number of quantiles predicted when --max_classes 0 enables regression.",
+    )
     parser.add_argument("--min_seq_len", type=int, default=None, help="Minimum samples per dataset")
     parser.add_argument("--max_seq_len", type=int, default=1024, help="Maximum samples per dataset")
     parser.add_argument(

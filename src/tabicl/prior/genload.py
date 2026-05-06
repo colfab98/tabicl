@@ -478,6 +478,26 @@ class SavePriorDataset:
         self.save_dir.mkdir(parents=True, exist_ok=True)
         self.save_metadata()
 
+        scm_fixed_hp = dict(DEFAULT_FIXED_HP)
+        if self.args.mix_probs is not None:
+            scm_fixed_hp["mix_probs"] = tuple(self.args.mix_probs)
+        if self.args.informed_mix_probs is not None:
+            scm_fixed_hp["informed_mix_probs"] = tuple(self.args.informed_mix_probs)
+        if self.args.informed_block_allocation is not None:
+            scm_fixed_hp["informed_block_allocation"] = tuple(self.args.informed_block_allocation)
+        if self.args.informed_feature_block_strength is not None:
+            scm_fixed_hp["informed_feature_block_strength"] = self.args.informed_feature_block_strength
+        if self.args.informed_interaction_strength is not None:
+            scm_fixed_hp["informed_interaction_strength"] = self.args.informed_interaction_strength
+        if self.args.informed_history_strength is not None:
+            scm_fixed_hp["informed_history_strength"] = self.args.informed_history_strength
+        if self.args.informed_intervention_strength is not None:
+            scm_fixed_hp["informed_intervention_strength"] = self.args.informed_intervention_strength
+        if self.args.informed_physical_marginal_prob is not None:
+            scm_fixed_hp["informed_physical_marginal_prob"] = self.args.informed_physical_marginal_prob
+        if self.args.informed_physical_marginal_profile is not None:
+            scm_fixed_hp["informed_physical_marginal_profile"] = self.args.informed_physical_marginal_profile
+
         self.prior = PriorDataset(
             batch_size=self.args.batch_size,
             batch_size_per_gp=self.args.batch_size_per_gp,
@@ -492,10 +512,11 @@ class SavePriorDataset:
             max_train_size=self.args.max_train_size,
             replay_small=self.args.replay_small,
             prior_type=self.args.prior_type,
-            scm_fixed_hp=DEFAULT_FIXED_HP,
+            scm_fixed_hp=scm_fixed_hp,
             scm_sampled_hp=DEFAULT_SAMPLED_HP,
             n_jobs=self.args.n_jobs,
             num_threads_per_generate=self.args.num_threads_per_generate,
+            informed_prior_ratio=self.args.informed_prior_ratio,
             device=self.args.device,
         )
         print(self.prior)
@@ -516,6 +537,16 @@ class SavePriorDataset:
             "min_train_size": self.args.min_train_size,
             "max_train_size": self.args.max_train_size,
             "replay_small": self.args.replay_small,
+            "informed_prior_ratio": self.args.informed_prior_ratio,
+            "mix_probs": self.args.mix_probs,
+            "informed_mix_probs": self.args.informed_mix_probs,
+            "informed_block_allocation": self.args.informed_block_allocation,
+            "informed_feature_block_strength": self.args.informed_feature_block_strength,
+            "informed_interaction_strength": self.args.informed_interaction_strength,
+            "informed_history_strength": self.args.informed_history_strength,
+            "informed_intervention_strength": self.args.informed_intervention_strength,
+            "informed_physical_marginal_prob": self.args.informed_physical_marginal_prob,
+            "informed_physical_marginal_profile": self.args.informed_physical_marginal_profile,
         }
         with open(self.save_dir / "metadata.json", "w") as f:
             json.dump(metadata, f, indent=2)
@@ -592,6 +623,11 @@ if __name__ == "__main__":
     def str2bool(value):
         return value.lower() == "true"
 
+    def false_or_float(value):
+        if isinstance(value, str) and value.lower() == "false":
+            return 0.0
+        return float(value)
+
     def train_size_type(value):
         """Custom type function to handle both int and float train sizes."""
         value = float(value)
@@ -646,9 +682,24 @@ if __name__ == "__main__":
         "--prior_type",
         type=str,
         default="mix_scm",
-        choices=["mlp_scm", "tree_scm", "mix_scm"],
+        choices=["mlp_scm", "tree_scm", "mix_scm", "informed_scm", "hybrid_scm"],
         help="Type of prior to use",
     )
+    parser.add_argument(
+        "--informed_prior_ratio",
+        type=false_or_float,
+        default=0.5,
+        help="For prior_type=hybrid_scm, probability of sampling informed subgroups.",
+    )
+    parser.add_argument("--mix_probs", type=float, nargs=2, default=None)
+    parser.add_argument("--informed_mix_probs", type=float, nargs=2, default=None)
+    parser.add_argument("--informed_block_allocation", type=float, nargs=5, default=None)
+    parser.add_argument("--informed_feature_block_strength", type=false_or_float, default=None)
+    parser.add_argument("--informed_interaction_strength", type=false_or_float, default=None)
+    parser.add_argument("--informed_history_strength", type=false_or_float, default=None)
+    parser.add_argument("--informed_intervention_strength", type=false_or_float, default=None)
+    parser.add_argument("--informed_physical_marginal_prob", type=false_or_float, default=None)
+    parser.add_argument("--informed_physical_marginal_profile", type=str, default=None)
     parser.add_argument("--n_jobs", type=int, default=-1, help="Number of jobs for parallel processing")
     parser.add_argument("--num_threads_per_generate", type=int, default=1, help="Threads per generation")
     parser.add_argument(

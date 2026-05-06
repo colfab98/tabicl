@@ -263,6 +263,43 @@ def csv_rows_from_zip(path: Path, internal_name: str) -> list[list[str]]:
     return [[clean_name(c) for c in row] for row in csv.reader(io.StringIO(text), dialect)]
 
 
+def csv_rows(path: Path, delimiter: str | None = None) -> list[list[str]]:
+    text = path.read_text(encoding="utf-8-sig", errors="replace")
+    if delimiter is None:
+        try:
+            dialect = csv.Sniffer().sniff(text[:5000])
+        except Exception:
+            dialect = csv.excel
+        return [[clean_name(c) for c in row] for row in csv.reader(io.StringIO(text), dialect)]
+    return [[clean_name(c) for c in row] for row in csv.reader(io.StringIO(text), delimiter=delimiter)]
+
+
+def docx_tables(path: Path) -> list[list[list[str]]]:
+    ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+    with zipfile.ZipFile(path) as zf:
+        root = ET.fromstring(zf.read("word/document.xml"))
+    tables = []
+    for tbl in root.findall(".//w:tbl", ns):
+        rows = []
+        for tr in tbl.findall("./w:tr", ns):
+            row = []
+            for tc in tr.findall("./w:tc", ns):
+                texts = [t.text or "" for t in tc.findall(".//w:t", ns)]
+                row.append(clean_name(" ".join("".join(texts).split())))
+            if any(row):
+                rows.append(row)
+        if rows:
+            tables.append(rows)
+    return tables
+
+
+def decimal_comma_to_dot(value: Any) -> Any:
+    text = clean_name(value)
+    if re.fullmatch(r"[+-]?\d+,\d+(?:[eE][+-]?\d+)?", text):
+        return text.replace(",", ".")
+    return value
+
+
 def rows_to_dicts(columns: list[str], rows: list[list[Any]], start: int = 1) -> list[dict[str, Any]]:
     cols = unique_columns(columns)
     out = []
@@ -638,6 +675,164 @@ def load_mooring() -> list[Table]:
     return [Table("mooring_steel_seawater", "OCP_R4_S31_Omax", columns, groups, out_rows)]
 
 
+def load_datacor_aluminum_inhibitors() -> list[Table]:
+    path = DATASETS / "datacor_aluminum_inhibitors" / "raw" / "DataCor.xlsx"
+    rows = xlsx_rows(path)["Main"]
+    wide_columns = unique_columns(rows[0])
+    wide_records = rows_to_dicts(wide_columns, rows, 1)
+
+    target_pattern = re.compile(r"^Efficiency_(AA\d+)_pH(\d+)$")
+    target_cols = [col for col in wide_columns if target_pattern.match(col)]
+    descriptor_cols = [col for col in wide_columns if col not in {"Inhibitor", "number", *target_cols}]
+
+    out_rows: list[dict[str, Any]] = []
+    for record in wide_records:
+        base = {
+            "Inhibitor": record.get("Inhibitor", ""),
+            "number": record.get("number", ""),
+        }
+        for col in descriptor_cols:
+            base[col] = record.get(col, "")
+        for target_col in target_cols:
+            match = target_pattern.match(target_col)
+            if not match:
+                continue
+            alloy, ph = match.groups()
+            row = dict(base)
+            row["alloy"] = alloy
+            row["pH"] = ph
+            row["efficiency_score"] = record.get(target_col, "")
+            row["source_efficiency_column"] = target_col
+            out_rows.append(row)
+
+    columns = ["Inhibitor", "number", "alloy", "pH", *descriptor_cols, "efficiency_score", "source_efficiency_column"]
+    groups = {col: "intervention" for col in columns}
+    groups.update(
+        {
+            "Inhibitor": "metadata",
+            "number": "metadata",
+            "alloy": "material",
+            "pH": "environment",
+            "efficiency_score": "target",
+            "source_efficiency_column": "metadata",
+        }
+    )
+    return [Table("datacor_aluminum_inhibitors", "DataCor_long_efficiency", columns, groups, out_rows)]
+
+
+def load_datacortech_aluminum_inhibitors() -> list[Table]:
+    initial_path = DATASETS / "datacortech_aluminum_inhibitors" / "raw" / "Datacortech_initial_data.xlsx"
+    final_path = DATASETS / "datacortech_aluminum_inhibitors" / "raw" / "Datacortech_final_data.xlsx"
+
+    initial_rows = xlsx_rows(initial_path)["Efficiencies"]
+    initial_columns = unique_columns(initial_rows[0])
+    initial_records = rows_to_dicts(initial_columns, initial_rows, 1)
+
+    final_rows = xlsx_rows(final_path)["Sheet 1"]
+    final_columns = unique_columns(final_rows[0])
+    descriptor_start = final_columns.index("Contributor") + 1 if "Contributor" in final_columns else len(final_columns)
+    descriptor_cols = final_columns[descriptor_start:]
+    descriptor_by_number: dict[str, dict[str, Any]] = {}
+    for record in rows_to_dicts(final_columns, final_rows, 1):
+        number = clean_name(record.get("Number"))
+        if not number or number in descriptor_by_number:
+            continue
+        descriptor_by_number[number] = {col: record.get(col, "") for col in descriptor_cols}
+
+    out_rows = []
+    for record in initial_records:
+        number = clean_name(record.get("Number"))
+        out = dict(record)
+        out["descriptor_source"] = "Datacortech_final_data.xlsx" if number in descriptor_by_number else ""
+        out.update(descriptor_by_number.get(number, {col: "" for col in descriptor_cols}))
+        out_rows.append(out)
+
+    columns = [*initial_columns, "descriptor_source", *descriptor_cols]
+    groups = {col: "metadata" for col in columns}
+    for col in columns:
+        if col in {"Metal", "Alloy"}:
+            groups[col] = "material"
+        elif col in {"Temperature_K", "pH", "Salt_Concentrat_M"}:
+            groups[col] = "environment"
+        elif col in {"Time_h"}:
+            groups[col] = "history"
+        elif col in {
+            "Inhib_Concentrat_M",
+            "Synergistic_inhib",
+            "Synergistic_inhib_type",
+            "Synergistic_inhib_Concentrat_M",
+            "Encapsulated",
+        } or col in descriptor_cols:
+            groups[col] = "intervention"
+        elif col == "Efficiency":
+            groups[col] = "target"
+    return [Table("datacortech_aluminum_inhibitors", "Efficiencies_with_descriptors", columns, groups, out_rows)]
+
+
+def load_mg_az91_inhibitors() -> list[Table]:
+    path = DATASETS / "mg_az91_inhibitors" / "raw" / "Features.csv"
+    rows = csv_rows(path, delimiter=";")
+    columns = unique_columns(["substrate_alloy", *rows[0]])
+    out_rows = []
+    for row in rows[1:]:
+        if not any(row):
+            continue
+        record = {"substrate_alloy": "AZ91"}
+        for idx, col in enumerate(columns[1:]):
+            record[col] = row[idx] if idx < len(row) else ""
+        out_rows.append(record)
+    groups = {col: "intervention" for col in columns}
+    groups.update({"substrate_alloy": "material", "No.": "metadata", "NAME": "metadata", "IE": "target"})
+    return [Table("mg_az91_inhibitors", "Features", columns, groups, out_rows)]
+
+
+def load_mg_ze41_inhibitors() -> list[Table]:
+    path = DATASETS / "mg_ze41_inhibitors" / "raw" / "ze41_mol_desc_db_red.csv"
+    rows = csv_rows(path, delimiter=";")
+    columns = unique_columns(["substrate_alloy", *rows[0]])
+    out_rows = []
+    for row in rows[1:]:
+        if not any(row):
+            continue
+        record = {"substrate_alloy": "ZE41"}
+        for idx, col in enumerate(columns[1:]):
+            value = row[idx] if idx < len(row) else ""
+            record[col] = value if idx == 0 else decimal_comma_to_dot(value)
+        out_rows.append(record)
+    groups = {col: "intervention" for col in columns}
+    groups.update(
+        {
+            "substrate_alloy": "material",
+            "compound": "metadata",
+            "inhibition efficiency ZE41 / %": "target",
+            "LinIE ZE41": "exclude",
+        }
+    )
+    return [Table("mg_ze41_inhibitors", "ze41_mol_desc_db_red", columns, groups, out_rows)]
+
+
+def load_ni_crevice_repassivation() -> list[Table]:
+    path = DATASETS / "ni_crevice_repassivation" / "raw" / "Research_data_Saenzetal.docx"
+    tables = docx_tables(path)
+    if not tables:
+        return []
+    rows = tables[0]
+    columns = unique_columns(rows[0])
+    groups = {col: "metadata" for col in columns}
+    for col in columns:
+        if col == "Alloy":
+            groups[col] = "material"
+        elif col in {"T. °C", "[Cl-]. mol/L", "[SO42-]. mol/L", "[NO3-]. mol/L", "[MoO42-]. mol/L"}:
+            groups[col] = "environment"
+        elif col == "iGS. µA/cm2":
+            groups[col] = "electrochem"
+        elif col == "ER.CREV. VECS":
+            groups[col] = "target"
+        elif col == "CC Attack?":
+            groups[col] = "exclude"
+    return [make_table("ni_crevice_repassivation", "Research_data_Saenzetal_table1", columns, groups, rows, 1)]
+
+
 def load_all_tables() -> list[Table]:
     tables: list[Table] = []
     for loader in [
@@ -648,6 +843,11 @@ def load_all_tables() -> list[Table]:
         load_316l_descriptors,
         load_nace,
         load_mooring,
+        load_datacor_aluminum_inhibitors,
+        load_datacortech_aluminum_inhibitors,
+        load_mg_az91_inhibitors,
+        load_mg_ze41_inhibitors,
+        load_ni_crevice_repassivation,
     ]:
         tables.extend(loader())
     return tables

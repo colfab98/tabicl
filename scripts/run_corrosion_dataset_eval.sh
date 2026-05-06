@@ -4,11 +4,12 @@ set -euo pipefail
 RUN_OR_CKPT="${1:-}"
 CHECKPOINT="${2:-}"
 MODEL_LABEL="${3:-}"
-TARGET_BINS="${4:-2}"
+TARGET_MODE="${4:-continuous}"
 
 if [ -z "$RUN_OR_CKPT" ] || [ -z "$CHECKPOINT" ]; then
-  echo "Usage: $0 <run_suffix_or_checkpoint_path[,run_suffix...]> <checkpoint_step_or_name> [job_or_model_label] [target_bins]"
+  echo "Usage: $0 <run_suffix_or_checkpoint_path[,run_suffix...]> <checkpoint_step_or_name> [job_or_model_label] [continuous|target_bins]"
   echo "Examples:"
+  echo "  $0 v19 1000 v19_step1000_reg continuous"
   echo "  $0 v15 600 v15_step600_bins3 3"
   echo "  $0 v15 600 v15_step600_bins5 5"
   echo "  $0 v12,v13,v14,v15 2500 compare_bins3 3"
@@ -17,9 +18,22 @@ if [ -z "$RUN_OR_CKPT" ] || [ -z "$CHECKPOINT" ]; then
   exit 1
 fi
 
-if ! [[ "$TARGET_BINS" =~ ^[0-9]+$ ]] || [ "$TARGET_BINS" -lt 2 ]; then
-  echo "target_bins must be an integer >= 2." >&2
-  exit 1
+if [[ "$TARGET_MODE" != "continuous" && "$TARGET_MODE" != "regression" ]]; then
+  if ! [[ "$TARGET_MODE" =~ ^[0-9]+$ ]] || [ "$TARGET_MODE" -lt 2 ]; then
+    echo "fourth argument must be 'continuous' or an integer target_bins >= 2." >&2
+    exit 1
+  fi
+fi
+
+REGRESSION_EVAL=0
+if [[ "$TARGET_MODE" == "continuous" || "$TARGET_MODE" == "regression" ]]; then
+  REGRESSION_EVAL=1
+fi
+
+if [ "$REGRESSION_EVAL" = "0" ]; then
+  TARGET_BINS="$TARGET_MODE"
+else
+  TARGET_BINS=""
 fi
 
 mkdir -p /home/"$USER"/tmp
@@ -33,7 +47,11 @@ if [[ "$RUN_OR_CKPT" == *.ckpt || "$RUN_OR_CKPT" == /* ]]; then
   CKPT_ARGS=(--local-ckpt-path "$RUN_OR_CKPT")
   CKPT_BASENAME="$(basename "$RUN_OR_CKPT" .ckpt)"
   RUN_LABEL="$(basename "$(dirname "$RUN_OR_CKPT")")"
-  LABEL="${MODEL_LABEL:-${RUN_LABEL}_${CKPT_BASENAME}_bins${TARGET_BINS}}"
+  if [ "$REGRESSION_EVAL" = "1" ]; then
+    LABEL="${MODEL_LABEL:-${RUN_LABEL}_${CKPT_BASENAME}_reg}"
+  else
+    LABEL="${MODEL_LABEL:-${RUN_LABEL}_${CKPT_BASENAME}_bins${TARGET_BINS}}"
+  fi
 
 elif [[ "$RUN_OR_CKPT" == *,* ]]; then
   if [ "$CHECKPOINT" = "latest" ]; then
@@ -72,7 +90,11 @@ elif [[ "$RUN_OR_CKPT" == *,* ]]; then
 
   JOINED_RUNS="${RUN_LABELS[*]}"
   JOINED_RUNS="${JOINED_RUNS// /_}"
-  LABEL="${MODEL_LABEL:-compare_${JOINED_RUNS}_${CKPT_LABEL}_bins${TARGET_BINS}}"
+  if [ "$REGRESSION_EVAL" = "1" ]; then
+    LABEL="${MODEL_LABEL:-compare_${JOINED_RUNS}_${CKPT_LABEL}_reg}"
+  else
+    LABEL="${MODEL_LABEL:-compare_${JOINED_RUNS}_${CKPT_LABEL}_bins${TARGET_BINS}}"
+  fi
   PASS_MODEL_LABEL=0
 
 else
@@ -93,7 +115,11 @@ else
     CKPT_LABEL="step${CKPT_LABEL}"
   fi
 
-  LABEL="${MODEL_LABEL:-${RUN_OR_CKPT}_${CKPT_LABEL}_bins${TARGET_BINS}}"
+  if [ "$REGRESSION_EVAL" = "1" ]; then
+    LABEL="${MODEL_LABEL:-${RUN_OR_CKPT}_${CKPT_LABEL}_reg}"
+  else
+    LABEL="${MODEL_LABEL:-${RUN_OR_CKPT}_${CKPT_LABEL}_bins${TARGET_BINS}}"
+  fi
 fi
 
 EVAL_ARGS=("${CKPT_ARGS[@]}")
@@ -102,7 +128,9 @@ if [ "$PASS_MODEL_LABEL" = "1" ]; then
   EVAL_ARGS+=(--local-model-label "$LABEL")
 fi
 
-if [ "$TARGET_BINS" = "2" ]; then
+if [ "$REGRESSION_EVAL" = "1" ]; then
+  EVAL_ARGS+=(--target-binning continuous)
+elif [ "$TARGET_BINS" = "2" ]; then
   EVAL_ARGS+=(--target-binning median_binary --target-bins 2)
 else
   EVAL_ARGS+=(--target-binning quantile_multiclass --target-bins "$TARGET_BINS")

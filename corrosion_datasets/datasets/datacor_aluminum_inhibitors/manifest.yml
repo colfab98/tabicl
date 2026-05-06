@@ -1,0 +1,19 @@
+dataset_id: datacor_aluminum_inhibitors
+title: DATACOR Dataset V2
+documented_at: 2026-05-06
+status: downloaded_inspected
+
+sources:
+  dataset_url: https://data.mendeley.com/datasets/v5p322m2t8/3
+  doi: 10.17632/v5p322m2t8.3
+  direct_file_url: https://data.mendeley.com/public-files/datasets/v5p322m2t8/files/8a12d9cd-27e8-42e5-a472-95c7cd040ad2/file_downloaded
+
+raw_files:
+  - path: raw/DataCor.xlsx
+    role: primary_workbook
+    size_bytes: 46078
+    sha256: 48cc7cfb236eb8271ec48875e46b740ee4f85dc1e64073af00ec03e4d5f26dcd
+
+notes:
+  - Raw workbook was downloaded from the public Mendeley file endpoint.
+  - Loader reshapes four alloy/pH efficiency columns into one long numeric target table.

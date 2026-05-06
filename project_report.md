@@ -690,6 +690,72 @@ weighted mean balanced accuracy ranks `v18` first among all models (`0.7088`).
 The weighted result is useful, but it should not replace the task-level
 unweighted mean as the primary ranking.
 
+### Classifier Models On Regression-Like Corrosion Targets
+
+The trained local models in this report are classifier models, not native
+regression models. Their checkpoints use `max_classes > 0`, the prior pipeline
+converts continuous synthetic SCM targets through `Reg2Cls`, and the training
+loop optimizes cross-entropy on class labels. The informed-prior structure is
+applied before this regression-to-classification conversion, but the final
+training objective remains classification.
+
+Most usable corrosion evaluation targets are nevertheless numeric response
+variables, not native class labels. Across the loaded target-labelled columns,
+the available targets are overwhelmingly regression-like corrosion responses
+such as pitting potential, repassivation potential, pitting or crevice
+temperature, corrosion potential, corrosion current density, corrosion rate,
+OCP, and curve-derived descriptors. The only clear native multiclass
+categorical target currently present is NACE `Localized Attack`; it is ignored
+by the current evaluator because it is not parsed into numeric values or a
+curated class mapping. No clear native binary categorical target is included in
+the current primary evaluation.
+
+The evaluation script was therefore changed to treat numeric corrosion-response
+tasks as an ordered classification proxy for regression. The original
+`median_binary` setting keeps the old above/below-median split. The optional
+`quantile_multiclass` setting converts each numeric target into ordered
+quantile bins, so the classifier predicts low-to-high target-value classes.
+This is a practical way to evaluate whether the classifier-trained models learn
+target ordering and coarse response magnitude, but it is not the same as
+training or evaluating a native `TabICLRegressor`.
+
+This distinction matters for interpretation. The bin labels are low-to-high
+target value, not automatically low-to-high corrosion severity. Higher
+corrosion rate or current density generally means worse corrosion, but higher
+pitting potential, repassivation potential, or pitting temperature can indicate
+better corrosion resistance. A true severity benchmark would need target-wise
+direction normalization before assigning severity labels.
+
+For quantile-bin evaluations, the most informative metrics are the
+ordinal-aware metrics:
+
+| metric | interpretation | use in this benchmark |
+|---|---|---|
+| `test_quadratic_weighted_kappa` | Chance-adjusted agreement that penalizes far-away bin mistakes more than adjacent mistakes. | Best primary metric for ordered 3-bin and 5-bin target-value tasks. |
+| `test_ordinal_mae` | Mean absolute bin error. Lower is better. | Most interpretable error metric; reports how many bins off the hard prediction is on average. |
+| `test_ordinal_rmse` | Root mean squared bin error. Lower is better. | Useful for detecting occasional severe low-vs-high mistakes. |
+| `test_expected_class_spearman` | Rank correlation between true ordinal bin and probability-weighted expected class. | Useful when hard argmax classes are noisy, especially in 5-bin small tasks. |
+| `test_expected_class_mae` | Absolute error between true ordinal bin and probability-weighted expected class. Lower is better. | Soft-probability version of ordinal error, dependent on probability quality. |
+
+Standard classification metrics should still be reported, but they are
+secondary for the regression-proxy interpretation. `test_balanced_accuracy`,
+`test_f1_macro`, `test_mcc`, and exact `test_accuracy` treat all wrong classes
+as equally wrong, so an adjacent-bin miss is penalized like a low-to-high
+extreme miss. `test_roc_auc_ovr_macro` is useful for probability-based
+class separability, but it does not encode target order. `test_adjacent_accuracy`
+is useful mainly for 5-bin sensitivity checks; it is weak for 3-bin tasks and
+uninformative for binary tasks.
+
+The safest headline for the quantile-bin experiments is therefore the
+unweighted mean or median `test_quadratic_weighted_kappa`, checked against
+`test_ordinal_mae`, `test_expected_class_spearman`, and task-level behavior on
+the more reliable corrosion tasks. The 3-bin evaluation is the cleanest default
+ordinal proxy because it keeps the same 12 primary tasks as the binary
+evaluation while adding target-order resolution. The 5-bin evaluation is a
+stricter sensitivity check, but it changes the task set by dropping NACE and
+selecting `iCORR` instead of `ECORR` for the HEAS table because of
+minimum-class-count constraints.
+
 ## Experiment Versions
 
 The baseline is a reproduced generic `mix_scm` run. It keeps the original
