@@ -2,8 +2,9 @@
 """Evaluate TabICL checkpoints on external corrosion benchmark tasks.
 
 The tasks are built from the corrosion_datasets workspace. Continuous corrosion
-targets are converted to binary high/low classification tasks by a median split,
-so local stage-1 classifier checkpoints can be compared consistently.
+targets are evaluated as native regression tasks by default, with optional
+median-binary or quantile-multiclass binning retained for classifier
+checkpoints.
 
 This is an evaluation benchmark only. Do not use these results to re-select the
 informed-prior values that were derived from the same external datasets.
@@ -17,6 +18,7 @@ import json
 import math
 import re
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -49,7 +51,16 @@ from analyze_structure import Table, clean_name, load_all_tables  # noqa: E402
 
 
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "corrosion_datasets" / "analysis" / "eval_results"
-DEFAULT_FEATURE_GROUPS = ("material", "environment", "history", "intervention")
+DEFAULT_FEATURE_GROUPS = (
+    "material",
+    "environment",
+    "process_history",
+    "exposure_duration",
+    "temporal_history",
+    "direct_intervention",
+    "molecular_descriptor",
+)
+ELECTROCHEM_FEATURE_GROUPS = ("electrochem_control", "electrochem_downstream")
 EVAL_NA_STRINGS = {"", "na", "n/a", "nan", "none", "null", "-", "--"}
 EVAL_RATING_TO_SEVERITY = {"a": 0.0, "b": 1.0, "c": 2.0, "d": 3.0}
 EVAL_UNIT_SUFFIX_RE = (
@@ -123,7 +134,9 @@ class EvalTask:
     X: pd.DataFrame
     y: pd.Series
     y_ordinal: pd.Series
+    task_family: str
     feature_groups_used: list[str]
+    feature_group_counts: dict[str, int]
     dropped_feature_columns: list[str]
     quality_flags: list[str]
 
@@ -169,6 +182,15 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=1000,
         help="Minimum step to include when --checkpoint all is used.",
+    )
+    parser.add_argument(
+        "--checkpoint-step-interval",
+        type=int,
+        default=1000,
+        help=(
+            "Only include common checkpoints whose step is divisible by this interval "
+            "when --checkpoint all is used. Use 0 to include every common checkpoint."
+        ),
     )
     parser.add_argument(
         "--local-ckpt-path",
@@ -243,7 +265,14 @@ def parse_args() -> argparse.Namespace:
         default=[],
         help="Skip generated tasks containing this quality flag. Can be passed multiple times.",
     )
-    parser.add_argument("--include-electrochem-features", action="store_true")
+    parser.add_argument(
+        "--include-electrochem-features",
+        action="store_true",
+        help=(
+            "Include electrochemical control/setpoint and downstream-response feature groups. "
+            "By default these are excluded to keep evaluation leakage-safe."
+        ),
+    )
     parser.add_argument("--compare-pretrained-tabicl", dest="compare_pretrained_tabicl", action="store_true", default=True)
     parser.add_argument("--no-compare-pretrained-tabicl", dest="compare_pretrained_tabicl", action="store_false")
     parser.add_argument(
@@ -288,6 +317,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def validate_args(args: argparse.Namespace) -> None:
+    if args.checkpoint_step_interval < 0:
+        raise ValueError("--checkpoint-step-interval must be >= 0.")
     if args.target_binning == "continuous":
         return
     if args.target_binning == "median_binary" and args.target_bins != 2:
@@ -407,13 +438,19 @@ def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEv
     common_steps = sorted(
         step
         for step in set.intersection(*(set(paths) for paths in by_run.values()))
-        if step >= args.min_checkpoint_step and step % 1000 == 0
+        if step >= args.min_checkpoint_step
+        and (args.checkpoint_step_interval == 0 or step % args.checkpoint_step_interval == 0)
     )
     if not common_steps:
         run_list = ", ".join(runs)
+        interval_note = (
+            "any interval"
+            if args.checkpoint_step_interval == 0
+            else f"interval {args.checkpoint_step_interval}"
+        )
         raise FileNotFoundError(
             f"No common step-*.ckpt checkpoints found across runs at or after "
-            f"step {args.min_checkpoint_step}: {run_list}"
+            f"step {args.min_checkpoint_step} with {interval_note}: {run_list}"
         )
 
     specs: list[CheckpointEvalSpec] = []
@@ -704,6 +741,16 @@ def regression_stratify_labels(values: np.ndarray, max_bins: int = 10) -> np.nda
     return None
 
 
+def task_family_for_dataset(dataset: str) -> str:
+    if "inhibitor" in dataset:
+        return "inhibitor_agent"
+    if dataset == "mooring_steel_seawater":
+        return "time_series_corrosion"
+    if dataset == "nace_nist_corr_data":
+        return "coarse_corpus"
+    return "normal_corrosion"
+
+
 def build_task(
     table: Table,
     target_col: str,
@@ -800,6 +847,7 @@ def build_task(
 
     task_id = f"{table.dataset}__{slugify(table.table)}__{slugify(target_col)}"
     quality_flags = assess_task_quality(table, X, y)
+    feature_group_counts = Counter(table.groups.get(col, "metadata") for col in X.columns)
     ordered_class_counts = {
         label: int(class_counts.get(label, 0))
         for label in class_labels
@@ -818,7 +866,9 @@ def build_task(
         X=X,
         y=y,
         y_ordinal=y_ordinal,
+        task_family=task_family_for_dataset(table.dataset),
         feature_groups_used=sorted(set(feature_groups)),
+        feature_group_counts=dict(sorted(feature_group_counts.items())),
         dropped_feature_columns=dropped,
         quality_flags=quality_flags,
     )
@@ -834,7 +884,7 @@ def make_tasks(args: argparse.Namespace) -> list[EvalTask]:
     tables = load_all_tables()
     feature_groups = list(DEFAULT_FEATURE_GROUPS)
     if args.include_electrochem_features:
-        feature_groups.append("electrochem")
+        feature_groups.extend(ELECTROCHEM_FEATURE_GROUPS)
     feature_groups_tuple = tuple(feature_groups)
 
     selected_datasets = set(args.dataset or [])
@@ -1104,6 +1154,7 @@ def evaluate_estimator(
             "positive_label": "",
             "positive_rate": math.nan,
             "task_quality_flags": ",".join(task.quality_flags),
+            "task_family": task.task_family,
             "test_mae": mae,
             "test_rmse": rmse,
             "test_r2": float(r2_score(y_true, y_pred)),
@@ -1112,6 +1163,7 @@ def evaluate_estimator(
             "test_nmae_iqr": nmae_iqr,
             "test_nrmse_iqr": nrmse_iqr,
             "feature_groups": ",".join(task.feature_groups_used),
+            "feature_group_counts": json.dumps(task.feature_group_counts, sort_keys=True),
             "dropped_feature_columns": ";".join(task.dropped_feature_columns),
         }
 
@@ -1181,6 +1233,7 @@ def evaluate_estimator(
         "positive_label": task.class_labels[-1],
         "positive_rate": float((task.y == task.class_labels[-1]).mean()),
         "task_quality_flags": ",".join(task.quality_flags),
+        "task_family": task.task_family,
         "test_accuracy": float(accuracy_score(y_test, y_pred)),
         "test_balanced_accuracy": float(balanced_accuracy_score(y_test, y_pred)),
         "test_f1_macro": float(f1_score(y_test, y_pred, average="macro")),
@@ -1188,6 +1241,7 @@ def evaluate_estimator(
         "test_auroc": auroc,
         "test_roc_auc_ovr_macro": roc_auc_ovr_macro,
         "feature_groups": ",".join(task.feature_groups_used),
+        "feature_group_counts": json.dumps(task.feature_group_counts, sort_keys=True),
         "dropped_feature_columns": ";".join(task.dropped_feature_columns),
     }
     row.update(ord_metrics)
@@ -1562,6 +1616,9 @@ def print_task_list(tasks: list[EvalTask]) -> None:
             "class_counts": ",".join(f"{label}:{task.class_counts.get(label, 0)}" for label in task.class_labels),
             "positive_rate": float((task.y == task.class_labels[-1]).mean()) if task.class_labels else math.nan,
             "threshold": task.threshold,
+            "task_family": task.task_family,
+            "feature_groups": ",".join(task.feature_groups_used),
+            "feature_group_counts": json.dumps(task.feature_group_counts, sort_keys=True),
             "quality_flags": ",".join(task.quality_flags),
         }
         for task in tasks
@@ -1927,6 +1984,7 @@ def main() -> None:
         "runs": expand_runs(args),
         "checkpoint": args.checkpoint,
         "min_checkpoint_step": args.min_checkpoint_step,
+        "checkpoint_step_interval": args.checkpoint_step_interval,
         "target_mode": args.target_mode,
         "target_binning": args.target_binning,
         "target_bins": args.target_bins,
@@ -1942,6 +2000,7 @@ def main() -> None:
         "excluded_quality_flags": list(args.exclude_quality_flag or []),
         "n_estimators": args.n_estimators,
         "feature_groups_default": list(DEFAULT_FEATURE_GROUPS),
+        "electrochem_feature_groups": list(ELECTROCHEM_FEATURE_GROUPS),
         "include_electrochem_features": args.include_electrochem_features,
         "rows": rows,
         "errors": errors,

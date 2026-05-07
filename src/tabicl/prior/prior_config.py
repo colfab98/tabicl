@@ -5,7 +5,9 @@ DEFAULT_FIXED_HP = {
     # SCMPrior
     "mix_probs": (0.7, 0.3),
     "informed_mix_probs": (0.9, 0.1),
-    "informed_block_allocation": (0.70, 0.18, 0.10, 0.02, 0.0),
+    "informed_task_family_probs": (0.85, 0.15),
+    "informed_normal_block_allocation": (0.72, 0.22, 0.04, 0.01, 0.0, 0.01, 0.0, 0.0, 0.0),
+    "informed_inhibitor_block_allocation": (0.05, 0.08, 0.02, 0.02, 0.0, 0.05, 0.78, 0.0, 0.0),
     "informed_feature_block_strength": 0.30,
     "informed_interaction_strength": 0.35,
     "informed_history_strength": 0.70,

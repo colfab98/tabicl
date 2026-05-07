@@ -1,0 +1,830 @@
+[
+  {
+    "causal_role_counts": {
+      "base_material_condition": 24,
+      "direct_intervention_control": 1,
+      "exposure_context": 4,
+      "metadata_identifier": 6,
+      "process_or_history_condition": 3,
+      "target_response": 3
+    },
+    "columns": 41,
+    "current_group_counts": {
+      "environment": 4,
+      "history": 4,
+      "material": 24,
+      "metadata": 6,
+      "target": 3
+    },
+    "dataset": "electrochemical_metrics_alloys",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 33,
+    "n_targets": 3,
+    "review_priority_counts": {
+      "low": 39,
+      "medium_ambiguous": 1,
+      "medium_group_changed": 1
+    },
+    "rows": 810,
+    "semantic_domain_counts": {
+      "environment": 4,
+      "history": 3,
+      "intervention": 1,
+      "material": 24,
+      "metadata": 6,
+      "target": 3
+    },
+    "statistical_family_counts": {
+      "categorical_nominal": 4,
+      "composition_component": 17,
+      "electrochemical_or_rate_response": 1,
+      "high_cardinality_categorical": 2,
+      "low_cardinality_numeric": 2,
+      "mostly_missing": 5,
+      "percentage_or_fraction": 6,
+      "signed_continuous_numeric": 2,
+      "signed_electrochemical_potential": 1,
+      "temperature_like": 1
+    },
+    "table": "Pitting Potential"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 24,
+      "direct_intervention_control": 1,
+      "exposure_context": 4,
+      "metadata_identifier": 5,
+      "process_or_history_condition": 3,
+      "target_response": 1
+    },
+    "columns": 38,
+    "current_group_counts": {
+      "environment": 4,
+      "history": 4,
+      "material": 24,
+      "metadata": 5,
+      "target": 1
+    },
+    "dataset": "electrochemical_metrics_alloys",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 31,
+    "n_targets": 1,
+    "review_priority_counts": {
+      "low": 36,
+      "medium_ambiguous": 1,
+      "medium_group_changed": 1
+    },
+    "rows": 189,
+    "semantic_domain_counts": {
+      "environment": 4,
+      "history": 3,
+      "intervention": 1,
+      "material": 24,
+      "metadata": 5,
+      "target": 1
+    },
+    "statistical_family_counts": {
+      "bounded_0_1": 1,
+      "categorical_nominal": 4,
+      "composition_component": 18,
+      "electrochemical_or_rate_response": 1,
+      "low_cardinality_numeric": 2,
+      "mostly_missing": 6,
+      "pH_bounded": 1,
+      "percentage_or_fraction": 3,
+      "signed_electrochemical_potential": 1,
+      "temperature_like": 1
+    },
+    "table": "Repassivation Potential"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 14,
+      "direct_intervention_control": 1,
+      "exposure_context": 4,
+      "metadata_identifier": 5,
+      "process_or_history_condition": 3,
+      "target_response": 3
+    },
+    "columns": 30,
+    "current_group_counts": {
+      "environment": 4,
+      "history": 4,
+      "material": 14,
+      "metadata": 5,
+      "target": 3
+    },
+    "dataset": "electrochemical_metrics_alloys",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 20,
+    "n_targets": 3,
+    "review_priority_counts": {
+      "low": 28,
+      "medium_ambiguous": 1,
+      "medium_group_changed": 1
+    },
+    "rows": 31,
+    "semantic_domain_counts": {
+      "environment": 4,
+      "history": 3,
+      "intervention": 1,
+      "material": 14,
+      "metadata": 5,
+      "target": 3
+    },
+    "statistical_family_counts": {
+      "bounded_0_1": 2,
+      "categorical_nominal": 5,
+      "composition_component": 13,
+      "low_cardinality_numeric": 2,
+      "mostly_missing": 5,
+      "pH_bounded": 1,
+      "signed_electrochemical_potential": 1,
+      "temperature_like": 1
+    },
+    "table": "Crevice Corrosion Potential"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 14,
+      "direct_intervention_control": 1,
+      "downstream_response_measurement": 1,
+      "exposure_context": 1,
+      "metadata_identifier": 5,
+      "process_or_history_condition": 3,
+      "target_response": 3
+    },
+    "columns": 28,
+    "current_group_counts": {
+      "environment": 1,
+      "history": 5,
+      "material": 14,
+      "metadata": 5,
+      "target": 3
+    },
+    "dataset": "electrochemical_metrics_alloys",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 21,
+    "n_targets": 3,
+    "review_priority_counts": {
+      "high_leakage_or_response_feature": 1,
+      "low": 25,
+      "medium_ambiguous": 1,
+      "medium_group_changed": 1
+    },
+    "rows": 117,
+    "semantic_domain_counts": {
+      "electrochem": 1,
+      "environment": 1,
+      "history": 3,
+      "intervention": 1,
+      "material": 14,
+      "metadata": 5,
+      "target": 3
+    },
+    "statistical_family_counts": {
+      "bounded_0_1": 1,
+      "categorical_nominal": 6,
+      "composition_component": 13,
+      "low_cardinality_numeric": 2,
+      "mostly_missing": 1,
+      "percentage_or_fraction": 1,
+      "positive_continuous_numeric": 3,
+      "signed_electrochemical_potential": 1
+    },
+    "table": "Pitting Temp"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 20,
+      "direct_intervention_control": 1,
+      "downstream_response_measurement": 1,
+      "exposure_context": 1,
+      "metadata_identifier": 5,
+      "process_or_history_condition": 3,
+      "target_response": 3
+    },
+    "columns": 34,
+    "current_group_counts": {
+      "environment": 1,
+      "history": 5,
+      "material": 20,
+      "metadata": 5,
+      "target": 3
+    },
+    "dataset": "electrochemical_metrics_alloys",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 26,
+    "n_targets": 3,
+    "review_priority_counts": {
+      "high_leakage_or_response_feature": 1,
+      "low": 31,
+      "medium_ambiguous": 1,
+      "medium_group_changed": 1
+    },
+    "rows": 70,
+    "semantic_domain_counts": {
+      "electrochem": 1,
+      "environment": 1,
+      "history": 3,
+      "intervention": 1,
+      "material": 20,
+      "metadata": 5,
+      "target": 3
+    },
+    "statistical_family_counts": {
+      "bounded_0_1": 1,
+      "categorical_nominal": 5,
+      "composition_component": 13,
+      "low_cardinality_numeric": 2,
+      "mostly_missing": 4,
+      "percentage_or_fraction": 7,
+      "positive_skewed_numeric": 2
+    },
+    "table": "Crevice Corrosion Temp"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 21,
+      "direct_intervention_control": 1,
+      "downstream_response_measurement": 2,
+      "exposure_context": 4,
+      "metadata_identifier": 78,
+      "process_or_history_condition": 3,
+      "target_response": 6
+    },
+    "columns": 115,
+    "current_group_counts": {
+      "electrochem": 2,
+      "environment": 4,
+      "history": 4,
+      "material": 21,
+      "metadata": 78,
+      "target": 6
+    },
+    "dataset": "electrochemical_metrics_alloys",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 29,
+    "n_targets": 6,
+    "review_priority_counts": {
+      "high_leakage_or_response_feature": 2,
+      "low": 111,
+      "medium_ambiguous": 1,
+      "medium_group_changed": 1
+    },
+    "rows": 51,
+    "semantic_domain_counts": {
+      "electrochem": 2,
+      "environment": 4,
+      "history": 3,
+      "intervention": 1,
+      "material": 21,
+      "metadata": 78,
+      "target": 6
+    },
+    "statistical_family_counts": {
+      "bounded_0_1": 3,
+      "categorical_nominal": 6,
+      "composition_component": 14,
+      "electrochemical_or_rate_response": 1,
+      "low_cardinality_numeric": 2,
+      "mostly_missing": 85,
+      "pH_bounded": 1,
+      "percentage_or_fraction": 1,
+      "signed_electrochemical_potential": 1,
+      "temperature_like": 1
+    },
+    "table": "HEAs_Ecorr, icorr, ipass, Rate"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 29,
+      "exposure_context": 3,
+      "metadata_identifier": 2,
+      "process_or_history_condition": 1,
+      "target_response": 4
+    },
+    "columns": 39,
+    "current_group_counts": {
+      "environment": 3,
+      "intervention": 1,
+      "material": 29,
+      "metadata": 2,
+      "target": 4
+    },
+    "dataset": "mpea_corrosion",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 33,
+    "n_targets": 4,
+    "review_priority_counts": {
+      "low": 37,
+      "medium_ambiguous": 1,
+      "medium_group_changed": 1
+    },
+    "rows": 619,
+    "semantic_domain_counts": {
+      "environment": 3,
+      "material": 29,
+      "metadata": 2,
+      "process": 1,
+      "target": 4
+    },
+    "statistical_family_counts": {
+      "bounded_0_1": 4,
+      "categorical_nominal": 3,
+      "composition_component": 24,
+      "concentration_like": 1,
+      "electrochemical_or_rate_response": 1,
+      "high_cardinality_categorical": 1,
+      "identifier_or_free_text": 2,
+      "positive_continuous_numeric": 1,
+      "signed_electrochemical_potential": 2
+    },
+    "table": "Sheet1"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 17,
+      "exposure_context": 2,
+      "metadata_identifier": 2,
+      "process_or_history_condition": 1,
+      "target_response": 3
+    },
+    "columns": 25,
+    "current_group_counts": {
+      "environment": 2,
+      "intervention": 1,
+      "material": 17,
+      "metadata": 2,
+      "target": 3
+    },
+    "dataset": "am_mpea_corrosion",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 18,
+    "n_targets": 3,
+    "review_priority_counts": {
+      "low": 23,
+      "medium_ambiguous": 1,
+      "medium_group_changed": 1
+    },
+    "rows": 97,
+    "semantic_domain_counts": {
+      "environment": 2,
+      "material": 17,
+      "metadata": 2,
+      "process": 1,
+      "target": 3
+    },
+    "statistical_family_counts": {
+      "categorical_nominal": 6,
+      "composition_component": 11,
+      "concentration_like": 1,
+      "electrochemical_or_rate_response": 1,
+      "mostly_missing": 1,
+      "positive_continuous_numeric": 3,
+      "signed_electrochemical_potential": 2
+    },
+    "table": "AM_MPEA_corrosion_database_V3"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 6,
+      "exposure_context": 6,
+      "metadata_identifier": 1,
+      "target_response": 4
+    },
+    "columns": 17,
+    "current_group_counts": {
+      "environment": 6,
+      "material": 6,
+      "metadata": 1,
+      "target": 4
+    },
+    "dataset": "steel_mortar_corrosion",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 16,
+    "n_targets": 4,
+    "review_priority_counts": {
+      "low": 15,
+      "medium_ambiguous": 2
+    },
+    "rows": 180,
+    "semantic_domain_counts": {
+      "environment": 6,
+      "material": 6,
+      "metadata": 1,
+      "target": 4
+    },
+    "statistical_family_counts": {
+      "bounded_0_1": 3,
+      "composition_component": 4,
+      "concentration_like": 2,
+      "electrochemical_or_rate_response": 3,
+      "low_cardinality_numeric": 1,
+      "mostly_missing": 1,
+      "pH_bounded": 1,
+      "positive_continuous_numeric": 1,
+      "signed_electrochemical_potential": 1
+    },
+    "table": "01_Carbonation"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 5,
+      "exposure_context": 6,
+      "metadata_identifier": 1,
+      "target_response": 4
+    },
+    "columns": 16,
+    "current_group_counts": {
+      "environment": 6,
+      "material": 5,
+      "metadata": 1,
+      "target": 4
+    },
+    "dataset": "steel_mortar_corrosion",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 15,
+    "n_targets": 4,
+    "review_priority_counts": {
+      "low": 14,
+      "medium_ambiguous": 2
+    },
+    "rows": 95,
+    "semantic_domain_counts": {
+      "environment": 6,
+      "material": 5,
+      "metadata": 1,
+      "target": 4
+    },
+    "statistical_family_counts": {
+      "bounded_0_1": 3,
+      "composition_component": 3,
+      "concentration_like": 2,
+      "electrochemical_or_rate_response": 3,
+      "low_cardinality_numeric": 1,
+      "mostly_missing": 1,
+      "pH_bounded": 1,
+      "positive_continuous_numeric": 1,
+      "signed_electrochemical_potential": 1
+    },
+    "table": "02_Chloride"
+  },
+  {
+    "causal_role_counts": {
+      "exposure_context": 1,
+      "metadata_identifier": 2,
+      "process_or_history_condition": 1,
+      "target_response": 4
+    },
+    "columns": 8,
+    "current_group_counts": {
+      "environment": 1,
+      "history": 1,
+      "metadata": 2,
+      "target": 4
+    },
+    "dataset": "316l_pitting_passivity",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 7,
+    "n_targets": 4,
+    "review_priority_counts": {
+      "low": 8
+    },
+    "rows": 955,
+    "semantic_domain_counts": {
+      "environment": 1,
+      "history": 1,
+      "metadata": 2,
+      "target": 4
+    },
+    "statistical_family_counts": {
+      "bounded_0_1": 1,
+      "categorical_nominal": 1,
+      "electrochemical_or_rate_response": 1,
+      "low_cardinality_numeric": 1,
+      "signed_electrochemical_potential": 4
+    },
+    "table": "Epit_Epass_descriptors"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 4,
+      "exposure_context": 4,
+      "metadata_identifier": 2,
+      "process_or_history_condition": 2,
+      "target_response": 3
+    },
+    "columns": 15,
+    "current_group_counts": {
+      "environment": 4,
+      "history": 2,
+      "material": 4,
+      "metadata": 2,
+      "target": 3
+    },
+    "dataset": "nace_nist_corr_data",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 4,
+    "n_targets": 3,
+    "review_priority_counts": {
+      "low": 14,
+      "medium_ambiguous": 1
+    },
+    "rows": 24721,
+    "semantic_domain_counts": {
+      "environment": 4,
+      "history": 2,
+      "material": 4,
+      "metadata": 2,
+      "target": 3
+    },
+    "statistical_family_counts": {
+      "categorical_nominal": 1,
+      "electrochemical_or_rate_response": 2,
+      "high_cardinality_categorical": 7,
+      "identifier_or_free_text": 2,
+      "low_cardinality_numeric": 1,
+      "mostly_missing": 2
+    },
+    "table": "CORR-DATA_Database"
+  },
+  {
+    "causal_role_counts": {
+      "exposure_context": 3,
+      "metadata_identifier": 1,
+      "process_or_history_condition": 1,
+      "target_response": 1
+    },
+    "columns": 6,
+    "current_group_counts": {
+      "environment": 3,
+      "history": 1,
+      "metadata": 1,
+      "target": 1
+    },
+    "dataset": "mooring_steel_seawater",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 5,
+    "n_targets": 1,
+    "review_priority_counts": {
+      "low": 6
+    },
+    "rows": 62,
+    "semantic_domain_counts": {
+      "environment": 3,
+      "history": 1,
+      "metadata": 1,
+      "target": 1
+    },
+    "statistical_family_counts": {
+      "bounded_0_1": 1,
+      "categorical_nominal": 1,
+      "concentration_like": 1,
+      "signed_electrochemical_potential": 1,
+      "temperature_like": 1,
+      "time_or_rate_condition": 1
+    },
+    "table": "OCP_R4_S31_Omax"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 1,
+      "direct_intervention_control": 3,
+      "exposure_context": 1,
+      "intervention_agent_descriptor": 14,
+      "metadata_identifier": 3,
+      "target_response": 1
+    },
+    "columns": 23,
+    "current_group_counts": {
+      "environment": 1,
+      "intervention": 17,
+      "material": 1,
+      "metadata": 3,
+      "target": 1
+    },
+    "dataset": "datacor_aluminum_inhibitors",
+    "n_intervention_agent_descriptor_roles": 14,
+    "n_molecular_descriptor_candidates": 14,
+    "n_numeric_columns": 17,
+    "n_targets": 1,
+    "review_priority_counts": {
+      "high_molecular_vs_intervention": 14,
+      "low": 9
+    },
+    "rows": 408,
+    "semantic_domain_counts": {
+      "environment": 1,
+      "intervention": 3,
+      "material": 1,
+      "metadata": 3,
+      "molecular_descriptor": 14,
+      "target": 1
+    },
+    "statistical_family_counts": {
+      "categorical_nominal": 2,
+      "dense_molecular_descriptor": 14,
+      "high_cardinality_categorical": 1,
+      "low_cardinality_numeric": 1,
+      "mostly_missing": 3,
+      "pH_bounded": 1,
+      "percentage_or_fraction": 1
+    },
+    "table": "DataCor_long_efficiency"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 2,
+      "direct_intervention_control": 5,
+      "exposure_context": 3,
+      "intervention_agent_descriptor": 209,
+      "metadata_identifier": 8,
+      "process_or_history_condition": 1,
+      "target_response": 1
+    },
+    "columns": 229,
+    "current_group_counts": {
+      "environment": 3,
+      "history": 1,
+      "intervention": 214,
+      "material": 2,
+      "metadata": 8,
+      "target": 1
+    },
+    "dataset": "datacortech_aluminum_inhibitors",
+    "n_intervention_agent_descriptor_roles": 209,
+    "n_molecular_descriptor_candidates": 209,
+    "n_numeric_columns": 217,
+    "n_targets": 1,
+    "review_priority_counts": {
+      "high_molecular_vs_intervention": 209,
+      "low": 20
+    },
+    "rows": 2011,
+    "semantic_domain_counts": {
+      "environment": 3,
+      "history": 1,
+      "intervention": 5,
+      "material": 2,
+      "metadata": 8,
+      "molecular_descriptor": 209,
+      "target": 1
+    },
+    "statistical_family_counts": {
+      "bounded_0_1": 1,
+      "categorical_nominal": 9,
+      "concentration_like": 2,
+      "dense_molecular_descriptor": 209,
+      "high_cardinality_categorical": 2,
+      "low_cardinality_numeric": 1,
+      "mostly_missing": 1,
+      "positive_continuous_numeric": 1,
+      "signed_continuous_numeric": 1,
+      "temperature_like": 1,
+      "time_or_rate_condition": 1
+    },
+    "table": "Efficiencies_with_descriptors"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 1,
+      "intervention_agent_descriptor": 873,
+      "metadata_identifier": 2,
+      "target_response": 1
+    },
+    "columns": 877,
+    "current_group_counts": {
+      "intervention": 873,
+      "material": 1,
+      "metadata": 2,
+      "target": 1
+    },
+    "dataset": "mg_az91_inhibitors",
+    "n_intervention_agent_descriptor_roles": 873,
+    "n_molecular_descriptor_candidates": 873,
+    "n_numeric_columns": 875,
+    "n_targets": 1,
+    "review_priority_counts": {
+      "high_molecular_vs_intervention": 873,
+      "low": 4
+    },
+    "rows": 68,
+    "semantic_domain_counts": {
+      "material": 1,
+      "metadata": 2,
+      "molecular_descriptor": 873,
+      "target": 1
+    },
+    "statistical_family_counts": {
+      "categorical_nominal": 1,
+      "composition_component": 2,
+      "dense_molecular_descriptor": 871,
+      "identifier_or_free_text": 1,
+      "low_cardinality_numeric": 1,
+      "signed_continuous_numeric": 1
+    },
+    "table": "Features"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 1,
+      "exclude": 1,
+      "intervention_agent_descriptor": 1260,
+      "metadata_identifier": 1,
+      "target_response": 1
+    },
+    "columns": 1264,
+    "current_group_counts": {
+      "exclude": 1,
+      "intervention": 1260,
+      "material": 1,
+      "metadata": 1,
+      "target": 1
+    },
+    "dataset": "mg_ze41_inhibitors",
+    "n_intervention_agent_descriptor_roles": 1260,
+    "n_molecular_descriptor_candidates": 1260,
+    "n_numeric_columns": 1262,
+    "n_targets": 1,
+    "review_priority_counts": {
+      "high_molecular_vs_intervention": 1260,
+      "low": 4
+    },
+    "rows": 60,
+    "semantic_domain_counts": {
+      "exclude": 1,
+      "material": 1,
+      "metadata": 1,
+      "molecular_descriptor": 1260,
+      "target": 1
+    },
+    "statistical_family_counts": {
+      "bounded_0_1": 1,
+      "categorical_nominal": 1,
+      "dense_molecular_descriptor": 1260,
+      "identifier_or_free_text": 1,
+      "low_cardinality_numeric": 1
+    },
+    "table": "ze41_mol_desc_db_red"
+  },
+  {
+    "causal_role_counts": {
+      "base_material_condition": 1,
+      "downstream_response_measurement": 1,
+      "exclude": 1,
+      "exposure_context": 5,
+      "metadata_identifier": 1,
+      "target_response": 1
+    },
+    "columns": 10,
+    "current_group_counts": {
+      "electrochem": 1,
+      "environment": 5,
+      "exclude": 1,
+      "material": 1,
+      "metadata": 1,
+      "target": 1
+    },
+    "dataset": "ni_crevice_repassivation",
+    "n_intervention_agent_descriptor_roles": 0,
+    "n_molecular_descriptor_candidates": 0,
+    "n_numeric_columns": 7,
+    "n_targets": 1,
+    "review_priority_counts": {
+      "high_leakage_or_response_feature": 1,
+      "low": 9
+    },
+    "rows": 613,
+    "semantic_domain_counts": {
+      "electrochem": 1,
+      "environment": 5,
+      "exclude": 1,
+      "material": 1,
+      "metadata": 1,
+      "target": 1
+    },
+    "statistical_family_counts": {
+      "bounded_0_1": 4,
+      "categorical_nominal": 2,
+      "identifier_or_free_text": 1,
+      "low_cardinality_numeric": 1,
+      "signed_continuous_numeric": 1,
+      "temperature_like": 1
+    },
+    "table": "Research_data_Saenzetal_table1"
+  }
+]

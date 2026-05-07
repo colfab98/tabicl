@@ -19,6 +19,11 @@ This is a first quantitative pass over the downloaded external corrosion dataset
 | `316l_pitting_passivity` | `Epit_Epass_descriptors` | 955 | 8 | 0 | 1 | 1 | 4 |
 | `nace_nist_corr_data` | `CORR-DATA_Database` | 24721 | 15 | 0 | 3 | 1 | 2 |
 | `mooring_steel_seawater` | `OCP_R4_S31_Omax` | 62 | 6 | 0 | 1 | 1 | 1 |
+| `datacor_aluminum_inhibitors` | `DataCor_long_efficiency` | 408 | 23 | 0 | 1 | 0 | 1 |
+| `datacortech_aluminum_inhibitors` | `Efficiencies_with_descriptors` | 2011 | 229 | 0 | 3 | 1 | 1 |
+| `mg_az91_inhibitors` | `Features` | 68 | 877 | 0 | 0 | 0 | 1 |
+| `mg_ze41_inhibitors` | `ze41_mol_desc_db_red` | 60 | 1264 | 0 | 0 | 0 | 1 |
+| `ni_crevice_repassivation` | `Research_data_Saenzetal_table1` | 613 | 10 | 1 | 5 | 0 | 1 |
 
 ## Within-Block Correlation Evidence
 
@@ -27,6 +32,7 @@ This is a first quantitative pass over the downloaded external corrosion dataset
 | `316l_pitting_passivity` | `Epit_Epass_descriptors` | target | 4 | 6 | 0.281 | 0.116 | 0.411 |
 | `am_mpea_corrosion` | `AM_MPEA_corrosion_database_V3` | material | 14 | 91 | 0.275 | 0.211 | 0.400 |
 | `am_mpea_corrosion` | `AM_MPEA_corrosion_database_V3` | target | 3 | 3 | 0.220 | 0.218 | 0.283 |
+| `datacortech_aluminum_inhibitors` | `Efficiencies_with_descriptors` | environment | 3 | 3 | 0.360 | 0.222 | 0.452 |
 | `electrochemical_metrics_alloys` | `Crevice Corrosion Potential` | environment | 2 | 1 | 0.966 | 0.966 | 0.966 |
 | `electrochemical_metrics_alloys` | `Crevice Corrosion Potential` | material | 5 | 10 | 0.398 | 0.358 | 0.596 |
 | `electrochemical_metrics_alloys` | `Crevice Corrosion Temp` | material | 17 | 120 | 0.394 | 0.363 | 0.583 |
@@ -46,6 +52,7 @@ This is a first quantitative pass over the downloaded external corrosion dataset
 | `mpea_corrosion` | `Sheet1` | target | 4 | 6 | 0.276 | 0.144 | 0.364 |
 | `nace_nist_corr_data` | `CORR-DATA_Database` | environment | 3 | 3 | 0.434 | 0.154 | 0.575 |
 | `nace_nist_corr_data` | `CORR-DATA_Database` | target | 2 | 1 | 0.905 | 0.905 | 0.905 |
+| `ni_crevice_repassivation` | `Research_data_Saenzetal_table1` | environment | 5 | 10 | 0.201 | 0.148 | 0.340 |
 | `steel_mortar_corrosion` | `01_Carbonation` | environment | 5 | 10 | 0.278 | 0.161 | 0.371 |
 | `steel_mortar_corrosion` | `01_Carbonation` | material | 6 | 15 | 0.291 | 0.246 | 0.405 |
 | `steel_mortar_corrosion` | `01_Carbonation` | target | 4 | 6 | 0.622 | 0.698 | 0.813 |
@@ -66,6 +73,7 @@ The probe compares cross-validated ridge R2 from material+environment numeric fe
 | `mpea_corrosion` | `Sheet1` | `Corrosion current density (microA/cm2)` | 555 | 0.048 | 0.046 | -0.002 |
 | `mpea_corrosion` | `Sheet1` | `Corrosion potential (mV vs SCE)` | 576 | 0.057 | -0.633 | -0.690 |
 | `mpea_corrosion` | `Sheet1` | `Pitting potential (mV vs SCE)` | 316 | 0.516 | 0.647 | 0.132 |
+| `ni_crevice_repassivation` | `Research_data_Saenzetal_table1` | `ER.CREV. VECS` | 407 | 0.217 | 0.324 | 0.107 |
 | `steel_mortar_corrosion` | `01_Carbonation` | `Chloride-to-hydroxide concentration ratio` | 180 | -0.625 | -0.837 | -0.211 |
 | `steel_mortar_corrosion` | `01_Carbonation` | `Corrosion Potential of Steel vs Cu/CuSO4` | 180 | 0.626 | 0.644 | 0.018 |
 | `steel_mortar_corrosion` | `01_Carbonation` | `Corrosion Rate of Steel` | 180 | 0.688 | 0.716 | 0.028 |
@@ -86,10 +94,10 @@ The probe compares cross-validated ridge R2 from material+environment numeric fe
 
 | Parameter | Suggested Default | Suggested Range | Evidence Summary | Interpretation |
 |---|---:|---:|---|---|
-| `informed_feature_block_strength` | 0.25 | 0.20-0.35 | mean=0.343; median=0.302; n=18 | Observed within-block numeric dependence is moderate but not a calibrated prior strength; use a soft block signal rather than increasing it aggressively. |
-| `informed_interaction_strength` | 0.25 | 0.10-0.35 | mat-env corr median=0.147; interaction delta median=-0.000 | Material-environment coupling is structurally sensible, but simple interaction gains are small and mixed; keep this moderate. |
+| `informed_feature_block_strength` | 0.25 | 0.20-0.35 | mean=0.337; median=0.302; n=20 | Observed within-block numeric dependence is moderate but not a calibrated prior strength; use a soft block signal rather than increasing it aggressively. |
+| `informed_interaction_strength` | 0.25 | 0.10-0.35 | mat-env corr median=0.148; interaction delta median=0.000 | Material-environment coupling is structurally sensible, but simple interaction gains are small and mixed; keep this moderate. |
 | `informed_history_strength` | 0.25 | 0.00-0.50 | mean=0.194; median=0.068; n=3 | Time-series evidence is narrow and mixed; path dependence is a corrosion motif, but a universal strong autoregressive component is not supported. |
-| `informed_intervention_strength` | 0.10 | 0.05-0.20 | mean=0.236; median=0.225; n=3 | Processing/intervention labels are sometimes informative, but the evidence is sparse and categorical, so keep this weak and conditional. |
+| `informed_intervention_strength` | 0.10 | 0.05-0.20 | mean=0.440; median=0.302; n=7 | Processing/intervention labels are sometimes informative, but the evidence is sparse and categorical, so keep this weak and conditional. |
 | `informed_prior_ratio` | 0.50 | 0.25-0.75 | mean=NA; median=NA; n=0 | External datasets do not directly estimate this training-mixture parameter; choose via pre-specified ablation, not DatacorTech test selection. |
 
 ## Caveats

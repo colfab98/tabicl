@@ -289,9 +289,10 @@ aggressive environment + strong intervention-like signal:
 target is reduced by this term
 ```
 
-The corrected dataset audit found intervention/process evidence to be sparse,
-so intervention should remain weak and should not receive a large default
-feature allocation.
+The regenerated dataset audit finds intervention/process evidence, especially
+in inhibitor descriptor tables and AM process labels, but it remains
+dataset-specific and mostly categorical or descriptor-based. Intervention should
+therefore remain weak and should not receive a large default feature allocation.
 
 ### Physical Marginal Feature Distributions
 
@@ -439,9 +440,10 @@ The datasets were used in a limited way:
 7. History/path dependence was checked using the available time-series mooring
    steel OCP data and lag-1 autocorrelation.
 8. Intervention/process effects were checked through associations from
-   processing or treatment-like fields. In the corrected result file, the
-   usable intervention association evidence comes from AM-MPEA `AM process`
-   associations with three electrochemical targets.
+   processing, treatment, and inhibitor-descriptor-like fields. In the
+   regenerated result file, the usable intervention association evidence comes
+   from AM-MPEA `AM process` associations and inhibitor-descriptor associations
+   in the Datacor, DatacorTech, Mg AZ91, and Mg ZE41 inhibitor tables.
 
 The broad pre-audit findings were:
 
@@ -452,9 +454,10 @@ The broad pre-audit findings were:
   useful, but simple interaction probes were mixed.
 - History/path dependence is scientifically important, but the downloaded
   time-series evidence was narrow.
-- Intervention/process variables were present and sometimes informative, but
-  too sparse and dataset-specific to justify a large universal intervention
-  strength.
+- Intervention/process and inhibitor-descriptor variables were present and
+  sometimes informative, but the evidence remains dataset-specific and mostly
+  categorical or descriptor-based, so it does not justify a large universal
+  intervention strength.
 - `informed_prior_ratio` cannot be estimated directly from these datasets
   because it controls how often informed synthetic tasks appear during training.
 
@@ -485,17 +488,17 @@ projects/tabicl/corrosion_datasets/analysis/structural_analysis_results.json
 They should be read as dataset-derived design values for ablation, not as
 calibrated physical constants and not as DatacorTech-selected hyperparameters.
 The external corrosion datasets estimate broad structural evidence: block
-dependence, material-environment coupling, limited history evidence, and sparse
-intervention/process association.
+dependence, material-environment coupling, limited history evidence, and
+dataset-specific intervention/process association.
 
 ### Corrected Structural Defaults
 
 | parameter | dataset-derived default | suggested range | evidence from collected datasets | reading |
 |---|---:|---:|---|---|
-| `informed_feature_block_strength` | `0.25` | `0.20-0.35` | within-block numeric dependence: `n=18`, mean `0.343`, median `0.302`, q75 `0.397` | Use a soft-to-moderate shared block signal. The evidence supports block structure but not aggressive coupling. |
-| `informed_interaction_strength` | `0.25` | `0.10-0.35` | material-environment correlation: `n=8`, mean `0.213`, median `0.147`, q75 `0.240`; ridge interaction delta: `n=14`, mean `-0.046`, median `-0.000`, q75 `0.025` | Material-environment interaction is scientifically sensible, but the diagnostic gain is mixed and near zero on median. Keep interaction moderate. |
+| `informed_feature_block_strength` | `0.25` | `0.20-0.35` | within-block numeric dependence: `n=20`, mean `0.337`, median `0.302`, q75 `0.395` | Use a soft-to-moderate shared block signal. The evidence supports block structure but not aggressive coupling. |
+| `informed_interaction_strength` | `0.25` | `0.10-0.35` | material-environment correlation: `n=9`, mean `0.206`, median `0.148`, q75 `0.217`; ridge interaction delta: `n=15`, mean `-0.035`, median `0.000`, q75 `0.040` | Material-environment interaction is scientifically sensible, but the diagnostic gain is mixed and near zero on median. Keep interaction moderate. |
 | `informed_history_strength` | `0.25` | `0.00-0.50` | absolute lag-1 Spearman from mooring OCP: `n=3`, mean `0.194`, median `0.068`, q75 `0.282` | History is a corrosion motif, but the usable time-series evidence is narrow and weak. Avoid a strong universal autoregressive prior. |
-| `informed_intervention_strength` | `0.10` | `0.05-0.20` | intervention/process target association: `n=3`, mean `0.236`, median `0.225`, q75 `0.264` | Intervention/process labels can be informative, but the evidence is sparse and categorical. Keep the conditional intervention effect weak. |
+| `informed_intervention_strength` | `0.10` | `0.05-0.20` | intervention/process target association: `n=7`, mean `0.440`, median `0.302`, q75 `0.645` | Intervention/process and inhibitor-descriptor labels can be informative, but the evidence is dataset-specific and mostly categorical or descriptor-based. Keep the conditional intervention effect weak. |
 | `informed_prior_ratio` | `0.50` | `0.25-0.75` | no direct structural estimate: `n=0` | The dataset collection does not estimate how often informed synthetic tasks should appear. Treat this as an ablation knob. |
 
 The dataset evidence argues against simply making the informed prior stronger.
@@ -604,12 +607,16 @@ rather than from selecting the best checkpoint result, the best default is a
 conservative, material-heavy hybrid prior.
 
 The strongest dataset-derived signal is feature composition, not exact numeric
-strength. The downloaded corrosion tables and constructed corrosion tasks are
-dominated by material/composition descriptors, with smaller environment and
-history/process components. Electrochemical measurements are often targets or
-downstream responses, so they should not occupy a large default input-feature
-block. Intervention/process variables exist, but they are sparse and mostly
-categorical.
+strength. The final block allocation is driven mainly by the current primary
+benchmark and leakage-safe evaluation feature composition, rather than raw
+column counts across every downloaded table. Those benchmark tasks are
+material/composition heavy, with smaller environment and history/process
+components. Electrochemical measurements are often targets or downstream
+responses, so they should not occupy a large default input-feature block. The
+new inhibitor datasets increase intervention-association evidence, but they
+are small or descriptor-heavy and mostly categorical in this structural
+analysis, so they do not by themselves justify a large universal intervention
+input block.
 
 Recommended setting:
 
@@ -620,10 +627,10 @@ Recommended setting:
 | `mix_probs` | `0.70 0.30` | Keep the generic MLP/tree mixture unchanged. |
 | `informed_mix_probs` | `0.70 0.30` | Avoid adding an extra uncalibrated preference for MLP-only informed tasks. |
 | `informed_block_allocation` | material `0.70`, environment `0.18`, electrochem `0.10`, history `0.02`, intervention `0.00` | Matches the material-heavy benchmark feature composition and avoids giving intervention a default block. |
-| `informed_feature_block_strength` | `0.25` | Corrected within-block dependence is moderate: mean about `0.343`, median about `0.302`. |
+| `informed_feature_block_strength` | `0.25` | Corrected within-block dependence is moderate: mean about `0.337`, median about `0.302`. |
 | `informed_interaction_strength` | `0.20` | Material-environment interaction is scientifically sensible, but corrected interaction-probe gains are mixed and near zero on median. |
 | `informed_history_strength` | `0.10` | Path dependence is a corrosion motif, but usable time-series evidence is narrow and weak. |
-| `informed_intervention_strength` | `0.05` | Intervention/process evidence is sparse; keep this as a weak conditional effect. |
+| `informed_intervention_strength` | `0.05` | Intervention evidence increased after adding inhibitor datasets, but it remains dataset-specific and mostly categorical or descriptor-based; keep this as a weak conditional effect. |
 | `informed_physical_marginal_prob` | `0.20` | Use broad physical marginal shapes occasionally, but do not let hand-specified ranges dominate training. |
 | `informed_physical_marginal_profile` | `corrosion_broad` | Use the existing broad profile if marginal transforms are enabled. |
 
@@ -653,7 +660,7 @@ material/composition should dominate the synthetic feature blocks;
 material-environment coupling should exist but remain moderate;
 electrochemical inputs should be much smaller than material inputs because they are often targets or downstream measurements;
 history should be weak because most benchmark tables are static row-wise data;
-intervention should have no default feature block because intervention columns are rare;
+intervention should have no default feature block in the primary material-heavy setting, though targeted inhibitor/intervention ablations are now worth testing;
 physical marginal shapes should be occasional, broad, and non-calibrated.
 ```
 
@@ -755,6 +762,268 @@ evaluation while adding target-order resolution. The 5-bin evaluation is a
 stricter sensitivity check, but it changes the task set by dropping NACE and
 selecting `iCORR` instead of `ECORR` for the HEAS table because of
 minimum-class-count constraints.
+
+## Native Regression Migration Audit
+
+This section records the conceptual changes made when moving the stage-1 work
+from classifier checkpoints to native regression checkpoints. It is intended as
+a debugging map: if something breaks, these are the places where the behavior
+was deliberately changed.
+
+### Scope Of The Migration
+
+The migration uses `max_classes=0` as the switch for native regression. Values
+`max_classes >= 2` remain the classifier path. `max_classes=1` and negative
+values are invalid.
+
+No classifier functionality was intentionally removed. The code still supports
+classifier training, median-binary corrosion evaluation, quantile-multiclass
+corrosion evaluation, and pretrained classifier comparison when
+`--target-binning` is not `continuous`.
+
+The regression path does not train on target bins. It trains on continuous
+synthetic targets and predicts quantiles. `--num_quantiles` controls the number
+of predicted quantiles; the stage-1 regression scripts use `999`, while the
+smoke test uses `99` for speed.
+
+### Prior Generation Changes
+
+`src/tabicl/prior/dataset.py` now treats `max_classes=0` as regression instead
+of rejecting it. This affects the shared `PriorConfig` validation and the
+dataset generators that receive `max_classes`.
+
+The SCM prior still calls `Reg2Cls`, but its meaning changes when
+`num_classes=0`. In that case, `Reg2Cls` keeps the feature preprocessing path
+and standardizes the target, but it does not assign class labels, balance
+classes, or permute target labels. The target remains floating point.
+
+SCM subgroup generation now sets `ds_num_classes=0` for every generated
+regression dataset. The random per-dataset class-count sampling is used only
+when `max_classes > 0`.
+
+A regression-specific target sanity check was added. Instead of requiring
+valid class coverage in train and test splits, regression data now requires
+finite targets, at least two unique target values on both sides of the
+train/test split, and non-negligible target standard deviation. The check can
+retry row permutations before rejecting a generated task.
+
+`DummyPrior` now mirrors this behavior. With `max_classes=0`, it emits
+continuous random targets; with `max_classes > 0`, it still emits integer class
+labels.
+
+The informed-prior transforms still operate before `Reg2Cls`. That means the
+high-level informed machinery can still be applied to regression datasets
+because it changes continuous features and continuous targets before final
+preprocessing. However, the final task distribution is not identical to the
+classifier-informed distribution because balanced binning, multiclass
+rank/value assignment, class-label permutation, and class-count filtering are
+inactive in regression mode. For the generic regression baseline, no informed
+settings are used.
+
+`src/tabicl/prior/genload.py` was also updated so prior-data generation can
+carry informed/hybrid prior options and save those values into metadata. This
+is important if regression prior batches are generated to disk instead of
+produced online during training.
+
+### Model And Training Changes
+
+`src/tabicl/train/train_config.py` exposes `--num_quantiles` and documents
+`--max_classes 0` as the regression setting.
+
+`src/tabicl/train/run.py` now passes both `max_classes` and `num_quantiles` into
+the model config saved in checkpoints. This is what lets downstream loading
+distinguish regression checkpoints from classifier checkpoints.
+
+The training loop branches on `max_classes`. For regression, model outputs are
+converted to a quantile distribution and optimized with CRPS against the
+continuous test targets. The logged training metrics are:
+
+```text
+crps
+median_mae
+median_rmse
+```
+
+For classification, the old cross-entropy and accuracy path remains:
+
+```text
+ce
+accuracy
+```
+
+Target-aware model embedding was made regression-safe. When `max_classes=0`,
+the target encoder treats `y_train` as a continuous scalar input instead of a
+one-hot class label, and code that computes class counts from target labels is
+guarded behind `max_classes > 0`.
+
+The core TabICL regression head uses the existing quantile-output path:
+`max_classes=0` selects output dimension `num_quantiles`, while
+`max_classes > 0` selects output dimension `max_classes`.
+
+The sklearn wrappers now reject checkpoint/model mismatches early:
+
+- `TabICLClassifier` rejects checkpoints with `config["max_classes"] == 0`.
+- `TabICLRegressor` rejects checkpoints with `config["max_classes"] != 0`.
+
+These checks are intentional. If an evaluation fails here, the likely problem
+is using a classifier checkpoint with regression eval or a regression
+checkpoint with classifier/bin eval.
+
+### Evaluation Changes
+
+`scripts/eval_corrosion_datasets.py` now defaults to native continuous-target
+evaluation:
+
+```text
+--target-binning continuous
+```
+
+In continuous mode, tasks keep their numeric targets, class labels are empty,
+and minimum class-count filtering is skipped. Large tasks can still be capped
+by `--max-samples-per-task`; for regression caps and train/test splits, the
+script uses quantile-like stratification labels only to keep the target
+distribution balanced across the split.
+
+Continuous evaluation uses `TabICLRegressor`, not `TabICLClassifier`. The
+default pretrained comparator also switches to the TabICL regressor checkpoint
+for continuous evaluation. The point prediction extracted from a regression
+distribution is controlled by:
+
+```text
+--regression-output mean|median
+```
+
+The default is `median`.
+
+Regression result rows add the following metrics:
+
+```text
+test_mae
+test_rmse
+test_r2
+test_spearman
+test_pearson
+test_nmae_iqr
+test_nrmse_iqr
+```
+
+For continuous eval, the primary aggregate is `test_spearman`, with
+`test_nmae_iqr` and `test_rmse` used as secondary sorting/check metrics.
+Classifier metrics are still emitted only for binned classifier evaluations.
+
+The evaluator still supports the older classifier-compatible modes:
+
+```text
+--target-binning median_binary
+--target-binning quantile_multiclass --target-bins N
+```
+
+Those modes remain useful for historical classifier checkpoints, but they are
+not the primary path for regression checkpoints.
+
+The all-checkpoint resolver now has a configurable interval:
+
+```text
+--checkpoint-step-interval 1000
+```
+
+The default keeps the historical behavior of using common checkpoints at
+1000-step multiples. Passing `--checkpoint-step-interval 0` includes every
+common checkpoint.
+
+`scripts/run_corrosion_dataset_eval.sh` now defaults its fourth argument to
+`continuous`, automatically passes `--target-binning continuous` for regression
+eval, and still maps numeric fourth arguments to binned classifier eval.
+
+The wrapper also detects full checkpoint directory names beginning with
+`tabicl_` and passes `--run-prefix ""` automatically. This matters for runs
+such as:
+
+```text
+tabicl_s1_regression_baseline
+tabicl_s1_regression_test4
+```
+
+For `checkpoint=all`, the wrapper defaults to:
+
+```text
+MIN_CHECKPOINT_STEP=0
+CHECKPOINT_STEP_INTERVAL=0
+```
+
+so wrapper-based all-checkpoint comparisons evaluate every common checkpoint
+unless these environment variables are overridden.
+
+### Training And Utility Scripts
+
+`scripts/train_stage1_reg.sbatch` is the clean generic regression baseline
+launcher. It uses:
+
+```text
+--prior_type mix_scm
+--mix_probs 0.7 0.3
+--max_classes 0
+--num_quantiles 999
+```
+
+It does not include informed-prior settings as active training structure, so it
+is the baseline regression run to compare against informed regression runs.
+
+`scripts/train_stage1_mini_generic.sbatch` is currently configured as a
+regression informed test launcher, despite the older generic name. It uses
+`max_classes=0` and currently includes the stronger Test 5 informed settings.
+This is a naming/reproducibility watchpoint, not a regression-code
+requirement. Use `train_stage1_reg.sbatch` when the desired run is the clean
+generic regression baseline.
+
+`smoke_test.sh` now exercises the regression path by using `--max_classes 0`
+and a smaller `--num_quantiles 99`. This means it no longer validates the
+classifier CE path by default.
+
+`tests/test_regression_prior.py` was added to check that the SCM prior emits
+finite floating targets with nonzero train/test target variance when
+`max_classes=0`.
+
+### Things Intentionally Preserved
+
+The classifier path remains available when `max_classes > 0`.
+
+The target-binning evaluation modes remain available for old classifier
+checkpoints and for any future classifier ablations.
+
+The existing informed-prior structure remains available. Regression does not
+remove `hybrid_scm`, `informed_scm`, block allocation, material-environment
+interaction, history, intervention, or physical marginal controls.
+
+Legacy stage scripts such as `scripts/train_stage1.sh`,
+`scripts/train_stage2.sh`, and `scripts/train_stage3.sh` still pass
+`--max_classes 10`, so they remain classifier-oriented unless edited.
+
+The corrosion dataset files and feature-group schema were not intentionally
+changed as part of the classifier-to-regression migration.
+
+### Regression Debugging Map
+
+If training fails before the model forward pass, inspect prior generation:
+`max_classes=0`, `Reg2Cls` with `num_classes=0`, and
+`regression_sanity_check`.
+
+If training fails during loss computation, inspect the quantile-output path:
+`num_quantiles`, `Trainer.regression_distribution(...)`, and CRPS.
+
+If evaluation fails immediately on model load, inspect checkpoint type:
+regression eval requires checkpoints whose saved config has `max_classes=0`.
+
+If evaluation succeeds but metrics look strange, first check whether the run is
+being evaluated in continuous mode or binned mode, whether the point prediction
+is `median` or `mean`, and whether the compared checkpoints are actually
+common across the selected runs.
+
+If an informed regression run behaves unexpectedly, remember that the informed
+structure is applied to continuous targets before target standardization, while
+classifier-informed runs additionally applied target binning and class-label
+operations. The high-level informed generator can be reused, but the final
+learning problem is not identical.
 
 ## Experiment Versions
 

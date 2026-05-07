@@ -483,8 +483,25 @@ class SavePriorDataset:
             scm_fixed_hp["mix_probs"] = tuple(self.args.mix_probs)
         if self.args.informed_mix_probs is not None:
             scm_fixed_hp["informed_mix_probs"] = tuple(self.args.informed_mix_probs)
-        if self.args.informed_block_allocation is not None:
-            scm_fixed_hp["informed_block_allocation"] = tuple(self.args.informed_block_allocation)
+        if self.args.informed_block_allocation is not None and self.args.informed_normal_block_allocation is None:
+            material, environment, electrochem, history, intervention = self.args.informed_block_allocation
+            scm_fixed_hp["informed_normal_block_allocation"] = (
+                material,
+                environment,
+                history,
+                0.0,
+                0.0,
+                intervention,
+                0.0,
+                electrochem,
+                0.0,
+            )
+        if self.args.informed_task_family_probs is not None:
+            scm_fixed_hp["informed_task_family_probs"] = tuple(self.args.informed_task_family_probs)
+        if self.args.informed_normal_block_allocation is not None:
+            scm_fixed_hp["informed_normal_block_allocation"] = tuple(self.args.informed_normal_block_allocation)
+        if self.args.informed_inhibitor_block_allocation is not None:
+            scm_fixed_hp["informed_inhibitor_block_allocation"] = tuple(self.args.informed_inhibitor_block_allocation)
         if self.args.informed_feature_block_strength is not None:
             scm_fixed_hp["informed_feature_block_strength"] = self.args.informed_feature_block_strength
         if self.args.informed_interaction_strength is not None:
@@ -541,6 +558,9 @@ class SavePriorDataset:
             "mix_probs": self.args.mix_probs,
             "informed_mix_probs": self.args.informed_mix_probs,
             "informed_block_allocation": self.args.informed_block_allocation,
+            "informed_task_family_probs": self.args.informed_task_family_probs,
+            "informed_normal_block_allocation": self.args.informed_normal_block_allocation,
+            "informed_inhibitor_block_allocation": self.args.informed_inhibitor_block_allocation,
             "informed_feature_block_strength": self.args.informed_feature_block_strength,
             "informed_interaction_strength": self.args.informed_interaction_strength,
             "informed_history_strength": self.args.informed_history_strength,
@@ -694,6 +714,9 @@ if __name__ == "__main__":
     parser.add_argument("--mix_probs", type=float, nargs=2, default=None)
     parser.add_argument("--informed_mix_probs", type=float, nargs=2, default=None)
     parser.add_argument("--informed_block_allocation", type=float, nargs=5, default=None)
+    parser.add_argument("--informed_task_family_probs", type=float, nargs=2, default=None)
+    parser.add_argument("--informed_normal_block_allocation", type=float, nargs=9, default=None)
+    parser.add_argument("--informed_inhibitor_block_allocation", type=float, nargs=9, default=None)
     parser.add_argument("--informed_feature_block_strength", type=false_or_float, default=None)
     parser.add_argument("--informed_interaction_strength", type=false_or_float, default=None)
     parser.add_argument("--informed_history_strength", type=false_or_float, default=None)

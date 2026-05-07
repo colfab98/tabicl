@@ -11,8 +11,4 @@ python3 /home/fcolanto/projects/tabicl/scripts/investigate_training_efficiency.p
 
 python scripts/plot_loss_from_err.py ~/tmp/tabicl_s1mini_generic_v4.6540.err --output ~/tmp/tabicl_s1mini_generic_v4.6540_loss.svg
 
-bash scripts/run_corrosion_dataset_eval.sh \
-  tabicl_s1mini_generic_baseline,tabicl_s1mini_generic_test1,tabicl_s1mini_generic_test2,tabicl_s1mini_generic_test3,tabicl_s1mini_generic_test4,tabicl_s1mini_generic_test5 \
-  all \
-  compare_all_bins3 \
-  3
+./scripts/run_corrosion_dataset_eval.sh regression_baseline,regression_test4 all compare_reg_baseline_test4_all continuous tabicl_s1_

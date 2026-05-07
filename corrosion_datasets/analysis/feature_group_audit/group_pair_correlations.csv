@@ -1,0 +1,337 @@
+dataset,table,axis,group_a,group_b,relation,n_pairs,mean_abs_spearman,median_abs_spearman,q75_abs_spearman,max_abs_spearman,median_pair_n
+electrochemical_metrics_alloys,Pitting Potential,current_group,material,material,within,234,0.11594645802947255,0.06767724467950811,0.1763407863955035,0.7748728798152944,764.5
+electrochemical_metrics_alloys,Pitting Potential,current_group,environment,material,cross,72,0.12974457258110825,0.07783450766056177,0.188035585382396,0.5444514402891529,727.0
+electrochemical_metrics_alloys,Pitting Potential,current_group,history,material,cross,23,0.11179732534544728,0.10249606178306434,0.14171823880163686,0.37139593791739794,633.0
+electrochemical_metrics_alloys,Pitting Potential,current_group,environment,environment,within,3,0.1445191475881681,0.1230011411625134,0.21459392390225496,0.3061867066419965,727.0
+electrochemical_metrics_alloys,Pitting Potential,current_group,environment,history,cross,3,0.14196592250025886,0.15132847544648423,0.17500560418587197,0.19868273292525968,620.0
+electrochemical_metrics_alloys,Pitting Potential,semantic_domain,material,material,within,234,0.11594645802947255,0.06767724467950811,0.1763407863955035,0.7748728798152944,764.5
+electrochemical_metrics_alloys,Pitting Potential,semantic_domain,environment,material,cross,72,0.12974457258110825,0.07783450766056177,0.188035585382396,0.5444514402891529,727.0
+electrochemical_metrics_alloys,Pitting Potential,semantic_domain,history,material,cross,23,0.11179732534544728,0.10249606178306434,0.14171823880163686,0.37139593791739794,633.0
+electrochemical_metrics_alloys,Pitting Potential,semantic_domain,environment,environment,within,3,0.1445191475881681,0.1230011411625134,0.21459392390225496,0.3061867066419965,727.0
+electrochemical_metrics_alloys,Pitting Potential,semantic_domain,environment,history,cross,3,0.14196592250025886,0.15132847544648423,0.17500560418587197,0.19868273292525968,620.0
+electrochemical_metrics_alloys,Pitting Potential,causal_role,base_material_condition,base_material_condition,within,234,0.11594645802947255,0.06767724467950811,0.1763407863955035,0.7748728798152944,764.5
+electrochemical_metrics_alloys,Pitting Potential,causal_role,base_material_condition,exposure_context,cross,72,0.12974457258110825,0.07783450766056177,0.188035585382396,0.5444514402891529,727.0
+electrochemical_metrics_alloys,Pitting Potential,causal_role,base_material_condition,process_or_history_condition,cross,23,0.11179732534544728,0.10249606178306434,0.14171823880163686,0.37139593791739794,633.0
+electrochemical_metrics_alloys,Pitting Potential,causal_role,exposure_context,exposure_context,within,3,0.1445191475881681,0.1230011411625134,0.21459392390225496,0.3061867066419965,727.0
+electrochemical_metrics_alloys,Pitting Potential,causal_role,exposure_context,process_or_history_condition,cross,3,0.14196592250025886,0.15132847544648423,0.17500560418587197,0.19868273292525968,620.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,composition_component,composition_component,within,136,0.07680224807321957,0.029441317555419802,0.10050410560733902,0.5031986600362496,795.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,composition_component,percentage_or_fraction,cross,67,0.161048773940807,0.12818866409705923,0.23849729976230324,0.4629099389921023,323.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,composition_component,mostly_missing,cross,10,0.11402561600102207,0.08321569044221921,0.20648702813694816,0.2520946931550303,156.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,composition_component,temperature_like,cross,17,0.1636842933176367,0.10727107974216768,0.2857593283923458,0.4752216461915828,727.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,composition_component,signed_continuous_numeric,cross,34,0.06952258766396115,0.04238032335176201,0.10853072687794754,0.2671165786308975,762.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,composition_component,electrochemical_or_rate_response,cross,16,0.09234955091337388,0.08208231930527932,0.13834602453556738,0.20656793223950023,643.5
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,percentage_or_fraction,percentage_or_fraction,within,15,0.22808117516876272,0.17645464365847832,0.3277942982661174,0.7748728798152944,186.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,mostly_missing,percentage_or_fraction,cross,6,0.2224372998938307,0.18512029632081226,0.23553038724222655,0.42973127590546256,79.5
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,percentage_or_fraction,temperature_like,cross,6,0.23362822728916208,0.21547584797274555,0.27139253521942586,0.5444514402891529,269.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,percentage_or_fraction,signed_continuous_numeric,cross,12,0.2083023284923952,0.19453053316422173,0.28789998178406334,0.5398177229043131,300.5
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,electrochemical_or_rate_response,percentage_or_fraction,cross,6,0.1652082677580402,0.11965241505071009,0.2164341930830383,0.37139593791739794,276.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,mostly_missing,temperature_like,cross,1,0.07951656335037556,0.07951656335037556,0.07951656335037556,0.07951656335037556,149.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,mostly_missing,signed_continuous_numeric,cross,2,0.10714719493560027,0.10714719493560027,0.1603010177956869,0.2134548406557735,149.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,electrochemical_or_rate_response,mostly_missing,cross,1,0.10249606178306434,0.10249606178306434,0.10249606178306434,0.10249606178306434,135.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,signed_continuous_numeric,temperature_like,cross,2,0.21459392390225496,0.21459392390225496,0.2603903152721257,0.3061867066419965,703.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,electrochemical_or_rate_response,temperature_like,cross,1,0.07588655912903262,0.07588655912903262,0.07588655912903262,0.07588655912903262,563.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,signed_continuous_numeric,signed_continuous_numeric,within,1,0.004369594959994454,0.004369594959994454,0.004369594959994454,0.004369594959994454,762.0
+electrochemical_metrics_alloys,Pitting Potential,statistical_family,electrochemical_or_rate_response,signed_continuous_numeric,cross,2,0.17500560418587197,0.17500560418587197,0.18684416855556582,0.19868273292525968,633.0
+electrochemical_metrics_alloys,Repassivation Potential,current_group,material,material,within,128,0.31036129759127984,0.2795164411103007,0.4875092774671384,0.806167155810434,189.0
+electrochemical_metrics_alloys,Repassivation Potential,current_group,environment,material,cross,57,0.3062332689515533,0.2688480671620743,0.3840213673572632,0.9346844095189648,183.0
+electrochemical_metrics_alloys,Repassivation Potential,current_group,history,material,cross,17,0.3162588510953109,0.27758469418356924,0.4130933508668534,0.7458797833951877,152.0
+electrochemical_metrics_alloys,Repassivation Potential,current_group,environment,environment,within,3,0.34002806353120957,0.35615206314790154,0.4488086234394948,0.5414651837310881,183.0
+electrochemical_metrics_alloys,Repassivation Potential,current_group,environment,history,cross,3,0.2797488539195786,0.3678994601078469,0.3736129434801974,0.3793264268525479,152.0
+electrochemical_metrics_alloys,Repassivation Potential,semantic_domain,material,material,within,128,0.31036129759127984,0.2795164411103007,0.4875092774671384,0.806167155810434,189.0
+electrochemical_metrics_alloys,Repassivation Potential,semantic_domain,environment,material,cross,57,0.3062332689515533,0.2688480671620743,0.3840213673572632,0.9346844095189648,183.0
+electrochemical_metrics_alloys,Repassivation Potential,semantic_domain,history,material,cross,17,0.3162588510953109,0.27758469418356924,0.4130933508668534,0.7458797833951877,152.0
+electrochemical_metrics_alloys,Repassivation Potential,semantic_domain,environment,environment,within,3,0.34002806353120957,0.35615206314790154,0.4488086234394948,0.5414651837310881,183.0
+electrochemical_metrics_alloys,Repassivation Potential,semantic_domain,environment,history,cross,3,0.2797488539195786,0.3678994601078469,0.3736129434801974,0.3793264268525479,152.0
+electrochemical_metrics_alloys,Repassivation Potential,causal_role,base_material_condition,base_material_condition,within,128,0.31036129759127984,0.2795164411103007,0.4875092774671384,0.806167155810434,189.0
+electrochemical_metrics_alloys,Repassivation Potential,causal_role,base_material_condition,exposure_context,cross,57,0.3062332689515533,0.2688480671620743,0.3840213673572632,0.9346844095189648,183.0
+electrochemical_metrics_alloys,Repassivation Potential,causal_role,base_material_condition,process_or_history_condition,cross,17,0.3162588510953109,0.27758469418356924,0.4130933508668534,0.7458797833951877,152.0
+electrochemical_metrics_alloys,Repassivation Potential,causal_role,exposure_context,exposure_context,within,3,0.34002806353120957,0.35615206314790154,0.4488086234394948,0.5414651837310881,183.0
+electrochemical_metrics_alloys,Repassivation Potential,causal_role,exposure_context,process_or_history_condition,cross,3,0.2797488539195786,0.3678994601078469,0.3736129434801974,0.3793264268525479,152.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,composition_component,composition_component,within,78,0.22004619362180933,0.15636967604008412,0.32269022553619153,0.7997988437768466,189.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,composition_component,percentage_or_fraction,cross,21,0.39587138532312616,0.4046051215283194,0.4892129373589411,0.6911164760603615,39.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,composition_component,mostly_missing,cross,19,0.40413390317982834,0.46042888236348145,0.5568554426173362,0.712053565970449,23.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,composition_component,temperature_like,cross,13,0.3644942216256411,0.33873420830341155,0.5332555553554128,0.6726758269674664,183.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,bounded_0_1,composition_component,cross,13,0.2873473874078272,0.2741348424174226,0.3427027739781179,0.4697423134240105,189.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,composition_component,pH_bounded,cross,13,0.24913674035140262,0.20020751885403157,0.3601495895374804,0.4993146058086287,189.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,composition_component,electrochemical_or_rate_response,cross,13,0.23293144215418624,0.25476880099023014,0.30010934844300236,0.42848362549981533,152.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,percentage_or_fraction,percentage_or_fraction,within,3,0.6093556968026155,0.6485978195479739,0.6829933067452336,0.7173887939424934,39.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,mostly_missing,percentage_or_fraction,cross,6,0.6796039544056008,0.6893930945189852,0.785856242035426,0.806167155810434,24.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,percentage_or_fraction,temperature_like,cross,3,0.19371514479790405,0.1756587267351787,0.21450241986147794,0.2533461129877772,39.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,bounded_0_1,percentage_or_fraction,cross,3,0.20375613288376443,0.10651601311516903,0.2609095910557958,0.41530316899642256,39.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,pH_bounded,percentage_or_fraction,cross,3,0.13507402488335146,0.0796066732076105,0.1772076412198839,0.2748086092321573,39.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,electrochemical_or_rate_response,percentage_or_fraction,cross,3,0.6450661232496702,0.6522227736520309,0.6990512785236093,0.7458797833951877,34.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,mostly_missing,temperature_like,cross,3,0.5750660969869887,0.6183342394167198,0.6214502988074606,0.6245663581982015,23.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,bounded_0_1,mostly_missing,cross,3,0.39362899211302516,0.15602504221594315,0.545354725867454,0.9346844095189648,23.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,mostly_missing,pH_bounded,cross,3,0.41295220441337105,0.2688480671620743,0.48770153385481346,0.7065550005475526,23.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,mostly_missing,mostly_missing,within,1,0.6651089201388543,0.6651089201388543,0.6651089201388543,0.6651089201388543,23.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,electrochemical_or_rate_response,mostly_missing,cross,1,0.4130933508668534,0.4130933508668534,0.4130933508668534,0.4130933508668534,22.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,bounded_0_1,temperature_like,cross,1,0.5414651837310881,0.5414651837310881,0.5414651837310881,0.5414651837310881,183.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,pH_bounded,temperature_like,cross,1,0.35615206314790154,0.35615206314790154,0.35615206314790154,0.35615206314790154,183.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,electrochemical_or_rate_response,temperature_like,cross,1,0.3793264268525479,0.3793264268525479,0.3793264268525479,0.3793264268525479,152.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,bounded_0_1,pH_bounded,cross,1,0.12246694371463913,0.12246694371463913,0.12246694371463913,0.12246694371463913,189.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,bounded_0_1,electrochemical_or_rate_response,cross,1,0.3678994601078469,0.3678994601078469,0.3678994601078469,0.3678994601078469,152.0
+electrochemical_metrics_alloys,Repassivation Potential,statistical_family,electrochemical_or_rate_response,pH_bounded,cross,1,0.09202067479834093,0.09202067479834093,0.09202067479834093,0.09202067479834093,152.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,current_group,material,material,within,10,0.3217664311572128,0.2270672637792725,0.47380950629427826,0.7412395287797577,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,current_group,environment,material,cross,10,0.5488821316278869,0.548753266772346,0.7934767881115505,0.8112051995370283,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,current_group,history,material,cross,5,0.5549367152850511,0.5548064289530158,0.8110937319721548,0.8112051995370283,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,current_group,environment,environment,within,1,0.9781791923641091,0.9781791923641091,0.9781791923641091,0.9781791923641091,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,current_group,environment,history,cross,2,0.9890895961820545,0.9890895961820545,0.9945447980910272,1.0,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,semantic_domain,material,material,within,10,0.3217664311572128,0.2270672637792725,0.47380950629427826,0.7412395287797577,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,semantic_domain,environment,material,cross,10,0.5488821316278869,0.548753266772346,0.7934767881115505,0.8112051995370283,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,semantic_domain,history,material,cross,5,0.5549367152850511,0.5548064289530158,0.8110937319721548,0.8112051995370283,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,semantic_domain,environment,environment,within,1,0.9781791923641091,0.9781791923641091,0.9781791923641091,0.9781791923641091,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,semantic_domain,environment,history,cross,2,0.9890895961820545,0.9890895961820545,0.9945447980910272,1.0,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,causal_role,base_material_condition,base_material_condition,within,10,0.3217664311572128,0.2270672637792725,0.47380950629427826,0.7412395287797577,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,causal_role,base_material_condition,exposure_context,cross,10,0.5488821316278869,0.548753266772346,0.7934767881115505,0.8112051995370283,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,causal_role,base_material_condition,process_or_history_condition,cross,5,0.5549367152850511,0.5548064289530158,0.8110937319721548,0.8112051995370283,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,causal_role,exposure_context,exposure_context,within,1,0.9781791923641091,0.9781791923641091,0.9781791923641091,0.9781791923641091,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,causal_role,exposure_context,process_or_history_condition,cross,2,0.9890895961820545,0.9890895961820545,0.9945447980910272,1.0,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,statistical_family,composition_component,composition_component,within,10,0.3217664311572128,0.2270672637792725,0.47380950629427826,0.7412395287797577,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,statistical_family,composition_component,temperature_like,cross,5,0.5428275479707227,0.5427001045916764,0.7933950116721136,0.7935040469246962,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,statistical_family,bounded_0_1,composition_component,cross,10,0.5549367152850511,0.5548064289530158,0.8110937319721548,0.8112051995370283,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,statistical_family,bounded_0_1,temperature_like,cross,2,0.9781791923641091,0.9781791923641091,0.9781791923641091,0.9781791923641091,28.0
+electrochemical_metrics_alloys,Crevice Corrosion Potential,statistical_family,bounded_0_1,bounded_0_1,within,1,1.0,1.0,1.0,1.0,28.0
+electrochemical_metrics_alloys,Pitting Temp,current_group,material,material,within,61,0.2807942471304828,0.23126861702147766,0.4232301684823995,0.8669151298091125,90.0
+electrochemical_metrics_alloys,Pitting Temp,current_group,history,material,cross,23,0.33529630988828074,0.28972503848513576,0.5254308841962763,0.6692738537885279,51.0
+electrochemical_metrics_alloys,Pitting Temp,current_group,history,history,within,1,0.45920891060480656,0.45920891060480656,0.45920891060480656,0.45920891060480656,51.0
+electrochemical_metrics_alloys,Pitting Temp,semantic_domain,material,material,within,61,0.2807942471304828,0.23126861702147766,0.4232301684823995,0.8669151298091125,90.0
+electrochemical_metrics_alloys,Pitting Temp,semantic_domain,electrochem,material,cross,11,0.286170877527077,0.28972503848513576,0.4322587771906139,0.6389901015803647,51.0
+electrochemical_metrics_alloys,Pitting Temp,semantic_domain,history,material,cross,12,0.3803279562193842,0.37668999383786883,0.5846361339752368,0.6692738537885279,82.5
+electrochemical_metrics_alloys,Pitting Temp,semantic_domain,electrochem,history,cross,1,0.45920891060480656,0.45920891060480656,0.45920891060480656,0.45920891060480656,51.0
+electrochemical_metrics_alloys,Pitting Temp,causal_role,base_material_condition,base_material_condition,within,61,0.2807942471304828,0.23126861702147766,0.4232301684823995,0.8669151298091125,90.0
+electrochemical_metrics_alloys,Pitting Temp,causal_role,base_material_condition,downstream_response_measurement,cross,11,0.286170877527077,0.28972503848513576,0.4322587771906139,0.6389901015803647,51.0
+electrochemical_metrics_alloys,Pitting Temp,causal_role,base_material_condition,process_or_history_condition,cross,12,0.3803279562193842,0.37668999383786883,0.5846361339752368,0.6692738537885279,82.5
+electrochemical_metrics_alloys,Pitting Temp,causal_role,downstream_response_measurement,process_or_history_condition,cross,1,0.45920891060480656,0.45920891060480656,0.45920891060480656,0.45920891060480656,51.0
+electrochemical_metrics_alloys,Pitting Temp,statistical_family,composition_component,composition_component,within,50,0.2541197227974694,0.20180285448005736,0.3958253923983482,0.8240761264246053,98.0
+electrochemical_metrics_alloys,Pitting Temp,statistical_family,composition_component,percentage_or_fraction,cross,11,0.4020420850078161,0.26242050550094354,0.6929193863198835,0.8669151298091125,44.0
+electrochemical_metrics_alloys,Pitting Temp,statistical_family,composition_component,signed_electrochemical_potential,cross,11,0.286170877527077,0.28972503848513576,0.4322587771906139,0.6389901015803647,51.0
+electrochemical_metrics_alloys,Pitting Temp,statistical_family,bounded_0_1,composition_component,cross,11,0.3683370135936445,0.24115166257321655,0.5892517661179755,0.6692738537885279,85.0
+electrochemical_metrics_alloys,Pitting Temp,statistical_family,bounded_0_1,percentage_or_fraction,cross,1,0.5122283251025211,0.5122283251025211,0.5122283251025211,0.5122283251025211,29.0
+electrochemical_metrics_alloys,Pitting Temp,statistical_family,bounded_0_1,signed_electrochemical_potential,cross,1,0.45920891060480656,0.45920891060480656,0.45920891060480656,0.45920891060480656,51.0
+electrochemical_metrics_alloys,Crevice Corrosion Temp,current_group,material,material,within,120,0.3940438418959251,0.3632786421965002,0.5834381185316275,0.9190208821296194,31.0
+electrochemical_metrics_alloys,Crevice Corrosion Temp,current_group,history,material,cross,15,0.3422870802510454,0.303079295182187,0.46095655459933216,0.7989060313312595,32.0
+electrochemical_metrics_alloys,Crevice Corrosion Temp,semantic_domain,material,material,within,120,0.3940438418959251,0.3632786421965002,0.5834381185316275,0.9190208821296194,31.0
+electrochemical_metrics_alloys,Crevice Corrosion Temp,semantic_domain,history,material,cross,15,0.3422870802510454,0.303079295182187,0.46095655459933216,0.7989060313312595,32.0
+electrochemical_metrics_alloys,Crevice Corrosion Temp,causal_role,base_material_condition,base_material_condition,within,120,0.3940438418959251,0.3632786421965002,0.5834381185316275,0.9190208821296194,31.0
+electrochemical_metrics_alloys,Crevice Corrosion Temp,causal_role,base_material_condition,process_or_history_condition,cross,15,0.3422870802510454,0.303079295182187,0.46095655459933216,0.7989060313312595,32.0
+electrochemical_metrics_alloys,Crevice Corrosion Temp,statistical_family,composition_component,composition_component,within,39,0.41469868245725844,0.34656613188750013,0.6290515781403931,0.9190208821296194,63.0
+electrochemical_metrics_alloys,Crevice Corrosion Temp,statistical_family,composition_component,percentage_or_fraction,cross,63,0.40233006921470504,0.41028700388706457,0.5473678270995184,0.8240998732688767,30.0
+electrochemical_metrics_alloys,Crevice Corrosion Temp,statistical_family,bounded_0_1,composition_component,cross,8,0.23529467871333531,0.19112849984509822,0.31454562709333855,0.4667109328581431,50.5
+electrochemical_metrics_alloys,Crevice Corrosion Temp,statistical_family,percentage_or_fraction,percentage_or_fraction,within,18,0.3202898917306397,0.2650074602696909,0.42407858073749816,0.8656836288513168,30.0
+electrochemical_metrics_alloys,Crevice Corrosion Temp,statistical_family,bounded_0_1,percentage_or_fraction,cross,7,0.46456411057985686,0.4552021763405213,0.6773666708129152,0.7989060313312595,22.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",current_group,material,material,within,36,0.29444691133349277,0.2990979391711274,0.4340438518884794,0.6648948280593693,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",current_group,environment,material,cross,18,0.11631533148185552,0.08088767535989028,0.17969134222485947,0.3074033549203252,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",current_group,history,material,cross,9,0.21493214733231192,0.2084645796613587,0.32899670416629373,0.38736826448709905,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",current_group,environment,environment,within,1,0.5098250812812302,0.5098250812812302,0.5098250812812302,0.5098250812812302,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",current_group,environment,history,cross,2,0.2133205914797099,0.2133205914797099,0.2459932700250017,0.27866594857029353,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",semantic_domain,material,material,within,36,0.29444691133349277,0.2990979391711274,0.4340438518884794,0.6648948280593693,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",semantic_domain,environment,material,cross,18,0.11631533148185552,0.08088767535989028,0.17969134222485947,0.3074033549203252,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",semantic_domain,history,material,cross,9,0.21493214733231192,0.2084645796613587,0.32899670416629373,0.38736826448709905,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",semantic_domain,environment,environment,within,1,0.5098250812812302,0.5098250812812302,0.5098250812812302,0.5098250812812302,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",semantic_domain,environment,history,cross,2,0.2133205914797099,0.2133205914797099,0.2459932700250017,0.27866594857029353,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",causal_role,base_material_condition,base_material_condition,within,36,0.29444691133349277,0.2990979391711274,0.4340438518884794,0.6648948280593693,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",causal_role,base_material_condition,exposure_context,cross,18,0.11631533148185552,0.08088767535989028,0.17969134222485947,0.3074033549203252,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",causal_role,base_material_condition,process_or_history_condition,cross,9,0.21493214733231192,0.2084645796613587,0.32899670416629373,0.38736826448709905,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",causal_role,exposure_context,exposure_context,within,1,0.5098250812812302,0.5098250812812302,0.5098250812812302,0.5098250812812302,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",causal_role,exposure_context,process_or_history_condition,cross,2,0.2133205914797099,0.2133205914797099,0.2459932700250017,0.27866594857029353,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",statistical_family,composition_component,composition_component,within,36,0.29444691133349277,0.2990979391711274,0.4340438518884794,0.6648948280593693,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",statistical_family,bounded_0_1,composition_component,cross,9,0.08878597347175224,0.04265454980450521,0.12121512926104958,0.23784008086303737,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",statistical_family,composition_component,pH_bounded,cross,9,0.1438446894919588,0.09725097951958715,0.19312803066198775,0.3074033549203252,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",statistical_family,composition_component,electrochemical_or_rate_response,cross,9,0.21493214733231192,0.2084645796613587,0.32899670416629373,0.38736826448709905,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",statistical_family,bounded_0_1,pH_bounded,cross,1,0.5098250812812302,0.5098250812812302,0.5098250812812302,0.5098250812812302,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",statistical_family,bounded_0_1,electrochemical_or_rate_response,cross,1,0.14797523438912621,0.14797523438912621,0.14797523438912621,0.14797523438912621,51.0
+electrochemical_metrics_alloys,"HEAs_Ecorr, icorr, ipass, Rate",statistical_family,electrochemical_or_rate_response,pH_bounded,cross,1,0.27866594857029353,0.27866594857029353,0.27866594857029353,0.27866594857029353,51.0
+mpea_corrosion,Sheet1,current_group,material,material,within,378,0.12356983252876601,0.06714424959350716,0.17057633613612647,1.0,619.0
+mpea_corrosion,Sheet1,current_group,environment,material,cross,28,0.09054897394762793,0.05325809345440968,0.14067694344684853,0.2926430808487985,599.0
+mpea_corrosion,Sheet1,current_group,intervention,material,cross,15,0.2974425718725071,0.29281409757894683,0.44647874683389244,0.5101756726453898,41.0
+mpea_corrosion,Sheet1,current_group,environment,intervention,cross,1,0.6269581126350809,0.6269581126350809,0.6269581126350809,0.6269581126350809,41.0
+mpea_corrosion,Sheet1,semantic_domain,material,material,within,378,0.12356983252876601,0.06714424959350716,0.17057633613612647,1.0,619.0
+mpea_corrosion,Sheet1,semantic_domain,environment,material,cross,28,0.09054897394762793,0.05325809345440968,0.14067694344684853,0.2926430808487985,599.0
+mpea_corrosion,Sheet1,semantic_domain,material,process,cross,15,0.2974425718725071,0.29281409757894683,0.44647874683389244,0.5101756726453898,41.0
+mpea_corrosion,Sheet1,semantic_domain,environment,process,cross,1,0.6269581126350809,0.6269581126350809,0.6269581126350809,0.6269581126350809,41.0
+mpea_corrosion,Sheet1,causal_role,base_material_condition,base_material_condition,within,378,0.12356983252876601,0.06714424959350716,0.17057633613612647,1.0,619.0
+mpea_corrosion,Sheet1,causal_role,base_material_condition,exposure_context,cross,28,0.09054897394762793,0.05325809345440968,0.14067694344684853,0.2926430808487985,599.0
+mpea_corrosion,Sheet1,causal_role,base_material_condition,process_or_history_condition,cross,15,0.2974425718725071,0.29281409757894683,0.44647874683389244,0.5101756726453898,41.0
+mpea_corrosion,Sheet1,causal_role,exposure_context,process_or_history_condition,cross,1,0.6269581126350809,0.6269581126350809,0.6269581126350809,0.6269581126350809,41.0
+mpea_corrosion,Sheet1,statistical_family,bounded_0_1,bounded_0_1,within,6,0.1577807847867836,0.07036333145911691,0.24732929216032534,0.44540294613254694,596.0
+mpea_corrosion,Sheet1,statistical_family,bounded_0_1,concentration_like,cross,4,0.07900810161094832,0.06708923627610486,0.09636651863145827,0.1330343419054277,576.0
+mpea_corrosion,Sheet1,statistical_family,bounded_0_1,high_cardinality_categorical,cross,3,0.35258096600977856,0.45011047707458407,0.4801430748599869,0.5101756726453898,41.0
+mpea_corrosion,Sheet1,statistical_family,bounded_0_1,composition_component,cross,96,0.11200959963676595,0.07504585762738922,0.13890323596582127,0.4131922523358478,596.0
+mpea_corrosion,Sheet1,statistical_family,concentration_like,high_cardinality_categorical,cross,1,0.6269581126350809,0.6269581126350809,0.6269581126350809,0.6269581126350809,41.0
+mpea_corrosion,Sheet1,statistical_family,composition_component,concentration_like,cross,24,0.09247245267040786,0.05325809345440968,0.16407408972021775,0.2926430808487985,599.0
+mpea_corrosion,Sheet1,statistical_family,composition_component,high_cardinality_categorical,cross,12,0.28365797333818926,0.28116721143173734,0.3472402968629712,0.48693902583228843,41.0
+mpea_corrosion,Sheet1,statistical_family,composition_component,composition_component,within,276,0.1268470667464613,0.06298813934661426,0.18584819337717962,1.0,619.0
+am_mpea_corrosion,AM_MPEA_corrosion_database_V3,current_group,environment,material,cross,14,0.08334225403168641,0.0704226222928744,0.118751738456347,0.1924462408725163,92.0
+am_mpea_corrosion,AM_MPEA_corrosion_database_V3,current_group,material,material,within,91,0.2733526756728894,0.19829604737615977,0.3892742680287551,0.9412605398905227,92.0
+am_mpea_corrosion,AM_MPEA_corrosion_database_V3,semantic_domain,environment,material,cross,14,0.08334225403168641,0.0704226222928744,0.118751738456347,0.1924462408725163,92.0
+am_mpea_corrosion,AM_MPEA_corrosion_database_V3,semantic_domain,material,material,within,91,0.2733526756728894,0.19829604737615977,0.3892742680287551,0.9412605398905227,92.0
+am_mpea_corrosion,AM_MPEA_corrosion_database_V3,causal_role,base_material_condition,exposure_context,cross,14,0.08334225403168641,0.0704226222928744,0.118751738456347,0.1924462408725163,92.0
+am_mpea_corrosion,AM_MPEA_corrosion_database_V3,causal_role,base_material_condition,base_material_condition,within,91,0.2733526756728894,0.19829604737615977,0.3892742680287551,0.9412605398905227,92.0
+am_mpea_corrosion,AM_MPEA_corrosion_database_V3,statistical_family,composition_component,concentration_like,cross,11,0.09200148358828755,0.09743839566257025,0.15493344854412255,0.1924462408725163,92.0
+am_mpea_corrosion,AM_MPEA_corrosion_database_V3,statistical_family,concentration_like,positive_continuous_numeric,cross,3,0.05159174565748223,0.03080152714634056,0.0729759589716673,0.11515039079699403,92.0
+am_mpea_corrosion,AM_MPEA_corrosion_database_V3,statistical_family,composition_component,composition_component,within,55,0.26729662249166486,0.1921749038659089,0.3572033254889385,0.9412605398905227,92.0
+am_mpea_corrosion,AM_MPEA_corrosion_database_V3,statistical_family,composition_component,positive_continuous_numeric,cross,33,0.29464172625213847,0.24727849810691166,0.4647570548931863,0.6540786810759275,92.0
+am_mpea_corrosion,AM_MPEA_corrosion_database_V3,statistical_family,positive_continuous_numeric,positive_continuous_numeric,within,3,0.15020076095693213,0.16833997677921694,0.17300769877766414,0.17767542077611137,92.0
+steel_mortar_corrosion,01_Carbonation,current_group,material,material,within,15,0.2906902208049142,0.24601366742596809,0.40473484130226434,0.8516364282179819,180.0
+steel_mortar_corrosion,01_Carbonation,current_group,environment,material,cross,36,0.18118688906345085,0.15310496800167722,0.21709157251756842,0.8384872080088988,180.0
+steel_mortar_corrosion,01_Carbonation,current_group,environment,environment,within,15,0.3047554309110333,0.14777575772583562,0.5254244240635954,0.9043320006453892,180.0
+steel_mortar_corrosion,01_Carbonation,semantic_domain,material,material,within,15,0.2906902208049142,0.24601366742596809,0.40473484130226434,0.8516364282179819,180.0
+steel_mortar_corrosion,01_Carbonation,semantic_domain,environment,material,cross,36,0.18118688906345085,0.15310496800167722,0.21709157251756842,0.8384872080088988,180.0
+steel_mortar_corrosion,01_Carbonation,semantic_domain,environment,environment,within,15,0.3047554309110333,0.14777575772583562,0.5254244240635954,0.9043320006453892,180.0
+steel_mortar_corrosion,01_Carbonation,causal_role,base_material_condition,base_material_condition,within,15,0.2906902208049142,0.24601366742596809,0.40473484130226434,0.8516364282179819,180.0
+steel_mortar_corrosion,01_Carbonation,causal_role,base_material_condition,exposure_context,cross,36,0.18118688906345085,0.15310496800167722,0.21709157251756842,0.8384872080088988,180.0
+steel_mortar_corrosion,01_Carbonation,causal_role,exposure_context,exposure_context,within,15,0.3047554309110333,0.14777575772583562,0.5254244240635954,0.9043320006453892,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,composition_component,composition_component,within,6,0.3087924338989019,0.24601366742596809,0.37436867137684304,0.6802813739314298,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,bounded_0_1,composition_component,cross,12,0.22210356707093692,0.11727875258678888,0.25634968893986054,0.8516364282179819,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,composition_component,electrochemical_or_rate_response,cross,4,0.05700565911762732,0.04412864984203588,0.05700565911762732,0.09563668694440164,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,composition_component,concentration_like,cross,4,0.20361703214635446,0.1916524524183253,0.229165386476206,0.26816313132653713,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,composition_component,pH_bounded,cross,4,0.4405194174212876,0.45095631038298645,0.6156967628418583,0.7971298569277682,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,composition_component,low_cardinality_numeric,cross,4,0.0,0.0,0.0,0.0,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,composition_component,positive_continuous_numeric,cross,4,0.11047119705336357,0.11619682026475858,0.167487342602709,0.17927216895086057,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,bounded_0_1,electrochemical_or_rate_response,cross,3,0.06639199129348267,0.0648284348452367,0.09563020329906305,0.1264319717528894,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,bounded_0_1,concentration_like,cross,3,0.19296648118642024,0.17503528980246816,0.20464778950635087,0.23426028921023356,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,bounded_0_1,pH_bounded,cross,3,0.534107283391799,0.4834566724751408,0.6609719402420198,0.8384872080088988,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,bounded_0_1,bounded_0_1,within,3,0.2870373647312552,0.2729586002896278,0.3326373051001775,0.3923160099107273,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,bounded_0_1,low_cardinality_numeric,cross,3,0.30144400021512974,0.0,0.4521660003226946,0.9043320006453892,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,bounded_0_1,positive_continuous_numeric,cross,3,0.4061175443399442,0.20705652854638942,0.5140230709386364,0.8209896133308834,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,concentration_like,electrochemical_or_rate_response,cross,1,0.6492915622539984,0.6492915622539984,0.6492915622539984,0.6492915622539984,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,electrochemical_or_rate_response,pH_bounded,cross,1,0.05859042593426582,0.05859042593426582,0.05859042593426582,0.05859042593426582,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,electrochemical_or_rate_response,low_cardinality_numeric,cross,1,0.0,0.0,0.0,0.0,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,electrochemical_or_rate_response,positive_continuous_numeric,cross,1,0.1055503761730402,0.1055503761730402,0.1055503761730402,0.1055503761730402,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,concentration_like,pH_bounded,cross,1,0.40155728587319234,0.40155728587319234,0.40155728587319234,0.40155728587319234,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,concentration_like,low_cardinality_numeric,cross,1,0.0,0.0,0.0,0.0,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,concentration_like,positive_continuous_numeric,cross,1,0.07351112047366444,0.07351112047366444,0.07351112047366444,0.07351112047366444,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,low_cardinality_numeric,pH_bounded,cross,1,0.0,0.0,0.0,0.0,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,pH_bounded,positive_continuous_numeric,cross,1,0.14777575772583562,0.14777575772583562,0.14777575772583562,0.14777575772583562,180.0
+steel_mortar_corrosion,01_Carbonation,statistical_family,low_cardinality_numeric,positive_continuous_numeric,cross,1,0.8894916269161675,0.8894916269161675,0.8894916269161675,0.8894916269161675,180.0
+steel_mortar_corrosion,02_Chloride,current_group,material,material,within,10,0.3187246957909482,0.3298244230415115,0.4896781250557891,0.6733493116231665,95.0
+steel_mortar_corrosion,02_Chloride,current_group,environment,material,cross,30,0.1362972673982788,0.1083475779943415,0.23260299343654842,0.4965105570713674,95.0
+steel_mortar_corrosion,02_Chloride,current_group,environment,environment,within,15,0.26897268162613225,0.1140016986051842,0.4571041842249095,0.8911605465229686,95.0
+steel_mortar_corrosion,02_Chloride,semantic_domain,material,material,within,10,0.3187246957909482,0.3298244230415115,0.4896781250557891,0.6733493116231665,95.0
+steel_mortar_corrosion,02_Chloride,semantic_domain,environment,material,cross,30,0.1362972673982788,0.1083475779943415,0.23260299343654842,0.4965105570713674,95.0
+steel_mortar_corrosion,02_Chloride,semantic_domain,environment,environment,within,15,0.26897268162613225,0.1140016986051842,0.4571041842249095,0.8911605465229686,95.0
+steel_mortar_corrosion,02_Chloride,causal_role,base_material_condition,base_material_condition,within,10,0.3187246957909482,0.3298244230415115,0.4896781250557891,0.6733493116231665,95.0
+steel_mortar_corrosion,02_Chloride,causal_role,base_material_condition,exposure_context,cross,30,0.1362972673982788,0.1083475779943415,0.23260299343654842,0.4965105570713674,95.0
+steel_mortar_corrosion,02_Chloride,causal_role,exposure_context,exposure_context,within,15,0.26897268162613225,0.1140016986051842,0.4571041842249095,0.8911605465229686,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,composition_component,composition_component,within,3,0.48655275045095736,0.45706706247338796,0.5652081870482772,0.6733493116231665,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,bounded_0_1,composition_component,cross,9,0.20036549020908032,0.1498973317418713,0.27327379143291464,0.5111405186474244,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,composition_component,electrochemical_or_rate_response,cross,3,0.11121557647013014,0.09187469883425955,0.12088601528806543,0.1498973317418713,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,composition_component,concentration_like,cross,3,0.11048220539743804,0.11827371127556859,0.15976505920096853,0.20125640712636847,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,composition_component,pH_bounded,cross,3,0.23281609613257886,0.24340550116270224,0.30001342184231106,0.3566213425219199,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,composition_component,low_cardinality_numeric,cross,3,0.002140624001328431,0.0017683600776214822,0.0023267559631819056,0.002885151848742329,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,composition_component,positive_continuous_numeric,cross,3,0.21780381041321126,0.277923205885452,0.31515152581849915,0.3523798457515463,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,bounded_0_1,electrochemical_or_rate_response,cross,3,0.06347050426283567,0.05077224840272637,0.0823869735039553,0.1140016986051842,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,bounded_0_1,concentration_like,cross,3,0.055932689444237196,0.027926276107503232,0.07537108409653799,0.12281589208557275,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,bounded_0_1,pH_bounded,cross,3,0.1679558976317566,0.1956070916328203,0.2314003421068517,0.2671935925808831,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,bounded_0_1,bounded_0_1,within,3,0.21484313195219237,0.12564573609388305,0.31309710767190296,0.5005484792499229,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,bounded_0_1,low_cardinality_numeric,cross,3,0.29733060091672553,0.0004934595529459914,0.4458270030379573,0.8911605465229686,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,bounded_0_1,positive_continuous_numeric,cross,3,0.4887093714442476,0.4965105570713674,0.6540548053494033,0.8115990536274391,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,concentration_like,electrochemical_or_rate_response,cross,1,0.684547846414685,0.684547846414685,0.684547846414685,0.684547846414685,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,electrochemical_or_rate_response,pH_bounded,cross,1,0.22966052203513404,0.22966052203513404,0.22966052203513404,0.22966052203513404,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,electrochemical_or_rate_response,low_cardinality_numeric,cross,1,0.0004934595529459914,0.0004934595529459914,0.0004934595529459914,0.0004934595529459914,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,electrochemical_or_rate_response,positive_continuous_numeric,cross,1,0.13598441823807234,0.13598441823807234,0.13598441823807234,0.13598441823807234,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,concentration_like,pH_bounded,cross,1,0.17744757087153545,0.17744757087153545,0.17744757087153545,0.17744757087153545,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,concentration_like,low_cardinality_numeric,cross,1,0.001013390022785795,0.001013390022785795,0.001013390022785795,0.001013390022785795,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,concentration_like,positive_continuous_numeric,cross,1,0.10493155913363192,0.10493155913363192,0.10493155913363192,0.10493155913363192,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,low_cardinality_numeric,pH_bounded,cross,1,0.004391356765405112,0.004391356765405112,0.004391356765405112,0.004391356765405112,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,pH_bounded,positive_continuous_numeric,cross,1,0.06407809324800377,0.06407809324800377,0.06407809324800377,0.06407809324800377,95.0
+steel_mortar_corrosion,02_Chloride,statistical_family,low_cardinality_numeric,positive_continuous_numeric,cross,1,0.7571578005329905,0.7571578005329905,0.7571578005329905,0.7571578005329905,95.0
+316l_pitting_passivity,Epit_Epass_descriptors,current_group,environment,history,cross,1,0.27823044354590337,0.27823044354590337,0.27823044354590337,0.27823044354590337,955.0
+316l_pitting_passivity,Epit_Epass_descriptors,semantic_domain,environment,history,cross,1,0.27823044354590337,0.27823044354590337,0.27823044354590337,0.27823044354590337,955.0
+316l_pitting_passivity,Epit_Epass_descriptors,causal_role,exposure_context,process_or_history_condition,cross,1,0.27823044354590337,0.27823044354590337,0.27823044354590337,0.27823044354590337,955.0
+316l_pitting_passivity,Epit_Epass_descriptors,statistical_family,bounded_0_1,electrochemical_or_rate_response,cross,1,0.27823044354590337,0.27823044354590337,0.27823044354590337,0.27823044354590337,955.0
+nace_nist_corr_data,CORR-DATA_Database,current_group,environment,material,cross,3,0.051926026627399424,0.0668292401114401,0.06834361421596018,0.06985798832048025,7185.0
+nace_nist_corr_data,CORR-DATA_Database,current_group,history,material,cross,1,0.007093583848653498,0.007093583848653498,0.007093583848653498,0.007093583848653498,1498.0
+nace_nist_corr_data,CORR-DATA_Database,current_group,environment,environment,within,3,0.43381299379605825,0.15406033407276562,0.5754948080381095,0.9969292820034532,7572.0
+nace_nist_corr_data,CORR-DATA_Database,current_group,environment,history,cross,3,0.03764292306260492,0.01941636943647571,0.055206015998641236,0.09099566256080677,3104.0
+nace_nist_corr_data,CORR-DATA_Database,semantic_domain,environment,material,cross,3,0.051926026627399424,0.0668292401114401,0.06834361421596018,0.06985798832048025,7185.0
+nace_nist_corr_data,CORR-DATA_Database,semantic_domain,history,material,cross,1,0.007093583848653498,0.007093583848653498,0.007093583848653498,0.007093583848653498,1498.0
+nace_nist_corr_data,CORR-DATA_Database,semantic_domain,environment,environment,within,3,0.43381299379605825,0.15406033407276562,0.5754948080381095,0.9969292820034532,7572.0
+nace_nist_corr_data,CORR-DATA_Database,semantic_domain,environment,history,cross,3,0.03764292306260492,0.01941636943647571,0.055206015998641236,0.09099566256080677,3104.0
+nace_nist_corr_data,CORR-DATA_Database,causal_role,base_material_condition,exposure_context,cross,3,0.051926026627399424,0.0668292401114401,0.06834361421596018,0.06985798832048025,7185.0
+nace_nist_corr_data,CORR-DATA_Database,causal_role,base_material_condition,process_or_history_condition,cross,1,0.007093583848653498,0.007093583848653498,0.007093583848653498,0.007093583848653498,1498.0
+nace_nist_corr_data,CORR-DATA_Database,causal_role,exposure_context,exposure_context,within,3,0.43381299379605825,0.15406033407276562,0.5754948080381095,0.9969292820034532,7572.0
+nace_nist_corr_data,CORR-DATA_Database,causal_role,exposure_context,process_or_history_condition,cross,3,0.03764292306260492,0.01941636943647571,0.055206015998641236,0.09099566256080677,3104.0
+nace_nist_corr_data,CORR-DATA_Database,statistical_family,high_cardinality_categorical,high_cardinality_categorical,within,6,0.24286951021172884,0.1101536768162181,0.1531575918825632,0.9969292820034532,7264.5
+nace_nist_corr_data,CORR-DATA_Database,statistical_family,high_cardinality_categorical,mostly_missing,cross,4,0.030005588259117068,0.013254976642564604,0.03731119271755848,0.09099566256080677,2965.0
+mooring_steel_seawater,OCP_R4_S31_Omax,current_group,environment,history,cross,1,0.009865539185222552,0.009865539185222552,0.009865539185222552,0.009865539185222552,62.0
+mooring_steel_seawater,OCP_R4_S31_Omax,semantic_domain,environment,history,cross,1,0.009865539185222552,0.009865539185222552,0.009865539185222552,0.009865539185222552,62.0
+mooring_steel_seawater,OCP_R4_S31_Omax,causal_role,exposure_context,process_or_history_condition,cross,1,0.009865539185222552,0.009865539185222552,0.009865539185222552,0.009865539185222552,62.0
+mooring_steel_seawater,OCP_R4_S31_Omax,statistical_family,temperature_like,time_or_rate_condition,cross,1,0.009865539185222552,0.009865539185222552,0.009865539185222552,0.009865539185222552,62.0
+datacor_aluminum_inhibitors,DataCor_long_efficiency,current_group,environment,intervention,cross,14,0.0,0.0,0.0,0.0,408.0
+datacor_aluminum_inhibitors,DataCor_long_efficiency,current_group,intervention,intervention,within,91,0.3122761089112654,0.21762731251846368,0.4648927530182427,0.9721764355002059,408.0
+datacor_aluminum_inhibitors,DataCor_long_efficiency,semantic_domain,environment,molecular_descriptor,cross,14,0.0,0.0,0.0,0.0,408.0
+datacor_aluminum_inhibitors,DataCor_long_efficiency,semantic_domain,molecular_descriptor,molecular_descriptor,within,91,0.3122761089112654,0.21762731251846368,0.4648927530182427,0.9721764355002059,408.0
+datacor_aluminum_inhibitors,DataCor_long_efficiency,causal_role,exposure_context,intervention_agent_descriptor,cross,14,0.0,0.0,0.0,0.0,408.0
+datacor_aluminum_inhibitors,DataCor_long_efficiency,causal_role,intervention_agent_descriptor,intervention_agent_descriptor,within,91,0.3122761089112654,0.21762731251846368,0.4648927530182427,0.9721764355002059,408.0
+datacor_aluminum_inhibitors,DataCor_long_efficiency,statistical_family,dense_molecular_descriptor,pH_bounded,cross,14,0.0,0.0,0.0,0.0,408.0
+datacor_aluminum_inhibitors,DataCor_long_efficiency,statistical_family,dense_molecular_descriptor,dense_molecular_descriptor,within,91,0.3122761089112654,0.21762731251846368,0.4648927530182427,0.9721764355002059,408.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,current_group,environment,history,cross,3,0.2922281794570183,0.3119460269232347,0.3615878604795183,0.4112296940358019,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,current_group,history,intervention,cross,144,0.11650311988597502,0.09105843519328237,0.16727548432803385,0.4251099361191807,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,current_group,environment,environment,within,3,0.35991805238152214,0.22219507602379293,0.45181868221535426,0.6814422884069156,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,current_group,environment,intervention,cross,432,0.1673873672860691,0.1452144948833617,0.23925877452616215,0.4599243678471191,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,current_group,intervention,intervention,within,10296,0.24132346936216661,0.17010203107844496,0.3442380721276375,1.0,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,semantic_domain,environment,history,cross,3,0.2922281794570183,0.3119460269232347,0.3615878604795183,0.4112296940358019,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,semantic_domain,history,intervention,cross,2,0.1710107366958893,0.1710107366958893,0.19727470826974058,0.2235386798435919,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,semantic_domain,history,molecular_descriptor,cross,142,0.11573540697315933,0.0900482175522884,0.1661952509430614,0.4251099361191807,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,semantic_domain,environment,environment,within,3,0.35991805238152214,0.22219507602379293,0.45181868221535426,0.6814422884069156,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,semantic_domain,environment,intervention,cross,6,0.12149001775647575,0.13241140485039615,0.16001804376496243,0.2017662992487622,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,semantic_domain,environment,molecular_descriptor,cross,426,0.16803380882873942,0.14639593714731225,0.24012689109966318,0.4599243678471191,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,semantic_domain,intervention,intervention,within,1,0.01838063572016435,0.01838063572016435,0.01838063572016435,0.01838063572016435,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,semantic_domain,intervention,molecular_descriptor,cross,284,0.12088053737251483,0.0883524451461063,0.17089414692207952,0.43488176046708965,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,semantic_domain,molecular_descriptor,molecular_descriptor,within,10011,0.24476255991442944,0.17405314934727223,0.3488376176279484,1.0,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,causal_role,exposure_context,process_or_history_condition,cross,3,0.2922281794570183,0.3119460269232347,0.3615878604795183,0.4112296940358019,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,causal_role,direct_intervention_control,process_or_history_condition,cross,2,0.1710107366958893,0.1710107366958893,0.19727470826974058,0.2235386798435919,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,causal_role,intervention_agent_descriptor,process_or_history_condition,cross,142,0.11573540697315933,0.0900482175522884,0.1661952509430614,0.4251099361191807,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,causal_role,exposure_context,exposure_context,within,3,0.35991805238152214,0.22219507602379293,0.45181868221535426,0.6814422884069156,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,causal_role,direct_intervention_control,exposure_context,cross,6,0.12149001775647575,0.13241140485039615,0.16001804376496243,0.2017662992487622,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,causal_role,exposure_context,intervention_agent_descriptor,cross,426,0.16803380882873942,0.14639593714731225,0.24012689109966318,0.4599243678471191,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,causal_role,direct_intervention_control,direct_intervention_control,within,1,0.01838063572016435,0.01838063572016435,0.01838063572016435,0.01838063572016435,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,causal_role,direct_intervention_control,intervention_agent_descriptor,cross,284,0.12088053737251483,0.0883524451461063,0.17089414692207952,0.43488176046708965,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,causal_role,intervention_agent_descriptor,intervention_agent_descriptor,within,10011,0.24476255991442944,0.17405314934727223,0.3488376176279484,1.0,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,temperature_like,time_or_rate_condition,cross,1,0.15350881741201833,0.15350881741201833,0.15350881741201833,0.15350881741201833,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,signed_continuous_numeric,time_or_rate_condition,cross,1,0.3119460269232347,0.3119460269232347,0.3119460269232347,0.3119460269232347,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,concentration_like,time_or_rate_condition,cross,2,0.3173841869396969,0.3173841869396969,0.3643069404877494,0.4112296940358019,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,bounded_0_1,time_or_rate_condition,cross,1,0.11848279354818665,0.11848279354818665,0.11848279354818665,0.11848279354818665,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,dense_molecular_descriptor,time_or_rate_condition,cross,142,0.11573540697315933,0.0900482175522884,0.1661952509430614,0.4251099361191807,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,signed_continuous_numeric,temperature_like,cross,1,0.17611679271385786,0.17611679271385786,0.17611679271385786,0.17611679271385786,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,concentration_like,temperature_like,cross,2,0.18220942195529932,0.18220942195529932,0.2022022489895461,0.22219507602379293,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,bounded_0_1,temperature_like,cross,1,0.03735912601272357,0.03735912601272357,0.03735912601272357,0.03735912601272357,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,dense_molecular_descriptor,temperature_like,cross,142,0.20140171133805918,0.181754008477658,0.3293703414251006,0.4381048644479624,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,concentration_like,signed_continuous_numeric,cross,2,0.42369587873229847,0.42369587873229847,0.552569083569607,0.6814422884069156,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,bounded_0_1,signed_continuous_numeric,cross,1,0.2017662992487622,0.2017662992487622,0.2017662992487622,0.2017662992487622,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,dense_molecular_descriptor,signed_continuous_numeric,cross,142,0.1509865349188058,0.11894918759141365,0.22952008170754096,0.4599243678471191,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,concentration_like,concentration_like,within,1,0.05904240251889507,0.05904240251889507,0.05904240251889507,0.05904240251889507,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,bounded_0_1,concentration_like,cross,2,0.07048983876707549,0.07048983876707549,0.09654444029053104,0.1225990418139866,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,concentration_like,dense_molecular_descriptor,cross,284,0.16010363437399733,0.1465044649696039,0.22891872796216461,0.43488176046708965,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,bounded_0_1,dense_molecular_descriptor,cross,142,0.0732669862263883,0.06104673015023474,0.10152153667302952,0.30594879291677657,2011.0
+datacortech_aluminum_inhibitors,Efficiencies_with_descriptors,statistical_family,dense_molecular_descriptor,dense_molecular_descriptor,within,10011,0.24476255991442944,0.17405314934727223,0.3488376176279484,1.0,2011.0
+mg_az91_inhibitors,Features,current_group,intervention,intervention,within,380628,0.2595516362170552,0.21082566706111383,0.375325087159659,1.0,68.0
+mg_az91_inhibitors,Features,semantic_domain,molecular_descriptor,molecular_descriptor,within,380628,0.2595516362170552,0.21082566706111383,0.375325087159659,1.0,68.0
+mg_az91_inhibitors,Features,causal_role,intervention_agent_descriptor,intervention_agent_descriptor,within,380628,0.2595516362170552,0.21082566706111383,0.375325087159659,1.0,68.0
+mg_az91_inhibitors,Features,statistical_family,dense_molecular_descriptor,dense_molecular_descriptor,within,378885,0.2589829483464343,0.2103124508098917,0.37449385355708575,1.0,68.0
+mg_az91_inhibitors,Features,statistical_family,composition_component,dense_molecular_descriptor,cross,1742,0.3828203135218599,0.33385199686970635,0.5599866562098654,1.0,68.0
+mg_az91_inhibitors,Features,statistical_family,composition_component,composition_component,within,1,0.9928196314332093,0.9928196314332093,0.9928196314332093,0.9928196314332093,68.0
+mg_ze41_inhibitors,ze41_mol_desc_db_red,current_group,intervention,intervention,within,793170,0.26066044691102735,0.2139141938467085,0.377189429738654,1.0,60.0
+mg_ze41_inhibitors,ze41_mol_desc_db_red,semantic_domain,molecular_descriptor,molecular_descriptor,within,793170,0.26066044691102735,0.2139141938467085,0.377189429738654,1.0,60.0
+mg_ze41_inhibitors,ze41_mol_desc_db_red,causal_role,intervention_agent_descriptor,intervention_agent_descriptor,within,793170,0.26066044691102735,0.2139141938467085,0.377189429738654,1.0,60.0
+mg_ze41_inhibitors,ze41_mol_desc_db_red,statistical_family,dense_molecular_descriptor,dense_molecular_descriptor,within,793170,0.26066044691102735,0.2139141938467085,0.377189429738654,1.0,60.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,current_group,environment,material,cross,5,0.15922417907905712,0.02846933197107675,0.3438338367726137,0.3950110241030739,466.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,current_group,electrochem,material,cross,1,0.1467615140607834,0.1467615140607834,0.1467615140607834,0.1467615140607834,466.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,current_group,environment,environment,within,10,0.20094290135283965,0.1478982467522,0.3400200701015837,0.47047243444566106,613.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,current_group,electrochem,environment,cross,5,0.0901994495152358,0.03851060639572286,0.11281505829336433,0.2561396250835453,613.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,semantic_domain,environment,material,cross,5,0.15922417907905712,0.02846933197107675,0.3438338367726137,0.3950110241030739,466.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,semantic_domain,electrochem,material,cross,1,0.1467615140607834,0.1467615140607834,0.1467615140607834,0.1467615140607834,466.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,semantic_domain,environment,environment,within,10,0.20094290135283965,0.1478982467522,0.3400200701015837,0.47047243444566106,613.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,semantic_domain,electrochem,environment,cross,5,0.0901994495152358,0.03851060639572286,0.11281505829336433,0.2561396250835453,613.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,causal_role,base_material_condition,exposure_context,cross,5,0.15922417907905712,0.02846933197107675,0.3438338367726137,0.3950110241030739,466.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,causal_role,base_material_condition,downstream_response_measurement,cross,1,0.1467615140607834,0.1467615140607834,0.1467615140607834,0.1467615140607834,466.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,causal_role,exposure_context,exposure_context,within,10,0.20094290135283965,0.1478982467522,0.3400200701015837,0.47047243444566106,613.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,causal_role,downstream_response_measurement,exposure_context,cross,5,0.0901994495152358,0.03851060639572286,0.11281505829336433,0.2561396250835453,613.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,statistical_family,categorical_nominal,temperature_like,cross,1,0.3950110241030739,0.3950110241030739,0.3950110241030739,0.3950110241030739,466.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,statistical_family,bounded_0_1,categorical_nominal,cross,4,0.1002774678230529,0.021564168200556358,0.10731045817146098,0.3438338367726137,466.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,statistical_family,categorical_nominal,low_cardinality_numeric,cross,1,0.1467615140607834,0.1467615140607834,0.1467615140607834,0.1467615140607834,466.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,statistical_family,bounded_0_1,temperature_like,cross,4,0.05540726632607211,0.02834876504628152,0.0768243878815803,0.16287390609079852,613.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,statistical_family,low_cardinality_numeric,temperature_like,cross,1,0.2561396250835453,0.2561396250835453,0.2561396250835453,0.2561396250835453,613.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,statistical_family,bounded_0_1,bounded_0_1,within,6,0.29796665803735134,0.2947701035622368,0.4464413374287141,0.47047243444566106,613.0
+ni_crevice_repassivation,Research_data_Saenzetal_table1,statistical_family,bounded_0_1,low_cardinality_numeric,cross,4,0.04871440562315842,0.037614093239948534,0.057086719370133224,0.11281505829336433,613.0

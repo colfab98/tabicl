@@ -236,8 +236,25 @@ class Trainer:
                 scm_fixed_hp["mix_probs"] = tuple(self.config.mix_probs)
             if self.config.informed_mix_probs is not None:
                 scm_fixed_hp["informed_mix_probs"] = tuple(self.config.informed_mix_probs)
-            if self.config.informed_block_allocation is not None:
-                scm_fixed_hp["informed_block_allocation"] = tuple(self.config.informed_block_allocation)
+            if self.config.informed_block_allocation is not None and self.config.informed_normal_block_allocation is None:
+                material, environment, electrochem, history, intervention = self.config.informed_block_allocation
+                scm_fixed_hp["informed_normal_block_allocation"] = (
+                    material,
+                    environment,
+                    history,
+                    0.0,
+                    0.0,
+                    intervention,
+                    0.0,
+                    electrochem,
+                    0.0,
+                )
+            if self.config.informed_task_family_probs is not None:
+                scm_fixed_hp["informed_task_family_probs"] = tuple(self.config.informed_task_family_probs)
+            if self.config.informed_normal_block_allocation is not None:
+                scm_fixed_hp["informed_normal_block_allocation"] = tuple(self.config.informed_normal_block_allocation)
+            if self.config.informed_inhibitor_block_allocation is not None:
+                scm_fixed_hp["informed_inhibitor_block_allocation"] = tuple(self.config.informed_inhibitor_block_allocation)
             if self.config.informed_feature_block_strength is not None:
                 scm_fixed_hp["informed_feature_block_strength"] = self.config.informed_feature_block_strength
             if self.config.informed_interaction_strength is not None:

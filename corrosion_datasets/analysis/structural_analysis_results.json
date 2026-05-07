@@ -467,6 +467,186 @@
         "metadata": 1,
         "exclude": 0
       }
+    },
+    {
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "rows": 408,
+      "columns": 23,
+      "columns_by_group": {
+        "material": 1,
+        "environment": 1,
+        "history": 0,
+        "intervention": 17,
+        "electrochem": 0,
+        "target": 1,
+        "metadata": 3,
+        "exclude": 0
+      },
+      "numeric_columns_by_group": {
+        "material": 0,
+        "environment": 1,
+        "history": 0,
+        "intervention": 0,
+        "electrochem": 0,
+        "target": 1,
+        "metadata": 0,
+        "exclude": 0
+      },
+      "categorical_columns_by_group": {
+        "material": 1,
+        "environment": 1,
+        "history": 0,
+        "intervention": 6,
+        "electrochem": 0,
+        "target": 1,
+        "metadata": 1,
+        "exclude": 0
+      }
+    },
+    {
+      "dataset": "datacortech_aluminum_inhibitors",
+      "table": "Efficiencies_with_descriptors",
+      "rows": 2011,
+      "columns": 229,
+      "columns_by_group": {
+        "material": 2,
+        "environment": 3,
+        "history": 1,
+        "intervention": 214,
+        "electrochem": 0,
+        "target": 1,
+        "metadata": 8,
+        "exclude": 0
+      },
+      "numeric_columns_by_group": {
+        "material": 0,
+        "environment": 3,
+        "history": 1,
+        "intervention": 0,
+        "electrochem": 0,
+        "target": 1,
+        "metadata": 0,
+        "exclude": 0
+      },
+      "categorical_columns_by_group": {
+        "material": 1,
+        "environment": 3,
+        "history": 1,
+        "intervention": 107,
+        "electrochem": 0,
+        "target": 0,
+        "metadata": 4,
+        "exclude": 0
+      }
+    },
+    {
+      "dataset": "mg_az91_inhibitors",
+      "table": "Features",
+      "rows": 68,
+      "columns": 877,
+      "columns_by_group": {
+        "material": 1,
+        "environment": 0,
+        "history": 0,
+        "intervention": 873,
+        "electrochem": 0,
+        "target": 1,
+        "metadata": 2,
+        "exclude": 0
+      },
+      "numeric_columns_by_group": {
+        "material": 0,
+        "environment": 0,
+        "history": 0,
+        "intervention": 0,
+        "electrochem": 0,
+        "target": 1,
+        "metadata": 0,
+        "exclude": 0
+      },
+      "categorical_columns_by_group": {
+        "material": 0,
+        "environment": 0,
+        "history": 0,
+        "intervention": 873,
+        "electrochem": 0,
+        "target": 1,
+        "metadata": 2,
+        "exclude": 0
+      }
+    },
+    {
+      "dataset": "mg_ze41_inhibitors",
+      "table": "ze41_mol_desc_db_red",
+      "rows": 60,
+      "columns": 1264,
+      "columns_by_group": {
+        "material": 1,
+        "environment": 0,
+        "history": 0,
+        "intervention": 1260,
+        "electrochem": 0,
+        "target": 1,
+        "metadata": 1,
+        "exclude": 1
+      },
+      "numeric_columns_by_group": {
+        "material": 0,
+        "environment": 0,
+        "history": 0,
+        "intervention": 0,
+        "electrochem": 0,
+        "target": 1,
+        "metadata": 0,
+        "exclude": 0
+      },
+      "categorical_columns_by_group": {
+        "material": 0,
+        "environment": 0,
+        "history": 0,
+        "intervention": 1260,
+        "electrochem": 0,
+        "target": 1,
+        "metadata": 1,
+        "exclude": 1
+      }
+    },
+    {
+      "dataset": "ni_crevice_repassivation",
+      "table": "Research_data_Saenzetal_table1",
+      "rows": 613,
+      "columns": 10,
+      "columns_by_group": {
+        "material": 1,
+        "environment": 5,
+        "history": 0,
+        "intervention": 0,
+        "electrochem": 1,
+        "target": 1,
+        "metadata": 1,
+        "exclude": 1
+      },
+      "numeric_columns_by_group": {
+        "material": 1,
+        "environment": 5,
+        "history": 0,
+        "intervention": 0,
+        "electrochem": 1,
+        "target": 1,
+        "metadata": 0,
+        "exclude": 0
+      },
+      "categorical_columns_by_group": {
+        "material": 1,
+        "environment": 5,
+        "history": 0,
+        "intervention": 0,
+        "electrochem": 1,
+        "target": 0,
+        "metadata": 0,
+        "exclude": 1
+      }
     }
   ],
   "within_block_correlations": [
@@ -777,6 +957,28 @@
       "median_abs_spearman": 0.9051696632151947,
       "q75_abs_spearman": 0.9051696632151947,
       "median_pair_n": 24172.0
+    },
+    {
+      "dataset": "datacortech_aluminum_inhibitors",
+      "table": "Efficiencies_with_descriptors",
+      "group": "environment",
+      "n_numeric_columns": 3,
+      "n_pairs": 3,
+      "mean_abs_spearman": 0.35991805238152214,
+      "median_abs_spearman": 0.22219507602379293,
+      "q75_abs_spearman": 0.45181868221535426,
+      "median_pair_n": 2011.0
+    },
+    {
+      "dataset": "ni_crevice_repassivation",
+      "table": "Research_data_Saenzetal_table1",
+      "group": "environment",
+      "n_numeric_columns": 5,
+      "n_pairs": 10,
+      "mean_abs_spearman": 0.20094290135283965,
+      "median_abs_spearman": 0.1478982467522,
+      "q75_abs_spearman": 0.3400200701015837,
+      "median_pair_n": 613.0
     }
   ],
   "cross_block_correlations": [
@@ -989,6 +1191,26 @@
       "median_abs_spearman": 0.009865539185222552,
       "q75_abs_spearman": 0.009865539185222552,
       "median_pair_n": 62.0
+    },
+    {
+      "dataset": "datacortech_aluminum_inhibitors",
+      "table": "Efficiencies_with_descriptors",
+      "group_pair": "environment:history",
+      "n_pairs": 3,
+      "mean_abs_spearman": 0.2922281794570183,
+      "median_abs_spearman": 0.3119460269232347,
+      "q75_abs_spearman": 0.3615878604795183,
+      "median_pair_n": 2011.0
+    },
+    {
+      "dataset": "ni_crevice_repassivation",
+      "table": "Research_data_Saenzetal_table1",
+      "group_pair": "material:environment",
+      "n_pairs": 5,
+      "mean_abs_spearman": 0.14831126301749958,
+      "median_abs_spearman": 0.04599702541439506,
+      "q75_abs_spearman": 0.24465105128723455,
+      "median_pair_n": 407.0
     }
   ],
   "target_associations": [
@@ -2186,11 +2408,11 @@
       "mean_abs_spearman": null,
       "max_abs_spearman": null,
       "n_categorical_associations": 1,
-      "mean_eta_squared": 0.0012604736367506331,
-      "max_eta_squared": 0.0012604736367506331,
+      "mean_eta_squared": 0.001260473636750633,
+      "max_eta_squared": 0.001260473636750633,
       "best_column": "Material Group",
       "best_method": "eta_squared",
-      "best_score": 0.0012604736367506331
+      "best_score": 0.001260473636750633
     },
     {
       "dataset": "nace_nist_corr_data",
@@ -2231,11 +2453,11 @@
       "mean_abs_spearman": null,
       "max_abs_spearman": null,
       "n_categorical_associations": 1,
-      "mean_eta_squared": 0.0006882948863770317,
-      "max_eta_squared": 0.0006882948863770317,
+      "mean_eta_squared": 0.0006882948863770318,
+      "max_eta_squared": 0.0006882948863770318,
       "best_column": "Material Group",
       "best_method": "eta_squared",
-      "best_score": 0.0006882948863770317
+      "best_score": 0.0006882948863770318
     },
     {
       "dataset": "nace_nist_corr_data",
@@ -2296,6 +2518,186 @@
       "best_column": "days",
       "best_method": "eta_squared",
       "best_score": 0.9114269131668046
+    },
+    {
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "target": "efficiency_score",
+      "group": "material",
+      "n_numeric_associations": 0,
+      "mean_abs_spearman": null,
+      "max_abs_spearman": null,
+      "n_categorical_associations": 1,
+      "mean_eta_squared": 0.0003679658364729239,
+      "max_eta_squared": 0.0003679658364729239,
+      "best_column": "alloy",
+      "best_method": "eta_squared",
+      "best_score": 0.0003679658364729239
+    },
+    {
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "target": "efficiency_score",
+      "group": "environment",
+      "n_numeric_associations": 1,
+      "mean_abs_spearman": 0.14632128784568726,
+      "max_abs_spearman": 0.14632128784568726,
+      "n_categorical_associations": 1,
+      "mean_eta_squared": 0.01568756772035614,
+      "max_eta_squared": 0.01568756772035614,
+      "best_column": "pH",
+      "best_method": "spearman",
+      "best_score": 0.14632128784568726
+    },
+    {
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "target": "efficiency_score",
+      "group": "intervention",
+      "n_numeric_associations": 0,
+      "mean_abs_spearman": null,
+      "max_abs_spearman": null,
+      "n_categorical_associations": 6,
+      "mean_eta_squared": 0.17918877642973466,
+      "max_eta_squared": 0.6118393326194711,
+      "best_column": "logP_(octanol/water)",
+      "best_method": "eta_squared",
+      "best_score": 0.6118393326194711
+    },
+    {
+      "dataset": "datacortech_aluminum_inhibitors",
+      "table": "Efficiencies_with_descriptors",
+      "target": "Efficiency",
+      "group": "material",
+      "n_numeric_associations": 0,
+      "mean_abs_spearman": null,
+      "max_abs_spearman": null,
+      "n_categorical_associations": 1,
+      "mean_eta_squared": 0.01369055147893109,
+      "max_eta_squared": 0.01369055147893109,
+      "best_column": "Alloy",
+      "best_method": "eta_squared",
+      "best_score": 0.01369055147893109
+    },
+    {
+      "dataset": "datacortech_aluminum_inhibitors",
+      "table": "Efficiencies_with_descriptors",
+      "target": "Efficiency",
+      "group": "environment",
+      "n_numeric_associations": 3,
+      "mean_abs_spearman": 0.12396051170759999,
+      "max_abs_spearman": 0.21618309250107734,
+      "n_categorical_associations": 3,
+      "mean_eta_squared": 0.15971300496427782,
+      "max_eta_squared": 0.4163813920231533,
+      "best_column": "pH",
+      "best_method": "eta_squared",
+      "best_score": 0.4163813920231533
+    },
+    {
+      "dataset": "datacortech_aluminum_inhibitors",
+      "table": "Efficiencies_with_descriptors",
+      "target": "Efficiency",
+      "group": "history",
+      "n_numeric_associations": 1,
+      "mean_abs_spearman": 0.09266210997929458,
+      "max_abs_spearman": 0.09266210997929458,
+      "n_categorical_associations": 1,
+      "mean_eta_squared": 0.03935302056682097,
+      "max_eta_squared": 0.03935302056682097,
+      "best_column": "Time_h",
+      "best_method": "spearman",
+      "best_score": 0.09266210997929458
+    },
+    {
+      "dataset": "datacortech_aluminum_inhibitors",
+      "table": "Efficiencies_with_descriptors",
+      "target": "Efficiency",
+      "group": "intervention",
+      "n_numeric_associations": 0,
+      "mean_abs_spearman": null,
+      "max_abs_spearman": null,
+      "n_categorical_associations": 107,
+      "mean_eta_squared": 0.012101455888884886,
+      "max_eta_squared": 0.14672783702994194,
+      "best_column": "MDEN.33",
+      "best_method": "eta_squared",
+      "best_score": 0.14672783702994194
+    },
+    {
+      "dataset": "mg_az91_inhibitors",
+      "table": "Features",
+      "target": "IE",
+      "group": "intervention",
+      "n_numeric_associations": 0,
+      "mean_abs_spearman": null,
+      "max_abs_spearman": null,
+      "n_categorical_associations": 349,
+      "mean_eta_squared": 0.08542564013945378,
+      "max_eta_squared": 0.6780811297656215,
+      "best_column": "P_VSA_v_2",
+      "best_method": "eta_squared",
+      "best_score": 0.6780811297656215
+    },
+    {
+      "dataset": "mg_ze41_inhibitors",
+      "table": "ze41_mol_desc_db_red",
+      "target": "inhibition efficiency ZE41 / %",
+      "group": "intervention",
+      "n_numeric_associations": 0,
+      "mean_abs_spearman": null,
+      "max_abs_spearman": null,
+      "n_categorical_associations": 592,
+      "mean_eta_squared": 0.15549516561180168,
+      "max_eta_squared": 0.9360303423756997,
+      "best_column": "SpMAD_EA",
+      "best_method": "eta_squared",
+      "best_score": 0.9360303423756997
+    },
+    {
+      "dataset": "ni_crevice_repassivation",
+      "table": "Research_data_Saenzetal_table1",
+      "target": "ER.CREV. VECS",
+      "group": "material",
+      "n_numeric_associations": 1,
+      "mean_abs_spearman": 0.21514674555767505,
+      "max_abs_spearman": 0.21514674555767505,
+      "n_categorical_associations": 1,
+      "mean_eta_squared": 0.15487158808537999,
+      "max_eta_squared": 0.15487158808537999,
+      "best_column": "Alloy",
+      "best_method": "spearman",
+      "best_score": 0.21514674555767505
+    },
+    {
+      "dataset": "ni_crevice_repassivation",
+      "table": "Research_data_Saenzetal_table1",
+      "target": "ER.CREV. VECS",
+      "group": "environment",
+      "n_numeric_associations": 5,
+      "mean_abs_spearman": 0.04768259036370483,
+      "max_abs_spearman": 0.10641368046725279,
+      "n_categorical_associations": 5,
+      "mean_eta_squared": 0.0265922719868117,
+      "max_eta_squared": 0.04269732638642442,
+      "best_column": "[Cl-]. mol/L",
+      "best_method": "spearman",
+      "best_score": 0.10641368046725279
+    },
+    {
+      "dataset": "ni_crevice_repassivation",
+      "table": "Research_data_Saenzetal_table1",
+      "target": "ER.CREV. VECS",
+      "group": "electrochem",
+      "n_numeric_associations": 1,
+      "mean_abs_spearman": 0.37273298561937745,
+      "max_abs_spearman": 0.37273298561937745,
+      "n_categorical_associations": 1,
+      "mean_eta_squared": 0.08141806002005794,
+      "max_eta_squared": 0.08141806002005794,
+      "best_column": "iGS. \u00b5A/cm2",
+      "best_method": "spearman",
+      "best_score": 0.37273298561937745
     }
   ],
   "interaction_probes": [
@@ -2317,9 +2719,9 @@
       "environment_features": [
         "Concentration in M"
       ],
-      "base_cv_r2": 0.057171881536851245,
-      "interaction_cv_r2": -0.6330947282193593,
-      "delta_cv_r2": -0.6902666097562106
+      "base_cv_r2": 0.05717188153685258,
+      "interaction_cv_r2": -0.6330947282194221,
+      "delta_cv_r2": -0.6902666097562747
     },
     {
       "dataset": "mpea_corrosion",
@@ -2340,8 +2742,8 @@
         "Concentration in M"
       ],
       "base_cv_r2": 0.5155188106636925,
-      "interaction_cv_r2": 0.6473314035695296,
-      "delta_cv_r2": 0.13181259290583702
+      "interaction_cv_r2": 0.6473314035695295,
+      "delta_cv_r2": 0.1318125929058369
     },
     {
       "dataset": "mpea_corrosion",
@@ -2361,9 +2763,9 @@
       "environment_features": [
         "Concentration in M"
       ],
-      "base_cv_r2": 0.04826362724931212,
-      "interaction_cv_r2": 0.04598006841173574,
-      "delta_cv_r2": -0.0022835588375763813
+      "base_cv_r2": 0.048263627249312345,
+      "interaction_cv_r2": 0.045980068411732675,
+      "delta_cv_r2": -0.0022835588375796703
     },
     {
       "dataset": "mpea_corrosion",
@@ -2383,9 +2785,9 @@
       "environment_features": [
         "Concentration in M"
       ],
-      "base_cv_r2": 0.3145221083507807,
-      "interaction_cv_r2": 0.4179742944951418,
-      "delta_cv_r2": 0.10345218614436108
+      "base_cv_r2": 0.31452210835078065,
+      "interaction_cv_r2": 0.4179742944951409,
+      "delta_cv_r2": 0.10345218614436025
     },
     {
       "dataset": "am_mpea_corrosion",
@@ -2406,8 +2808,8 @@
         "Electrolyte concentration (M)"
       ],
       "base_cv_r2": 0.20720070612703748,
-      "interaction_cv_r2": 0.2045239949140647,
-      "delta_cv_r2": -0.0026767112129727766
+      "interaction_cv_r2": 0.20452399491406464,
+      "delta_cv_r2": -0.002676711212972832
     },
     {
       "dataset": "am_mpea_corrosion",
@@ -2427,9 +2829,9 @@
       "environment_features": [
         "Electrolyte concentration (M)"
       ],
-      "base_cv_r2": 0.8030035255268787,
+      "base_cv_r2": 0.8030035255268786,
       "interaction_cv_r2": 0.8032831597829457,
-      "delta_cv_r2": 0.0002796342560670295
+      "delta_cv_r2": 0.00027963425606714054
     },
     {
       "dataset": "am_mpea_corrosion",
@@ -2450,8 +2852,8 @@
         "Electrolyte concentration (M)"
       ],
       "base_cv_r2": 0.7972885850655722,
-      "interaction_cv_r2": 0.7959372846195912,
-      "delta_cv_r2": -0.001351300445980974
+      "interaction_cv_r2": 0.7959372846195911,
+      "delta_cv_r2": -0.0013513004459810851
     },
     {
       "dataset": "steel_mortar_corrosion",
@@ -2473,9 +2875,9 @@
         "Free Chloride Concentration of mortar",
         "Incorporated Chloride Concentration of mortar"
       ],
-      "base_cv_r2": 0.6264038707887737,
-      "interaction_cv_r2": 0.6440807058298856,
-      "delta_cv_r2": 0.01767683504111195
+      "base_cv_r2": 0.6264038707887734,
+      "interaction_cv_r2": 0.6440807058298829,
+      "delta_cv_r2": 0.017676835041109507
     },
     {
       "dataset": "steel_mortar_corrosion",
@@ -2497,9 +2899,9 @@
         "Water Content of mortar",
         "Incorporated Chloride Concentration of mortar"
       ],
-      "base_cv_r2": -0.6254919397546811,
-      "interaction_cv_r2": -0.8365801485878149,
-      "delta_cv_r2": -0.21108820883313384
+      "base_cv_r2": -0.6254919397546825,
+      "interaction_cv_r2": -0.8365801485878123,
+      "delta_cv_r2": -0.21108820883312973
     },
     {
       "dataset": "steel_mortar_corrosion",
@@ -2521,9 +2923,9 @@
         "Degree of Saturation of mortar",
         "Incorporated Chloride Concentration of mortar"
       ],
-      "base_cv_r2": 0.6879305239939402,
-      "interaction_cv_r2": 0.7155529909651435,
-      "delta_cv_r2": 0.027622466971203297
+      "base_cv_r2": 0.6879305239939397,
+      "interaction_cv_r2": 0.7155529909651432,
+      "delta_cv_r2": 0.02762246697120352
     },
     {
       "dataset": "steel_mortar_corrosion",
@@ -2544,9 +2946,9 @@
         "Free Chloride Concentration of mortar",
         "pH value of Pore Solution of mortar"
       ],
-      "base_cv_r2": 0.28431771486186824,
-      "interaction_cv_r2": 0.21078098454351757,
-      "delta_cv_r2": -0.07353673031835067
+      "base_cv_r2": 0.28431771486186896,
+      "interaction_cv_r2": 0.21078098454351854,
+      "delta_cv_r2": -0.07353673031835042
     },
     {
       "dataset": "steel_mortar_corrosion",
@@ -2567,9 +2969,9 @@
         "Incorporated Chloride Concentration of mortar",
         "Water Content of mortar"
       ],
-      "base_cv_r2": 0.8303229888342667,
-      "interaction_cv_r2": 0.883371737051933,
-      "delta_cv_r2": 0.05304874821766625
+      "base_cv_r2": 0.8303229888342665,
+      "interaction_cv_r2": 0.8833717370519331,
+      "delta_cv_r2": 0.053048748217666586
     },
     {
       "dataset": "steel_mortar_corrosion",
@@ -2613,9 +3015,28 @@
         "pH value of Pore Solution of mortar",
         "Free Chloride Concentration of mortar"
       ],
-      "base_cv_r2": -0.03171911367567719,
-      "interaction_cv_r2": -0.03260414567880656,
-      "delta_cv_r2": -0.0008850320031293726
+      "base_cv_r2": -0.031719113675677126,
+      "interaction_cv_r2": -0.03260414567880945,
+      "delta_cv_r2": -0.0008850320031323217
+    },
+    {
+      "dataset": "ni_crevice_repassivation",
+      "table": "Research_data_Saenzetal_table1",
+      "target": "ER.CREV. VECS",
+      "n": 407,
+      "material_features": [
+        "Alloy"
+      ],
+      "environment_features": [
+        "[Cl-]. mol/L",
+        "T. \u00b0C",
+        "[MoO42-]. mol/L",
+        "[SO42-]. mol/L",
+        "[NO3-]. mol/L"
+      ],
+      "base_cv_r2": 0.21715117398983966,
+      "interaction_cv_r2": 0.32447308181525103,
+      "delta_cv_r2": 0.10732190782541137
     }
   ],
   "history_autocorrelation": [
@@ -2647,10 +3068,10 @@
   "recommendations": {
     "informed_feature_block_strength": {
       "evidence": {
-        "n": 18,
-        "mean": 0.34281644193704885,
+        "n": 20,
+        "mean": 0.33657784543006203,
         "median": 0.3024041044623863,
-        "q75": 0.3970014292767928
+        "q75": 0.3950297043562144
       },
       "suggested_range": [
         0.2,
@@ -2661,16 +3082,16 @@
     },
     "informed_interaction_strength": {
       "material_environment_correlation": {
-        "n": 8,
-        "mean": 0.2128455163320126,
-        "median": 0.14650558416489753,
-        "q75": 0.23962651739499408
+        "n": 9,
+        "mean": 0.20567504374151113,
+        "median": 0.14831126301749958,
+        "q75": 0.21742426687614103
       },
       "interaction_cv_delta": {
-        "n": 14,
-        "mean": -0.045619735828723404,
-        "median": -0.00030269887353117156,
-        "q75": 0.02513605898868046
+        "n": 15,
+        "mean": -0.03542362625178568,
+        "median": 0.00027963425606714054,
+        "q75": 0.04033560759443505
       },
       "suggested_range": [
         0.1,
@@ -2695,10 +3116,10 @@
     },
     "informed_intervention_strength": {
       "target_association": {
-        "n": 3,
-        "mean": 0.23588328469177464,
-        "median": 0.22547593668497976,
-        "q75": 0.2639039086069868
+        "n": 7,
+        "mean": 0.4400469279808654,
+        "median": 0.30233188052899385,
+        "q75": 0.6449602311925463
       },
       "suggested_range": [
         0.05,

@@ -206,9 +206,53 @@ def build_parser():
         default=None,
         metavar=("MATERIAL", "ENVIRONMENT", "ELECTROCHEM", "HISTORY", "INTERVENTION"),
         help=(
-            "Optional informed feature block allocation weights in material, environment, "
-            "electrochem, history, intervention order."
+            "Deprecated five-weight allocation from the old coarse schema. Prefer "
+            "--informed_normal_block_allocation and --informed_inhibitor_block_allocation."
         ),
+    )
+    parser.add_argument(
+        "--informed_task_family_probs",
+        type=float,
+        nargs=2,
+        default=None,
+        metavar=("NORMAL_CORROSION", "INHIBITOR_AGENT"),
+        help="Optional informed task-family mixture weights for audit-v2 grouping.",
+    )
+    parser.add_argument(
+        "--informed_normal_block_allocation",
+        type=float,
+        nargs=9,
+        default=None,
+        metavar=(
+            "MATERIAL",
+            "ENVIRONMENT",
+            "PROCESS_HISTORY",
+            "EXPOSURE_DURATION",
+            "TEMPORAL_HISTORY",
+            "DIRECT_INTERVENTION",
+            "MOLECULAR_DESCRIPTOR",
+            "ELECTROCHEM_CONTROL",
+            "ELECTROCHEM_DOWNSTREAM",
+        ),
+        help="Optional audit-v2 block allocation for normal corrosion synthetic tasks.",
+    )
+    parser.add_argument(
+        "--informed_inhibitor_block_allocation",
+        type=float,
+        nargs=9,
+        default=None,
+        metavar=(
+            "MATERIAL",
+            "ENVIRONMENT",
+            "PROCESS_HISTORY",
+            "EXPOSURE_DURATION",
+            "TEMPORAL_HISTORY",
+            "DIRECT_INTERVENTION",
+            "MOLECULAR_DESCRIPTOR",
+            "ELECTROCHEM_CONTROL",
+            "ELECTROCHEM_DOWNSTREAM",
+        ),
+        help="Optional audit-v2 block allocation for inhibitor-agent synthetic tasks.",
     )
     parser.add_argument(
         "--informed_feature_block_strength",

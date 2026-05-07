@@ -35,13 +35,37 @@ OUT_MD = ROOT / "analysis" / "structural_analysis_results.md"
 GROUPS = [
     "material",
     "environment",
-    "history",
-    "intervention",
-    "electrochem",
+    "process_history",
+    "exposure_duration",
+    "temporal_history",
+    "direct_intervention",
+    "molecular_descriptor",
+    "electrochem_control",
+    "electrochem_downstream",
     "target",
     "metadata",
     "exclude",
 ]
+
+INHIBITOR_DATASETS = {
+    "datacor_aluminum_inhibitors",
+    "datacortech_aluminum_inhibitors",
+    "mg_az91_inhibitors",
+    "mg_ze41_inhibitors",
+}
+
+DIRECT_INTERVENTION_CONTROL_RE = re.compile(
+    r"(inhib.*concentrat|synergistic|encapsulated|dose|dosage|coating|coated)",
+    re.IGNORECASE,
+)
+
+EXPOSURE_DURATION_RE = re.compile(r"(time|duration|days?|hours?|exposure|immersion)", re.IGNORECASE)
+ELECTROCHEM_CONTROL_RE = re.compile(
+    r"(test\s+potential|scan[_\s-]*rate|applied\s+potential)",
+    re.IGNORECASE,
+)
+
+MAX_WITHIN_CORRELATION_COLUMNS = 32
 
 NA_STRINGS = {
     "",
@@ -319,6 +343,55 @@ def make_table(dataset: str, table: str, columns: list[str], groups_by_col: dict
             continue
         dict_rows.append({col: row[i] if i < len(row) else "" for i, col in enumerate(cols)})
     return Table(dataset, table, cols, fixed_groups, dict_rows)
+
+
+def audit_v2_group(table: Table, column: str, current_group: str) -> str:
+    """Map the first-pass loader labels into the audit-derived ontology."""
+    if current_group in {"target", "metadata", "exclude", "material", "environment"}:
+        return current_group
+
+    if table.dataset in INHIBITOR_DATASETS:
+        direct_inhibitor_controls = {
+            "Inhib_Concentrat_M",
+            "Synergistic_inhib",
+            "Synergistic_inhib_type",
+            "Synergistic_inhib_Concentrat_M",
+            "Encapsulated",
+        }
+        if current_group == "intervention":
+            return "direct_intervention" if column in direct_inhibitor_controls else "molecular_descriptor"
+        if current_group == "history":
+            return "exposure_duration" if EXPOSURE_DURATION_RE.search(column) else "process_history"
+        if current_group == "electrochem":
+            return "electrochem_downstream"
+        return current_group
+
+    if current_group == "intervention":
+        return "direct_intervention" if DIRECT_INTERVENTION_CONTROL_RE.search(column) else "process_history"
+
+    if current_group == "history":
+        if table.dataset == "mooring_steel_seawater" and column == "days":
+            return "temporal_history"
+        if ELECTROCHEM_CONTROL_RE.search(column):
+            return "electrochem_control"
+        if "heat treatment" in column.lower():
+            return "direct_intervention"
+        if EXPOSURE_DURATION_RE.search(column):
+            return "exposure_duration"
+        return "process_history"
+
+    if current_group == "electrochem":
+        return "electrochem_downstream"
+
+    return current_group
+
+
+def apply_audit_v2_groups(table: Table) -> Table:
+    groups = {
+        col: audit_v2_group(table, col, table.groups.get(col, "metadata"))
+        for col in table.columns
+    }
+    return Table(table.dataset, table.table, table.columns, groups, table.rows, table.notes)
 
 
 def group_by_positions(columns: list[str], position_groups: dict[str, list[int]]) -> dict[str, str]:
@@ -849,15 +922,13 @@ def load_all_tables() -> list[Table]:
         load_mg_ze41_inhibitors,
         load_ni_crevice_repassivation,
     ]:
-        tables.extend(loader())
+        tables.extend(apply_audit_v2_groups(table) for table in loader())
     return tables
 
 
 def is_numeric_measurement_column(table: Table, column: str) -> bool:
     group = table.groups.get(column, "metadata")
-    if group in {"metadata", "exclude"}:
-        return False
-    if group == "intervention":
+    if group in {"metadata", "exclude", "molecular_descriptor"}:
         return False
     if NUMERIC_COLUMN_EXCLUDE_RE.search(column):
         return False
@@ -949,8 +1020,21 @@ def within_block_correlations(tables: list[Table]) -> list[dict[str, Any]]:
     results = []
     for table in tables:
         by_group = numeric_columns_by_group(table)
-        for group in ["material", "environment", "history", "intervention", "electrochem", "target"]:
+        for group in [
+            "material",
+            "environment",
+            "process_history",
+            "exposure_duration",
+            "temporal_history",
+            "direct_intervention",
+            "electrochem_control",
+            "electrochem_downstream",
+            "target",
+        ]:
             cols = by_group.get(group, [])
+            n_numeric_columns_total = len(cols)
+            if len(cols) > MAX_WITHIN_CORRELATION_COLUMNS:
+                cols = cols[:MAX_WITHIN_CORRELATION_COLUMNS]
             vals, ns = [], []
             for i in range(len(cols)):
                 for j in range(i + 1, len(cols)):
@@ -966,6 +1050,7 @@ def within_block_correlations(tables: list[Table]) -> list[dict[str, Any]]:
                         "table": table.table,
                         "group": group,
                         "n_numeric_columns": len(cols),
+                        "n_numeric_columns_total": n_numeric_columns_total,
                         "n_pairs": len(vals),
                         "mean_abs_spearman": summary["mean"],
                         "median_abs_spearman": summary["median"],
@@ -979,10 +1064,11 @@ def within_block_correlations(tables: list[Table]) -> list[dict[str, Any]]:
 def cross_block_correlations(tables: list[Table]) -> list[dict[str, Any]]:
     pairs = [
         ("material", "environment"),
-        ("material", "history"),
-        ("material", "intervention"),
-        ("environment", "history"),
-        ("environment", "intervention"),
+        ("material", "process_history"),
+        ("material", "exposure_duration"),
+        ("environment", "process_history"),
+        ("environment", "exposure_duration"),
+        ("environment", "direct_intervention"),
     ]
     results = []
     for table in tables:
@@ -1045,7 +1131,16 @@ def target_associations(tables: list[Table]) -> list[dict[str, Any]]:
         targets = numeric_by_group.get("target", [])
         for target in targets:
             y = numeric_vector(table, target)
-            for group in ["material", "environment", "history", "intervention", "electrochem"]:
+            for group in [
+                "material",
+                "environment",
+                "process_history",
+                "exposure_duration",
+                "temporal_history",
+                "direct_intervention",
+                "electrochem_control",
+                "electrochem_downstream",
+            ]:
                 vals = []
                 best = None
                 for col in numeric_by_group.get(group, []):
@@ -1240,7 +1335,16 @@ def recommendations(results: dict[str, Any]) -> dict[str, Any]:
 
     feature_groups = aggregate_group_metric(
         within,
-        lambda r: r["group"] in {"material", "environment", "history", "electrochem"} and r["dataset"] not in {"316l_pitting_passivity"},
+        lambda r: r["group"]
+        in {
+            "material",
+            "environment",
+            "process_history",
+            "exposure_duration",
+            "temporal_history",
+            "electrochem_control",
+        }
+        and r["dataset"] not in {"316l_pitting_passivity"},
         "mean_abs_spearman",
     )
     mat_env = aggregate_group_metric(cross, lambda r: r["group_pair"] == "material:environment", "mean_abs_spearman")
@@ -1250,7 +1354,7 @@ def recommendations(results: dict[str, Any]) -> dict[str, Any]:
         [
             r["best_score"]
             for r in target
-            if r["group"] == "intervention" and np.isfinite(float(r.get("best_score", math.nan)))
+            if r["group"] == "direct_intervention" and np.isfinite(float(r.get("best_score", math.nan)))
         ]
     )
 
@@ -1307,15 +1411,20 @@ def write_markdown(results: dict[str, Any], path: Path) -> None:
         "",
         "## Dataset Coverage",
         "",
-        "| Dataset | Table | Rows | Columns | Numeric material | Numeric environment | Numeric history/intervention | Numeric targets |",
-        "|---|---|---:|---:|---:|---:|---:|---:|",
+        "| Dataset | Table | Rows | Columns | Numeric material | Numeric environment | Numeric process/history | Numeric molecular descriptors | Numeric targets |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for row in results["table_summaries"]:
-        hist_int = row["numeric_columns_by_group"].get("history", 0) + row["numeric_columns_by_group"].get("intervention", 0)
+        hist_int = (
+            row["numeric_columns_by_group"].get("process_history", 0)
+            + row["numeric_columns_by_group"].get("exposure_duration", 0)
+            + row["numeric_columns_by_group"].get("temporal_history", 0)
+        )
         lines.append(
             f"| `{row['dataset']}` | `{row['table']}` | {row['rows']} | {row['columns']} | "
             f"{row['numeric_columns_by_group'].get('material', 0)} | {row['numeric_columns_by_group'].get('environment', 0)} | "
-            f"{hist_int} | {row['numeric_columns_by_group'].get('target', 0)} |"
+            f"{hist_int} | {row['numeric_columns_by_group'].get('molecular_descriptor', 0)} | "
+            f"{row['numeric_columns_by_group'].get('target', 0)} |"
         )
 
     lines += [

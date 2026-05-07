@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=tabicl_s1_regression_baseline
+#SBATCH --job-name=tabicl_s1_regression_test4
 #SBATCH --gpus=2
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
@@ -37,10 +37,19 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --scheduler cosine_warmup \
             --warmup_proportion 0.02 \
             --gradient_clipping 1.0 \
-            --prior_type mix_scm \
-            --informed_prior_ratio False \
+            --prior_type hybrid_scm \
+            --informed_prior_ratio 0.5 \
             --mix_probs 0.7 0.3 \
             --informed_mix_probs 0.7 0.3 \
+            --informed_task_family_probs 0.85 0.15 \
+            --informed_normal_block_allocation 0.72 0.22 0.04 0.01 0.0 0.01 0.0 0.0 0.0 \
+            --informed_inhibitor_block_allocation 0.05 0.08 0.02 0.02 0.0 0.05 0.78 0.0 0.0 \
+            --informed_feature_block_strength 0.25 \
+            --informed_interaction_strength 0.20 \
+            --informed_history_strength 0.10 \
+            --informed_intervention_strength 0.05 \
+            --informed_physical_marginal_prob 0.20 \
+            --informed_physical_marginal_profile corrosion_broad \
             --prior_device cpu \
             --prior_n_jobs "${PRIOR_N_JOBS}" \
             --dataloader_num_workers "${DATALOADER_NUM_WORKERS}" \

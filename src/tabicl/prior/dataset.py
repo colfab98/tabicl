@@ -606,6 +606,10 @@ class SCMPrior(Prior):
         return torch.exp(math.log(low) + u * (math.log(high) - math.log(low)))
 
     @staticmethod
+    def _normal_from_rank(u: Tensor) -> Tensor:
+        return math.sqrt(2.0) * torch.erfinv(2.0 * u - 1.0)
+
+    @staticmethod
     def _piecewise_ph_from_rank(u: Tensor) -> Tensor:
         acidic = (u / 0.20).clamp(0.0, 1.0) * 6.0
         near_neutral = 6.0 + ((u - 0.20) / 0.60).clamp(0.0, 1.0) * 3.0
@@ -621,6 +625,8 @@ class SCMPrior(Prior):
             return cls._piecewise_ph_from_rank(u)
         if family == "chloride":
             return cls._log_uniform_from_rank(u, 1e-3, 1e5)
+        if family == "concentration":
+            return cls._log_uniform_from_rank(u, 1e-6, 1e1)
         if family == "salinity":
             return cls._log_uniform_from_rank(u, 1e-3, 3.5e1)
         if family == "temperature":
@@ -637,9 +643,26 @@ class SCMPrior(Prior):
             return torch.floor(cls._log_uniform_from_rank(u, 1.0, 1e6))
         if family == "material_fraction":
             return 100.0 * u
+        if family == "material_bounded":
+            return u
         if family == "material_property":
             return cls._log_uniform_from_rank(u, 1e-2, 1e3)
+        if family == "material_category":
+            n_categories = int(np.random.choice([2, 3, 4, 5]))
+            return torch.floor(u * n_categories).clamp(max=n_categories - 1)
+        if family == "environment_bounded":
+            return u
+        if family == "environment_category":
+            n_categories = int(np.random.choice([2, 3, 4, 5, 6]))
+            return torch.floor(u * n_categories).clamp(max=n_categories - 1)
         if family == "prior_damage":
+            return u
+        if family == "process_binary":
+            return (u > 0.5).to(dtype=values.dtype)
+        if family == "process_category":
+            n_categories = int(np.random.choice([2, 3, 4, 5, 6]))
+            return torch.floor(u * n_categories).clamp(max=n_categories - 1)
+        if family == "process_score":
             return u
         if family == "intervention_binary":
             return (u > 0.5).to(dtype=values.dtype)
@@ -647,6 +670,16 @@ class SCMPrior(Prior):
             n_categories = int(np.random.choice([2, 3, 4]))
             return torch.floor(u * n_categories).clamp(max=n_categories - 1)
         if family == "intervention_dose":
+            return u
+        if family == "descriptor_standard":
+            scale = float(np.random.uniform(0.5, 3.0))
+            shift = float(np.random.uniform(-1.0, 1.0))
+            return shift + scale * cls._normal_from_rank(u)
+        if family == "descriptor_positive":
+            return cls._log_uniform_from_rank(u, 1e-3, 1e3)
+        if family == "descriptor_count":
+            return torch.floor(cls._log_uniform_from_rank(u, 1.0, 256.0))
+        if family == "descriptor_bounded":
             return u
 
         raise ValueError(f"Unknown corrosion marginal family: {family}")
@@ -684,14 +717,58 @@ class SCMPrior(Prior):
                 self._apply_composition_marginal(X, slice(start, start + comp_width))
                 start += comp_width
             for col in range(start, material_slice.stop):
-                family = str(np.random.choice(["material_fraction", "material_property"]))
+                family = str(
+                    np.random.choice(
+                        [
+                            "material_fraction",
+                            "material_fraction",
+                            "material_bounded",
+                            "material_category",
+                            "material_property",
+                        ]
+                    )
+                )
                 X[:, col] = self._corrosion_marginal_values(X[:, col], family)
 
         block_families = {
-            "environment": ["ph", "chloride", "salinity", "temperature"],
-            "electrochem": ["potential", "current_density", "resistance"],
-            "history": ["exposure_time", "cycle_count", "prior_damage"],
-            "intervention": ["intervention_binary", "intervention_category", "intervention_dose"],
+            "environment": [
+                "environment_bounded",
+                "environment_bounded",
+                "environment_category",
+                "ph",
+                "temperature",
+                "concentration",
+                "chloride",
+                "salinity",
+            ],
+            "electrochem_control": ["potential", "current_density", "resistance"],
+            "electrochem_downstream": ["potential", "current_density", "resistance"],
+            "process_history": [
+                "process_category",
+                "process_category",
+                "process_binary",
+                "process_score",
+                "exposure_time",
+                "cycle_count",
+            ],
+            "exposure_duration": ["exposure_time", "cycle_count"],
+            "temporal_history": ["exposure_time", "cycle_count", "prior_damage"],
+            "direct_intervention": [
+                "intervention_category",
+                "intervention_category",
+                "intervention_category",
+                "intervention_binary",
+                "intervention_dose",
+            ],
+            "molecular_descriptor": [
+                "descriptor_standard",
+                "descriptor_standard",
+                "descriptor_standard",
+                "descriptor_positive",
+                "descriptor_positive",
+                "descriptor_count",
+                "descriptor_bounded",
+            ],
         }
         for block_name, families in block_families.items():
             feature_slice = blocks.get(block_name)
@@ -703,24 +780,26 @@ class SCMPrior(Prior):
 
         return X
 
-    def _split_informed_blocks(self, num_features: int) -> Dict[str, slice]:
-        """Split features into coarse domain blocks."""
-        names = ["material", "environment", "electrochem", "history", "intervention"]
+    def _split_blocks_from_allocation(
+        self,
+        num_features: int,
+        names: list[str],
+        allocation: Any,
+        option_name: str,
+    ) -> Dict[str, slice]:
         if num_features <= 0:
             return {}
 
-        allocation = np.asarray(
-            self.fixed_hp.get("informed_block_allocation", (0.70, 0.18, 0.10, 0.02, 0.0)), dtype=float
-        )
+        allocation = np.asarray(allocation, dtype=float)
         if allocation.shape != (len(names),):
             raise ValueError(
-                "informed_block_allocation must contain five weights in "
-                "material, environment, electrochem, history, intervention order."
+                f"{option_name} must contain {len(names)} weights in "
+                f"{', '.join(names)} order."
             )
         if not np.all(np.isfinite(allocation)) or np.any(allocation < 0.0):
-            raise ValueError("informed_block_allocation weights must be finite and non-negative.")
+            raise ValueError(f"{option_name} weights must be finite and non-negative.")
         if allocation.sum() <= 0.0:
-            raise ValueError("At least one informed_block_allocation weight must be positive.")
+            raise ValueError(f"At least one {option_name} weight must be positive.")
 
         weights = allocation / allocation.sum()
         raw_counts = weights * num_features
@@ -752,13 +831,176 @@ class SCMPrior(Prior):
                 break
         return blocks
 
+    def _sample_informed_task_family(self) -> str:
+        families = ["normal_corrosion", "inhibitor_agent"]
+        probs = np.asarray(self.fixed_hp.get("informed_task_family_probs", (0.85, 0.15)), dtype=float)
+        if probs.shape != (len(families),):
+            raise ValueError("informed_task_family_probs must contain two weights in normal_corrosion, inhibitor_agent order.")
+        if not np.all(np.isfinite(probs)) or np.any(probs < 0.0) or probs.sum() <= 0.0:
+            raise ValueError("informed_task_family_probs weights must be finite, non-negative, and not all zero.")
+        probs = probs / probs.sum()
+        return str(np.random.choice(families, p=probs))
+
+    def _split_informed_blocks_with_family(self, num_features: int) -> Tuple[str, Dict[str, slice]]:
+        """Split features into audit-derived corrosion feature blocks."""
+        names = [
+            "material",
+            "environment",
+            "process_history",
+            "exposure_duration",
+            "temporal_history",
+            "direct_intervention",
+            "molecular_descriptor",
+            "electrochem_control",
+            "electrochem_downstream",
+        ]
+        family = self._sample_informed_task_family()
+        if family == "inhibitor_agent":
+            allocation = self.fixed_hp.get(
+                "informed_inhibitor_block_allocation",
+                (0.05, 0.08, 0.02, 0.02, 0.0, 0.05, 0.78, 0.0, 0.0),
+            )
+            option_name = "informed_inhibitor_block_allocation"
+        else:
+            allocation = self.fixed_hp.get(
+                "informed_normal_block_allocation",
+                (0.72, 0.22, 0.04, 0.01, 0.0, 0.01, 0.0, 0.0, 0.0),
+            )
+            option_name = "informed_normal_block_allocation"
+        blocks = self._split_blocks_from_allocation(num_features, names, allocation, option_name)
+        return family, blocks
+
+    def _split_informed_blocks(self, num_features: int) -> Dict[str, slice]:
+        """Split features into audit-derived corrosion feature blocks."""
+        _, blocks = self._split_informed_blocks_with_family(num_features)
+        return blocks
+
+    @staticmethod
+    def _standardize_signal(values: Tensor) -> Tensor:
+        values = torch.nan_to_num(values, nan=0.0, posinf=0.0, neginf=0.0)
+        if values.numel() <= 1:
+            return torch.zeros_like(values)
+        centered = values - values.mean()
+        scale = torch.std(centered.float(), unbiased=False).to(device=values.device, dtype=values.dtype)
+        return centered / scale.clamp_min(1e-6)
+
+    def _block_projection(self, X: Tensor, feature_slice: Optional[slice], max_columns: int = 12) -> Optional[Tensor]:
+        if feature_slice is None or feature_slice.stop <= feature_slice.start:
+            return None
+
+        block = X[:, feature_slice]
+        if block.numel() == 0:
+            return None
+
+        width = block.shape[-1]
+        if width > max_columns:
+            idx = torch.randperm(width, device=X.device)[:max_columns]
+            block = block[:, idx]
+            width = block.shape[-1]
+
+        if width == 1:
+            projection = block[:, 0]
+        else:
+            weights = torch.randn(width, device=X.device, dtype=X.dtype)
+            weights = weights / torch.linalg.vector_norm(weights).clamp_min(1e-6)
+            projection = block @ weights
+        return self._standardize_signal(projection)
+
+    @staticmethod
+    def _optional_zero(values: Optional[Tensor], reference: Tensor) -> Tensor:
+        return torch.zeros_like(reference) if values is None else values
+
+    def _environment_aggressiveness(self, X: Tensor, blocks: Dict[str, slice], reference: Tensor) -> Tensor:
+        env_slice = blocks.get("environment")
+        env_primary = self._block_projection(X, env_slice)
+        if env_primary is None:
+            return torch.zeros_like(reference)
+
+        env_secondary = self._optional_zero(self._block_projection(X, env_slice), env_primary)
+        env_tertiary = self._optional_zero(self._block_projection(X, env_slice), env_primary)
+
+        chloride_like = torch.sigmoid(env_primary)
+        pH_stress_like = torch.abs(torch.tanh(env_secondary))
+        temperature_like = torch.sigmoid(env_tertiary)
+        aggressiveness = 0.50 * chloride_like + 0.30 * pH_stress_like + 0.20 * temperature_like
+        return self._standardize_signal(aggressiveness)
+
+    def _apply_informed_corrosion_mechanism(
+        self,
+        X: Tensor,
+        y: Tensor,
+        blocks: Dict[str, slice],
+        family: str,
+        interaction_strength: float,
+        intervention_strength: float,
+    ) -> Tuple[Tensor, Tensor]:
+        """Add a broad corrosion-domain target mechanism over semantic blocks."""
+        reference = y.to(dtype=X.dtype)
+        material = self._block_projection(X, blocks.get("material"))
+        environment = self._environment_aggressiveness(X, blocks, reference)
+        process = self._block_projection(X, blocks.get("process_history"))
+        exposure = self._block_projection(X, blocks.get("exposure_duration"))
+        history = self._block_projection(X, blocks.get("temporal_history"))
+        intervention = self._block_projection(X, blocks.get("direct_intervention"))
+        descriptor = self._block_projection(X, blocks.get("molecular_descriptor"))
+
+        material_susceptibility = torch.tanh(self._optional_zero(material, reference))
+        environment_drive = torch.sigmoid(environment)
+        process_modifier = torch.tanh(self._optional_zero(process, reference))
+        exposure_drive = torch.sigmoid(self._optional_zero(exposure, reference))
+        history_damage = torch.sigmoid(self._optional_zero(history, reference))
+
+        corrosion_drive = torch.zeros_like(reference)
+        if material is not None:
+            corrosion_drive = corrosion_drive + 0.35 * material_susceptibility
+        if blocks.get("environment") is not None:
+            corrosion_drive = corrosion_drive + 0.45 * environment_drive
+        if material is not None and blocks.get("environment") is not None:
+            corrosion_drive = corrosion_drive + 0.75 * material_susceptibility * environment_drive
+        if exposure is not None:
+            corrosion_drive = corrosion_drive + 0.25 * exposure_drive * (0.75 + 0.50 * environment_drive)
+        if process is not None:
+            corrosion_drive = corrosion_drive + 0.20 * process_modifier * (0.75 + 0.25 * environment_drive)
+        if history is not None:
+            corrosion_drive = corrosion_drive + 0.20 * history_damage
+
+        if descriptor is not None and family != "inhibitor_agent":
+            # Descriptor-heavy columns can appear in mixed real tasks, but in normal
+            # corrosion tasks they should not dominate the target.
+            corrosion_drive = corrosion_drive + 0.08 * torch.tanh(descriptor)
+
+        if torch.std(corrosion_drive.float(), unbiased=False) > 1e-6:
+            y = y + interaction_strength * self._standardize_signal(corrosion_drive).to(dtype=y.dtype)
+
+        electro_signal = torch.tanh(self._standardize_signal(corrosion_drive)).unsqueeze(-1)
+        for electro_name in ("electrochem_control", "electrochem_downstream"):
+            electro_slice = blocks.get(electro_name)
+            if electro_slice is not None and electro_slice.stop > electro_slice.start:
+                X[:, electro_slice] = X[:, electro_slice] + 0.5 * interaction_strength * electro_signal
+
+        if family == "inhibitor_agent":
+            if descriptor is None and intervention is None:
+                return X, y
+            descriptor_efficacy = torch.sigmoid(self._optional_zero(descriptor, reference))
+            dose = torch.sigmoid(self._optional_zero(intervention, reference))
+            inhibitor_effect = descriptor_efficacy * dose * (0.70 + 0.30 * environment_drive)
+            if torch.std(inhibitor_effect.float(), unbiased=False) > 1e-6:
+                y = y - intervention_strength * self._standardize_signal(inhibitor_effect).to(dtype=y.dtype)
+        elif intervention is not None:
+            intervention_gate = torch.sigmoid(intervention)
+            inhibitor_effect = intervention_gate * (0.60 + 0.40 * environment_drive)
+            if torch.std(inhibitor_effect.float(), unbiased=False) > 1e-6:
+                y = y - intervention_strength * self._standardize_signal(inhibitor_effect).to(dtype=y.dtype)
+
+        return X, y
+
     def apply_informed_structure(self, X: Tensor, y: Tensor, params: Dict[str, Any]) -> Tuple[Tensor, Tensor]:
         """Inject block-wise and interaction structure for informed synthetic priors."""
         num_features = int(params["num_features"])
         if num_features <= 1:
             return X, y
 
-        blocks = self._split_informed_blocks(num_features)
+        family, blocks = self._split_informed_blocks_with_family(num_features)
         if not blocks:
             return X, y
 
@@ -779,28 +1021,8 @@ class SCMPrior(Prior):
             shared = torch.randn(X.shape[0], 1, device=X.device, dtype=X.dtype)
             X[:, feature_slice] = (1.0 - block_strength) * X[:, feature_slice] + block_strength * shared
 
-        def block_mean(name: str) -> Optional[Tensor]:
-            feature_slice = blocks.get(name)
-            if feature_slice is None or feature_slice.stop <= feature_slice.start:
-                return None
-            return X[:, feature_slice].mean(dim=-1, keepdim=True)
-
-        material = block_mean("material")
-        environment = block_mean("environment")
-        electrochem = block_mean("electrochem")
-        history = block_mean("history")
-        intervention = block_mean("intervention")
-
-        # Coupled material x environment signal.
-        if material is not None and environment is not None:
-            coupled = torch.tanh(material * environment)
-            y = y + interaction_strength * coupled.squeeze(-1)
-            electro_slice = blocks.get("electrochem")
-            if electro_slice is not None and electro_slice.stop > electro_slice.start:
-                X[:, electro_slice] = X[:, electro_slice] + 0.5 * interaction_strength * coupled
-
-        # Path dependence via autoregressive history features.
-        history_slice = blocks.get("history")
+        # Path dependence is limited to true temporal-history features.
+        history_slice = blocks.get("temporal_history")
         if history_slice is not None and history_slice.stop > history_slice.start and X.shape[0] > 2:
             hist = X[:, history_slice].clone()
             for t in range(1, hist.shape[0]):
@@ -808,11 +1030,14 @@ class SCMPrior(Prior):
             X[:, history_slice] = hist
             y = y + 0.2 * hist.mean(dim=-1)
 
-        # Interventions reduce damage conditionally on environment severity.
-        if intervention is not None and environment is not None:
-            intervention_gate = torch.sigmoid(intervention).squeeze(-1)
-            env_severity = torch.relu(environment).squeeze(-1)
-            y = y - intervention_strength * intervention_gate * env_severity
+        X, y = self._apply_informed_corrosion_mechanism(
+            X,
+            y,
+            blocks,
+            family,
+            interaction_strength=interaction_strength,
+            intervention_strength=intervention_strength,
+        )
 
         X = self.apply_informed_physical_marginals(X, blocks)
 
