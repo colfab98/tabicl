@@ -37,7 +37,7 @@ from sklearn.metrics import (
     roc_auc_score,
     r2_score,
 )
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit, train_test_split
 
 from tabicl import TabICLClassifier, TabICLRegressor
 
@@ -61,8 +61,20 @@ DEFAULT_FEATURE_GROUPS = (
     "molecular_descriptor",
 )
 ELECTROCHEM_FEATURE_GROUPS = ("electrochem_control", "electrochem_downstream")
+DEFAULT_EXCLUDED_DATASETS = ("316l_pitting_passivity",)
+DEFAULT_EXCLUDED_TASKS = (
+    "nace_nist_corr_data__corr_data_database__rate_mm_yr_or_rating_numeric_rate_only",
+    "nace_nist_corr_data__corr_data_database__rate_mils_yr_or_rating_numeric_rate_only",
+)
+DEFAULT_SUMMARY_EXCLUDED_DATASETS = (
+    "mooring_steel_seawater",
+    "am_mpea_corrosion",
+    "mg_az91_inhibitors",
+    "mg_ze41_inhibitors",
+)
 EVAL_NA_STRINGS = {"", "na", "n/a", "nan", "none", "null", "-", "--"}
 EVAL_RATING_TO_SEVERITY = {"a": 0.0, "b": 1.0, "c": 2.0, "d": 3.0}
+EXACT_NUMERIC_TEXT_RE = re.compile(r"^\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?\s*$")
 EVAL_UNIT_SUFFIX_RE = (
     r"^[\s,;/()°%+\-.]*"
     r"(?:m|mol|molar|wt|vol|ppm|ppb|ppt|c|f|k|d|day|days|h|hr|hrs|hour|hours|min|s|sec|"
@@ -77,6 +89,19 @@ METRIC_COLUMNS = (
     "test_pearson",
     "test_nmae_iqr",
     "test_nrmse_iqr",
+    "test_pinball_loss",
+    "test_npinball_iqr",
+    "test_quantile_calibration_mae",
+    "test_quantile_calibration_max_error",
+    "test_interval_50_coverage_error",
+    "test_interval_50_nwidth_iqr",
+    "test_interval_50_nwinkler_iqr",
+    "test_interval_80_coverage_error",
+    "test_interval_80_nwidth_iqr",
+    "test_interval_80_nwinkler_iqr",
+    "test_interval_90_coverage_error",
+    "test_interval_90_nwidth_iqr",
+    "test_interval_90_nwinkler_iqr",
     "test_accuracy",
     "test_balanced_accuracy",
     "test_f1_macro",
@@ -99,10 +124,52 @@ LOWER_IS_BETTER_METRICS = {
     "test_rmse",
     "test_nmae_iqr",
     "test_nrmse_iqr",
+    "test_pinball_loss",
+    "test_npinball_iqr",
+    "test_quantile_calibration_mae",
+    "test_quantile_calibration_max_error",
+    "test_interval_50_coverage_error",
+    "test_interval_50_nwidth_iqr",
+    "test_interval_50_nwinkler_iqr",
+    "test_interval_80_coverage_error",
+    "test_interval_80_nwidth_iqr",
+    "test_interval_80_nwinkler_iqr",
+    "test_interval_90_coverage_error",
+    "test_interval_90_nwidth_iqr",
+    "test_interval_90_nwinkler_iqr",
     "test_ordinal_mae",
     "test_ordinal_rmse",
     "test_expected_class_mae",
 }
+DEFAULT_REGRESSION_QUANTILE_ALPHAS = (
+    0.05,
+    0.10,
+    0.20,
+    0.25,
+    0.30,
+    0.40,
+    0.50,
+    0.60,
+    0.70,
+    0.75,
+    0.80,
+    0.90,
+    0.95,
+)
+REGRESSION_INTERVAL_SPECS = (
+    (50, 0.25, 0.75),
+    (80, 0.10, 0.90),
+    (90, 0.05, 0.95),
+)
+DEFAULT_REGRESSION_PLOT_METRICS = (
+    "test_spearman",
+    "test_nmae_iqr",
+    "test_nrmse_iqr",
+    "test_npinball_iqr",
+    "test_interval_80_coverage_error",
+    "test_pearson",
+    "test_r2",
+)
 PRIMARY_TARGET_PATTERNS = (
     "corrosion rate",
     "inhibition efficiency",
@@ -116,6 +183,18 @@ PRIMARY_TARGET_PATTERNS = (
     "ocp",
     "rate (mm/yr)",
     "rate",
+)
+DATACORTECH_AUTHOR_FEATURES = (
+    "pH_2_neutral",
+    "ALogP",
+    "tpsaEfficiency",
+    "bpol",
+    "apol",
+    "WTPT.5",
+    "ALogp2",
+    "ATSm1",
+    "WTPT.3",
+    "XLogP",
 )
 
 
@@ -139,6 +218,11 @@ class EvalTask:
     feature_group_counts: dict[str, int]
     dropped_feature_columns: list[str]
     quality_flags: list[str]
+    split_groups: pd.Series | None
+    split_strategy: str
+    include_in_summary: bool
+    summary_exclusion_reason: str
+    fixed_split: EvalSplit | None = None
 
 
 @dataclass(frozen=True)
@@ -152,6 +236,20 @@ class CheckpointEvalSpec:
     checkpoint_name: str
     checkpoint_step: int | None
     local_specs: tuple[LocalModelSpec, ...]
+
+
+@dataclass(frozen=True)
+class EvalSplit:
+    train_index: np.ndarray
+    test_index: np.ndarray
+    split_strategy: str
+
+
+@dataclass
+class CachedTabICLModel:
+    model: Any
+    model_path: Any
+    model_config: dict[str, Any]
 
 
 def parse_args() -> argparse.Namespace:
@@ -193,6 +291,22 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--include-latest-common-checkpoint",
+        dest="include_latest_common_checkpoint",
+        action="store_true",
+        default=True,
+        help=(
+            "When --checkpoint all is interval-filtered, also include the latest common checkpoint "
+            "even if it is not on the interval."
+        ),
+    )
+    parser.add_argument(
+        "--no-include-latest-common-checkpoint",
+        dest="include_latest_common_checkpoint",
+        action="store_false",
+        help="Do not add the latest common checkpoint outside the interval-filtered set.",
+    )
+    parser.add_argument(
         "--local-ckpt-path",
         action="append",
         type=Path,
@@ -210,6 +324,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run-prefix", type=str, default="tabicl_s1mini_generic_")
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--n-estimators", type=int, default=8)
+    parser.add_argument(
+        "--no-model-cache",
+        dest="model_cache",
+        action="store_false",
+        default=True,
+        help="Disable per-checkpoint TabICL model reuse across tasks.",
+    )
     parser.add_argument("--test-size", type=float, default=0.25)
     parser.add_argument("--random-state", type=int, default=42)
     parser.add_argument("--target-mode", choices=("primary", "all"), default="primary")
@@ -236,8 +357,37 @@ def parse_args() -> argparse.Namespace:
         default="median",
         help="Point prediction extracted from TabICLRegressor for continuous-target evaluation.",
     )
+    parser.add_argument(
+        "--regression-quantile-alphas",
+        nargs="+",
+        type=float,
+        default=list(DEFAULT_REGRESSION_QUANTILE_ALPHAS),
+        help=(
+            "Quantile levels requested from TabICLRegressor in continuous-target evaluation. "
+            "Used for pinball loss, quantile calibration, and 50/80/90 percent interval diagnostics."
+        ),
+    )
+    parser.add_argument(
+        "--no-regression-uncertainty",
+        dest="regression_uncertainty",
+        action="store_false",
+        default=True,
+        help="Skip quantile predictions and uncertainty metrics for faster continuous-target evaluation.",
+    )
     parser.add_argument("--dataset", action="append", help="Limit to dataset id. Can be passed multiple times.")
     parser.add_argument("--task", action="append", help="Limit to exact task id. Can be passed multiple times.")
+    parser.add_argument(
+        "--datacortech-protocol",
+        choices=("author_simple", "benchmark"),
+        default="author_simple",
+        help=(
+            "DatacorTech-only task construction. author_simple is the default and uses the "
+            "R-script filters, selected pH/descriptor features, and fixed holdout rows while "
+            "preserving the continuous target unless --target-binning changes it. benchmark "
+            "uses the stricter leakage-aware molecular-descriptor grouped split and all "
+            "leakage-safe features."
+        ),
+    )
     parser.add_argument("--min-samples", type=int, default=40)
     parser.add_argument("--min-class-count", type=int, default=10)
     parser.add_argument(
@@ -302,7 +452,11 @@ def parse_args() -> argparse.Namespace:
         action="append",
         choices=METRIC_COLUMNS,
         default=None,
-        help="Metric to plot in --checkpoint all mode. Repeat to plot multiple metrics. Defaults to all metrics.",
+        help=(
+            "Metric to plot in --checkpoint all mode. Repeat to plot multiple metrics. "
+            "Regression defaults to normalized/rank metrics; pass raw metrics such as "
+            "test_rmse explicitly if native-unit task-level diagnostics are needed."
+        ),
     )
     parser.add_argument(
         "--no-checkpoint-plots",
@@ -319,6 +473,12 @@ def parse_args() -> argparse.Namespace:
 def validate_args(args: argparse.Namespace) -> None:
     if args.checkpoint_step_interval < 0:
         raise ValueError("--checkpoint-step-interval must be >= 0.")
+    alphas = list(args.regression_quantile_alphas or [])
+    if len(alphas) != len(set(alphas)):
+        raise ValueError("--regression-quantile-alphas must not contain duplicate levels.")
+    if any(alpha <= 0.0 or alpha >= 1.0 for alpha in alphas):
+        raise ValueError("--regression-quantile-alphas values must be between 0 and 1.")
+    args.regression_quantile_alphas = sorted(alphas)
     if args.target_binning == "continuous":
         return
     if args.target_binning == "median_binary" and args.target_bins != 2:
@@ -340,6 +500,8 @@ def metric_sort_specs_for_args(args: argparse.Namespace) -> list[tuple[str, bool
         return [
             (REGRESSION_PRIMARY_METRIC, False),
             ("test_nmae_iqr", True),
+            ("test_npinball_iqr", True),
+            ("test_interval_80_coverage_error", True),
             ("test_rmse", True),
         ]
     if args.target_binning == "quantile_multiclass":
@@ -349,6 +511,12 @@ def metric_sort_specs_for_args(args: argparse.Namespace) -> list[tuple[str, bool
             (PRIMARY_METRIC, False),
         ]
     return [(PRIMARY_METRIC, False), ("test_mcc", False)]
+
+
+def default_plot_metrics_for_args(args: argparse.Namespace) -> list[str]:
+    if args.target_binning == "continuous":
+        return list(DEFAULT_REGRESSION_PLOT_METRICS)
+    return list(METRIC_COLUMNS)
 
 
 def expand_runs(args: argparse.Namespace) -> list[str]:
@@ -435,12 +603,21 @@ def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEv
         )
 
     by_run = {run: available_step_checkpoints(run, args) for run in runs}
-    common_steps = sorted(
+    all_common_steps = sorted(
         step
         for step in set.intersection(*(set(paths) for paths in by_run.values()))
         if step >= args.min_checkpoint_step
-        and (args.checkpoint_step_interval == 0 or step % args.checkpoint_step_interval == 0)
     )
+    common_steps = [
+        step
+        for step in all_common_steps
+        if args.checkpoint_step_interval == 0 or step % args.checkpoint_step_interval == 0
+    ]
+    if args.include_latest_common_checkpoint and all_common_steps:
+        latest_common_step = all_common_steps[-1]
+        if latest_common_step not in common_steps:
+            common_steps.append(latest_common_step)
+            common_steps.sort()
     if not common_steps:
         run_list = ", ".join(runs)
         interval_note = (
@@ -568,6 +745,28 @@ def eval_to_float(value: Any, *, column: str = "", group: str = "") -> float:
     return math.nan
 
 
+def is_nace_rate_or_rating_target(table: Table, target_col: str) -> bool:
+    return (
+        table.dataset == "nace_nist_corr_data"
+        and table.table == "CORR-DATA_Database"
+        and target_col in {"Rate (mm/yr) or Rating", "Rate (mils/yr) or Rating"}
+    )
+
+
+def exact_numeric_rate_or_nan(value: Any) -> float:
+    """Parse only exact numeric rate entries, excluding ratings and censored values."""
+    if value is None:
+        return math.nan
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = normalize_eval_numeric_text(clean_name(value))
+    if text.lower() in EVAL_NA_STRINGS:
+        return math.nan
+    if not EXACT_NUMERIC_TEXT_RE.match(text):
+        return math.nan
+    return float(text)
+
+
 def finite_target_values(table: Table, target_col: str) -> np.ndarray:
     values = np.array(
         [eval_to_float(row.get(target_col), column=target_col, group="target") for row in table.rows],
@@ -652,11 +851,13 @@ def feature_value_series(
     table: Table,
     column: str,
     *,
+    rows: list[dict[str, Any]] | None = None,
     min_numeric_finite_ratio: float,
     min_categorical_nonmissing_ratio: float,
 ) -> tuple[pd.Series | None, str, str]:
     group = table.groups.get(column, "metadata")
-    raw = [row.get(column) for row in table.rows]
+    source_rows = table.rows if rows is None else rows
+    raw = [row.get(column) for row in source_rows]
     numeric = np.array([eval_to_float(value, column=column, group=group) for value in raw], dtype=float)
     finite_ratio = float(np.isfinite(numeric).mean()) if len(numeric) else 0.0
     if finite_ratio >= min_numeric_finite_ratio and np.nanstd(numeric) > 0:
@@ -722,6 +923,93 @@ def assess_task_quality(table: Table, X: pd.DataFrame, y: pd.Series) -> list[str
     return sorted(set(flags))
 
 
+def is_default_excluded_task(task: EvalTask) -> bool:
+    if task.task_id in DEFAULT_EXCLUDED_TASKS:
+        return True
+    return task.dataset == "nace_nist_corr_data" and task.task_id.endswith("_numeric_rate_only")
+
+
+def summary_exclusion_reason_for_task(task_id: str, dataset: str) -> str:
+    if dataset in DEFAULT_SUMMARY_EXCLUDED_DATASETS:
+        return f"diagnostic_dataset:{dataset}"
+    return ""
+
+
+def normalized_group_value(value: Any) -> str:
+    if pd.isna(value):
+        return "<NA>"
+    if isinstance(value, (int, float, np.integer, np.floating)):
+        numeric = float(value)
+        if not np.isfinite(numeric):
+            return "<NA>"
+        return format(numeric, ".12g")
+    return str(value).strip()
+
+
+def dataframe_group_keys(frame: pd.DataFrame) -> pd.Series:
+    values = [
+        json.dumps([normalized_group_value(value) for value in row], separators=(",", ":"))
+        for row in frame.itertuples(index=False, name=None)
+    ]
+    return pd.Series(values, index=frame.index, dtype="string")
+
+
+def split_groups_for_task(table: Table, X: pd.DataFrame) -> tuple[pd.Series | None, str]:
+    if table.dataset != "datacortech_aluminum_inhibitors":
+        return None, "random_stratified"
+
+    descriptor_cols = [
+        col
+        for col in X.columns
+        if table.groups.get(col) == "molecular_descriptor"
+    ]
+    if not descriptor_cols:
+        return None, "random_stratified"
+
+    groups = dataframe_group_keys(X[descriptor_cols]).reset_index(drop=True)
+    if groups.nunique(dropna=False) < 2:
+        return None, "random_stratified"
+    return groups, "grouped_molecular_descriptor"
+
+
+def is_datacortech_author_row(row: dict[str, Any]) -> bool:
+    return (
+        clean_name(row.get("Metal")).casefold() == "al"
+        and clean_name(row.get("Synergistic_inhib")).casefold() == "no"
+    )
+
+
+def datacortech_author_holdout_split(n_samples: int) -> EvalSplit:
+    if n_samples != 1966:
+        raise ValueError(
+            "DatacorTech author_simple expects 1966 rows after filtering "
+            f"to Metal == 'Al' and Synergistic_inhib == 'No', got {n_samples}."
+        )
+
+    train_index: list[int] = []
+    test_index: list[int] = []
+    for start in range(0, 1700, 100):
+        train_index.extend(range(start, start + 80))
+        test_index.extend(range(start + 80, start + 100))
+    train_index.extend(range(1700, 1880))
+    test_index.extend(range(1880, 1900))
+    train_index.extend(range(1900, 1966))
+
+    train = np.asarray(train_index, dtype=int)
+    test = np.asarray(test_index, dtype=int)
+    if len(set(train).intersection(set(test))) != 0 or len(train) + len(test) != n_samples:
+        raise ValueError("DatacorTech author_simple holdout indices are inconsistent.")
+    return EvalSplit(train_index=train, test_index=test, split_strategy="datacortech_author_holdout")
+
+
+def datacortech_neutral_ph_series(rows: list[dict[str, Any]]) -> pd.Series:
+    values: list[float] = []
+    for row in rows:
+        ph = eval_to_float(row.get("pH"), column="pH", group="environment")
+        values.append(float(4.0 < ph < 10.0) if np.isfinite(ph) else math.nan)
+    return pd.Series(values, name="pH_2_neutral")
+
+
 def regression_stratify_labels(values: np.ndarray, max_bins: int = 10) -> np.ndarray | None:
     """Create coarse quantile labels only for preserving target coverage in splits."""
     values = np.asarray(values, dtype=float)
@@ -741,6 +1029,108 @@ def regression_stratify_labels(values: np.ndarray, max_bins: int = 10) -> np.nda
     return None
 
 
+def split_distribution_score(labels: np.ndarray | None, train_index: np.ndarray, test_index: np.ndarray) -> float:
+    if labels is None:
+        return 0.0
+
+    labels = np.asarray(labels)
+    unique_labels = pd.unique(pd.Series(labels))
+    if len(unique_labels) <= 1:
+        return 0.0
+
+    full = pd.Series(labels).value_counts(normalize=True)
+    train = pd.Series(labels[train_index]).value_counts(normalize=True)
+    test = pd.Series(labels[test_index]).value_counts(normalize=True)
+    score = 0.0
+    missing_penalty = 0.0
+    for label in unique_labels:
+        full_value = float(full.get(label, 0.0))
+        train_value = float(train.get(label, 0.0))
+        test_value = float(test.get(label, 0.0))
+        score += abs(train_value - full_value) + abs(test_value - full_value)
+        if train_value == 0.0:
+            missing_penalty += 10.0
+        if test_value == 0.0:
+            missing_penalty += 2.0
+    return score + missing_penalty
+
+
+def task_train_test_indices(
+    task: EvalTask,
+    *,
+    y_values: np.ndarray | pd.Series,
+    test_size: float,
+    random_state: int,
+    stratify: np.ndarray | pd.Series | None,
+) -> tuple[np.ndarray, np.ndarray, str]:
+    indices = np.arange(len(task.X))
+    if task.split_groups is None:
+        train_index, test_index = train_test_split(
+            indices,
+            test_size=test_size,
+            stratify=stratify,
+            random_state=random_state,
+        )
+        return np.asarray(train_index), np.asarray(test_index), "random_stratified"
+
+    groups = task.split_groups.astype(str).to_numpy()
+    if len(np.unique(groups)) < 2:
+        train_index, test_index = train_test_split(
+            indices,
+            test_size=test_size,
+            stratify=stratify,
+            random_state=random_state,
+        )
+        return np.asarray(train_index), np.asarray(test_index), "random_stratified_fallback"
+
+    y_array = np.asarray(y_values)
+    stratify_array = np.asarray(stratify) if stratify is not None else None
+    splitter = GroupShuffleSplit(n_splits=128, test_size=test_size, random_state=random_state)
+    best_split: tuple[np.ndarray, np.ndarray] | None = None
+    best_score = math.inf
+    for train_index, test_index in splitter.split(indices, y_array, groups):
+        if len(train_index) == 0 or len(test_index) == 0:
+            continue
+        train_groups = set(groups[train_index])
+        test_groups = set(groups[test_index])
+        if train_groups.intersection(test_groups):
+            continue
+        size_score = abs((len(test_index) / len(indices)) - test_size)
+        distribution_score = split_distribution_score(stratify_array, train_index, test_index)
+        score = size_score + distribution_score
+        if score < best_score:
+            best_score = score
+            best_split = (np.asarray(train_index), np.asarray(test_index))
+
+    if best_split is None:
+        raise RuntimeError(f"Could not create a non-overlapping grouped split for task {task.task_id}")
+    return best_split[0], best_split[1], task.split_strategy
+
+
+def make_task_split(task: EvalTask, *, test_size: float, random_state: int) -> EvalSplit:
+    if task.fixed_split is not None:
+        return task.fixed_split
+
+    if task.target_binning == "continuous":
+        y_values = task.y.astype(float)
+        stratify = regression_stratify_labels(y_values.to_numpy(dtype=float))
+    else:
+        y_values = task.y
+        stratify = task.y
+    train_index, test_index, split_strategy = task_train_test_indices(
+        task,
+        y_values=y_values,
+        test_size=test_size,
+        stratify=stratify,
+        random_state=random_state,
+    )
+    return EvalSplit(
+        train_index=np.asarray(train_index),
+        test_index=np.asarray(test_index),
+        split_strategy=split_strategy,
+    )
+
+
 def task_family_for_dataset(dataset: str) -> str:
     if "inhibitor" in dataset:
         return "inhibitor_agent"
@@ -757,6 +1147,7 @@ def build_task(
     *,
     target_binning: str,
     target_bins: int,
+    datacortech_protocol: str,
     feature_groups: tuple[str, ...],
     max_category_cardinality: int,
     min_numeric_finite_ratio: float,
@@ -766,8 +1157,20 @@ def build_task(
     max_samples_per_task: int,
     random_state: int,
 ) -> EvalTask | None:
+    rows = list(table.rows)
+    use_datacortech_author_simple = (
+        table.dataset == "datacortech_aluminum_inhibitors"
+        and datacortech_protocol == "author_simple"
+    )
+    if use_datacortech_author_simple:
+        rows = [row for row in rows if is_datacortech_author_row(row)]
+
+    strict_numeric_rate_only = target_binning == "continuous" and is_nace_rate_or_rating_target(table, target_col)
+    target_parser = exact_numeric_rate_or_nan if strict_numeric_rate_only else (
+        lambda value: eval_to_float(value, column=target_col, group="target")
+    )
     target_values = np.array(
-        [eval_to_float(row.get(target_col), column=target_col, group="target") for row in table.rows],
+        [target_parser(row.get(target_col)) for row in rows],
         dtype=float,
     )
     valid_target = np.isfinite(target_values)
@@ -796,13 +1199,23 @@ def build_task(
 
     features: dict[str, pd.Series] = {}
     dropped: list[str] = []
-    for col in table.columns:
+    candidate_columns = DATACORTECH_AUTHOR_FEATURES if use_datacortech_author_simple else tuple(table.columns)
+    for col in candidate_columns:
+        if col == "pH_2_neutral" and use_datacortech_author_simple:
+            features[col] = datacortech_neutral_ph_series(rows)
+            continue
+
+        if col not in table.columns:
+            dropped.append(f"{col}:missing")
+            continue
+
         group = table.groups.get(col, "metadata")
-        if col == target_col or group not in feature_groups:
+        if col == target_col or (not use_datacortech_author_simple and group not in feature_groups):
             continue
         series, kind, drop_reason = feature_value_series(
             table,
             col,
+            rows=rows,
             min_numeric_finite_ratio=min_numeric_finite_ratio,
             min_categorical_nonmissing_ratio=min_categorical_nonmissing_ratio,
         )
@@ -845,13 +1258,40 @@ def build_task(
         ):
             return None
 
-    task_id = f"{table.dataset}__{slugify(table.table)}__{slugify(target_col)}"
+    target_slug = slugify(target_col)
+    if strict_numeric_rate_only:
+        target_slug = f"{target_slug}_numeric_rate_only"
+    task_id = f"{table.dataset}__{slugify(table.table)}__{target_slug}"
     quality_flags = assess_task_quality(table, X, y)
-    feature_group_counts = Counter(table.groups.get(col, "metadata") for col in X.columns)
+    if strict_numeric_rate_only:
+        quality_flags = sorted(set(quality_flags + ["numeric_rate_only_target"]))
+    fixed_split: EvalSplit | None = None
+    if use_datacortech_author_simple:
+        fixed_split = datacortech_author_holdout_split(len(X))
+        split_groups = None
+        split_strategy = fixed_split.split_strategy
+        quality_flags = sorted(
+            set(quality_flags + ["datacortech_author_simple", "datacortech_author_feature_subset", split_strategy])
+        )
+    else:
+        split_groups, split_strategy = split_groups_for_task(table, X)
+        if split_groups is not None:
+            quality_flags = sorted(set(quality_flags + [split_strategy]))
+    summary_exclusion_reason = summary_exclusion_reason_for_task(task_id, table.dataset)
+    feature_group_counts = Counter(
+        "environment" if col == "pH_2_neutral" else table.groups.get(col, "metadata")
+        for col in X.columns
+    )
     ordered_class_counts = {
         label: int(class_counts.get(label, 0))
         for label in class_labels
     }
+    feature_groups_used = sorted(
+        set(
+            "environment" if col == "pH_2_neutral" else table.groups.get(col, "metadata")
+            for col in X.columns
+        )
+    )
     return EvalTask(
         task_id=task_id,
         dataset=table.dataset,
@@ -867,10 +1307,15 @@ def build_task(
         y=y,
         y_ordinal=y_ordinal,
         task_family=task_family_for_dataset(table.dataset),
-        feature_groups_used=sorted(set(feature_groups)),
+        feature_groups_used=feature_groups_used,
         feature_group_counts=dict(sorted(feature_group_counts.items())),
         dropped_feature_columns=dropped,
         quality_flags=quality_flags,
+        split_groups=split_groups,
+        split_strategy=split_strategy,
+        include_in_summary=summary_exclusion_reason == "",
+        summary_exclusion_reason=summary_exclusion_reason,
+        fixed_split=fixed_split,
     )
 
 
@@ -890,8 +1335,11 @@ def make_tasks(args: argparse.Namespace) -> list[EvalTask]:
     selected_datasets = set(args.dataset or [])
     selected_tasks = set(args.task or [])
     excluded_quality_flags = set(args.exclude_quality_flag or [])
+    default_excluded_datasets = set(DEFAULT_EXCLUDED_DATASETS)
     tasks: list[EvalTask] = []
     for table in tables:
+        if table.dataset in default_excluded_datasets:
+            continue
         if selected_datasets and table.dataset not in selected_datasets:
             continue
         target_cols = choose_target_columns(
@@ -908,6 +1356,7 @@ def make_tasks(args: argparse.Namespace) -> list[EvalTask]:
                 target_col,
                 target_binning=args.target_binning,
                 target_bins=args.target_bins,
+                datacortech_protocol=args.datacortech_protocol,
                 feature_groups=feature_groups_tuple,
                 max_category_cardinality=args.max_category_cardinality,
                 min_numeric_finite_ratio=args.min_numeric_finite_ratio,
@@ -918,6 +1367,8 @@ def make_tasks(args: argparse.Namespace) -> list[EvalTask]:
                 random_state=args.random_state,
             )
             if task is None:
+                continue
+            if is_default_excluded_task(task):
                 continue
             if excluded_quality_flags and set(task.quality_flags).intersection(excluded_quality_flags):
                 continue
@@ -1001,6 +1452,42 @@ def make_tabpfn_regressor(device: str, random_state: int) -> Any:
             return TabPFNRegressor()
 
 
+def make_cached_tabicl_factory(
+    estimator_factory: Any,
+    *,
+    cache_key: tuple[Any, ...],
+    model_cache: dict[tuple[Any, ...], CachedTabICLModel],
+) -> Any:
+    def cached_factory() -> Any:
+        if cache_key not in model_cache:
+            loader = estimator_factory()
+            loader._resolve_device()
+            loader._load_model()
+            loader.model_.to(loader.device_)
+            model_cache[cache_key] = CachedTabICLModel(
+                model=loader.model_,
+                model_path=loader.model_path_,
+                model_config=loader.model_config_,
+            )
+
+        cached = model_cache[cache_key]
+        estimator = estimator_factory()
+
+        def load_model_from_cache() -> None:
+            model = cached.model
+            if hasattr(model, "clear_cache"):
+                model.clear_cache()
+            estimator.model_ = model
+            estimator.model_path_ = cached.model_path
+            estimator.model_config_ = cached.model_config
+            estimator.model_.eval()
+
+        estimator._load_model = load_model_from_cache
+        return estimator
+
+    return cached_factory
+
+
 def positive_probability(estimator: Any, X: pd.DataFrame, positive_label: str = "high") -> np.ndarray:
     proba = np.asarray(estimator.predict_proba(X), dtype=float)
     classes = [str(cls) for cls in estimator.classes_]
@@ -1035,6 +1522,101 @@ def pearson_safe(y_true: np.ndarray, y_pred: np.ndarray) -> float:
         return math.nan
     value = pd.Series(y_true).corr(pd.Series(y_pred), method="pearson")
     return float(value) if value is not None and np.isfinite(value) else math.nan
+
+
+def alpha_index(alphas: list[float], target_alpha: float) -> int | None:
+    for index, alpha in enumerate(alphas):
+        if math.isclose(alpha, target_alpha, rel_tol=0.0, abs_tol=1e-9):
+            return index
+    return None
+
+
+def empty_regression_uncertainty_metrics() -> dict[str, float]:
+    metrics = {
+        "test_pinball_loss": math.nan,
+        "test_npinball_iqr": math.nan,
+        "test_quantile_calibration_mae": math.nan,
+        "test_quantile_calibration_max_error": math.nan,
+    }
+    for label, _, _ in REGRESSION_INTERVAL_SPECS:
+        metrics.update(
+            {
+                f"test_interval_{label}_coverage": math.nan,
+                f"test_interval_{label}_coverage_error": math.nan,
+                f"test_interval_{label}_mean_width": math.nan,
+                f"test_interval_{label}_nwidth_iqr": math.nan,
+                f"test_interval_{label}_winkler": math.nan,
+                f"test_interval_{label}_nwinkler_iqr": math.nan,
+            }
+        )
+    return metrics
+
+
+def regression_uncertainty_metrics(
+    *,
+    y_true: np.ndarray,
+    quantiles: np.ndarray | None,
+    alphas: list[float],
+    target_iqr: float,
+) -> dict[str, float]:
+    metrics = empty_regression_uncertainty_metrics()
+    if quantiles is None:
+        return metrics
+
+    y_true = np.asarray(y_true, dtype=float)
+    quantiles = np.asarray(quantiles, dtype=float)
+    alphas_array = np.asarray(alphas, dtype=float)
+    if quantiles.ndim != 2 or quantiles.shape[0] != len(y_true) or quantiles.shape[1] != len(alphas):
+        return metrics
+
+    valid_rows = np.isfinite(y_true) & np.isfinite(quantiles).all(axis=1)
+    if not valid_rows.any():
+        return metrics
+
+    y_valid = y_true[valid_rows]
+    q_valid = quantiles[valid_rows]
+    errors = y_valid[:, None] - q_valid
+    pinball = np.maximum(alphas_array * errors, (alphas_array - 1.0) * errors)
+    pinball_loss = float(np.mean(pinball))
+    metrics["test_pinball_loss"] = pinball_loss
+    metrics["test_npinball_iqr"] = pinball_loss / target_iqr if target_iqr > 0 else math.nan
+
+    observed_cdf = np.mean(y_valid[:, None] <= q_valid, axis=0)
+    calibration_errors = np.abs(observed_cdf - alphas_array)
+    metrics["test_quantile_calibration_mae"] = float(np.mean(calibration_errors))
+    metrics["test_quantile_calibration_max_error"] = float(np.max(calibration_errors))
+
+    for label, lower_alpha, upper_alpha in REGRESSION_INTERVAL_SPECS:
+        lower_index = alpha_index(alphas, lower_alpha)
+        upper_index = alpha_index(alphas, upper_alpha)
+        if lower_index is None or upper_index is None:
+            continue
+
+        lower = np.minimum(q_valid[:, lower_index], q_valid[:, upper_index])
+        upper = np.maximum(q_valid[:, lower_index], q_valid[:, upper_index])
+        nominal_coverage = (upper_alpha - lower_alpha)
+        misses_low = y_valid < lower
+        misses_high = y_valid > upper
+        coverage = float(np.mean((~misses_low) & (~misses_high)))
+        width = upper - lower
+        tail_alpha = max(1.0 - nominal_coverage, np.finfo(float).eps)
+        winkler = width.copy()
+        winkler[misses_low] += (2.0 / tail_alpha) * (lower[misses_low] - y_valid[misses_low])
+        winkler[misses_high] += (2.0 / tail_alpha) * (y_valid[misses_high] - upper[misses_high])
+        mean_width = float(np.mean(width))
+        mean_winkler = float(np.mean(winkler))
+        metrics.update(
+            {
+                f"test_interval_{label}_coverage": coverage,
+                f"test_interval_{label}_coverage_error": abs(coverage - nominal_coverage),
+                f"test_interval_{label}_mean_width": mean_width,
+                f"test_interval_{label}_nwidth_iqr": mean_width / target_iqr if target_iqr > 0 else math.nan,
+                f"test_interval_{label}_winkler": mean_winkler,
+                f"test_interval_{label}_nwinkler_iqr": mean_winkler / target_iqr if target_iqr > 0 else math.nan,
+            }
+        )
+
+    return metrics
 
 
 def aligned_probability_matrix(estimator: Any, X: pd.DataFrame, task: EvalTask) -> np.ndarray | None:
@@ -1099,29 +1681,82 @@ def ordinal_metrics(
     return metrics
 
 
+def split_metadata(task: EvalTask, train_index: np.ndarray, test_index: np.ndarray, split_strategy: str) -> dict[str, Any]:
+    metadata: dict[str, Any] = {
+        "split_strategy": split_strategy,
+        "split_group_count": 0,
+        "split_train_group_count": 0,
+        "split_test_group_count": 0,
+        "split_group_overlap_count": 0,
+        "include_in_summary": bool(task.include_in_summary),
+        "summary_exclusion_reason": task.summary_exclusion_reason,
+    }
+    if task.split_groups is None:
+        return metadata
+
+    groups = task.split_groups.astype(str).reset_index(drop=True)
+    train_groups = set(groups.iloc[train_index])
+    test_groups = set(groups.iloc[test_index])
+    metadata.update(
+        {
+            "split_group_count": int(groups.nunique(dropna=False)),
+            "split_train_group_count": int(len(train_groups)),
+            "split_test_group_count": int(len(test_groups)),
+            "split_group_overlap_count": int(len(train_groups.intersection(test_groups))),
+        }
+    )
+    return metadata
+
+
 def evaluate_estimator(
     *,
     model_label: str,
     model_kind: str,
     estimator_factory: Any,
     task: EvalTask,
+    task_split: EvalSplit | None,
     test_size: float,
     random_state: int,
     regression_output: str = "median",
+    regression_quantile_alphas: list[float] | None = None,
+    regression_uncertainty: bool = True,
 ) -> dict[str, Any]:
     if task.target_binning == "continuous":
+        regression_quantile_alphas = list(regression_quantile_alphas or DEFAULT_REGRESSION_QUANTILE_ALPHAS)
         y_values = task.y.astype(float)
-        stratify = regression_stratify_labels(y_values.to_numpy(dtype=float))
-        X_train, X_test, y_train, y_test = train_test_split(
-            task.X,
-            y_values,
-            test_size=test_size,
-            stratify=stratify,
-            random_state=random_state,
-        )
+        split = task_split or make_task_split(task, test_size=test_size, random_state=random_state)
+        train_index = split.train_index
+        test_index = split.test_index
+        split_strategy = split.split_strategy
+        X_train = task.X.iloc[train_index].reset_index(drop=True)
+        X_test = task.X.iloc[test_index].reset_index(drop=True)
+        y_train = y_values.iloc[train_index].reset_index(drop=True)
+        y_test = y_values.iloc[test_index].reset_index(drop=True)
         estimator = estimator_factory()
         estimator.fit(X_train, y_train)
-        y_pred = np.asarray(estimator.predict(X_test, output_type=regression_output), dtype=float)
+        quantile_pred: np.ndarray | None = None
+        if regression_uncertainty:
+            try:
+                predictions = estimator.predict(
+                    X_test,
+                    output_type=[regression_output, "quantiles"],
+                    alphas=regression_quantile_alphas,
+                )
+                if isinstance(predictions, dict):
+                    y_pred = np.asarray(predictions[regression_output], dtype=float)
+                    quantile_pred = np.asarray(predictions["quantiles"], dtype=float)
+                else:
+                    y_pred = np.asarray(predictions, dtype=float)
+            except TypeError:
+                try:
+                    y_pred = np.asarray(estimator.predict(X_test, output_type=regression_output), dtype=float)
+                except TypeError:
+                    y_pred = np.asarray(estimator.predict(X_test), dtype=float)
+        else:
+            try:
+                y_pred = np.asarray(estimator.predict(X_test, output_type=regression_output), dtype=float)
+            except TypeError:
+                y_pred = np.asarray(estimator.predict(X_test), dtype=float)
         y_true = y_test.to_numpy(dtype=float)
 
         mae = float(mean_absolute_error(y_true, y_pred))
@@ -1129,9 +1764,19 @@ def evaluate_estimator(
         target_iqr = float(np.subtract(*np.percentile(y_train.to_numpy(dtype=float), [75, 25])))
         nmae_iqr = mae / target_iqr if target_iqr > 0 else math.nan
         nrmse_iqr = rmse / target_iqr if target_iqr > 0 else math.nan
+        uncertainty_metrics = (
+            regression_uncertainty_metrics(
+                y_true=y_true,
+                quantiles=quantile_pred,
+                alphas=regression_quantile_alphas,
+                target_iqr=target_iqr,
+            )
+            if regression_uncertainty
+            else empty_regression_uncertainty_metrics()
+        )
 
         model_source = getattr(estimator, "model_path_", "")
-        return {
+        row = {
             "model": model_label,
             "model_kind": model_kind,
             "model_source": str(model_source),
@@ -1144,6 +1789,12 @@ def evaluate_estimator(
             "target_bins": 0,
             "target_bin_edges": "",
             "regression_output": regression_output,
+            "regression_uncertainty": bool(regression_uncertainty),
+            "regression_quantile_alphas": (
+                " ".join(format(alpha, ".6g") for alpha in regression_quantile_alphas)
+                if regression_uncertainty
+                else ""
+            ),
             "n_samples": int(len(task.X)),
             "n_train": int(len(X_train)),
             "n_test": int(len(X_test)),
@@ -1153,6 +1804,7 @@ def evaluate_estimator(
             "class_counts": "",
             "positive_label": "",
             "positive_rate": math.nan,
+            **split_metadata(task, train_index, test_index, split_strategy),
             "task_quality_flags": ",".join(task.quality_flags),
             "task_family": task.task_family,
             "test_mae": mae,
@@ -1166,15 +1818,18 @@ def evaluate_estimator(
             "feature_group_counts": json.dumps(task.feature_group_counts, sort_keys=True),
             "dropped_feature_columns": ";".join(task.dropped_feature_columns),
         }
+        row.update(uncertainty_metrics)
+        return row
 
-    X_train, X_test, y_train, y_test, _, y_test_ordinal = train_test_split(
-        task.X,
-        task.y,
-        task.y_ordinal,
-        test_size=test_size,
-        stratify=task.y,
-        random_state=random_state,
-    )
+    split = task_split or make_task_split(task, test_size=test_size, random_state=random_state)
+    train_index = split.train_index
+    test_index = split.test_index
+    split_strategy = split.split_strategy
+    X_train = task.X.iloc[train_index].reset_index(drop=True)
+    X_test = task.X.iloc[test_index].reset_index(drop=True)
+    y_train = task.y.iloc[train_index].reset_index(drop=True)
+    y_test = task.y.iloc[test_index].reset_index(drop=True)
+    y_test_ordinal = task.y_ordinal.iloc[test_index].reset_index(drop=True)
     estimator = estimator_factory()
     estimator.fit(X_train, y_train)
     y_pred = pd.Series(estimator.predict(X_test)).astype(str)
@@ -1232,6 +1887,7 @@ def evaluate_estimator(
         "class_counts": ",".join(f"{label}:{task.class_counts.get(label, 0)}" for label in task.class_labels),
         "positive_label": task.class_labels[-1],
         "positive_rate": float((task.y == task.class_labels[-1]).mean()),
+        **split_metadata(task, train_index, test_index, split_strategy),
         "task_quality_flags": ",".join(task.quality_flags),
         "task_family": task.task_family,
         "test_accuracy": float(accuracy_score(y_test, y_pred)),
@@ -1258,7 +1914,12 @@ def ordered_unique(values: list[str]) -> list[str]:
     return result
 
 
-def default_output_paths(local_specs: list[LocalModelSpec] | tuple[LocalModelSpec, ...], checkpoint_part: str | None = None) -> tuple[Path, Path, Path, Path]:
+def default_output_paths(
+    local_specs: list[LocalModelSpec] | tuple[LocalModelSpec, ...],
+    *,
+    checkpoint_part: str | None = None,
+    stage_tag: str = "unspecified_stage",
+) -> tuple[Path, Path, Path, Path]:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     model_labels = [spec.label for spec in local_specs]
     checkpoint_stems = {spec.checkpoint_path.stem for spec in local_specs}
@@ -1270,12 +1931,13 @@ def default_output_paths(local_specs: list[LocalModelSpec] | tuple[LocalModelSpe
             shown_labels = f"{shown_labels}_plus{len(model_labels) - 4}"
         model_part = f"compare_{shown_labels}"
     ckpt_part = checkpoint_part or (next(iter(checkpoint_stems)) if len(checkpoint_stems) == 1 else "mixed_checkpoints")
-    base = f"corrosion_eval_{model_part}_{slugify(ckpt_part)}_{stamp}"
+    base = f"corrosion_eval_{model_part}_{slugify(ckpt_part)}_{slugify(stage_tag)}_{stamp}"
+    output_dir = DEFAULT_OUTPUT_DIR / base
     return (
-        DEFAULT_OUTPUT_DIR / f"{base}.json",
-        DEFAULT_OUTPUT_DIR / f"{base}.csv",
-        DEFAULT_OUTPUT_DIR / f"{base}_wide.csv",
-        DEFAULT_OUTPUT_DIR / f"{base}_summary.csv",
+        output_dir / "results.json",
+        output_dir / "rows.csv",
+        output_dir / "wide.csv",
+        output_dir / "summary.csv",
     )
 
 
@@ -1283,10 +1945,27 @@ def derived_csv_path(output_csv: Path, suffix: str) -> Path:
     return output_csv.with_name(f"{output_csv.stem}_{suffix}{output_csv.suffix}")
 
 
+def infer_stage_tag(args: argparse.Namespace) -> str:
+    stage_tags: list[str] = []
+    candidates = [str(args.run_prefix or "")]
+    candidates.extend(str(run) for run in (args.run or []))
+    candidates.extend(str(path) for path in (args.local_ckpt_path or []))
+
+    for candidate in candidates:
+        for match in re.finditer(r"tabicl_(s\d+(?:mini)?)(?:[_/\\-]|$)", candidate):
+            tag = match.group(1)
+            if tag not in stage_tags:
+                stage_tags.append(tag)
+
+    if len(stage_tags) == 1:
+        return stage_tags[0]
+    if len(stage_tags) > 1:
+        return "mixed_stage"
+    return "unspecified_stage"
+
+
 def default_plot_dir(args: argparse.Namespace, output_csv: Path) -> Path:
-    if args.target_binning == "continuous":
-        return output_csv.with_name("corrosion_eval_compare_regression")
-    return output_csv.with_name(f"corrosion_eval_compare_bins{args.target_bins}")
+    return output_csv.parent / "plots"
 
 
 def to_float_or_nan(value: Any) -> float:
@@ -1324,6 +2003,8 @@ def make_wide_results_dataframe(rows: list[dict[str, Any]]) -> pd.DataFrame:
         "target_bins",
         "target_bin_edges",
         "regression_output",
+        "regression_uncertainty",
+        "regression_quantile_alphas",
         "n_samples",
         "n_train",
         "n_test",
@@ -1332,6 +2013,13 @@ def make_wide_results_dataframe(rows: list[dict[str, Any]]) -> pd.DataFrame:
         "class_labels",
         "class_counts",
         "positive_rate",
+        "split_strategy",
+        "split_group_count",
+        "split_train_group_count",
+        "split_test_group_count",
+        "split_group_overlap_count",
+        "include_in_summary",
+        "summary_exclusion_reason",
         "task_quality_flags",
     ]
     records: list[dict[str, Any]] = []
@@ -1366,6 +2054,13 @@ def make_wide_results_dataframe(rows: list[dict[str, Any]]) -> pd.DataFrame:
     return pd.DataFrame(records)
 
 
+def summary_included_frame(df: pd.DataFrame) -> pd.DataFrame:
+    if df.empty or "include_in_summary" not in df.columns:
+        return df
+    include = df["include_in_summary"].fillna(True).astype(bool)
+    return df[include].copy()
+
+
 def make_summary_dataframe(
     rows: list[dict[str, Any]],
     errors: list[dict[str, Any]],
@@ -1375,8 +2070,8 @@ def make_summary_dataframe(
     if not rows and not errors:
         return pd.DataFrame()
 
-    df = pd.DataFrame(rows)
-    error_df = pd.DataFrame(errors)
+    df = summary_included_frame(pd.DataFrame(rows))
+    error_df = summary_included_frame(pd.DataFrame(errors))
     has_checkpoint = "checkpoint_name" in df.columns or "checkpoint_name" in error_df.columns
     if has_checkpoint:
         checkpoint_names = ordered_unique(
@@ -1542,6 +2237,8 @@ def print_result_row(row: dict[str, Any]) -> None:
             f"  {row['model']:<24} "
             f"spearman={format_metric(row.get('test_spearman'))} "
             f"nmae_iqr={format_metric(row.get('test_nmae_iqr'))} "
+            f"npinball_iqr={format_metric(row.get('test_npinball_iqr'))} "
+            f"cov80={format_metric(row.get('test_interval_80_coverage'))} "
             f"mae={format_metric(row.get('test_mae'))} "
             f"rmse={format_metric(row.get('test_rmse'))}"
         )
@@ -1581,7 +2278,7 @@ def print_summary(
     metric_display_cols = [f"mean_{primary_metric}", f"weighted_mean_{primary_metric}"]
     if primary_metric == REGRESSION_PRIMARY_METRIC:
         metric_display_cols.extend(["mean_test_nmae_iqr", "weighted_mean_test_nmae_iqr"])
-        metric_display_cols.extend(["mean_test_rmse", "weighted_mean_test_rmse"])
+        metric_display_cols.extend(["mean_test_npinball_iqr", "mean_test_interval_80_coverage_error"])
     elif primary_metric != PRIMARY_METRIC:
         metric_display_cols.extend(["mean_test_ordinal_mae", "weighted_mean_test_ordinal_mae"])
         metric_display_cols.extend([f"mean_{PRIMARY_METRIC}", f"weighted_mean_{PRIMARY_METRIC}"])
@@ -1617,6 +2314,10 @@ def print_task_list(tasks: list[EvalTask]) -> None:
             "positive_rate": float((task.y == task.class_labels[-1]).mean()) if task.class_labels else math.nan,
             "threshold": task.threshold,
             "task_family": task.task_family,
+            "split_strategy": task.split_strategy,
+            "split_group_count": int(task.split_groups.nunique(dropna=False)) if task.split_groups is not None else 0,
+            "include_in_summary": task.include_in_summary,
+            "summary_exclusion_reason": task.summary_exclusion_reason,
             "feature_groups": ",".join(task.feature_groups_used),
             "feature_group_counts": json.dumps(task.feature_group_counts, sort_keys=True),
             "quality_flags": ",".join(task.quality_flags),
@@ -1776,6 +2477,18 @@ def main() -> None:
     if not tasks:
         raise RuntimeError("No corrosion evaluation tasks were generated. Try --target-mode all or lower --min-samples.")
 
+    summary_task_count = sum(1 for task in tasks if task.include_in_summary)
+    diagnostic_task_count = len(tasks) - summary_task_count
+    if diagnostic_task_count:
+        print(
+            f"Generated {len(tasks)} tasks: {summary_task_count} included in checkpoint summaries, "
+            f"{diagnostic_task_count} diagnostic-only."
+        )
+    task_splits = {
+        task.task_id: make_task_split(task, test_size=args.test_size, random_state=args.random_state)
+        for task in tasks
+    }
+
     checkpoint_specs = resolve_checkpoint_eval_specs(args)
     first_local_specs = checkpoint_specs[0].local_specs
     include_checkpoint_columns = args.checkpoint == "all"
@@ -1788,70 +2501,86 @@ def main() -> None:
 
     rows: list[dict[str, Any]] = []
     errors: list[dict[str, Any]] = []
+    reuse_pretrained_tabicl = args.checkpoint == "all" and args.compare_pretrained_tabicl
+    pretrained_tabicl_reuse_ready = False
+    pretrained_tabicl_row_templates_by_task: dict[str, list[dict[str, Any]]] = {}
+    pretrained_tabicl_error_templates_by_task: dict[str, list[dict[str, Any]]] = {}
+    pretrained_tabicl_reuse_labels: list[str] = []
     for checkpoint_eval in checkpoint_specs:
+        model_cache: dict[tuple[Any, ...], CachedTabICLModel] = {}
         jobs: list[dict[str, Any]] = []
         for spec in checkpoint_eval.local_specs:
             model_path = str(spec.checkpoint_path)
             if is_regression_eval:
+                factory = lambda model_path=model_path: make_tabicl_regressor(
+                    model_path=model_path,
+                    checkpoint_version=pretrained_checkpoint_version,
+                    device=args.device,
+                    n_estimators=args.n_estimators,
+                    random_state=args.random_state,
+                    allow_auto_download=False,
+                )
                 jobs.append(
                     {
                         "model_label": spec.label,
                         "model_kind": "local_tabicl_regressor",
-                        "factory": lambda model_path=model_path: make_tabicl_regressor(
-                            model_path=model_path,
-                            checkpoint_version=pretrained_checkpoint_version,
-                            device=args.device,
-                            n_estimators=args.n_estimators,
-                            random_state=args.random_state,
-                            allow_auto_download=False,
-                        ),
+                        "factory": factory,
+                        "cache_key": ("local_tabicl_regressor", model_path, args.device),
                     }
                 )
             else:
+                factory = lambda model_path=model_path: make_tabicl_classifier(
+                    model_path=model_path,
+                    checkpoint_version=pretrained_checkpoint_version,
+                    device=args.device,
+                    n_estimators=args.n_estimators,
+                    random_state=args.random_state,
+                    allow_auto_download=False,
+                )
                 jobs.append(
                     {
                         "model_label": spec.label,
                         "model_kind": "local_tabicl_classifier",
-                        "factory": lambda model_path=model_path: make_tabicl_classifier(
-                            model_path=model_path,
-                            checkpoint_version=pretrained_checkpoint_version,
-                            device=args.device,
-                            n_estimators=args.n_estimators,
-                            random_state=args.random_state,
-                            allow_auto_download=False,
-                        ),
+                        "factory": factory,
+                        "cache_key": ("local_tabicl_classifier", model_path, args.device),
                     }
                 )
 
-        if args.compare_pretrained_tabicl:
+        if args.compare_pretrained_tabicl and not pretrained_tabicl_reuse_ready:
             if is_regression_eval:
+                factory = lambda: make_tabicl_regressor(
+                    model_path=None,
+                    checkpoint_version=pretrained_checkpoint_version,
+                    device=args.device,
+                    n_estimators=args.n_estimators,
+                    random_state=args.random_state,
+                    allow_auto_download=args.baseline_auto_download,
+                )
                 jobs.append(
                     {
                         "model_label": "pretrained_tabicl_v2",
                         "model_kind": "pretrained_tabicl_regressor",
-                        "factory": lambda: make_tabicl_regressor(
-                            model_path=None,
-                            checkpoint_version=pretrained_checkpoint_version,
-                            device=args.device,
-                            n_estimators=args.n_estimators,
-                            random_state=args.random_state,
-                            allow_auto_download=args.baseline_auto_download,
-                        ),
+                        "factory": factory,
+                        "cache_key": ("pretrained_tabicl_regressor", pretrained_checkpoint_version, args.device),
+                        "reuse_static_baseline": reuse_pretrained_tabicl,
                     }
                 )
             else:
+                factory = lambda: make_tabicl_classifier(
+                    model_path=None,
+                    checkpoint_version=pretrained_checkpoint_version,
+                    device=args.device,
+                    n_estimators=args.n_estimators,
+                    random_state=args.random_state,
+                    allow_auto_download=args.baseline_auto_download,
+                )
                 jobs.append(
                     {
                         "model_label": "pretrained_tabicl_v2",
                         "model_kind": "pretrained_tabicl_classifier",
-                        "factory": lambda: make_tabicl_classifier(
-                            model_path=None,
-                            checkpoint_version=pretrained_checkpoint_version,
-                            device=args.device,
-                            n_estimators=args.n_estimators,
-                            random_state=args.random_state,
-                            allow_auto_download=args.baseline_auto_download,
-                        ),
+                        "factory": factory,
+                        "cache_key": ("pretrained_tabicl_classifier", pretrained_checkpoint_version, args.device),
+                        "reuse_static_baseline": reuse_pretrained_tabicl,
                     }
                 )
 
@@ -1866,12 +2595,31 @@ def main() -> None:
                     "model_label": "pretrained_tabpfn",
                     "model_kind": "pretrained_tabpfn_regressor" if is_regression_eval else "pretrained_tabpfn_classifier",
                     "factory": tabpfn_factory,
+                    "cache_key": None,
                 }
             )
         ensure_unique_job_labels(jobs)
+        if args.model_cache:
+            for job in jobs:
+                cache_key = job.get("cache_key")
+                if cache_key is None:
+                    continue
+                job["factory"] = make_cached_tabicl_factory(
+                    job["factory"],
+                    cache_key=cache_key,
+                    model_cache=model_cache,
+                )
 
         checkpoint_header = f"Checkpoint {checkpoint_eval.checkpoint_name}"
-        print(f"\n{checkpoint_header}: evaluating {len(tasks)} tasks x {len(jobs)} models.")
+        reused_model_count = len(pretrained_tabicl_reuse_labels) if pretrained_tabicl_reuse_ready else 0
+        if reused_model_count:
+            print(
+                f"\n{checkpoint_header}: evaluating {len(tasks)} tasks x "
+                f"{len(jobs) + reused_model_count} models "
+                f"({len(jobs)} computed, {reused_model_count} reused)."
+            )
+        else:
+            print(f"\n{checkpoint_header}: evaluating {len(tasks)} tasks x {len(jobs)} models.")
         print("Local checkpoints:")
         for spec in checkpoint_eval.local_specs:
             print(f"  {spec.label}: {spec.checkpoint_path}")
@@ -1890,10 +2638,17 @@ def main() -> None:
                         model_kind=job["model_kind"],
                         estimator_factory=job["factory"],
                         task=task,
+                        task_split=task_splits[task.task_id],
                         test_size=args.test_size,
                         random_state=args.random_state,
                         regression_output=args.regression_output,
+                        regression_quantile_alphas=args.regression_quantile_alphas,
+                        regression_uncertainty=args.regression_uncertainty,
                     )
+                    if job.get("reuse_static_baseline"):
+                        pretrained_tabicl_row_templates_by_task.setdefault(task.task_id, []).append(dict(row))
+                        if job["model_label"] not in pretrained_tabicl_reuse_labels:
+                            pretrained_tabicl_reuse_labels.append(job["model_label"])
                     if include_checkpoint_columns:
                         row["checkpoint_name"] = checkpoint_eval.checkpoint_name
                         row["checkpoint_step"] = checkpoint_eval.checkpoint_step
@@ -1910,8 +2665,15 @@ def main() -> None:
                         "table": task.table,
                         "target": task.target,
                         "task_quality_flags": ",".join(task.quality_flags),
+                        "split_strategy": task.split_strategy,
+                        "include_in_summary": bool(task.include_in_summary),
+                        "summary_exclusion_reason": task.summary_exclusion_reason,
                         "error": repr(exc),
                     }
+                    if job.get("reuse_static_baseline"):
+                        pretrained_tabicl_error_templates_by_task.setdefault(task.task_id, []).append(dict(error))
+                        if job["model_label"] not in pretrained_tabicl_reuse_labels:
+                            pretrained_tabicl_reuse_labels.append(job["model_label"])
                     if include_checkpoint_columns:
                         error["checkpoint_name"] = checkpoint_eval.checkpoint_name
                         error["checkpoint_step"] = checkpoint_eval.checkpoint_step
@@ -1920,9 +2682,33 @@ def main() -> None:
                     if args.print_json_lines:
                         print(json.dumps(error, sort_keys=True))
 
+            if pretrained_tabicl_reuse_ready:
+                for template in pretrained_tabicl_row_templates_by_task.get(task.task_id, []):
+                    row = dict(template)
+                    if include_checkpoint_columns:
+                        row["checkpoint_name"] = checkpoint_eval.checkpoint_name
+                        row["checkpoint_step"] = checkpoint_eval.checkpoint_step
+                    rows.append(row)
+                    print_result_row(row)
+                    if args.print_json_lines:
+                        print(json.dumps(row, sort_keys=True))
+                for template in pretrained_tabicl_error_templates_by_task.get(task.task_id, []):
+                    error = dict(template)
+                    if include_checkpoint_columns:
+                        error["checkpoint_name"] = checkpoint_eval.checkpoint_name
+                        error["checkpoint_step"] = checkpoint_eval.checkpoint_step
+                    errors.append(error)
+                    print(f"  {error['model']:<24} ERROR {error['error']} (reused)")
+                    if args.print_json_lines:
+                        print(json.dumps(error, sort_keys=True))
+
+        if reuse_pretrained_tabicl and not pretrained_tabicl_reuse_ready:
+            pretrained_tabicl_reuse_ready = True
+
     output_json, output_csv, output_wide_csv, output_summary_csv = default_output_paths(
         first_local_specs,
         checkpoint_part="all_common_checkpoints" if args.checkpoint == "all" else None,
+        stage_tag=infer_stage_tag(args),
     )
     if args.output_json is not None:
         output_json = args.output_json.expanduser().resolve()
@@ -1954,7 +2740,7 @@ def main() -> None:
             if args.output_plot_dir is not None
             else default_plot_dir(args, output_csv)
         )
-        plot_metrics = list(args.plot_metric or METRIC_COLUMNS)
+        plot_metrics = list(args.plot_metric or default_plot_metrics_for_args(args))
         plot_paths = write_checkpoint_trend_plots(summary_df, output_plot_dir, plot_metrics)
 
     payload = {
@@ -1985,18 +2771,26 @@ def main() -> None:
         "checkpoint": args.checkpoint,
         "min_checkpoint_step": args.min_checkpoint_step,
         "checkpoint_step_interval": args.checkpoint_step_interval,
+        "include_latest_common_checkpoint": args.include_latest_common_checkpoint,
         "target_mode": args.target_mode,
         "target_binning": args.target_binning,
         "target_bins": args.target_bins,
         "regression_output": args.regression_output,
+        "regression_uncertainty": args.regression_uncertainty,
+        "regression_quantile_alphas": list(args.regression_quantile_alphas),
         "pretrained_checkpoint_version": pretrained_checkpoint_version,
+        "model_cache": args.model_cache,
         "primary_metric": primary_metric,
         "metric_sort_specs": metric_sort_specs,
         "test_size": args.test_size,
         "random_state": args.random_state,
+        "datacortech_protocol": args.datacortech_protocol,
         "max_samples_per_task": args.max_samples_per_task,
         "min_numeric_finite_ratio": args.min_numeric_finite_ratio,
         "min_categorical_nonmissing_ratio": args.min_categorical_nonmissing_ratio,
+        "default_excluded_datasets": list(DEFAULT_EXCLUDED_DATASETS),
+        "default_excluded_tasks": list(DEFAULT_EXCLUDED_TASKS),
+        "default_summary_excluded_datasets": list(DEFAULT_SUMMARY_EXCLUDED_DATASETS),
         "excluded_quality_flags": list(args.exclude_quality_flag or []),
         "n_estimators": args.n_estimators,
         "feature_groups_default": list(DEFAULT_FEATURE_GROUPS),
@@ -2005,6 +2799,7 @@ def main() -> None:
         "rows": rows,
         "errors": errors,
         "output_files": {
+            "artifact_dir": str(output_json.parent),
             "json": str(output_json),
             "csv": str(output_csv),
             "wide_csv": str(output_wide_csv),
@@ -2018,7 +2813,8 @@ def main() -> None:
     wide_df.to_csv(output_wide_csv, index=False)
     summary_df.to_csv(output_summary_csv, index=False)
 
-    print(f"\nSaved JSON results to {output_json}")
+    print(f"\nSaved evaluation artifacts to {output_json.parent}")
+    print(f"Saved JSON results to {output_json}")
     print(f"Saved row CSV results to {output_csv}")
     print(f"Saved wide comparison CSV to {output_wide_csv}")
     print(f"Saved model summary CSV to {output_summary_csv}")

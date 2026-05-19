@@ -3,6 +3,10 @@ source .venv/bin/activate
 git push -u fork HEAD
 
 
+git restore scripts/train_stage1_reg.sbatch
+git pull --ff-only origin colfab98/datacortech-prior
+
+
 sbatch ~/projects/tabicl/scripts/train_stage1_mini_generic.sbatch
 
 bash scripts/run_datacortech_eval.sh   ~/projects/tabicl/checkpoints/tabicl_s1mini_generic_v4/step-1050.ckpt   tabicl_s1mini_generic_v4_step1050   datacortech_generic_v4_eval

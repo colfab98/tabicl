@@ -73,22 +73,55 @@ data generation in that run.
 ### Feature Block Structure
 
 Corrosion features are not exchangeable anonymous columns. Alloy composition,
-pH, chloride concentration, exposure duration, inhibitor dose, and
-electrochemical potential represent different functional families. The informed
-prior therefore splits synthetic columns into coarse conceptual blocks:
+pH, chloride concentration, exposure duration, process history, inhibitor dose,
+molecular descriptors, and electrochemical measurements represent different
+functional families. The current informed prior therefore uses the audit-v2
+feature taxonomy instead of the older coarse five-block layout.
+
+The synthetic block order is:
 
 - `material`
 - `environment`
-- `electrochem`
-- `history`
-- `intervention`
+- `process_history`
+- `exposure_duration`
+- `temporal_history`
+- `direct_intervention`
+- `molecular_descriptor`
+- `electrochem_control`
+- `electrochem_downstream`
 
-The allocation is controlled by `informed_block_allocation`, with weights given
-in material, environment, electrochem, history, intervention order. The weights
-are normalized internally, so they define relative allocation rather than
-absolute counts. Zero weights are allowed, and blocks with zero assigned width
-are not created. For small synthetic tables, low-weight blocks may also be
-absent after rounding.
+The generator first samples an informed task family:
+
+| task family | purpose |
+|---|---|
+| `normal_corrosion` | Material/environment/process-oriented corrosion tables. |
+| `inhibitor_agent` | Inhibitor/intervention tables where molecular descriptors dominate the input columns. |
+
+The family probabilities are controlled by
+`informed_task_family_probs`, in `normal_corrosion`, `inhibitor_agent` order.
+The current default and stage-1 regression Test 4 setting use:
+
+```text
+--informed_task_family_probs 0.85 0.15
+```
+
+Feature allocation is controlled separately for each family:
+
+```text
+--informed_normal_block_allocation 0.72 0.22 0.04 0.01 0.0 0.01 0.0 0.0 0.0
+--informed_inhibitor_block_allocation 0.05 0.08 0.02 0.02 0.0 0.05 0.78 0.0 0.0
+```
+
+These weights are in the nine-block order listed above. The old
+`informed_block_allocation` argument remains only as a deprecated compatibility
+alias for older scripts. It maps the old five values into the new normal-task
+allocation shape, but new experiments should use the explicit normal and
+inhibitor allocation arguments.
+
+The weights are normalized internally, so they define relative allocation
+rather than absolute counts. Zero weights are allowed, and blocks with zero
+assigned width are not created. For small synthetic tables, low-weight blocks
+may also be absent after rounding.
 
 The block widths are approximate. The implementation computes fractional target
 counts from the normalized weights, floors them, and then assigns remaining
@@ -105,9 +138,11 @@ X_block = (1 - alpha) * X_block + alpha * z_block
 `alpha` is controlled by `informed_feature_block_strength`. This represents the
 idea that variables inside a corrosion family often move together or act as
 proxies for a shared latent condition. Environmental variables may jointly
-reflect solution aggressiveness. Electrochemical variables may jointly reflect
-passive-film stability or corrosion tendency. Material descriptors may jointly
-reflect alloy family or microstructural resistance.
+reflect solution aggressiveness. Material descriptors may jointly reflect alloy
+family or microstructural resistance. Molecular descriptors may jointly reflect
+inhibitor chemistry. Electrochemical variables are split into
+control/setpoint-like inputs and downstream-response-like measurements so that
+leakage-prone evaluation defaults can exclude them.
 
 This shared latent coupling is applied only to blocks with more than one
 feature. A one-column block can still participate in later target interactions,
@@ -124,78 +159,98 @@ strong.
 `alpha` is clipped by the implementation to stay below `1.0`, preventing the
 shared latent component from fully replacing the original feature values.
 
-The block structure is injected before `Reg2Cls`. During `Reg2Cls`, features are
-standardized and randomly permuted by default. Therefore the final model input
-can still contain block-induced correlations, but the correlated columns are not
-guaranteed to remain contiguous in input order.
+The block structure is injected before the final target/preprocessing step.
+During `Reg2Cls`, features are standardized and randomly permuted by default.
+Therefore the final model input can still contain block-induced correlations,
+but the correlated columns are not guaranteed to remain contiguous in input
+order.
 
-### Material-Environment Interaction
+### Broad Corrosion Target Mechanism
 
-Corrosion resistance is conditional. A material that performs well in one
-environment may fail in another; chloride concentration, pH, temperature, and
-electrolyte chemistry can change the ranking of materials. The informed prior
-therefore can add an extra material-environment interaction term to the
-synthetic target.
+The first informed-prior implementation used a very simple target term:
+`tanh(material_mean * environment_mean)`. That was useful as a minimal
+interaction test, but it did not address the broader concern that corrosion-like
+features still need to predict corrosion-like targets.
 
-This term is used only when both material and environment blocks are present.
-The block summaries are simple arithmetic means over the synthetic columns in
-each block, computed after the within-block latent coupling step. The prior does
-not identify specific columns as pH, chloride, alloy content, or temperature;
-those names are conceptual interpretations of the synthetic blocks.
+The current implementation replaces that simple target term with a lightweight
+latent corrosion mechanism in `_apply_informed_corrosion_mechanism(...)`. It is
+not a literature-parameterized corrosion simulator. It encodes broad domain
+knowledge in stochastic latent form:
 
 ```text
-coupled = tanh(material_mean * environment_mean)
-y = y + beta * coupled
+material_susceptibility
+environment_aggressiveness
+material_susceptibility x environment_aggressiveness
+exposure_duration_effect
+process_or_history_modifier
+inhibitor_efficacy
 ```
 
-`beta` is controlled by `informed_interaction_strength`. The product creates an
-additional target contribution that depends on the combination of material-like
-and environment-like block states. It does not replace the base SCM target, and
-it does not imply that the whole synthetic task is interaction-only.
+Each signal is computed from random projections of the relevant semantic block,
+not from named physical columns. Environment aggressiveness is composed from
+chloride-like, pH-stress-like, and temperature-like latent projections. This is
+intentionally broad: it teaches the model that corrosion targets can depend on
+material/environment/process/intervention structure without claiming that a
+synthetic column is literally chloride concentration or pH.
 
-The `tanh(...)` bounds the raw coupled signal to `[-1, 1]`, which prevents the
-material-environment product itself from exploding. The final magnitude of the
-added term is still controlled by `beta`, which is not clipped by the
-implementation. If `beta = 0`, this extra interaction term has no effect.
+For normal corrosion tasks, the target receives a standardized corrosion-drive
+term:
 
-The intended learning signal is that important corrosion behavior may live in
-cross-block relationships. For example, material-like features may matter more
-under aggressive environment-like conditions than under mild ones, even though
-the synthetic columns are not explicitly labeled with real physical names.
+```text
+corrosion_drive =
+    material_susceptibility
+  + environment_aggressiveness
+  + material_susceptibility * environment_aggressiveness
+  + exposure_duration_effect
+  + process_or_history_modifier
+
+y = y + beta * standardize(corrosion_drive)
+```
+
+`beta` is controlled by `informed_interaction_strength`. The term does not
+replace the base SCM target. It adds a corrosion-plausible signal on top of the
+generic synthetic target, keeping the task distribution broader than one
+hand-coded corrosion equation.
+
+For inhibitor-agent tasks, molecular descriptors are allowed to affect the
+target through an inhibitor-efficacy signal. Direct intervention columns act as
+dose/control-like inputs. Under positive `informed_intervention_strength`, the
+effect reduces the target conditionally on the environment:
+
+```text
+inhibitor_effect =
+    descriptor_efficacy * direct_intervention_dose * environment_modifier
+
+y = y - gamma * standardize(inhibitor_effect)
+```
+
+This is the main way the new descriptor-heavy inhibitor block differs from the
+older implementation. Molecular descriptors are no longer treated as generic
+direct interventions, but they can still help predict the target through
+descriptor-dependent inhibitor efficacy.
+
+For normal corrosion tasks with direct-intervention columns, the same
+intervention strength produces a weaker conditional reduction term. This keeps
+intervention useful when present but avoids making it a universal default
+driver for material/environment tasks.
 
 ### Electrochemical Proxy Behavior
 
-The informed prior also allows the material-environment interaction to perturb
-the electrochemical block. This encodes the idea that electrochemical
-measurements are often downstream observations of the material-environment
-system.
+Electrochemical features are split into `electrochem_control` and
+`electrochem_downstream`. They are not part of the default leakage-safe
+evaluation feature set, because many electrochemical measurements are targets
+or downstream responses of the experiment.
 
-In implementation, this is not a separate electrochemical mechanism. When
-material and environment blocks are both present, the prior computes the same
-`coupled` signal used for the target interaction. If an electrochemical block is
-also present, that signal is added uniformly to all electrochemical columns:
+Inside synthetic informed tasks, electrochemical blocks can still be perturbed
+by the latent corrosion-drive signal:
 
 ```text
-X_electrochem = X_electrochem + 0.5 * beta * coupled
+X_electrochem = X_electrochem + 0.5 * beta * tanh(standardize(corrosion_drive))
 ```
 
-The target receives the coupled material-environment term directly; the
-electrochemical block is not used as a mediator that then causes the target.
-The implementation also does not use the computed electrochemical block mean for
-this perturbation.
-
-This perturbation only exists when material, environment, and electrochemical
-blocks are all present. If the electrochemical block is absent because its
-allocation is zero or rounded away, no electrochemical columns are perturbed. If
-`informed_interaction_strength` is zero, this perturbation also disappears
-because it uses the same strength parameter as the target interaction.
-
-The prior does not implement electrochemical equations or different formulas
-for potential, current density, resistance, EIS, Tafel behavior, or passive film
-kinetics. It only makes electrochemical-like columns statistically connected to
-the material-environment state. If physical marginals are enabled, this
-perturbation occurs before the electrochemical columns may be remapped into
-broad potential/current/resistance-like marginal shapes.
+This encodes the idea that electrochemical-like columns may be statistically
+connected to the material/environment corrosion state. It does not implement
+Tafel, EIS, passive-film kinetics, or other electrochemical equations.
 
 ### History Dependence
 
@@ -208,8 +263,9 @@ h_t = rho * h_(t-1) + (1 - rho) * h_t
 ```
 
 This transform is applied to the synthetic row order, not to explicit physical
-time stamps or grouped time-series conditions. It runs only when a history block
-exists and the generated table has enough rows for an autoregressive update.
+time stamps or grouped time-series conditions. It runs only when a
+`temporal_history` block exists and the generated table has enough rows for an
+autoregressive update.
 
 `rho` is controlled by `informed_history_strength` and clipped by the
 implementation to stay below `1.0`. Larger values make each history row depend
@@ -232,67 +288,6 @@ motif, but not as a strong universal assumption. Most constructed benchmark
 tasks are ordinary row-wise tabular tasks, not true time-series tasks. The only
 usable time-series evidence came from the mooring steel OCP table and was
 limited.
-
-### Conditional Intervention Behavior
-
-Interventions such as inhibitors, coatings, treatments, and process controls
-should not be modeled as simple global main effects. Their effect depends on
-the environment in which they are applied. The informed prior therefore supports
-a conditional intervention term:
-
-```text
-y = y - gamma * sigmoid(intervention) * relu(environment)
-```
-
-This term is applied only when both intervention and environment blocks exist.
-The `intervention` and `environment` values in the formula are simple block
-means over synthetic columns, computed before any optional physical marginal
-transforms. They are not explicitly identified inhibitor, coating, dose, pH, or
-chloride columns.
-
-`gamma` is controlled by `informed_intervention_strength`. The implementation
-does not clip this value or force it to be positive. Under the intended positive
-setting, the term reduces the target when the environment block mean is
-positive. If `gamma` were set negative, the same formula would instead increase
-the target.
-
-If the environment signal is mild or negative, `relu(environment)` is zero and
-the intervention term does not change the target:
-
-```text
-mild environment:
-relu(environment) = 0
-y = y - gamma * sigmoid(intervention) * 0
-y = y
-```
-
-In an aggressive environment, `relu(environment)` is positive and the
-intervention gate can reduce the target under positive `gamma`:
-
-```text
-aggressive environment:
-relu(environment) > 0
-y = y - gamma * sigmoid(intervention) * positive_value
-```
-
-`sigmoid(intervention)` is a continuous gate, not a binary no/yes inhibitor
-indicator. The intended qualitative behavior is:
-
-```text
-mild environment + intervention-like signal:
-target is approximately unchanged by this term
-
-aggressive environment + weak intervention-like signal:
-target changes little from this term
-
-aggressive environment + strong intervention-like signal:
-target is reduced by this term
-```
-
-The regenerated dataset audit finds intervention/process evidence, especially
-in inhibitor descriptor tables and AM process labels, but it remains
-dataset-specific and mostly categorical or descriptor-based. Intervention should
-therefore remain weak and should not receive a large default feature allocation.
 
 ### Physical Marginal Feature Distributions
 
@@ -318,15 +313,18 @@ names raise an error.
 The broad `corrosion_broad` profile can create feature shapes such as:
 
 - pH constrained to `0-14`
-- chloride/salinity as positive log-scale variables
+- chloride, salinity, and generic concentration as positive log-scale variables
 - temperature in broad Celsius-like ranges
 - electrochemical potentials in broad voltage-like ranges
 - current density and resistance as positive log-scale variables
 - exposure time and cycle count as positive, skewed variables
 - material composition-like groups that sum to approximately 100%
-- material fractions/properties
+- material fractions, bounded material variables, material categories, and material properties
+- environment bounded variables and low-cardinality environment categories
+- process binary/category/score-like variables
 - prior damage values in `[0, 1]`
 - intervention binary/category/dose-like variables
+- molecular descriptor shapes, including standard-normal-like, positive log-scale, count-like, and bounded descriptor variables
 
 These are broad general-knowledge distributions, not fitted empirical
 quantiles from the benchmark datasets. They are implemented as rank-based
@@ -341,10 +339,12 @@ condition passes. The selected subset is softmax-scaled to sum to `100` before
 later processing, while the rest of the material block receives
 fraction/property-like marginals.
 
-The ordering matters. Material-environment, history, and intervention target
-terms are computed before physical marginal remapping, so those target effects
-use the pre-marginal synthetic values. The physical marginal layer changes the
-feature values afterward.
+The ordering matters. The broad corrosion target mechanism is computed before
+physical marginal remapping, so target effects use the pre-marginal synthetic
+latent values. The physical marginal layer changes the feature values afterward.
+This is deliberate for now: it avoids overfitting hand-coded physical formulas,
+but it also means the current prior does not literally compute target effects
+from final pH/chloride/temperature units.
 
 After these marginals are created, `Reg2Cls` can still convert some columns to
 categorical form, remove outliers, standardize every feature column, randomly
@@ -357,7 +357,9 @@ feature preprocessing.
 ### Difference From `col_feature_group`
 
 The informed prior's feature groups are synthetic semantic blocks in the data
-generator: material, environment, electrochemical, history, and intervention.
+generator: material, environment, process/history, exposure duration,
+intervention, molecular descriptor, and electrochemical control/downstream
+families.
 The model-side `col_feature_group` mechanism is an architectural embedding
 mechanism that groups feature values before creating column embeddings.
 
@@ -369,9 +371,9 @@ These mechanisms are related but not identical:
   values jointly during embedding.
 
 The model-side grouping is not semantic. It does not know which generated
-columns are material, environment, electrochemical, history, or intervention
-columns, and it is not given labels such as "this column is pH" or "this column
-is alloy composition".
+columns are material, environment, molecular descriptor, process, history,
+direct intervention, or electrochemical columns, and it is not given labels
+such as "this column is pH" or "this column is alloy composition".
 
 The default model behavior uses `col_feature_group="same"` with group size `3`.
 In that mode, grouping is based on circular shifted feature views, not simple
@@ -423,9 +425,11 @@ questions:
 
 The datasets were used in a limited way:
 
-1. Columns were manually mapped, using the shared schema, into coarse groups:
-   `material`, `environment`, `history`, `intervention`, `electrochem`,
-   `target`, and `metadata`.
+1. Columns were manually mapped and then audit-refined into leakage-aware
+   groups: `material`, `environment`, `process_history`,
+   `exposure_duration`, `temporal_history`, `direct_intervention`,
+   `molecular_descriptor`, `electrochem_control`,
+   `electrochem_downstream`, `target`, `metadata`, and `exclude`.
 2. The analysis counted how often those groups appeared across downloaded
    corrosion tables.
 3. Within each group, numeric dependence was estimated using pairwise Spearman
@@ -440,24 +444,24 @@ The datasets were used in a limited way:
 7. History/path dependence was checked using the available time-series mooring
    steel OCP data and lag-1 autocorrelation.
 8. Intervention/process effects were checked through associations from
-   processing, treatment, and inhibitor-descriptor-like fields. In the
-   regenerated result file, the usable intervention association evidence comes
-   from AM-MPEA `AM process` associations and inhibitor-descriptor associations
-   in the Datacor, DatacorTech, Mg AZ91, and Mg ZE41 inhibitor tables.
+   processing, treatment, direct inhibitor controls, and inhibitor molecular
+   descriptors. The audit separated dense inhibitor descriptors from direct
+   intervention controls because descriptors describe the intervention agent;
+   they are not themselves dose/coating/process controls.
 
 The broad pre-audit findings were:
 
-- The datasets supported separate material, environment, electrochemical
-  response, history/process, and intervention-like blocks.
+- The datasets supported separate material, environment, process/history,
+  direct-intervention, molecular-descriptor, and electrochemical
+  control/downstream blocks.
 - Within-block dependence was usually moderate rather than extreme.
 - Material-environment coupling was scientifically sensible and sometimes
   useful, but simple interaction probes were mixed.
 - History/path dependence is scientifically important, but the downloaded
   time-series evidence was narrow.
 - Intervention/process and inhibitor-descriptor variables were present and
-  sometimes informative, but the evidence remains dataset-specific and mostly
-  categorical or descriptor-based, so it does not justify a large universal
-  intervention strength.
+  sometimes informative, but descriptors should be modeled as a separate
+  inhibitor-agent family rather than folded into generic direct intervention.
 - `informed_prior_ratio` cannot be estimated directly from these datasets
   because it controls how often informed synthetic tasks appear during training.
 
@@ -508,20 +512,20 @@ The dataset evidence argues against simply making the informed prior stronger.
 The structural-analysis file does not directly estimate every informed-prior
 setting.
 
-`informed_block_allocation` is not derived from the strength table above. It is
-driven mainly by feature-composition evidence: the collected and constructed
-corrosion tasks are material/composition heavy, with smaller environment and
-history/process components, very sparse intervention inputs, and electrochemical
-values often appearing as targets or downstream measurements. The final
-material-heavy allocation is therefore reported in the later
-**Dataset-Derived Recommended Setting** section.
+`informed_task_family_probs`, `informed_normal_block_allocation`, and
+`informed_inhibitor_block_allocation` are not derived from the strength table
+above. They are driven mainly by feature-composition evidence under the audit-v2
+grouping: normal corrosion tasks are material/composition heavy, while
+inhibitor tables are descriptor-heavy. Electrochemical values often appear as
+targets, controls, or downstream measurements, so the default leakage-safe
+training setting gives them zero allocation.
 
 `informed_physical_marginal_prob` is also not estimated from empirical
 corrosion-feature marginal distributions. The physical marginal layer is a
 hand-specified broad prior over pH-like, concentration-like, time-like,
-electrochemical-like, compositional, and intervention-like shapes. Its
-probability should be treated as a conservative design choice rather than a
-measured value.
+electrochemical-like, compositional, process-like, intervention-like, and
+molecular-descriptor-like shapes. Its probability should be treated as a
+conservative design choice rather than a measured value.
 
 ## Benchmark And Task Quality
 
@@ -604,19 +608,17 @@ Weak or suspect tasks should be reported with explicit caveats.
 
 If the informed setting is chosen from the corrected corrosion dataset insights
 rather than from selecting the best checkpoint result, the best default is a
-conservative, material-heavy hybrid prior.
+conservative, grouping-aware hybrid prior.
 
 The strongest dataset-derived signal is feature composition, not exact numeric
-strength. The final block allocation is driven mainly by the current primary
-benchmark and leakage-safe evaluation feature composition, rather than raw
-column counts across every downloaded table. Those benchmark tasks are
-material/composition heavy, with smaller environment and history/process
-components. Electrochemical measurements are often targets or downstream
-responses, so they should not occupy a large default input-feature block. The
-new inhibitor datasets increase intervention-association evidence, but they
-are small or descriptor-heavy and mostly categorical in this structural
-analysis, so they do not by themselves justify a large universal intervention
-input block.
+strength. The final allocation is driven mainly by leakage-safe evaluation
+feature composition under the audit-v2 groups. Normal corrosion tasks are
+material/composition heavy, with smaller environment and process/history
+components. Electrochemical measurements are often targets, controls, or
+downstream responses, so they do not occupy a default input-feature block.
+Inhibitor datasets are descriptor-heavy, so they are handled as a separate
+inhibitor-agent task family rather than blended into the normal corrosion
+allocation.
 
 Recommended setting:
 
@@ -626,11 +628,13 @@ Recommended setting:
 | `informed_prior_ratio` | `0.50` | Not estimated by datasets; use a balanced design default, not a claimed calibrated value. |
 | `mix_probs` | `0.70 0.30` | Keep the generic MLP/tree mixture unchanged. |
 | `informed_mix_probs` | `0.70 0.30` | Avoid adding an extra uncalibrated preference for MLP-only informed tasks. |
-| `informed_block_allocation` | material `0.70`, environment `0.18`, electrochem `0.10`, history `0.02`, intervention `0.00` | Matches the material-heavy benchmark feature composition and avoids giving intervention a default block. |
+| `informed_task_family_probs` | `0.85 0.15` | Mostly normal corrosion tasks, with a minority of inhibitor-agent tasks. |
+| `informed_normal_block_allocation` | `0.72 0.22 0.04 0.01 0.0 0.01 0.0 0.0 0.0` | Matches leakage-safe normal corrosion feature composition: material heavy, environment second, small process/exposure/direct-intervention, no molecular/electrochem defaults. |
+| `informed_inhibitor_block_allocation` | `0.05 0.08 0.02 0.02 0.0 0.05 0.78 0.0 0.0` | Reflects descriptor-heavy inhibitor tables while keeping some environment and direct-intervention context. |
 | `informed_feature_block_strength` | `0.25` | Corrected within-block dependence is moderate: mean about `0.337`, median about `0.302`. |
-| `informed_interaction_strength` | `0.20` | Material-environment interaction is scientifically sensible, but corrected interaction-probe gains are mixed and near zero on median. |
+| `informed_interaction_strength` | `0.20` | Material/environment/process corrosion target structure is scientifically sensible, but diagnostic interaction gains are mixed and should stay moderate. |
 | `informed_history_strength` | `0.10` | Path dependence is a corrosion motif, but usable time-series evidence is narrow and weak. |
-| `informed_intervention_strength` | `0.05` | Intervention evidence increased after adding inhibitor datasets, but it remains dataset-specific and mostly categorical or descriptor-based; keep this as a weak conditional effect. |
+| `informed_intervention_strength` | `0.05` | Direct interventions and inhibitor descriptors can matter, but the effect should remain weak and conditional. |
 | `informed_physical_marginal_prob` | `0.20` | Use broad physical marginal shapes occasionally, but do not let hand-specified ranges dominate training. |
 | `informed_physical_marginal_profile` | `corrosion_broad` | Use the existing broad profile if marginal transforms are enabled. |
 
@@ -641,7 +645,9 @@ Launch arguments:
 --informed_prior_ratio 0.5
 --mix_probs 0.7 0.3
 --informed_mix_probs 0.7 0.3
---informed_block_allocation 0.70 0.18 0.10 0.02 0.0
+--informed_task_family_probs 0.85 0.15
+--informed_normal_block_allocation 0.72 0.22 0.04 0.01 0.0 0.01 0.0 0.0 0.0
+--informed_inhibitor_block_allocation 0.05 0.08 0.02 0.02 0.0 0.05 0.78 0.0 0.0
 --informed_feature_block_strength 0.25
 --informed_interaction_strength 0.20
 --informed_history_strength 0.10
@@ -657,10 +663,12 @@ are plausible. The dataset-based argument is:
 
 ```text
 material/composition should dominate the synthetic feature blocks;
-material-environment coupling should exist but remain moderate;
-electrochemical inputs should be much smaller than material inputs because they are often targets or downstream measurements;
+environment should be the second-largest normal corrosion block;
+process/exposure/direct-intervention should be present but small;
+molecular descriptors should dominate only inhibitor-agent synthetic tasks;
+electrochemical inputs should default to zero because they are often targets, controls, or downstream measurements;
 history should be weak because most benchmark tables are static row-wise data;
-intervention should have no default feature block in the primary material-heavy setting, though targeted inhibitor/intervention ablations are now worth testing;
+the corrosion target mechanism should include material x environment and conditional inhibitor/intervention effects, but remain broad and stochastic;
 physical marginal shapes should be occasional, broad, and non-calibrated.
 ```
 
@@ -884,6 +892,23 @@ by `--max-samples-per-task`; for regression caps and train/test splits, the
 script uses quantile-like stratification labels only to keep the target
 distribution balanced across the split.
 
+The evaluator now uses the audit-v2 leakage-safe feature groups by default:
+
+```text
+material
+environment
+process_history
+exposure_duration
+temporal_history
+direct_intervention
+molecular_descriptor
+```
+
+Electrochemical control and downstream-response groups are excluded unless
+`--include-electrochem-features` is passed. Result rows also record
+`task_family` and `feature_group_counts`, making it possible to inspect normal
+corrosion, inhibitor-agent, time-series, and coarse-corpus behavior separately.
+
 Continuous evaluation uses `TabICLRegressor`, not `TabICLClassifier`. The
 default pretrained comparator also switches to the TabICL regressor checkpoint
 for continuous evaluation. The point prediction extracted from a regression
@@ -956,25 +981,29 @@ unless these environment variables are overridden.
 
 ### Training And Utility Scripts
 
-`scripts/train_stage1_reg.sbatch` is the clean generic regression baseline
-launcher. It uses:
+`scripts/train_stage1_reg.sbatch` is the active stage-1 regression launcher.
+It is currently configured as the grouping-aware Test 4 informed regression
+run, not as the clean generic baseline. It uses:
 
 ```text
---prior_type mix_scm
+--prior_type hybrid_scm
+--informed_prior_ratio 0.5
 --mix_probs 0.7 0.3
+--informed_mix_probs 0.7 0.3
+--informed_task_family_probs 0.85 0.15
+--informed_normal_block_allocation 0.72 0.22 0.04 0.01 0.0 0.01 0.0 0.0 0.0
+--informed_inhibitor_block_allocation 0.05 0.08 0.02 0.02 0.0 0.05 0.78 0.0 0.0
 --max_classes 0
 --num_quantiles 999
 ```
 
-It does not include informed-prior settings as active training structure, so it
-is the baseline regression run to compare against informed regression runs.
+This script is the replacement for the old coarse Test 4 setup. A clean generic
+regression baseline should use `prior_type mix_scm` and omit the informed
+arguments, but that is not the current content of `train_stage1_reg.sbatch`.
 
-`scripts/train_stage1_mini_generic.sbatch` is currently configured as a
-regression informed test launcher, despite the older generic name. It uses
-`max_classes=0` and currently includes the stronger Test 5 informed settings.
-This is a naming/reproducibility watchpoint, not a regression-code
-requirement. Use `train_stage1_reg.sbatch` when the desired run is the clean
-generic regression baseline.
+`scripts/train_stage1_mini_generic.sbatch` is obsolete for the current
+regression workflow. It may still contain old coarse informed-prior arguments,
+but it should not be used for the new grouping-aware regression experiments.
 
 `smoke_test.sh` now exercises the regression path by using `--max_classes 0`
 and a smaller `--num_quantiles 99`. This means it no longer validates the
@@ -992,8 +1021,9 @@ The target-binning evaluation modes remain available for old classifier
 checkpoints and for any future classifier ablations.
 
 The existing informed-prior structure remains available. Regression does not
-remove `hybrid_scm`, `informed_scm`, block allocation, material-environment
-interaction, history, intervention, or physical marginal controls.
+remove `hybrid_scm`, `informed_scm`, audit-v2 block allocation, broad corrosion
+target mechanisms, history, intervention, molecular descriptors, or physical
+marginal controls.
 
 Legacy stage scripts such as `scripts/train_stage1.sh`,
 `scripts/train_stage2.sh`, and `scripts/train_stage3.sh` still pass
@@ -1027,6 +1057,12 @@ learning problem is not identical.
 
 ## Experiment Versions
 
+This section records the older `s1mini_generic` experiment matrix. It is useful
+for historical interpretation, but it predates the audit-v2 grouping and still
+uses the deprecated five-value `informed_block_allocation` notation. The active
+regression Test 4 launcher is now `scripts/train_stage1_reg.sbatch` with the
+nine-block normal/inhibitor allocation arguments described above.
+
 The baseline is a reproduced generic `mix_scm` run. It keeps the original
 generic MLP/tree prior mixture and disables all informed-prior structure. The
 informed tests then add corrosion-derived structure in stages, so the effect of
@@ -1056,7 +1092,7 @@ All runs also use 2 GPUs through `torchrun --standalone --nproc_per_node=2`,
 CPU prior generation, `prior_n_jobs=8`, `dataloader_num_workers=4`, and
 `dataloader_prefetch_factor=4`.
 
-### New Test Matrix
+### Historical S1-Mini Test Matrix
 
 | run | prior type | purpose | informed structure |
 |---|---|---|---|
@@ -1284,38 +1320,26 @@ The informed prior encodes plausible corrosion motifs, but it can also inject
 the wrong feature proportions or overemphasize structures that are rare in the
 benchmark inputs.
 
-The main mismatch found in the audit was feature allocation. The older informed
-prior split synthetic features approximately as:
+The main mismatch found in the audit has now been addressed in code: the old
+coarse five-block allocation has been replaced by audit-v2 grouping, separate
+normal/inhibitor task-family allocations, and leakage-safe electrochemical
+defaults. This reduces the earlier risk of too little material/composition
+capacity, too much electrochemical-feature capacity, and treating dense
+inhibitor molecular descriptors as direct intervention controls.
 
-| block | older informed-prior allocation |
-|---|---:|
-| `material` | 27.7% |
-| `environment` | 27.0% |
-| `electrochem` | 20.0% |
-| `history` | 15.0% |
-| `intervention` | 10.3% |
+The remaining implementation risks are different:
 
-The constructed corrosion evaluation tasks had aggregate input-feature
-composition:
-
-| block | eval-task feature count | eval-task share |
-|---|---:|---:|
-| `material` | 146 | 73.0% |
-| `environment` | 29 | 14.5% |
-| `history` | 24 | 12.0% |
-| `intervention` | 1 | 0.5% |
-| `electrochem` | 0 | 0.0% |
-
-This mismatch gives a plausible explanation for why informed variants can
-underperform the clean generic baseline at some checkpoints:
-
-- too little material/composition capacity relative to the benchmark tasks
-- too much electrochemical-feature capacity despite electrochemical variables
-  usually being targets or leakage-prone post-measurements
-- too much intervention structure despite almost no intervention features in
-  the evaluation tasks
-- too much row-order/history structure for mostly non-time-series tables
-- interaction strength chosen from weak, noisy interaction evidence
+- the new corrosion target mechanism is broad latent domain knowledge, not a
+  validated physical simulator;
+- physical marginal transforms are hand-specified and not fitted empirical
+  corrosion-feature quantiles;
+- target effects are computed before physical marginal remapping, so the
+  mechanism does not literally use final pH/chloride/temperature units;
+- molecular descriptors are modeled as useful for inhibitor efficacy, but the
+  descriptor-to-efficacy mapping is stochastic and generic;
+- history remains weak because most benchmark tables are static row-wise data;
+- electrochemical inputs are excluded by default in evaluation, but synthetic
+  electrochemical blocks still exist for optional informed-prior tasks.
 
 History evidence is especially weak. The only true time-series signal came
 from the mooring steel OCP table:
@@ -1456,5 +1480,7 @@ values, not calibrated estimates. The corrected parser audit softened the
 evidence for exact strengths, especially history and intervention.
 
 The original `v18` description as a code-level block-allocation change remains
-important for reproducibility, but the allocation is now exposed as a CLI
-argument through `--informed_block_allocation`.
+important for reproducibility, but it belongs to the older five-block
+implementation. Current runs should use `--informed_normal_block_allocation`
+and `--informed_inhibitor_block_allocation`; `--informed_block_allocation` is a
+deprecated compatibility alias.
