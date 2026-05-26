@@ -910,6 +910,26 @@ class SCMPrior(Prior):
     def _optional_zero(values: Optional[Tensor], reference: Tensor) -> Tensor:
         return torch.zeros_like(reference) if values is None else values
 
+    def _informed_target_family(self) -> str:
+        family = str(self.fixed_hp.get("informed_target_family", "generic_corrosion")).strip().lower()
+        family = family.replace("-", "_")
+        aliases = {
+            "generic": "generic_corrosion",
+            "corrosion": "generic_corrosion",
+            "corrosion_severity": "generic_corrosion",
+            "pitting": "pitting_potential",
+            "epit": "pitting_potential",
+            "breakdown_potential": "pitting_potential",
+            "pitting_breakdown_potential": "pitting_potential",
+        }
+        family = aliases.get(family, family)
+        if family not in {"generic_corrosion", "pitting_potential"}:
+            raise ValueError(
+                "Unsupported informed_target_family "
+                f"{family!r}. Expected one of: generic_corrosion, pitting_potential."
+            )
+        return family
+
     def _environment_aggressiveness(self, X: Tensor, blocks: Dict[str, slice], reference: Tensor) -> Tensor:
         env_slice = blocks.get("environment")
         env_primary = self._block_projection(X, env_slice)
@@ -925,6 +945,75 @@ class SCMPrior(Prior):
         aggressiveness = 0.50 * chloride_like + 0.30 * pH_stress_like + 0.20 * temperature_like
         return self._standardize_signal(aggressiveness)
 
+    def _apply_informed_pitting_potential_mechanism(
+        self,
+        X: Tensor,
+        y: Tensor,
+        blocks: Dict[str, slice],
+        family: str,
+        interaction_strength: float,
+        intervention_strength: float,
+    ) -> Tuple[Tensor, Tensor]:
+        """Add an Epit-like target where higher y means stronger pitting resistance."""
+        reference = y.to(dtype=X.dtype)
+        material = self._block_projection(X, blocks.get("material"))
+        environment = self._environment_aggressiveness(X, blocks, reference)
+        process = self._block_projection(X, blocks.get("process_history"))
+        exposure = self._block_projection(X, blocks.get("exposure_duration"))
+        history = self._block_projection(X, blocks.get("temporal_history"))
+        intervention = self._block_projection(X, blocks.get("direct_intervention"))
+        descriptor = self._block_projection(X, blocks.get("molecular_descriptor"))
+
+        material_signal = self._optional_zero(material, reference)
+        material_passivity = torch.tanh(material_signal)
+        material_susceptibility = torch.sigmoid(-material_signal)
+        environment_drive = torch.sigmoid(environment)
+        process_offset = torch.tanh(self._optional_zero(process, reference))
+        exposure_drive = torch.sigmoid(self._optional_zero(exposure, reference))
+        history_damage = torch.sigmoid(self._optional_zero(history, reference))
+
+        # Epit is a breakdown threshold: protective/passivating chemistry raises it,
+        # while chloride-/temperature-/pH-like environmental stress lowers it.
+        epit_drive = torch.zeros_like(reference)
+        if material is not None:
+            epit_drive = epit_drive + 0.55 * material_passivity
+        if blocks.get("environment") is not None:
+            epit_drive = epit_drive - 0.45 * environment_drive
+        if material is not None and blocks.get("environment") is not None:
+            epit_drive = epit_drive - 0.75 * material_susceptibility * environment_drive
+        if exposure is not None:
+            epit_drive = epit_drive - 0.20 * exposure_drive * (0.75 + 0.50 * environment_drive)
+        if process is not None:
+            epit_drive = epit_drive + 0.20 * process_offset * (0.75 + 0.25 * environment_drive)
+        if history is not None:
+            epit_drive = epit_drive - 0.15 * history_damage
+        if descriptor is not None and family != "inhibitor_agent":
+            epit_drive = epit_drive + 0.05 * torch.tanh(descriptor)
+
+        if torch.std(epit_drive.float(), unbiased=False) > 1e-6:
+            y = y + interaction_strength * self._standardize_signal(epit_drive).to(dtype=y.dtype)
+
+        electro_signal = torch.tanh(self._standardize_signal(epit_drive)).unsqueeze(-1)
+        for electro_name in ("electrochem_control", "electrochem_downstream"):
+            electro_slice = blocks.get(electro_name)
+            if electro_slice is not None and electro_slice.stop > electro_slice.start:
+                X[:, electro_slice] = X[:, electro_slice] + 0.5 * interaction_strength * electro_signal
+
+        if family == "inhibitor_agent":
+            if descriptor is None and intervention is None:
+                return X, y
+            descriptor_efficacy = torch.sigmoid(self._optional_zero(descriptor, reference))
+            dose = torch.sigmoid(self._optional_zero(intervention, reference))
+            protection = descriptor_efficacy * dose * (0.70 + 0.30 * environment_drive)
+            if torch.std(protection.float(), unbiased=False) > 1e-6:
+                y = y + intervention_strength * self._standardize_signal(protection).to(dtype=y.dtype)
+        elif intervention is not None:
+            protection = torch.sigmoid(intervention) * (0.60 + 0.40 * environment_drive)
+            if torch.std(protection.float(), unbiased=False) > 1e-6:
+                y = y + intervention_strength * self._standardize_signal(protection).to(dtype=y.dtype)
+
+        return X, y
+
     def _apply_informed_corrosion_mechanism(
         self,
         X: Tensor,
@@ -935,6 +1024,17 @@ class SCMPrior(Prior):
         intervention_strength: float,
     ) -> Tuple[Tensor, Tensor]:
         """Add a broad corrosion-domain target mechanism over semantic blocks."""
+        target_family = self._informed_target_family()
+        if target_family == "pitting_potential":
+            return self._apply_informed_pitting_potential_mechanism(
+                X,
+                y,
+                blocks,
+                family,
+                interaction_strength=interaction_strength,
+                intervention_strength=intervention_strength,
+            )
+
         reference = y.to(dtype=X.dtype)
         material = self._block_projection(X, blocks.get("material"))
         environment = self._environment_aggressiveness(X, blocks, reference)

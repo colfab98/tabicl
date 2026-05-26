@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=tabicl_s1_regression_test7
-#SBATCH --gpus=2
+#SBATCH --job-name=tabicl_s1_regression_pitting_optuna_worst_trial21
+#SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
 #SBATCH --output=/home/%u/tmp/%x.%j.out
@@ -20,7 +20,7 @@ cd ~/projects/tabicl
 source .venv/bin/activate
 
 
-torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabicl/train/run.py \
+torchrun --standalone --nproc_per_node=1 /home/fcolanto/projects/tabicl/src/tabicl/train/run.py \
             --wandb_log False \
             --wandb_project TabICL \
             --wandb_name Stage1 \
@@ -41,14 +41,15 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --informed_prior_ratio 0.75 \
             --mix_probs 0.7 0.3 \
             --informed_mix_probs 0.7 0.3 \
-            --informed_task_family_probs 0.80 0.20 \
-            --informed_normal_block_allocation 0.72 0.19 0.06 0.005 0.005 0.02 0.0 0.0 0.0 \
-            --informed_inhibitor_block_allocation 0.03 0.04 0.01 0.01 0.0 0.03 0.88 0.0 0.0 \
-            --informed_feature_block_strength 0.25 \
-            --informed_interaction_strength 0.20 \
-            --informed_history_strength 0.10 \
-            --informed_intervention_strength 0.05 \
-            --informed_physical_marginal_prob 0.20 \
+            --informed_task_family_probs 1.0 0.0 \
+            --informed_normal_block_allocation 0.7209996920 0.1905883028 0.08841200518 0.0 0.0 0.0 0.0 0.0 0.0 \
+            --informed_inhibitor_block_allocation 0.05 0.08 0.02 0.02 0.0 0.05 0.78 0.0 0.0 \
+            --informed_feature_block_strength 0.3966906976 \
+            --informed_interaction_strength 0.1931080436 \
+            --informed_history_strength 0.0 \
+            --informed_intervention_strength 0.0 \
+            --informed_target_family pitting_potential \
+            --informed_physical_marginal_prob 0.0 \
             --informed_physical_marginal_profile corrosion_broad \
             --prior_device cpu \
             --prior_n_jobs "${PRIOR_N_JOBS}" \

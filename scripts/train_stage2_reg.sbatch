@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=tabicl_s2_regression_baseline
+#SBATCH --job-name=tabicl_s2_regression_pitting_target
 #SBATCH --gpus=2
 #SBATCH --mem=64G
 #SBATCH --time=48:00:00
@@ -15,7 +15,7 @@ PRIOR_N_JOBS=4
 DATALOADER_NUM_WORKERS=1
 DATALOADER_PREFETCH_FACTOR=1
 
-STAGE1_CKPT_DIR="${STAGE1_CKPT_DIR:-/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline}"
+STAGE1_CKPT_DIR="${STAGE1_CKPT_DIR:-/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_target}"
 STAGE2_CKPT_DIR="${STAGE2_CKPT_DIR:-/home/fcolanto/projects/tabicl/checkpoints/${RUN_NAME}}"
 RESUME_STAGE2="${RESUME_STAGE2:-1}"
 
@@ -71,8 +71,20 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --poly_decay_lr_end 5e-6 \
             --poly_decay_power 2.0 \
             --gradient_clipping 1.0 \
-            --prior_type mix_scm \
+            --prior_type hybrid_scm \
+            --informed_prior_ratio 0.75 \
             --mix_probs 0.7 0.3 \
+            --informed_mix_probs 0.7 0.3 \
+            --informed_task_family_probs 1.0 0.0 \
+            --informed_normal_block_allocation 0.72 0.22 0.06 0.0 0.0 0.0 0.0 0.0 0.0 \
+            --informed_inhibitor_block_allocation 0.05 0.08 0.02 0.02 0.0 0.05 0.78 0.0 0.0 \
+            --informed_feature_block_strength 0.25 \
+            --informed_interaction_strength 0.20 \
+            --informed_history_strength 0.0 \
+            --informed_intervention_strength 0.0 \
+            --informed_target_family pitting_potential \
+            --informed_physical_marginal_prob 0.20 \
+            --informed_physical_marginal_profile corrosion_broad \
             --prior_device cpu \
             --prior_n_jobs "${PRIOR_N_JOBS}" \
             --dataloader_num_workers "${DATALOADER_NUM_WORKERS}" \

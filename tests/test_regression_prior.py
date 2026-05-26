@@ -140,3 +140,47 @@ def test_informed_corrosion_mechanism_changes_inhibitor_targets_from_descriptors
     assert y_new.shape == y.shape
     assert torch.isfinite(y_new).all()
     assert torch.std(y_new - y, unbiased=False) > 0
+
+
+def test_pitting_target_family_raises_target_with_material_passivity():
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["informed_target_family"] = "pitting_potential"
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.zeros(64, 2)
+    X[:, 0] = torch.linspace(-3.0, 3.0, steps=64)
+    y = torch.zeros(64)
+    blocks = {"material": slice(0, 1), "environment": slice(1, 2)}
+
+    _, y_new = prior._apply_informed_corrosion_mechanism(
+        X.clone(),
+        y.clone(),
+        blocks,
+        "normal_corrosion",
+        interaction_strength=1.0,
+        intervention_strength=0.0,
+    )
+
+    assert torch.isfinite(y_new).all()
+    assert y_new[-1] > y_new[0]
+
+
+def test_pitting_target_family_lowers_target_with_environment_aggressiveness():
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["informed_target_family"] = "pitting_potential"
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.zeros(64, 2)
+    X[:, 1] = torch.linspace(-3.0, 3.0, steps=64)
+    y = torch.zeros(64)
+    blocks = {"material": slice(0, 1), "environment": slice(1, 2)}
+
+    _, y_new = prior._apply_informed_corrosion_mechanism(
+        X.clone(),
+        y.clone(),
+        blocks,
+        "normal_corrosion",
+        interaction_strength=1.0,
+        intervention_strength=0.0,
+    )
+
+    assert torch.isfinite(y_new).all()
+    assert y_new[0] > y_new[-1]

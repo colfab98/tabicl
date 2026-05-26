@@ -6,6 +6,7 @@ CHECKPOINT="${2:-}"
 MODEL_LABEL="${3:-}"
 TARGET_MODE="${4:-continuous}"
 RUN_PREFIX_MODE="${5-${RUN_PREFIX:-auto}}"
+EXTRA_EVAL_ARGS=("${@:6}")
 
 if [ -z "$RUN_OR_CKPT" ] || [ -z "$CHECKPOINT" ]; then
   echo "Usage: $0 <run_suffix_or_checkpoint_path[,run_suffix...]> <checkpoint_step_or_name> [job_or_model_label] [continuous|target_bins] [run_prefix|auto]"
@@ -22,6 +23,8 @@ if [ -z "$RUN_OR_CKPT" ] || [ -z "$CHECKPOINT" ]; then
   echo "The wrapper defaults are stage-aware: s1 every 500 steps, s2 every 100 steps, fallback every 1000 steps."
   echo "The latest common checkpoint is included by default; set INCLUDE_LATEST_COMMON_CHECKPOINT=0 to disable."
   echo "Set CHECKPOINT_STEP_INTERVAL=0 to evaluate every common checkpoint."
+  echo "Pass extra eval_corrosion_datasets.py args after the run_prefix argument, e.g. --task <task_id>."
+  echo "Set COMPARE_PRETRAINED_TABICL=0 to skip pretrained TabICL in the submitted eval."
   echo "Set DRY_RUN=1 to print resolved arguments without submitting sbatch."
   exit 1
 fi
@@ -43,6 +46,33 @@ all_run_tokens_are_full_dir_names() {
     fi
   done
   [ "$found" = "1" ]
+}
+
+short_model_label() {
+  local token="$1"
+  local label
+  label="$(basename "$token")"
+  label="${label#tabicl_s1_regression_}"
+  label="${label#tabicl_s2_regression_}"
+  label="${label#tabicl_s1_}"
+  label="${label#tabicl_s2_}"
+  label="${label#pitting_optuna_}"
+  if [[ "$label" =~ ^best_trial([0-9]+)$ ]]; then
+    label="trial${BASH_REMATCH[1]}_optuna_best"
+  elif [[ "$label" =~ ^worst_trial([0-9]+)$ ]]; then
+    label="trial${BASH_REMATCH[1]}_optuna_worst"
+  fi
+  printf '%s' "$label"
+}
+
+extra_args_have_model_labels() {
+  local arg
+  for arg in "${EXTRA_EVAL_ARGS[@]}"; do
+    if [[ "$arg" == "--local-model-label" || "$arg" == "--model-label" ]]; then
+      return 0
+    fi
+  done
+  return 1
 }
 
 default_checkpoint_step_interval() {
@@ -107,8 +137,14 @@ elif [[ "$RUN_OR_CKPT" == *,* ]]; then
       continue
     fi
     CKPT_ARGS+=(--run "$RUN")
-    RUN_LABELS+=("$RUN")
+    RUN_LABELS+=("$(short_model_label "$RUN")")
   done
+
+  if ! extra_args_have_model_labels; then
+    for LABEL_ITEM in "${RUN_LABELS[@]}"; do
+      CKPT_ARGS+=(--local-model-label "$LABEL_ITEM")
+    done
+  fi
 
   if [ "${#RUN_LABELS[@]}" -eq 0 ]; then
     echo "No run suffixes found in '$RUN_OR_CKPT'." >&2
@@ -201,6 +237,10 @@ if [ "$PASS_MODEL_LABEL" = "1" ]; then
   EVAL_ARGS+=(--local-model-label "$LABEL")
 fi
 
+if [ "${#EXTRA_EVAL_ARGS[@]}" -gt 0 ]; then
+  EVAL_ARGS+=("${EXTRA_EVAL_ARGS[@]}")
+fi
+
 if [ "$REGRESSION_EVAL" = "1" ]; then
   EVAL_ARGS+=(--target-binning continuous)
 elif [ "$TARGET_BINS" = "2" ]; then
@@ -210,6 +250,13 @@ else
 fi
 
 printf -v EVAL_ARGS_STR "%q " "${EVAL_ARGS[@]}"
+
+COMPARE_PRETRAINED_TABICL="${COMPARE_PRETRAINED_TABICL:-1}"
+if [ "$COMPARE_PRETRAINED_TABICL" = "0" ]; then
+  PRETRAINED_ARG="--no-compare-pretrained-tabicl"
+else
+  PRETRAINED_ARG="--compare-pretrained-tabicl"
+fi
 
 JOB_NAME="tabicl_corrosion_${LABEL}"
 
@@ -236,5 +283,5 @@ source .venv/bin/activate
 python scripts/eval_corrosion_datasets.py \\
   ${EVAL_ARGS_STR}\\
   --target-mode primary \\
-  --compare-pretrained-tabicl
+  ${PRETRAINED_ARG}
 EOF

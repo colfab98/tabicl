@@ -71,6 +71,15 @@ def build_parser():
         "--scheduler", type=str, default="cosine_warmup", help="Learning rate scheduler: see optim.py for options."
     )
     parser.add_argument(
+        "--scheduler_total_steps",
+        type=int,
+        default=None,
+        help=(
+            "Optional LR scheduler horizon. Defaults to --max_steps. "
+            "Use this for short proxy runs that should follow the early part of a longer training schedule."
+        ),
+    )
+    parser.add_argument(
         "--warmup_proportion",
         type=float,
         default=0.2,
@@ -277,6 +286,16 @@ def build_parser():
         type=false_or_float,
         default=None,
         help="Optional override for informed intervention damping strength.",
+    )
+    parser.add_argument(
+        "--informed_target_family",
+        type=str,
+        default=None,
+        choices=("generic_corrosion", "pitting_potential"),
+        help=(
+            "Optional target semantics for informed SCM target generation. "
+            "Use pitting_potential for Epit/passivity-breakdown threshold targets."
+        ),
     )
     parser.add_argument(
         "--informed_physical_marginal_prob",

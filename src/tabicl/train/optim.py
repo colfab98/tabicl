@@ -107,8 +107,12 @@ def get_cosine_with_restarts(
 def get_scheduler(config, optimizer):
     """Get the learning rate scheduler based on the training configuration."""
 
+    scheduler_total_steps = getattr(config, "scheduler_total_steps", None) or config.max_steps
+    if scheduler_total_steps <= 0:
+        raise ValueError("scheduler_total_steps must be positive.")
+
     if config.warmup_proportion >= 0:
-        warmup_steps = config.max_steps * config.warmup_proportion
+        warmup_steps = scheduler_total_steps * config.warmup_proportion
     else:
         warmup_steps = config.warmup_steps
 
@@ -116,17 +120,17 @@ def get_scheduler(config, optimizer):
         scheduler = get_constant_schedule(optimizer=optimizer)
     elif config.scheduler == "linear_warmup":
         scheduler = get_linear_schedule_with_warmup(
-            optimizer=optimizer, num_warmup_steps=warmup_steps, num_training_steps=config.max_steps
+            optimizer=optimizer, num_warmup_steps=warmup_steps, num_training_steps=scheduler_total_steps
         )
     elif config.scheduler == "cosine_warmup":
         scheduler = get_cosine_schedule_with_warmup(
-            optimizer=optimizer, num_warmup_steps=warmup_steps, num_training_steps=config.max_steps
+            optimizer=optimizer, num_warmup_steps=warmup_steps, num_training_steps=scheduler_total_steps
         )
     elif config.scheduler == "cosine_with_restarts":
         scheduler = get_cosine_with_restarts(
             optimizer=optimizer,
             num_warmup_steps=warmup_steps,
-            num_training_steps=config.max_steps,
+            num_training_steps=scheduler_total_steps,
             num_cycles=config.cosine_num_cycles,
             amplitude_decay=config.cosine_amplitude_decay,
             lr_end=config.cosine_lr_end,
@@ -135,7 +139,7 @@ def get_scheduler(config, optimizer):
         scheduler = get_polynomial_decay_schedule_with_warmup(
             optimizer=optimizer,
             num_warmup_steps=warmup_steps,
-            num_training_steps=config.max_steps,
+            num_training_steps=scheduler_total_steps,
             lr_end=config.poly_decay_lr_end,
             power=config.poly_decay_power,
         )

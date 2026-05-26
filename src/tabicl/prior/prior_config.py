@@ -12,6 +12,7 @@ DEFAULT_FIXED_HP = {
     "informed_interaction_strength": 0.35,
     "informed_history_strength": 0.70,
     "informed_intervention_strength": 0.20,
+    "informed_target_family": "generic_corrosion",
     "informed_physical_marginal_prob": 0.0,
     "informed_physical_marginal_profile": "corrosion_broad",
     # TreeSCM

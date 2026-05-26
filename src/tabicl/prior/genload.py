@@ -510,6 +510,8 @@ class SavePriorDataset:
             scm_fixed_hp["informed_history_strength"] = self.args.informed_history_strength
         if self.args.informed_intervention_strength is not None:
             scm_fixed_hp["informed_intervention_strength"] = self.args.informed_intervention_strength
+        if self.args.informed_target_family is not None:
+            scm_fixed_hp["informed_target_family"] = self.args.informed_target_family
         if self.args.informed_physical_marginal_prob is not None:
             scm_fixed_hp["informed_physical_marginal_prob"] = self.args.informed_physical_marginal_prob
         if self.args.informed_physical_marginal_profile is not None:
@@ -565,6 +567,7 @@ class SavePriorDataset:
             "informed_interaction_strength": self.args.informed_interaction_strength,
             "informed_history_strength": self.args.informed_history_strength,
             "informed_intervention_strength": self.args.informed_intervention_strength,
+            "informed_target_family": self.args.informed_target_family,
             "informed_physical_marginal_prob": self.args.informed_physical_marginal_prob,
             "informed_physical_marginal_profile": self.args.informed_physical_marginal_profile,
         }
@@ -721,6 +724,12 @@ if __name__ == "__main__":
     parser.add_argument("--informed_interaction_strength", type=false_or_float, default=None)
     parser.add_argument("--informed_history_strength", type=false_or_float, default=None)
     parser.add_argument("--informed_intervention_strength", type=false_or_float, default=None)
+    parser.add_argument(
+        "--informed_target_family",
+        type=str,
+        default=None,
+        choices=("generic_corrosion", "pitting_potential"),
+    )
     parser.add_argument("--informed_physical_marginal_prob", type=false_or_float, default=None)
     parser.add_argument("--informed_physical_marginal_profile", type=str, default=None)
     parser.add_argument("--n_jobs", type=int, default=-1, help="Number of jobs for parallel processing")

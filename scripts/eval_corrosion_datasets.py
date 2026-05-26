@@ -17,6 +17,7 @@ import html
 import json
 import math
 import re
+import subprocess
 import sys
 from collections import Counter
 from dataclasses import dataclass
@@ -333,6 +334,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--test-size", type=float, default=0.25)
     parser.add_argument("--random-state", type=int, default=42)
+    parser.add_argument(
+        "--split-seeds",
+        nargs="+",
+        type=int,
+        default=None,
+        help=(
+            "Evaluate each listed train/test split seed and aggregate the resulting rows. "
+            "This reruns this evaluator once per seed and writes combined rows, summary, and plots."
+        ),
+    )
     parser.add_argument("--target-mode", choices=("primary", "all"), default="primary")
     parser.add_argument(
         "--target-binning",
@@ -580,6 +591,16 @@ def available_step_checkpoints(run: str, args: argparse.Namespace) -> dict[int, 
 
 def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEvalSpec]:
     if args.checkpoint != "all":
+        runs = expand_runs(args)
+        local_ckpt_paths = list(args.local_ckpt_path or [])
+        if not runs and not local_ckpt_paths and (args.compare_pretrained_tabicl or args.compare_tabpfn):
+            return [
+                CheckpointEvalSpec(
+                    checkpoint_name="pretrained_baselines",
+                    checkpoint_step=None,
+                    local_specs=tuple(),
+                )
+            ]
         local_specs = tuple(resolve_local_model_specs(args))
         checkpoint_steps = {checkpoint_step_from_path(spec.checkpoint_path) for spec in local_specs}
         checkpoint_steps.discard(None)
@@ -1923,14 +1944,20 @@ def default_output_paths(
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     model_labels = [spec.label for spec in local_specs]
     checkpoint_stems = {spec.checkpoint_path.stem for spec in local_specs}
-    if len(model_labels) == 1:
+    if not model_labels:
+        model_part = "pretrained_baselines"
+    elif len(model_labels) == 1:
         model_part = slugify(model_labels[0])
     else:
         shown_labels = "_".join(slugify(label) for label in model_labels[:4])
         if len(model_labels) > 4:
             shown_labels = f"{shown_labels}_plus{len(model_labels) - 4}"
         model_part = f"compare_{shown_labels}"
-    ckpt_part = checkpoint_part or (next(iter(checkpoint_stems)) if len(checkpoint_stems) == 1 else "mixed_checkpoints")
+    ckpt_part = checkpoint_part or (
+        next(iter(checkpoint_stems))
+        if len(checkpoint_stems) == 1
+        else "pretrained" if not checkpoint_stems else "mixed_checkpoints"
+    )
     base = f"corrosion_eval_{model_part}_{slugify(ckpt_part)}_{slugify(stage_tag)}_{stamp}"
     output_dir = DEFAULT_OUTPUT_DIR / base
     return (
@@ -2458,9 +2485,298 @@ def write_checkpoint_trend_plots(summary: pd.DataFrame, output_dir: Path, metric
     return written
 
 
+REPEATED_SPLIT_VALUE_ARGS = {
+    "--output-json",
+    "--output-csv",
+    "--output-wide-csv",
+    "--output-summary-csv",
+    "--output-plot-dir",
+    "--random-state",
+}
+REPEATED_SPLIT_DROP_FLAGS = {"--no-checkpoint-plots"}
+
+
+def strip_repeated_split_driver_args(argv: list[str]) -> list[str]:
+    """Remove args controlled by the repeated-split driver before spawning seed runs."""
+    cleaned: list[str] = []
+    index = 0
+    while index < len(argv):
+        arg = argv[index]
+        if arg == "--split-seeds":
+            index += 1
+            while index < len(argv) and not argv[index].startswith("--"):
+                index += 1
+            continue
+        if arg in REPEATED_SPLIT_VALUE_ARGS:
+            index += 2
+            continue
+        if arg in REPEATED_SPLIT_DROP_FLAGS:
+            index += 1
+            continue
+        cleaned.append(arg)
+        index += 1
+    return cleaned
+
+
+def repeated_split_output_paths(args: argparse.Namespace) -> tuple[Path, Path, Path, Path, Path]:
+    if args.output_csv is not None:
+        artifact_dir = args.output_csv.expanduser().resolve().parent
+    elif args.output_json is not None:
+        artifact_dir = args.output_json.expanduser().resolve().parent
+    elif args.output_wide_csv is not None:
+        artifact_dir = args.output_wide_csv.expanduser().resolve().parent
+    elif args.output_summary_csv is not None:
+        artifact_dir = args.output_summary_csv.expanduser().resolve().parent
+    else:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        artifact_dir = DEFAULT_OUTPUT_DIR / f"corrosion_eval_repeated_splits_{stamp}"
+
+    output_json = (
+        args.output_json.expanduser().resolve()
+        if args.output_json is not None
+        else artifact_dir / "results.json"
+    )
+    output_csv = (
+        args.output_csv.expanduser().resolve()
+        if args.output_csv is not None
+        else artifact_dir / "rows.csv"
+    )
+    output_wide_csv = (
+        args.output_wide_csv.expanduser().resolve()
+        if args.output_wide_csv is not None
+        else artifact_dir / "wide.csv"
+    )
+    output_summary_csv = (
+        args.output_summary_csv.expanduser().resolve()
+        if args.output_summary_csv is not None
+        else artifact_dir / "summary.csv"
+    )
+    output_plot_dir = (
+        args.output_plot_dir.expanduser().resolve()
+        if args.output_plot_dir is not None
+        else artifact_dir / "plots"
+    )
+    return output_json, output_csv, output_wide_csv, output_summary_csv, output_plot_dir
+
+
+def add_split_metadata(records: list[dict[str, Any]], *, seed: int, seed_dir: Path) -> list[dict[str, Any]]:
+    enriched: list[dict[str, Any]] = []
+    for record in records:
+        item = dict(record)
+        item["split_seed"] = int(seed)
+        item["seed_output_dir"] = str(seed_dir)
+        enriched.append(item)
+    return enriched
+
+
+def add_split_counts_to_summary(summary: pd.DataFrame, rows: list[dict[str, Any]]) -> pd.DataFrame:
+    if summary.empty or not rows:
+        return summary
+    row_df = pd.DataFrame(rows)
+    if "split_seed" not in row_df.columns or "model" not in row_df.columns:
+        return summary
+
+    group_cols = ["model"]
+    if "checkpoint_name" in row_df.columns and "checkpoint_name" in summary.columns:
+        group_cols = ["checkpoint_name", "model"]
+    counts = (
+        row_df.groupby(group_cols, dropna=False)["split_seed"]
+        .nunique()
+        .reset_index(name="n_splits")
+    )
+    merged = summary.merge(counts, on=group_cols, how="left")
+    ordered_cols = list(merged.columns)
+    if "n_splits" in ordered_cols:
+        ordered_cols.remove("n_splits")
+        insert_at = ordered_cols.index("n_success") if "n_success" in ordered_cols else len(ordered_cols)
+        ordered_cols.insert(insert_at, "n_splits")
+        merged = merged[ordered_cols]
+    return merged
+
+
+def make_repeated_split_wide_dataframe(rows: list[dict[str, Any]], summary: pd.DataFrame) -> pd.DataFrame:
+    if not rows or summary.empty:
+        return pd.DataFrame()
+    row_df = pd.DataFrame(rows)
+    has_checkpoint = "checkpoint_name" in row_df.columns and "checkpoint_name" in summary.columns
+    group_cols = ["task_id"]
+    if has_checkpoint:
+        group_cols = ["checkpoint_name", "checkpoint_step", "task_id"]
+
+    meta_cols = [
+        "checkpoint_name",
+        "checkpoint_step",
+        "task_id",
+        "dataset",
+        "table",
+        "target",
+        "target_threshold_median",
+        "target_binning",
+        "target_bins",
+        "target_bin_edges",
+        "regression_output",
+        "regression_uncertainty",
+        "regression_quantile_alphas",
+        "n_samples",
+        "n_train",
+        "n_test",
+        "n_features",
+        "n_classes",
+        "class_labels",
+        "class_counts",
+        "positive_rate",
+        "split_strategy",
+        "include_in_summary",
+        "summary_exclusion_reason",
+        "task_quality_flags",
+    ]
+    records: list[dict[str, Any]] = []
+    for _, group in row_df.groupby(group_cols, sort=False, dropna=False):
+        first = group.iloc[0]
+        record = {col: first[col] for col in meta_cols if col in group.columns}
+        if "split_seed" in group.columns:
+            seeds = sorted({int(seed) for seed in pd.to_numeric(group["split_seed"], errors="coerce").dropna()})
+            record["split_seeds"] = " ".join(str(seed) for seed in seeds)
+            record["n_splits"] = len(seeds)
+
+        if has_checkpoint:
+            summary_group = summary[summary["checkpoint_name"].astype(str) == str(first["checkpoint_name"])]
+        else:
+            summary_group = summary
+        for _, summary_row in summary_group.iterrows():
+            model = str(summary_row["model"])
+            model_key = slugify(model)
+            for metric in METRIC_COLUMNS:
+                value_col = f"mean_{metric}"
+                if value_col in summary_row:
+                    record[f"{metric}__{model_key}"] = summary_row[value_col]
+        records.append(record)
+    return pd.DataFrame(records)
+
+
+def run_repeated_split_eval(args: argparse.Namespace) -> None:
+    seeds = list(args.split_seeds or [])
+    if not seeds:
+        raise ValueError("--split-seeds must contain at least one seed.")
+
+    output_json, output_csv, output_wide_csv, output_summary_csv, output_plot_dir = repeated_split_output_paths(args)
+    artifact_dir = output_json.parent
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    for output_path in (output_json, output_csv, output_wide_csv, output_summary_csv):
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    base_argv = strip_repeated_split_driver_args(sys.argv[1:])
+    all_rows: list[dict[str, Any]] = []
+    all_errors: list[dict[str, Any]] = []
+    seed_outputs: list[dict[str, Any]] = []
+
+    for seed in seeds:
+        seed_dir = artifact_dir / f"seed_{seed}"
+        seed_dir.mkdir(parents=True, exist_ok=True)
+        seed_json = seed_dir / "results.json"
+        seed_rows = seed_dir / "rows.csv"
+        seed_wide = seed_dir / "wide.csv"
+        seed_summary = seed_dir / "summary.csv"
+        command = [
+            sys.executable,
+            str(Path(__file__).resolve()),
+            *base_argv,
+            "--random-state",
+            str(seed),
+            "--output-json",
+            str(seed_json),
+            "--output-csv",
+            str(seed_rows),
+            "--output-wide-csv",
+            str(seed_wide),
+            "--output-summary-csv",
+            str(seed_summary),
+            "--no-checkpoint-plots",
+        ]
+        print(f"\nRepeated split seed {seed}: {' '.join(command)}", flush=True)
+        subprocess.run(command, cwd=REPO_ROOT, check=True)
+        payload = json.loads(seed_json.read_text(encoding="utf-8"))
+        all_rows.extend(add_split_metadata(payload.get("rows", []), seed=seed, seed_dir=seed_dir))
+        all_errors.extend(add_split_metadata(payload.get("errors", []), seed=seed, seed_dir=seed_dir))
+        seed_outputs.append(
+            {
+                "split_seed": int(seed),
+                "json": str(seed_json),
+                "rows_csv": str(seed_rows),
+                "wide_csv": str(seed_wide),
+                "summary_csv": str(seed_summary),
+            }
+        )
+
+    primary_metric = primary_metric_for_args(args)
+    metric_sort_specs = metric_sort_specs_for_args(args)
+    summary_df = print_summary(
+        all_rows,
+        all_errors,
+        primary_metric=primary_metric,
+        metric_sort_specs=metric_sort_specs,
+    )
+    summary_df = add_split_counts_to_summary(summary_df, all_rows)
+    wide_df = make_repeated_split_wide_dataframe(all_rows, summary_df)
+
+    plot_paths: list[Path] = []
+    if args.checkpoint == "all" and args.checkpoint_plots:
+        plot_metrics = list(args.plot_metric or default_plot_metrics_for_args(args))
+        plot_paths = write_checkpoint_trend_plots(summary_df, output_plot_dir, plot_metrics)
+
+    payload = {
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "repeated_split_eval": True,
+        "split_seeds": seeds,
+        "seed_outputs": seed_outputs,
+        "runs": expand_runs(args),
+        "checkpoint": args.checkpoint,
+        "target_mode": args.target_mode,
+        "target_binning": args.target_binning,
+        "target_bins": args.target_bins,
+        "regression_output": args.regression_output,
+        "regression_uncertainty": args.regression_uncertainty,
+        "primary_metric": primary_metric,
+        "metric_sort_specs": metric_sort_specs,
+        "test_size": args.test_size,
+        "n_estimators": args.n_estimators,
+        "rows": all_rows,
+        "errors": all_errors,
+        "output_files": {
+            "artifact_dir": str(artifact_dir),
+            "json": str(output_json),
+            "csv": str(output_csv),
+            "wide_csv": str(output_wide_csv),
+            "summary_csv": str(output_summary_csv),
+            "plot_dir": str(output_plot_dir) if plot_paths else None,
+            "plots": [str(path) for path in plot_paths],
+        },
+    }
+    output_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    pd.DataFrame(all_rows).to_csv(output_csv, index=False)
+    wide_df.to_csv(output_wide_csv, index=False)
+    summary_df.to_csv(output_summary_csv, index=False)
+
+    print(f"\nSaved repeated-split evaluation artifacts to {artifact_dir}")
+    print(f"Saved JSON results to {output_json}")
+    print(f"Saved repeated-split row CSV results to {output_csv}")
+    print(f"Saved repeated-split wide comparison CSV to {output_wide_csv}")
+    print(f"Saved repeated-split model summary CSV to {output_summary_csv}")
+    if plot_paths:
+        print(f"Saved repeated-split checkpoint trend plots to {output_plot_dir}")
+        for path in plot_paths:
+            print(f"  {path}")
+    if all_errors:
+        print(f"Completed with {len(all_errors)} task/model errors; see JSON for details.")
+
+
 def main() -> None:
     args = parse_args()
     validate_args(args)
+    if args.split_seeds is not None:
+        run_repeated_split_eval(args)
+        return
+
     primary_metric = primary_metric_for_args(args)
     metric_sort_specs = metric_sort_specs_for_args(args)
     is_regression_eval = args.target_binning == "continuous"
