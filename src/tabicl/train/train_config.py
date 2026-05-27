@@ -310,7 +310,7 @@ def build_parser():
         "--informed_physical_marginal_profile",
         type=str,
         default=None,
-        help="Optional physical marginal profile for informed SCM features, e.g. corrosion_broad.",
+        help="Optional physical marginal profile for informed SCM features, e.g. corrosion_broad or pitting_potential_v1.",
     )
     parser.add_argument("--prior_device", default="cpu", type=str, help="Device for prior data generation")
     parser.add_argument(

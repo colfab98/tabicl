@@ -1,10 +1,5 @@
 # Project Report: TabICL Background
 
-## Purpose Of This Report
-
-This report introduces the TabICL concepts that are needed for the project. It focuses on the parts that matter for modifying the pretraining prior: in-context tabular prediction, synthetic task generation, SCM-based priors, the row/column attention structure, and the Bayesian-style interpretation of prediction.
-
-The report is written for readers with basic machine-learning background. It avoids implementation details that are not needed for understanding the later domain-specific prior changes.
 
 ## TabICL In One Sentence
 
@@ -46,7 +41,13 @@ The SCM generator first creates a few starting columns. Each starting column has
 
 The generator then applies random functions to these starting columns. In TabICL, these functions can be MLP layers or tree-based transformations. The functions create new columns from the starting columns.
 
-Finally, the generator chooses some of the generated columns to be the input features X, and one generated column to be the target y.
+Depending on the sampled generator path, the final feature and target selection
+can happen in two closely related ways. In causal-mode SCMs, the generator
+chooses some generated intermediate columns as the input features `X` and one
+generated column as the target `y`. In the current tree-based path, the sampled
+causes are used as `X` and the final tree/ensemble transformation output is used
+as `y`. In both cases, the synthetic task is defined by random mechanisms that
+connect features and target.
 
 In the TabICL code used here, the generic SCM prior has two main generator families:
 
@@ -57,7 +58,12 @@ The `mix_scm` setting samples between these generator families. This matters bec
 
 The SCM generator does not simply sample independent columns. It creates variables that can share latent causes, depend on intermediate variables, and affect the target through nonlinear paths. After generation, the data is postprocessed: features are scaled, some numerical columns can be converted to categorical-like values, uninformative columns can be removed, feature order can be shuffled, and invalid train/test splits can be rejected or retried.
 
-The SCM generator does not only create unrelated random columns. It first creates starting columns, then uses random MLP or tree functions to create new columns from them. Because several new columns can be computed from the same starting columns, the final features can be related to each other. The target can also be computed from these generated columns, so the features and target can have nonlinear relationships.
+The SCM generator does not only create unrelated random columns. It first creates
+starting columns, then uses random MLP or tree functions to create outputs from
+them. In causal-mode paths, several selected feature columns can share generated
+ancestors. In direct predictive paths, the target is still produced by a random
+nonlinear transformation of the feature columns. Either way, the features and
+target can have nonlinear relationships.
 
 For classification pretraining, a continuous synthetic target is converted into class labels. For regression pretraining, the target remains continuous. In both cases, the model sees many tasks where the training context contains enough information to predict held-out rows.
 
@@ -484,6 +490,62 @@ corrosion-style dependencies: especially material/environment effects and their
 interaction. The original SCM target remains present, so the task is still a
 broad synthetic tabular task rather than a hand-coded corrosion simulator.
 
+## Informed Prior: Target Family Selection
+
+Next parameter: `informed_target_family`. This selects the interpretation of the
+extra informed target component. The default is:
+
+```text
+informed_target_family = generic_corrosion
+```
+
+In the generic-corrosion family, higher `y` means a stronger corrosion-like
+response. The material/environment/exposure/history drive raises the target, and
+protective intervention or inhibitor effects subtract from it. This is the
+behavior described in the previous target-mechanism section and in the
+intervention sections below.
+
+The newer supported setting is:
+
+```text
+informed_target_family = pitting_potential
+```
+
+This creates an Epit-like pitting-potential target. The sign convention is
+different: higher `y` now means a higher breakdown threshold, or stronger
+pitting resistance. Protective or passivating material chemistry raises the
+target, while aggressive chloride-/pH-/temperature-like environment signals,
+material susceptibility under aggressive environment, exposure, and accumulated
+history lower it.
+
+Implementation idea:
+
+```text
+epit_drive =
+    material_passivity
+  - environment_aggressiveness
+  - material_susceptibility * environment_aggressiveness
+  - exposure_effect
+  + process_offset
+  - history_damage
+
+y = y + beta * standardized(epit_drive)
+```
+
+For pitting-potential targets, direct interventions and inhibitor-agent effects
+are added when they look protective, because protection raises the synthetic
+breakdown threshold:
+
+```text
+y = y + gamma * standardized(protection_effect)
+```
+
+So the same block system can represent two different corrosion target semantics:
+generic corrosion severity, where protection lowers the target, and pitting
+potential, where protection raises the target. The model still does not see the
+target-family label. It only sees the resulting feature-target statistics in the
+synthetic pretraining tasks.
+
 ## Informed Prior: Temporal History Behavior
 
 Next parameter: `informed_history_strength`. This applies only when the synthetic
@@ -555,7 +617,8 @@ But this is not a raw-column rule. It is not saying one particular input column
 is inhibitor dose and larger values of that column always mean more inhibitor.
 The score is a synthetic summary of the intervention block.
 
-For normal corrosion tasks, the intervention effect is applied to the target as:
+For normal corrosion tasks under the default `generic_corrosion` target family,
+the intervention effect is applied to the target as:
 
 ```text
 protection_effect = intervention_gate * (0.60 + 0.40 * environment_drive)
@@ -570,7 +633,11 @@ corrosion drive, while a stronger intervention signal subtracts a protective
 effect. The protection term is environment-modulated because an intervention can
 be more visible under aggressive conditions than under mild conditions.
 
-Simple reading:
+For the `pitting_potential` target family, the same protection signal has the
+opposite sign in `y`, because a protective intervention should raise the
+synthetic breakdown threshold rather than lower a corrosion-severity response.
+
+Simple reading for the default generic-corrosion target:
 
 ```text
 high environment, low intervention  -> high corrosion-like target
@@ -792,7 +859,10 @@ y = y - gamma * standardized(inhibitor_effect)
 
 Here `gamma` is still `informed_intervention_strength`. The effect is subtracted
 from the target because the synthetic assumption is that an effective inhibitor
-can reduce the corrosion-like response.
+can reduce the corrosion-like response in the default `generic_corrosion` target
+family. In the `pitting_potential` target family, the descriptor-dependent
+protection term is added instead, because stronger inhibitor protection raises
+the synthetic pitting-potential threshold.
 
 The important difference from the normal direct-intervention case is that the
 protective effect can depend on the molecular descriptor block. In plain words:

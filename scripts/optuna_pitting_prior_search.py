@@ -111,6 +111,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dataloader-num-workers", type=int, default=4)
     parser.add_argument("--dataloader-prefetch-factor", type=int, default=4)
     parser.add_argument("--eval-n-estimators", type=int, default=8)
+    parser.add_argument(
+        "--physical-profile",
+        type=str,
+        default="pitting_potential_v1",
+        help="Informed physical marginal profile passed to training.",
+    )
     parser.add_argument("--skip-existing", action="store_true", help="Reuse existing checkpoints/evals.")
     parser.add_argument("--dry-run", action="store_true", help="Write commands/metadata without running training or eval.")
     return parser.parse_args()
@@ -130,18 +136,29 @@ def study_output_root(root: Path, study_name: str) -> Path:
     return root.expanduser().resolve() / slugify(study_name)
 
 
+def build_optuna_storage(storage: str | None) -> Any:
+    if storage is None or not storage.startswith("journal://"):
+        return storage
+    from optuna.storages.journal import JournalFileBackend, JournalFileOpenLock, JournalStorage
+
+    journal_path = Path(storage.removeprefix("journal://")).expanduser().resolve()
+    journal_path.parent.mkdir(parents=True, exist_ok=True)
+    lock = JournalFileOpenLock(str(journal_path), grace_period=120)
+    return JournalStorage(JournalFileBackend(str(journal_path), lock_obj=lock))
+
+
 def sample_params(trial: SuggestTrial) -> TrialParams:
-    informed_prior_ratio = trial.suggest_categorical("informed_prior_ratio", [0.25, 0.50, 0.75, 1.00])
-    informed_feature_block_strength = trial.suggest_float("informed_feature_block_strength", 0.10, 0.40)
-    informed_interaction_strength = trial.suggest_float("informed_interaction_strength", 0.05, 0.50)
+    informed_prior_ratio = trial.suggest_categorical("informed_prior_ratio", [0.75, 1.00])
+    informed_feature_block_strength = trial.suggest_float("informed_feature_block_strength", 0.15, 0.45)
+    informed_interaction_strength = trial.suggest_float("informed_interaction_strength", 0.25, 0.55)
     informed_physical_marginal_prob = trial.suggest_categorical(
         "informed_physical_marginal_prob",
-        [0.0, 0.10, 0.20, 0.35, 0.50],
+        [0.25, 0.50, 0.75, 1.00],
     )
 
-    alloc_material = trial.suggest_float("alloc_material", 0.60, 0.85)
+    alloc_material = trial.suggest_float("alloc_material", 0.55, 0.85)
     process_low = max(0.0, 0.65 - alloc_material)
-    process_high = min(0.10, 0.90 - alloc_material)
+    process_high = min(0.15, 0.90 - alloc_material)
     alloc_process_history = trial.suggest_float("alloc_process_history", process_low, process_high)
     alloc_environment = 1.0 - alloc_material - alloc_process_history
 
@@ -228,7 +245,7 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         "--informed_physical_marginal_prob",
         format_float(params.informed_physical_marginal_prob),
         "--informed_physical_marginal_profile",
-        "corrosion_broad",
+        args.physical_profile,
         "--prior_device",
         "cpu",
         "--prior_n_jobs",
@@ -418,7 +435,7 @@ def run_optuna(args: argparse.Namespace) -> None:
     args.base_run_name = base_run_name
     study = optuna.create_study(
         study_name=args.study_name,
-        storage=args.storage,
+        storage=build_optuna_storage(args.storage),
         direction="maximize",
         load_if_exists=True,
     )

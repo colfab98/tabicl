@@ -19,6 +19,7 @@ import os
 import sys
 import math
 import warnings
+from dataclasses import dataclass, field
 from typing import Dict, Tuple, Union, Optional, Any
 
 import numpy as np
@@ -42,6 +43,28 @@ from .prior_config import DEFAULT_FIXED_HP, DEFAULT_SAMPLED_HP
 warnings.filterwarnings(
     "ignore", message=".*The PyTorch API of nested tensors is in prototype stage.*", category=UserWarning
 )
+
+
+@dataclass
+class PittingProfileInfo:
+    """Role metadata for pitting-potential synthetic feature profiles."""
+
+    applied: bool = False
+    material_style: str = "latent"
+    role_columns: Dict[str, list[int]] = field(default_factory=dict)
+    categorical_columns: list[int] = field(default_factory=list)
+    material_passivity: Optional[Tensor] = None
+    material_susceptibility: Optional[Tensor] = None
+    environment_aggressiveness: Optional[Tensor] = None
+    process_offset: Optional[Tensor] = None
+    exposure_damage: Optional[Tensor] = None
+    descriptor_signal: Optional[Tensor] = None
+    intervention_signal: Optional[Tensor] = None
+
+    def add_role(self, role: str, col: int, *, categorical: bool = False) -> None:
+        self.role_columns.setdefault(role, []).append(col)
+        if categorical:
+            self.categorical_columns.append(col)
 
 
 class Prior:
@@ -693,16 +716,338 @@ class SCMPrior(Prior):
         sharpness = float(np.random.uniform(0.6, 1.8))
         X[:, feature_slice] = torch.softmax(logits * sharpness, dim=-1) * 100.0
 
+    def _informed_physical_marginal_profile(self) -> str:
+        profile = str(self.fixed_hp.get("informed_physical_marginal_profile", "corrosion_broad")).strip().lower()
+        profile = profile.replace("-", "_")
+        aliases = {
+            "pitting": "pitting_potential_v1",
+            "epit": "pitting_potential_v1",
+            "pitting_potential": "pitting_potential_v1",
+            "pitting_potential_profile": "pitting_potential_v1",
+        }
+        return aliases.get(profile, profile)
+
+    @staticmethod
+    def _is_pitting_profile_name(profile: str) -> bool:
+        return profile in {"pitting_potential_v1", "pitting_v1", "epit_v1"}
+
+    @classmethod
+    def _categorical_values_from_rank(cls, values: Tensor, n_categories: int) -> Tensor:
+        u = cls._rank_uniform(values).clamp(0.0, 1.0 - 1e-6)
+        return torch.floor(u * n_categories).clamp(max=n_categories - 1)
+
+    def _pitting_profile_block_signal(
+        self,
+        X: Tensor,
+        cols: list[int],
+        categorical_cols: Optional[set[int]] = None,
+        log_positive: bool = False,
+    ) -> Optional[Tensor]:
+        if not cols:
+            return None
+        categorical_cols = categorical_cols or set()
+        signals = []
+        for col in cols:
+            values = torch.nan_to_num(X[:, col], nan=0.0, posinf=0.0, neginf=0.0)
+            if col in categorical_cols:
+                labels = values.long().clamp(min=0)
+                n_categories = int(labels.max().item()) + 1 if labels.numel() else 1
+                offsets = torch.randn(max(n_categories, 1), device=X.device, dtype=X.dtype)
+                signals.append(offsets[labels.clamp(max=offsets.numel() - 1)])
+            elif log_positive:
+                signals.append(torch.log1p(values.clamp_min(0.0)))
+            else:
+                signals.append(values)
+        block = torch.stack(signals, dim=-1)
+        if block.shape[-1] == 1:
+            return self._standardize_signal(block[:, 0])
+        weights = torch.randn(block.shape[-1], device=X.device, dtype=X.dtype)
+        weights = weights / torch.linalg.vector_norm(weights).clamp_min(1e-6)
+        return self._standardize_signal(block @ weights)
+
+    def _apply_pitting_material_profile(self, X: Tensor, blocks: Dict[str, slice], info: PittingProfileInfo) -> None:
+        material_slice = blocks.get("material")
+        if material_slice is None or material_slice.stop <= material_slice.start:
+            return
+
+        start, stop = material_slice.start, material_slice.stop
+        width = stop - start
+        if width <= 0:
+            return
+
+        styles = [
+            "composition_like",
+            "sparse_alloying",
+            "bounded_partial_composition",
+            "descriptor_like",
+            "mixed_metadata",
+        ]
+        probs = np.asarray([0.30, 0.22, 0.20, 0.18, 0.10], dtype=float)
+        if width == 1:
+            styles = ["bounded_partial_composition", "descriptor_like"]
+            probs = np.asarray([0.55, 0.45], dtype=float)
+        probs = probs / probs.sum()
+        style = str(np.random.choice(styles, p=probs))
+        info.material_style = style
+
+        cols = list(range(start, stop))
+        categorical_cols: set[int] = set()
+
+        if style == "composition_like":
+            logits = torch.nan_to_num(X[:, material_slice], nan=0.0, posinf=0.0, neginf=0.0)
+            shared = self._standardize_signal(logits.mean(dim=-1)).unsqueeze(-1)
+            latent_weights = torch.randn(1, width, device=X.device, dtype=X.dtype)
+            sharpness = float(np.random.uniform(0.7, 1.8))
+            logits = 0.55 * logits + 0.45 * shared * latent_weights
+            composition = torch.softmax(logits * sharpness, dim=-1) * 100.0
+            if np.random.random() < 0.30:
+                row_scale = torch.empty(X.shape[0], 1, device=X.device, dtype=X.dtype).uniform_(0.92, 1.08)
+                composition = composition * row_scale
+            X[:, material_slice] = composition
+            for col in cols:
+                info.add_role("material_composition", col)
+            signal_cols = cols
+            log_positive = True
+        elif style == "sparse_alloying":
+            for col in cols:
+                u = self._rank_uniform(X[:, col]).clamp(1e-6, 1.0 - 1e-6)
+                active_prob = float(np.random.uniform(0.06, 0.35))
+                active = self._rank_uniform(X[:, col] + 0.05 * torch.randn_like(X[:, col])) > (1.0 - active_prob)
+                values = self._log_uniform_from_rank(u, 1e-3, float(np.random.uniform(1.0, 18.0)))
+                if np.random.random() < 0.35:
+                    values = values * float(np.random.uniform(0.02, 0.25))
+                X[:, col] = torch.where(active, values, torch.zeros_like(values))
+                info.add_role("material_sparse_alloying", col)
+            signal_cols = cols
+            log_positive = True
+        elif style == "bounded_partial_composition":
+            for col in cols:
+                u = self._rank_uniform(X[:, col]).clamp(1e-6, 1.0 - 1e-6)
+                upper = float(np.random.uniform(5.0, 100.0))
+                exponent = float(np.random.uniform(0.55, 2.2))
+                X[:, col] = upper * torch.pow(u, exponent)
+                info.add_role("material_partial_composition", col)
+            signal_cols = cols
+            log_positive = True
+        elif style == "descriptor_like":
+            families = ["descriptor_standard", "descriptor_positive", "descriptor_bounded", "material_property"]
+            for col in cols:
+                family = str(np.random.choice(families, p=[0.45, 0.20, 0.25, 0.10]))
+                X[:, col] = self._corrosion_marginal_values(X[:, col], family)
+                info.add_role("material_descriptor", col)
+            signal_cols = cols
+            log_positive = False
+        else:
+            n_cat = 0 if width <= 2 else int(np.random.choice([0, 1, 1, min(2, width // 4)]))
+            cat_positions = set(np.random.choice(cols, size=n_cat, replace=False).tolist()) if n_cat > 0 else set()
+            for col in cols:
+                if col in cat_positions:
+                    n_categories = int(np.random.choice([2, 3, 4, 5]))
+                    X[:, col] = self._categorical_values_from_rank(X[:, col], n_categories)
+                    info.add_role("material_category", col, categorical=True)
+                    categorical_cols.add(col)
+                else:
+                    family = str(np.random.choice(["descriptor_standard", "descriptor_bounded", "material_bounded"]))
+                    X[:, col] = self._corrosion_marginal_values(X[:, col], family)
+                    info.add_role("material_descriptor", col)
+            signal_cols = [col for col in cols if col not in categorical_cols] or cols
+            log_positive = False
+
+        passivity = self._pitting_profile_block_signal(X, signal_cols, categorical_cols, log_positive=log_positive)
+        if passivity is None:
+            return
+        susceptibility_noise = self._pitting_profile_block_signal(X, signal_cols, categorical_cols, log_positive=log_positive)
+        if susceptibility_noise is None:
+            susceptibility_noise = -passivity
+        info.material_passivity = passivity
+        info.material_susceptibility = self._standardize_signal(-0.75 * passivity + 0.25 * susceptibility_noise)
+
+    def _sample_pitting_environment_roles(self, width: int) -> list[str]:
+        candidates = [
+            ("chloride_like", 0.78),
+            ("ph_like", 0.55),
+            ("temperature_like", 0.65),
+            ("solution_concentration_like", 0.42),
+            ("solution_category", 0.32),
+        ]
+        selected = [role for role, prob in candidates if np.random.random() < prob]
+        if not selected:
+            selected = [str(np.random.choice([role for role, _ in candidates]))]
+        if width >= 2 and "chloride_like" not in selected and np.random.random() < 0.45:
+            selected.insert(0, "chloride_like")
+        np.random.shuffle(selected)
+        fillers = ["environment_proxy", "solution_concentration_like", "temperature_like", "solution_category"]
+        while len(selected) < width:
+            selected.append(str(np.random.choice(fillers)))
+        return selected[:width]
+
+    def _apply_pitting_environment_profile(self, X: Tensor, blocks: Dict[str, slice], info: PittingProfileInfo) -> None:
+        env_slice = blocks.get("environment")
+        if env_slice is None or env_slice.stop <= env_slice.start:
+            return
+
+        roles = self._sample_pitting_environment_roles(env_slice.stop - env_slice.start)
+        terms = []
+        weights = []
+        for col, role in zip(range(env_slice.start, env_slice.stop), roles):
+            if role == "chloride_like":
+                u = self._rank_uniform(X[:, col]).clamp(1e-6, 1.0 - 1e-6)
+                X[:, col] = self._log_uniform_from_rank(u, 1e-4, float(np.random.uniform(1.0, 1e3)))
+                term = self._standardize_signal(torch.log10(X[:, col].clamp_min(1e-12)))
+                info.add_role(role, col)
+                weight = float(np.random.uniform(0.35, 0.75))
+            elif role == "ph_like":
+                X[:, col] = self._piecewise_ph_from_rank(self._rank_uniform(X[:, col]).clamp(1e-6, 1.0 - 1e-6))
+                neutral = float(np.random.uniform(6.3, 8.2))
+                term = self._standardize_signal(torch.abs(X[:, col] - neutral))
+                info.add_role(role, col)
+                weight = float(np.random.uniform(0.20, 0.50))
+            elif role == "temperature_like":
+                u = self._rank_uniform(X[:, col]).clamp(1e-6, 1.0 - 1e-6)
+                low = float(np.random.uniform(-15.0, 10.0))
+                high = float(np.random.uniform(70.0, 160.0))
+                X[:, col] = low + (high - low) * u
+                term = self._standardize_signal(X[:, col])
+                info.add_role(role, col)
+                weight = float(np.random.uniform(0.18, 0.45))
+            elif role == "solution_category":
+                n_categories = int(np.random.choice([2, 3, 4, 5, 6]))
+                X[:, col] = self._categorical_values_from_rank(X[:, col], n_categories)
+                labels = X[:, col].long().clamp(min=0, max=n_categories - 1)
+                offsets = torch.randn(n_categories, device=X.device, dtype=X.dtype)
+                term = self._standardize_signal(offsets[labels])
+                info.add_role(role, col, categorical=True)
+                weight = float(np.random.uniform(0.12, 0.35))
+            elif role == "solution_concentration_like":
+                u = self._rank_uniform(X[:, col]).clamp(1e-6, 1.0 - 1e-6)
+                X[:, col] = self._log_uniform_from_rank(u, 1e-5, float(np.random.uniform(0.5, 100.0)))
+                term = self._standardize_signal(torch.log10(X[:, col].clamp_min(1e-12)))
+                info.add_role(role, col)
+                weight = float(np.random.uniform(0.15, 0.40))
+            else:
+                u = self._rank_uniform(X[:, col]).clamp(1e-6, 1.0 - 1e-6)
+                X[:, col] = torch.pow(u, float(np.random.uniform(0.55, 2.0)))
+                term = self._standardize_signal(X[:, col])
+                info.add_role(role, col)
+                weight = float(np.random.uniform(0.08, 0.25))
+            terms.append(term)
+            weights.append(weight)
+
+        if terms:
+            stacked = torch.stack(terms, dim=-1)
+            weight_tensor = torch.tensor(weights, device=X.device, dtype=X.dtype)
+            info.environment_aggressiveness = self._standardize_signal(stacked @ weight_tensor)
+
+    def _apply_pitting_process_profile(self, X: Tensor, blocks: Dict[str, slice], info: PittingProfileInfo) -> None:
+        process_slice = blocks.get("process_history")
+        if process_slice is None or process_slice.stop <= process_slice.start:
+            return
+
+        role_pool = [
+            "test_method_category",
+            "heat_treatment_category",
+            "microstructure_category",
+            "surface_process_score",
+            "exposure_history_proxy",
+        ]
+        offset_terms = []
+        damage_terms = []
+        for col in range(process_slice.start, process_slice.stop):
+            role = str(np.random.choice(role_pool, p=[0.28, 0.20, 0.18, 0.22, 0.12]))
+            if role.endswith("category"):
+                n_categories = int(np.random.choice([2, 3, 4, 5]))
+                X[:, col] = self._categorical_values_from_rank(X[:, col], n_categories)
+                labels = X[:, col].long().clamp(min=0, max=n_categories - 1)
+                offsets = torch.randn(n_categories, device=X.device, dtype=X.dtype)
+                offset_terms.append(self._standardize_signal(offsets[labels]))
+                info.add_role(role, col, categorical=True)
+            elif role == "exposure_history_proxy":
+                u = self._rank_uniform(X[:, col]).clamp(1e-6, 1.0 - 1e-6)
+                X[:, col] = self._log_uniform_from_rank(u, 1e-2, 1e5)
+                damage_terms.append(self._standardize_signal(torch.log10(X[:, col].clamp_min(1e-12))))
+                info.add_role(role, col)
+            else:
+                u = self._rank_uniform(X[:, col]).clamp(1e-6, 1.0 - 1e-6)
+                X[:, col] = torch.pow(u, float(np.random.uniform(0.5, 2.0)))
+                sign = float(np.random.choice([-1.0, 1.0]))
+                offset_terms.append(sign * self._standardize_signal(X[:, col]))
+                info.add_role(role, col)
+
+        if offset_terms:
+            info.process_offset = self._standardize_signal(torch.stack(offset_terms, dim=-1).mean(dim=-1))
+        if damage_terms:
+            info.exposure_damage = self._standardize_signal(torch.stack(damage_terms, dim=-1).mean(dim=-1))
+
+    def _apply_pitting_descriptor_profile(self, X: Tensor, blocks: Dict[str, slice], info: PittingProfileInfo) -> None:
+        descriptor_slice = blocks.get("molecular_descriptor")
+        if descriptor_slice is None or descriptor_slice.stop <= descriptor_slice.start:
+            return
+
+        cols = list(range(descriptor_slice.start, descriptor_slice.stop))
+        for col in cols:
+            family = str(np.random.choice(["descriptor_standard", "descriptor_bounded", "descriptor_positive"]))
+            X[:, col] = self._corrosion_marginal_values(X[:, col], family)
+            info.add_role("pitting_material_descriptor", col)
+        info.descriptor_signal = self._pitting_profile_block_signal(X, cols)
+
+    def _apply_pitting_intervention_profile(
+        self, X: Tensor, blocks: Dict[str, slice], family: str, info: PittingProfileInfo
+    ) -> None:
+        if family != "inhibitor_agent":
+            return
+        intervention_slice = blocks.get("direct_intervention")
+        if intervention_slice is None or intervention_slice.stop <= intervention_slice.start:
+            return
+
+        terms = []
+        for col in range(intervention_slice.start, intervention_slice.stop):
+            if np.random.random() < 0.50:
+                n_categories = int(np.random.choice([2, 3, 4]))
+                X[:, col] = self._categorical_values_from_rank(X[:, col], n_categories)
+                labels = X[:, col].long().clamp(min=0, max=n_categories - 1)
+                offsets = torch.randn(n_categories, device=X.device, dtype=X.dtype)
+                terms.append(self._standardize_signal(offsets[labels]))
+                info.add_role("intervention_category", col, categorical=True)
+            else:
+                u = self._rank_uniform(X[:, col]).clamp(1e-6, 1.0 - 1e-6)
+                X[:, col] = torch.pow(u, float(np.random.uniform(0.5, 2.0)))
+                terms.append(self._standardize_signal(X[:, col]))
+                info.add_role("intervention_dose", col)
+        if terms:
+            info.intervention_signal = self._standardize_signal(torch.stack(terms, dim=-1).mean(dim=-1))
+
+    def _apply_pitting_potential_profile(
+        self, X: Tensor, blocks: Dict[str, slice], family: str
+    ) -> Tuple[Tensor, PittingProfileInfo]:
+        info = PittingProfileInfo()
+        marginal_prob = float(self.fixed_hp.get("informed_physical_marginal_prob", 0.0))
+        marginal_prob = float(np.clip(marginal_prob, 0.0, 1.0))
+        if marginal_prob <= 0.0 or np.random.random() >= marginal_prob:
+            return X, info
+
+        X = X.clone()
+        info.applied = True
+        self._apply_pitting_material_profile(X, blocks, info)
+        self._apply_pitting_environment_profile(X, blocks, info)
+        self._apply_pitting_process_profile(X, blocks, info)
+        self._apply_pitting_descriptor_profile(X, blocks, info)
+        self._apply_pitting_intervention_profile(X, blocks, family, info)
+        return torch.nan_to_num(X), info
+
     def apply_informed_physical_marginals(self, X: Tensor, blocks: Dict[str, slice]) -> Tensor:
-        """Apply broad physical marginal shapes to informed corrosion-like feature blocks."""
+        """Apply physical marginal shapes to informed corrosion-like feature blocks."""
+        profile = self._informed_physical_marginal_profile()
+        if profile in {"false", "none", "off", "disabled"}:
+            return X
+        if self._is_pitting_profile_name(profile):
+            X, _ = self._apply_pitting_potential_profile(X, blocks, "normal_corrosion")
+            return X
+
         marginal_prob = float(self.fixed_hp.get("informed_physical_marginal_prob", 0.0))
         marginal_prob = float(np.clip(marginal_prob, 0.0, 1.0))
         if marginal_prob <= 0.0 or np.random.random() >= marginal_prob:
             return X
 
-        profile = str(self.fixed_hp.get("informed_physical_marginal_profile", "corrosion_broad")).lower()
-        if profile in {"false", "none", "off", "disabled"}:
-            return X
         if profile not in {"corrosion_broad", "broad", "corrosion"}:
             raise ValueError(f"Unknown informed physical marginal profile: {profile}")
 
@@ -953,42 +1298,85 @@ class SCMPrior(Prior):
         family: str,
         interaction_strength: float,
         intervention_strength: float,
+        profile_info: Optional[PittingProfileInfo] = None,
     ) -> Tuple[Tensor, Tensor]:
         """Add an Epit-like target where higher y means stronger pitting resistance."""
         reference = y.to(dtype=X.dtype)
-        material = self._block_projection(X, blocks.get("material"))
-        environment = self._environment_aggressiveness(X, blocks, reference)
-        process = self._block_projection(X, blocks.get("process_history"))
-        exposure = self._block_projection(X, blocks.get("exposure_duration"))
+        profile_applied = profile_info is not None and profile_info.applied
+
+        material = (
+            profile_info.material_passivity
+            if profile_applied and profile_info.material_passivity is not None
+            else self._block_projection(X, blocks.get("material"))
+        )
+        susceptibility = (
+            profile_info.material_susceptibility
+            if profile_applied and profile_info.material_susceptibility is not None
+            else None
+        )
+        environment = (
+            profile_info.environment_aggressiveness
+            if profile_applied and profile_info.environment_aggressiveness is not None
+            else self._environment_aggressiveness(X, blocks, reference)
+        )
+        process = (
+            profile_info.process_offset
+            if profile_applied and profile_info.process_offset is not None
+            else self._block_projection(X, blocks.get("process_history"))
+        )
+        exposure = (
+            profile_info.exposure_damage
+            if profile_applied and profile_info.exposure_damage is not None
+            else self._block_projection(X, blocks.get("exposure_duration"))
+        )
         history = self._block_projection(X, blocks.get("temporal_history"))
-        intervention = self._block_projection(X, blocks.get("direct_intervention"))
-        descriptor = self._block_projection(X, blocks.get("molecular_descriptor"))
+        intervention = (
+            profile_info.intervention_signal
+            if profile_applied and profile_info.intervention_signal is not None
+            else self._block_projection(X, blocks.get("direct_intervention"))
+        )
+        descriptor = (
+            profile_info.descriptor_signal
+            if profile_applied and profile_info.descriptor_signal is not None
+            else self._block_projection(X, blocks.get("molecular_descriptor"))
+        )
 
         material_signal = self._optional_zero(material, reference)
         material_passivity = torch.tanh(material_signal)
-        material_susceptibility = torch.sigmoid(-material_signal)
+        if susceptibility is None:
+            material_susceptibility = torch.sigmoid(-material_signal)
+        else:
+            material_susceptibility = torch.sigmoid(self._standardize_signal(susceptibility))
         environment_drive = torch.sigmoid(environment)
         process_offset = torch.tanh(self._optional_zero(process, reference))
         exposure_drive = torch.sigmoid(self._optional_zero(exposure, reference))
         history_damage = torch.sigmoid(self._optional_zero(history, reference))
 
-        # Epit is a breakdown threshold: protective/passivating chemistry raises it,
-        # while chloride-/temperature-/pH-like environmental stress lowers it.
+        material_coef = float(np.random.uniform(0.45, 0.70))
+        environment_coef = float(np.random.uniform(0.35, 0.65))
+        interaction_coef = float(np.random.uniform(0.60, 0.95))
+        exposure_coef = float(np.random.uniform(0.12, 0.28))
+        process_coef = float(np.random.uniform(0.12, 0.28))
+        history_coef = float(np.random.uniform(0.08, 0.20))
+        descriptor_coef = float(np.random.uniform(0.03, 0.10))
+
+        # Epit is a breakdown threshold: protective/passivating material signal raises it,
+        # while aggressive environments and susceptible-material interactions lower it.
         epit_drive = torch.zeros_like(reference)
         if material is not None:
-            epit_drive = epit_drive + 0.55 * material_passivity
+            epit_drive = epit_drive + material_coef * material_passivity
         if blocks.get("environment") is not None:
-            epit_drive = epit_drive - 0.45 * environment_drive
+            epit_drive = epit_drive - environment_coef * environment_drive
         if material is not None and blocks.get("environment") is not None:
-            epit_drive = epit_drive - 0.75 * material_susceptibility * environment_drive
+            epit_drive = epit_drive - interaction_coef * material_susceptibility * environment_drive
         if exposure is not None:
-            epit_drive = epit_drive - 0.20 * exposure_drive * (0.75 + 0.50 * environment_drive)
+            epit_drive = epit_drive - exposure_coef * exposure_drive * (0.75 + 0.50 * environment_drive)
         if process is not None:
-            epit_drive = epit_drive + 0.20 * process_offset * (0.75 + 0.25 * environment_drive)
+            epit_drive = epit_drive + process_coef * process_offset * (0.75 + 0.25 * environment_drive)
         if history is not None:
-            epit_drive = epit_drive - 0.15 * history_damage
+            epit_drive = epit_drive - history_coef * history_damage
         if descriptor is not None and family != "inhibitor_agent":
-            epit_drive = epit_drive + 0.05 * torch.tanh(descriptor)
+            epit_drive = epit_drive + descriptor_coef * torch.tanh(descriptor)
 
         if torch.std(epit_drive.float(), unbiased=False) > 1e-6:
             y = y + interaction_strength * self._standardize_signal(epit_drive).to(dtype=y.dtype)
@@ -1022,6 +1410,7 @@ class SCMPrior(Prior):
         family: str,
         interaction_strength: float,
         intervention_strength: float,
+        profile_info: Optional[PittingProfileInfo] = None,
     ) -> Tuple[Tensor, Tensor]:
         """Add a broad corrosion-domain target mechanism over semantic blocks."""
         target_family = self._informed_target_family()
@@ -1033,6 +1422,7 @@ class SCMPrior(Prior):
                 family,
                 interaction_strength=interaction_strength,
                 intervention_strength=intervention_strength,
+                profile_info=profile_info,
             )
 
         reference = y.to(dtype=X.dtype)
@@ -1130,16 +1520,28 @@ class SCMPrior(Prior):
             X[:, history_slice] = hist
             y = y + 0.2 * hist.mean(dim=-1)
 
-        X, y = self._apply_informed_corrosion_mechanism(
-            X,
-            y,
-            blocks,
-            family,
-            interaction_strength=interaction_strength,
-            intervention_strength=intervention_strength,
-        )
-
-        X = self.apply_informed_physical_marginals(X, blocks)
+        profile = self._informed_physical_marginal_profile()
+        if self._is_pitting_profile_name(profile):
+            X, profile_info = self._apply_pitting_potential_profile(X, blocks, family)
+            X, y = self._apply_informed_corrosion_mechanism(
+                X,
+                y,
+                blocks,
+                family,
+                interaction_strength=interaction_strength,
+                intervention_strength=intervention_strength,
+                profile_info=profile_info,
+            )
+        else:
+            X, y = self._apply_informed_corrosion_mechanism(
+                X,
+                y,
+                blocks,
+                family,
+                interaction_strength=interaction_strength,
+                intervention_strength=intervention_strength,
+            )
+            X = self.apply_informed_physical_marginals(X, blocks)
 
         return torch.nan_to_num(X), torch.nan_to_num(y)
 
@@ -1174,9 +1576,13 @@ class SCMPrior(Prior):
 
         while True:
             X, y = prior_cls(**params)()
+            reg2cls_params = params
             if params.get("informed_mode", False):
                 X, y = self.apply_informed_structure(X, y, params)
-            X, y = Reg2Cls(params)(X, y)
+                profile = self._informed_physical_marginal_profile()
+                if self._is_pitting_profile_name(profile):
+                    reg2cls_params = {**params, "cat_prob": 0.0}
+            X, y = Reg2Cls(reg2cls_params)(X, y)
 
             # Add batch dim for single dataset to be compatible with delete_unique_features and sanity_check
             X, y = X.unsqueeze(0), y.unsqueeze(0)

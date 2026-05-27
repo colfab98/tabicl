@@ -19,6 +19,11 @@ python scripts/plot_loss_from_err.py ~/tmp/tabicl_s1mini_generic_v4.6540.err --o
 
 
 
-sbatch --export=ALL,STUDY_NAME=pitting_prior_search_pitting_target_v2_,N_TRIALS=50 scripts/optuna_pitting_prior_search.sbatch
-
-optuna-dashboard sqlite:////home/fcolanto/projects/tabicl/corrosion_datasets/analysis/pitting_prior_search/pitting_prior_search_pitting_target_v2/pitting_prior_search_pitting_target_v2.db --host 127.0.0.1 --port 8080
+sbatch \
+  --export=ALL,STUDY_NAME=pitting_prior_search_pitting_target_v2,N_TRIALS=50,STORAGE=journal:///home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna/pitting_prior_search_pitting_target_v2/study_journal_v1.log \
+  scripts/optuna_pitting_prior_search.sbatch
+  
+optuna-dashboard /home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna/pitting_prior_search_pitting_target_v2/study_journal_v1.log \
+  --storage-class JournalFileStorage \
+  --host 127.0.0.1 \
+  --port 8080

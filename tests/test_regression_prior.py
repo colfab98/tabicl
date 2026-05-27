@@ -1,6 +1,7 @@
 import torch
 
 from tabicl.prior.dataset import PriorDataset, SCMPrior
+from tabicl.prior.reg2cls import Reg2Cls
 from tabicl.prior.prior_config import DEFAULT_FIXED_HP
 
 
@@ -184,3 +185,88 @@ def test_pitting_target_family_lowers_target_with_environment_aggressiveness():
 
     assert torch.isfinite(y_new).all()
     assert y_new[0] > y_new[-1]
+
+
+
+def _pitting_fixed_hp() -> dict:
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["informed_target_family"] = "pitting_potential"
+    fixed_hp["informed_physical_marginal_profile"] = "pitting_potential_v1"
+    fixed_hp["informed_physical_marginal_prob"] = 1.0
+    fixed_hp["informed_task_family_probs"] = (1.0, 0.0)
+    fixed_hp["informed_mix_probs"] = (1.0, 0.0)
+    fixed_hp["informed_normal_block_allocation"] = (0.65, 0.25, 0.10, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    return fixed_hp
+
+
+def test_pitting_potential_v1_profile_records_roles_and_drives_target():
+    torch.manual_seed(2)
+    fixed_hp = _pitting_fixed_hp()
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.randn(96, 10)
+    y = torch.zeros(96)
+    blocks = {
+        "material": slice(0, 6),
+        "environment": slice(6, 9),
+        "process_history": slice(9, 10),
+    }
+
+    X_profile, info = prior._apply_pitting_potential_profile(X.clone(), blocks, "normal_corrosion")
+    assert info.applied
+    assert info.material_passivity is not None
+    assert info.environment_aggressiveness is not None
+    assert info.role_columns
+    assert torch.isfinite(X_profile).all()
+    assert torch.std(X_profile - X, unbiased=False) > 0
+
+    _, y_new = prior._apply_informed_corrosion_mechanism(
+        X_profile,
+        y.clone(),
+        blocks,
+        "normal_corrosion",
+        interaction_strength=0.5,
+        intervention_strength=0.0,
+        profile_info=info,
+    )
+
+    assert torch.isfinite(y_new).all()
+    assert torch.std(y_new - y, unbiased=False) > 0
+
+
+def test_pitting_potential_v1_full_generation_is_finite_and_disables_generic_num2cat(monkeypatch):
+    seen_cat_probs = []
+    original_num2cat = Reg2Cls._num2cat
+
+    def spy_num2cat(self, X):
+        seen_cat_probs.append(float(self.hp.get("cat_prob", 0.0)))
+        return original_num2cat(self, X)
+
+    monkeypatch.setattr(Reg2Cls, "_num2cat", spy_num2cat)
+
+    fixed_hp = _pitting_fixed_hp()
+    fixed_hp["cat_prob"] = 1.0
+    dataset = PriorDataset(
+        batch_size=2,
+        batch_size_per_gp=1,
+        min_features=6,
+        max_features=10,
+        max_classes=0,
+        min_seq_len=32,
+        max_seq_len=40,
+        min_train_size=0.4,
+        max_train_size=0.6,
+        prior_type="informed_scm",
+        scm_fixed_hp=fixed_hp,
+        scm_sampled_hp={},
+        n_jobs=1,
+        device="cpu",
+    )
+
+    X, y, d, _, _ = dataset.prior.get_batch()
+
+    assert seen_cat_probs
+    assert all(prob == 0.0 for prob in seen_cat_probs)
+    assert torch.isfinite(X).all()
+    assert torch.isfinite(y).all()
+    assert (d > 0).all()
+    assert y.dtype.is_floating_point
