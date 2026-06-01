@@ -369,16 +369,25 @@ def _inhibitor_efficiency_fixed_hp() -> dict:
 def test_datacor_inhibitor_allocation_matches_retained_feature_shape():
     fixed_hp = _inhibitor_efficiency_fixed_hp()
     fixed_hp["informed_inhibitor_block_allocation"] = (0.0625, 0.0625, 0.0, 0.0, 0.0, 0.0, 0.875, 0.0, 0.0)
+    fixed_hp["informed_inhibitor_block_allocation_min_counts"] = (1, 1, 0, 0, 0, 0, 1, 0, 0)
     prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
 
-    family, blocks = prior._split_informed_blocks_with_family(16)
+    expected_counts = {
+        8: (1, 1, 6),
+        10: (1, 1, 8),
+        16: (1, 1, 14),
+        32: (2, 2, 28),
+    }
+    for num_features, (material_count, environment_count, descriptor_count) in expected_counts.items():
+        family, blocks = prior._split_informed_blocks_with_family(num_features)
 
-    assert family == "inhibitor_agent"
-    assert blocks["material"] == slice(0, 1)
-    assert blocks["environment"] == slice(1, 2)
-    assert blocks["molecular_descriptor"] == slice(2, 16)
-    assert "direct_intervention" not in blocks
-    assert set(blocks) == {"material", "environment", "molecular_descriptor"}
+        assert family == "inhibitor_agent"
+        assert blocks["material"] == slice(0, material_count)
+        assert blocks["environment"] == slice(material_count, material_count + environment_count)
+        assert blocks["molecular_descriptor"] == slice(material_count + environment_count, num_features)
+        assert blocks["molecular_descriptor"].stop - blocks["molecular_descriptor"].start == descriptor_count
+        assert "direct_intervention" not in blocks
+        assert set(blocks) == {"material", "environment", "molecular_descriptor"}
 
 
 def test_inhibitor_efficiency_v1_profile_records_roles_and_drives_target():

@@ -45,6 +45,18 @@ DATACOR_INHIBITOR_BLOCK_ALLOCATION = (
     0.0,     # electrochem_downstream
 )
 
+DATACOR_INHIBITOR_BLOCK_MIN_COUNTS = (
+    1,  # material/alloy
+    1,  # environment/pH condition
+    0,  # process_history
+    0,  # exposure_duration
+    0,  # temporal_history
+    0,  # direct_intervention
+    1,  # molecular_descriptor
+    0,  # electrochem_control
+    0,  # electrochem_downstream
+)
+
 
 @dataclass(frozen=True)
 class TrialParams:
@@ -115,8 +127,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--micro-batch-size", type=int, default=4)
     parser.add_argument("--batch-size-per-gp", type=int, default=4)
-    parser.add_argument("--min-features", type=int, default=16)
-    parser.add_argument("--max-features", type=int, default=16)
+    parser.add_argument("--min-features", type=int, default=8)
+    parser.add_argument("--max-features", type=int, default=32)
     parser.add_argument("--max-seq-len", type=int, default=1024)
     parser.add_argument("--skip-existing", action="store_true", help="Reuse existing checkpoints/evals.")
     parser.add_argument("--dry-run", action="store_true", help="Write commands/metadata without running training or eval.")
@@ -224,6 +236,8 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         "1.0",
         "--informed_inhibitor_block_allocation",
         *(format_float(value) for value in DATACOR_INHIBITOR_BLOCK_ALLOCATION),
+        "--informed_inhibitor_block_allocation_min_counts",
+        *(str(value) for value in DATACOR_INHIBITOR_BLOCK_MIN_COUNTS),
         "--informed_feature_block_strength",
         format_float(params.informed_feature_block_strength),
         "--informed_interaction_strength",
@@ -436,6 +450,7 @@ def run_trial(args: argparse.Namespace, trial_number: int, params: TrialParams) 
         "trial_name": trial_name,
         "params": asdict(params),
         "fixed_inhibitor_block_allocation": DATACOR_INHIBITOR_BLOCK_ALLOCATION,
+        "fixed_inhibitor_block_min_counts": DATACOR_INHIBITOR_BLOCK_MIN_COUNTS,
         "dataset": DATACOR_DATASET,
         "task_id": DATACOR_TASK_ID,
         "split_strategy": "grouped_molecular_descriptor",

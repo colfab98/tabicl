@@ -1336,6 +1336,7 @@ class SCMPrior(Prior):
         names: list[str],
         allocation: Any,
         option_name: str,
+        min_counts: Any = None,
     ) -> Dict[str, slice]:
         if num_features <= 0:
             return {}
@@ -1369,6 +1370,37 @@ class SCMPrior(Prior):
             idx = int(np.argmax(weights))
             counts[idx] += 1
             remaining -= 1
+
+        if min_counts is not None:
+            min_counts_array = np.asarray(min_counts, dtype=float)
+            if min_counts_array.shape != (len(names),):
+                raise ValueError(
+                    f"{option_name}_min_counts must contain {len(names)} counts in "
+                    f"{', '.join(names)} order."
+                )
+            if not np.all(np.isfinite(min_counts_array)) or np.any(min_counts_array < 0.0):
+                raise ValueError(f"{option_name}_min_counts values must be finite and non-negative.")
+            rounded_min_counts = np.rint(min_counts_array)
+            if not np.allclose(min_counts_array, rounded_min_counts):
+                raise ValueError(f"{option_name}_min_counts values must be whole numbers.")
+            min_counts_int = rounded_min_counts.astype(int)
+            if np.any((min_counts_int > 0) & (weights <= 0.0)):
+                raise ValueError(f"{option_name}_min_counts cannot require columns for zero-weight blocks.")
+            if int(min_counts_int.sum()) > num_features:
+                raise ValueError(f"{option_name}_min_counts sum cannot exceed the sampled feature count.")
+
+            deficits = np.maximum(min_counts_int - counts, 0)
+            if np.any(deficits):
+                counts += deficits
+                excess = int(counts.sum() - num_features)
+                while excess > 0:
+                    candidates = np.flatnonzero(counts > min_counts_int)
+                    if candidates.size == 0:
+                        raise ValueError(f"{option_name}_min_counts cannot be satisfied for this feature count.")
+                    over_target = counts[candidates] - raw_counts[candidates]
+                    idx = int(candidates[np.argmax(over_target)])
+                    counts[idx] -= 1
+                    excess -= 1
 
         blocks: Dict[str, slice] = {}
         start = 0
@@ -1423,7 +1455,10 @@ class SCMPrior(Prior):
         )
         if sampled_allocation is not None:
             allocation = sampled_allocation
-        blocks = self._split_blocks_from_allocation(num_features, names, allocation, option_name)
+        min_counts = self.fixed_hp.get(f"{option_name}_min_counts")
+        blocks = self._split_blocks_from_allocation(
+            num_features, names, allocation, option_name, min_counts=min_counts
+        )
         return family, blocks
 
     def _split_informed_blocks(self, num_features: int) -> Dict[str, slice]:

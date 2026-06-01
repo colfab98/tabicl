@@ -263,6 +263,14 @@ class Trainer:
                 scm_fixed_hp["informed_inhibitor_block_allocation_ranges"] = tuple(
                     self.config.informed_inhibitor_block_allocation_ranges
                 )
+            if self.config.informed_normal_block_allocation_min_counts is not None:
+                scm_fixed_hp["informed_normal_block_allocation_min_counts"] = tuple(
+                    self.config.informed_normal_block_allocation_min_counts
+                )
+            if self.config.informed_inhibitor_block_allocation_min_counts is not None:
+                scm_fixed_hp["informed_inhibitor_block_allocation_min_counts"] = tuple(
+                    self.config.informed_inhibitor_block_allocation_min_counts
+                )
             if self.config.informed_feature_block_strength is not None:
                 scm_fixed_hp["informed_feature_block_strength"] = self.config.informed_feature_block_strength
             if self.config.informed_interaction_strength is not None:

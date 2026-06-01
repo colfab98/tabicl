@@ -278,6 +278,20 @@ def build_parser():
         help="Optional low/high pairs for per-dataset inhibitor-agent block allocation sampling.",
     )
     parser.add_argument(
+        "--informed_normal_block_allocation_min_counts",
+        type=int,
+        nargs=9,
+        default=None,
+        help="Optional minimum column counts for normal-corrosion allocation blocks.",
+    )
+    parser.add_argument(
+        "--informed_inhibitor_block_allocation_min_counts",
+        type=int,
+        nargs=9,
+        default=None,
+        help="Optional minimum column counts for inhibitor-agent allocation blocks.",
+    )
+    parser.add_argument(
         "--informed_feature_block_strength",
         type=false_or_float,
         default=None,

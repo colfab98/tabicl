@@ -510,6 +510,14 @@ class SavePriorDataset:
             scm_fixed_hp["informed_inhibitor_block_allocation_ranges"] = tuple(
                 self.args.informed_inhibitor_block_allocation_ranges
             )
+        if self.args.informed_normal_block_allocation_min_counts is not None:
+            scm_fixed_hp["informed_normal_block_allocation_min_counts"] = tuple(
+                self.args.informed_normal_block_allocation_min_counts
+            )
+        if self.args.informed_inhibitor_block_allocation_min_counts is not None:
+            scm_fixed_hp["informed_inhibitor_block_allocation_min_counts"] = tuple(
+                self.args.informed_inhibitor_block_allocation_min_counts
+            )
         if self.args.informed_feature_block_strength is not None:
             scm_fixed_hp["informed_feature_block_strength"] = self.args.informed_feature_block_strength
         if self.args.informed_interaction_strength is not None:
@@ -577,8 +585,10 @@ class SavePriorDataset:
             "informed_task_family_probs": self.args.informed_task_family_probs,
             "informed_normal_block_allocation": self.args.informed_normal_block_allocation,
             "informed_normal_block_allocation_ranges": self.args.informed_normal_block_allocation_ranges,
+            "informed_normal_block_allocation_min_counts": self.args.informed_normal_block_allocation_min_counts,
             "informed_inhibitor_block_allocation": self.args.informed_inhibitor_block_allocation,
             "informed_inhibitor_block_allocation_ranges": self.args.informed_inhibitor_block_allocation_ranges,
+            "informed_inhibitor_block_allocation_min_counts": self.args.informed_inhibitor_block_allocation_min_counts,
             "informed_feature_block_strength": self.args.informed_feature_block_strength,
             "informed_interaction_strength": self.args.informed_interaction_strength,
             "informed_history_strength": self.args.informed_history_strength,
@@ -741,6 +751,8 @@ if __name__ == "__main__":
     parser.add_argument("--informed_inhibitor_block_allocation", type=float, nargs=9, default=None)
     parser.add_argument("--informed_normal_block_allocation_ranges", type=float, nargs=18, default=None)
     parser.add_argument("--informed_inhibitor_block_allocation_ranges", type=float, nargs=18, default=None)
+    parser.add_argument("--informed_normal_block_allocation_min_counts", type=int, nargs=9, default=None)
+    parser.add_argument("--informed_inhibitor_block_allocation_min_counts", type=int, nargs=9, default=None)
     parser.add_argument("--informed_feature_block_strength", type=false_or_float, default=None)
     parser.add_argument("--informed_interaction_strength", type=false_or_float, default=None)
     parser.add_argument("--informed_history_strength", type=false_or_float, default=None)
