@@ -1125,6 +1125,51 @@ class SCMPrior(Prior):
 
         return X
 
+    @staticmethod
+    def _sample_block_allocation_from_ranges(
+        names: list[str],
+        ranges: Any,
+        option_name: str,
+    ) -> Optional[np.ndarray]:
+        if ranges is None:
+            return None
+
+        ranges_array = np.asarray(ranges, dtype=float)
+        if ranges_array.shape == (2 * len(names),):
+            ranges_array = ranges_array.reshape(len(names), 2)
+        if ranges_array.shape != (len(names), 2):
+            raise ValueError(
+                f"{option_name} must contain low/high pairs for {len(names)} weights in "
+                f"{', '.join(names)} order."
+            )
+        if not np.all(np.isfinite(ranges_array)) or np.any(ranges_array < 0.0):
+            raise ValueError(f"{option_name} bounds must be finite and non-negative.")
+
+        lows = ranges_array[:, 0]
+        highs = ranges_array[:, 1]
+        if np.any(lows > highs):
+            raise ValueError(f"{option_name} low bounds must be <= high bounds.")
+        if lows.sum() > 1.0 + 1e-12 or highs.sum() < 1.0 - 1e-12:
+            raise ValueError(f"{option_name} bounds must allow allocations that sum to 1.")
+
+        sampled = np.zeros(len(names), dtype=float)
+        remaining = 1.0
+        for idx in range(len(names)):
+            remaining_low = float(lows[idx + 1 :].sum())
+            remaining_high = float(highs[idx + 1 :].sum())
+            low = max(float(lows[idx]), remaining - remaining_high)
+            high = min(float(highs[idx]), remaining - remaining_low)
+            if high < low - 1e-12:
+                raise ValueError(f"{option_name} bounds cannot produce a valid allocation.")
+            sampled[idx] = low if abs(high - low) <= 1e-12 else float(np.random.uniform(low, high))
+            remaining -= sampled[idx]
+
+        sampled[-1] += remaining
+        sampled = np.clip(sampled, lows, highs)
+        if sampled.sum() <= 0.0:
+            raise ValueError(f"At least one {option_name} sampled weight must be positive.")
+        return sampled
+
     def _split_blocks_from_allocation(
         self,
         num_features: int,
@@ -1212,6 +1257,12 @@ class SCMPrior(Prior):
                 (0.72, 0.22, 0.04, 0.01, 0.0, 0.01, 0.0, 0.0, 0.0),
             )
             option_name = "informed_normal_block_allocation"
+        allocation_ranges = self.fixed_hp.get(f"{option_name}_ranges")
+        sampled_allocation = self._sample_block_allocation_from_ranges(
+            names, allocation_ranges, f"{option_name}_ranges"
+        )
+        if sampled_allocation is not None:
+            allocation = sampled_allocation
         blocks = self._split_blocks_from_allocation(num_features, names, allocation, option_name)
         return family, blocks
 
@@ -1352,9 +1403,18 @@ class SCMPrior(Prior):
         exposure_drive = torch.sigmoid(self._optional_zero(exposure, reference))
         history_damage = torch.sigmoid(self._optional_zero(history, reference))
 
-        material_coef = float(np.random.uniform(0.45, 0.70))
-        environment_coef = float(np.random.uniform(0.35, 0.65))
-        interaction_coef = float(np.random.uniform(0.60, 0.95))
+        material_coef_scale = float(self.fixed_hp.get("epit_material_coef_scale", 1.0))
+        environment_coef_scale = float(self.fixed_hp.get("epit_environment_coef_scale", 1.0))
+        interaction_coef_scale = float(self.fixed_hp.get("epit_interaction_coef_scale", 1.0))
+        coefficient_scales = np.asarray(
+            [material_coef_scale, environment_coef_scale, interaction_coef_scale], dtype=float
+        )
+        if not np.all(np.isfinite(coefficient_scales)) or np.any(coefficient_scales < 0.0):
+            raise ValueError("Epit coefficient scales must be finite and non-negative.")
+
+        material_coef = material_coef_scale * float(np.random.uniform(0.45, 0.70))
+        environment_coef = environment_coef_scale * float(np.random.uniform(0.35, 0.65))
+        interaction_coef = interaction_coef_scale * float(np.random.uniform(0.60, 0.95))
         exposure_coef = float(np.random.uniform(0.12, 0.28))
         process_coef = float(np.random.uniform(0.12, 0.28))
         history_coef = float(np.random.uniform(0.08, 0.20))

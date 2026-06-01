@@ -255,6 +255,14 @@ class Trainer:
                 scm_fixed_hp["informed_normal_block_allocation"] = tuple(self.config.informed_normal_block_allocation)
             if self.config.informed_inhibitor_block_allocation is not None:
                 scm_fixed_hp["informed_inhibitor_block_allocation"] = tuple(self.config.informed_inhibitor_block_allocation)
+            if self.config.informed_normal_block_allocation_ranges is not None:
+                scm_fixed_hp["informed_normal_block_allocation_ranges"] = tuple(
+                    self.config.informed_normal_block_allocation_ranges
+                )
+            if self.config.informed_inhibitor_block_allocation_ranges is not None:
+                scm_fixed_hp["informed_inhibitor_block_allocation_ranges"] = tuple(
+                    self.config.informed_inhibitor_block_allocation_ranges
+                )
             if self.config.informed_feature_block_strength is not None:
                 scm_fixed_hp["informed_feature_block_strength"] = self.config.informed_feature_block_strength
             if self.config.informed_interaction_strength is not None:
@@ -269,6 +277,12 @@ class Trainer:
                 scm_fixed_hp["informed_physical_marginal_prob"] = self.config.informed_physical_marginal_prob
             if self.config.informed_physical_marginal_profile is not None:
                 scm_fixed_hp["informed_physical_marginal_profile"] = self.config.informed_physical_marginal_profile
+            if self.config.epit_material_coef_scale is not None:
+                scm_fixed_hp["epit_material_coef_scale"] = self.config.epit_material_coef_scale
+            if self.config.epit_environment_coef_scale is not None:
+                scm_fixed_hp["epit_environment_coef_scale"] = self.config.epit_environment_coef_scale
+            if self.config.epit_interaction_coef_scale is not None:
+                scm_fixed_hp["epit_interaction_coef_scale"] = self.config.epit_interaction_coef_scale
 
             # Generate prior data on the fly
             dataset = PriorDataset(

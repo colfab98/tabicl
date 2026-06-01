@@ -2,7 +2,7 @@
 #SBATCH --job-name=pitting_prior_search
 #SBATCH --gpus=2
 #SBATCH --mem=32G
-#SBATCH --time=96:00:00
+#SBATCH --time=48:00:00
 #SBATCH --output=/home/%u/tmp/%x.%j.out
 #SBATCH --error=/home/%u/tmp/%x.%j.err
 

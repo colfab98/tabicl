@@ -164,6 +164,7 @@ REGRESSION_INTERVAL_SPECS = (
 )
 DEFAULT_REGRESSION_PLOT_METRICS = (
     "test_spearman",
+    "test_mae",
     "test_nmae_iqr",
     "test_nrmse_iqr",
     "test_npinball_iqr",
@@ -453,6 +454,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-wide-csv", type=Path, default=None, help="Wide comparison CSV with one row per task.")
     parser.add_argument("--output-summary-csv", type=Path, default=None, help="Per-model aggregate summary CSV.")
     parser.add_argument(
+        "--save-task-tables",
+        action="store_true",
+        help=(
+            "Save each generated task's human-readable model input table before TabICL "
+            "preprocessing. The CSV contains retained feature columns plus the target."
+        ),
+    )
+    parser.add_argument(
         "--output-plot-dir",
         type=Path,
         default=None,
@@ -465,8 +474,8 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help=(
             "Metric to plot in --checkpoint all mode. Repeat to plot multiple metrics. "
-            "Regression defaults to normalized/rank metrics; pass raw metrics such as "
-            "test_rmse explicitly if native-unit task-level diagnostics are needed."
+            "Regression defaults include rank, raw MAE, and normalized error metrics; pass "
+            "test_rmse explicitly if squared-error-sensitive diagnostics are needed."
         ),
     )
     parser.add_argument(
@@ -513,6 +522,7 @@ def metric_sort_specs_for_args(args: argparse.Namespace) -> list[tuple[str, bool
             ("test_nmae_iqr", True),
             ("test_npinball_iqr", True),
             ("test_interval_80_coverage_error", True),
+            ("test_mae", True),
             ("test_rmse", True),
         ]
     if args.target_binning == "quantile_multiclass":
@@ -975,8 +985,14 @@ def dataframe_group_keys(frame: pd.DataFrame) -> pd.Series:
     return pd.Series(values, index=frame.index, dtype="string")
 
 
+MOLECULAR_DESCRIPTOR_GROUPED_SPLIT_DATASETS = {
+    "datacor_aluminum_inhibitors",
+    "datacortech_aluminum_inhibitors",
+}
+
+
 def split_groups_for_task(table: Table, X: pd.DataFrame) -> tuple[pd.Series | None, str]:
-    if table.dataset != "datacortech_aluminum_inhibitors":
+    if table.dataset not in MOLECULAR_DESCRIPTOR_GROUPED_SPLIT_DATASETS:
         return None, "random_stratified"
 
     descriptor_cols = [
@@ -2304,6 +2320,7 @@ def print_summary(
         display_cols.extend(["checkpoint_name", "checkpoint_step"])
     metric_display_cols = [f"mean_{primary_metric}", f"weighted_mean_{primary_metric}"]
     if primary_metric == REGRESSION_PRIMARY_METRIC:
+        metric_display_cols.extend(["mean_test_mae", "weighted_mean_test_mae"])
         metric_display_cols.extend(["mean_test_nmae_iqr", "weighted_mean_test_nmae_iqr"])
         metric_display_cols.extend(["mean_test_npinball_iqr", "mean_test_interval_80_coverage_error"])
     elif primary_metric != PRIMARY_METRIC:
@@ -2485,6 +2502,20 @@ def write_checkpoint_trend_plots(summary: pd.DataFrame, output_dir: Path, metric
     return written
 
 
+def save_model_input_tables(tasks: list[EvalTask], output_dir: Path) -> list[Path]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    written: list[Path] = []
+    for task in tasks:
+        task_dir = output_dir / slugify(task.task_id)
+        task_dir.mkdir(parents=True, exist_ok=True)
+        table = task.X.reset_index(drop=True).copy()
+        table[task.target] = task.y.reset_index(drop=True)
+        output_path = task_dir / "model_input_table.csv"
+        table.to_csv(output_path, index=False)
+        written.append(output_path)
+    return written
+
+
 REPEATED_SPLIT_VALUE_ARGS = {
     "--output-json",
     "--output-csv",
@@ -2493,7 +2524,7 @@ REPEATED_SPLIT_VALUE_ARGS = {
     "--output-plot-dir",
     "--random-state",
 }
-REPEATED_SPLIT_DROP_FLAGS = {"--no-checkpoint-plots"}
+REPEATED_SPLIT_DROP_FLAGS = {"--no-checkpoint-plots", "--save-task-tables"}
 
 
 def strip_repeated_split_driver_args(argv: list[str]) -> list[str]:
@@ -2665,6 +2696,10 @@ def run_repeated_split_eval(args: argparse.Namespace) -> None:
     for output_path in (output_json, output_csv, output_wide_csv, output_summary_csv):
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    task_table_paths: list[Path] = []
+    if args.save_task_tables:
+        task_table_paths = save_model_input_tables(make_tasks(args), artifact_dir / "task_tables")
+
     base_argv = strip_repeated_split_driver_args(sys.argv[1:])
     all_rows: list[dict[str, Any]] = []
     all_errors: list[dict[str, Any]] = []
@@ -2750,6 +2785,7 @@ def run_repeated_split_eval(args: argparse.Namespace) -> None:
             "summary_csv": str(output_summary_csv),
             "plot_dir": str(output_plot_dir) if plot_paths else None,
             "plots": [str(path) for path in plot_paths],
+            "task_tables": [str(path) for path in task_table_paths],
         },
     }
     output_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -2765,6 +2801,10 @@ def run_repeated_split_eval(args: argparse.Namespace) -> None:
     if plot_paths:
         print(f"Saved repeated-split checkpoint trend plots to {output_plot_dir}")
         for path in plot_paths:
+            print(f"  {path}")
+    if task_table_paths:
+        print(f"Saved model input task tables to {artifact_dir / 'task_tables'}")
+        for path in task_table_paths:
             print(f"  {path}")
     if all_errors:
         print(f"Completed with {len(all_errors)} task/model errors; see JSON for details.")
@@ -3041,6 +3081,10 @@ def main() -> None:
     for output_path in (output_json, output_csv, output_wide_csv, output_summary_csv):
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
+    task_table_paths: list[Path] = []
+    if args.save_task_tables:
+        task_table_paths = save_model_input_tables(tasks, output_json.parent / "task_tables")
+
     summary_df = print_summary(
         rows,
         errors,
@@ -3122,6 +3166,7 @@ def main() -> None:
             "summary_csv": str(output_summary_csv),
             "plot_dir": str(output_plot_dir) if output_plot_dir is not None else None,
             "plots": [str(path) for path in plot_paths],
+            "task_tables": [str(path) for path in task_table_paths],
         },
     }
     output_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -3137,6 +3182,10 @@ def main() -> None:
     if plot_paths:
         print(f"Saved checkpoint trend plots to {output_plot_dir}")
         for path in plot_paths:
+            print(f"  {path}")
+    if task_table_paths:
+        print(f"Saved model input task tables to {output_json.parent / 'task_tables'}")
+        for path in task_table_paths:
             print(f"  {path}")
     if errors:
         print(f"Completed with {len(errors)} task/model errors; see JSON for details.")

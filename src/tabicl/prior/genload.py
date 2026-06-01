@@ -502,6 +502,14 @@ class SavePriorDataset:
             scm_fixed_hp["informed_normal_block_allocation"] = tuple(self.args.informed_normal_block_allocation)
         if self.args.informed_inhibitor_block_allocation is not None:
             scm_fixed_hp["informed_inhibitor_block_allocation"] = tuple(self.args.informed_inhibitor_block_allocation)
+        if self.args.informed_normal_block_allocation_ranges is not None:
+            scm_fixed_hp["informed_normal_block_allocation_ranges"] = tuple(
+                self.args.informed_normal_block_allocation_ranges
+            )
+        if self.args.informed_inhibitor_block_allocation_ranges is not None:
+            scm_fixed_hp["informed_inhibitor_block_allocation_ranges"] = tuple(
+                self.args.informed_inhibitor_block_allocation_ranges
+            )
         if self.args.informed_feature_block_strength is not None:
             scm_fixed_hp["informed_feature_block_strength"] = self.args.informed_feature_block_strength
         if self.args.informed_interaction_strength is not None:
@@ -516,6 +524,12 @@ class SavePriorDataset:
             scm_fixed_hp["informed_physical_marginal_prob"] = self.args.informed_physical_marginal_prob
         if self.args.informed_physical_marginal_profile is not None:
             scm_fixed_hp["informed_physical_marginal_profile"] = self.args.informed_physical_marginal_profile
+        if self.args.epit_material_coef_scale is not None:
+            scm_fixed_hp["epit_material_coef_scale"] = self.args.epit_material_coef_scale
+        if self.args.epit_environment_coef_scale is not None:
+            scm_fixed_hp["epit_environment_coef_scale"] = self.args.epit_environment_coef_scale
+        if self.args.epit_interaction_coef_scale is not None:
+            scm_fixed_hp["epit_interaction_coef_scale"] = self.args.epit_interaction_coef_scale
 
         self.prior = PriorDataset(
             batch_size=self.args.batch_size,
@@ -562,7 +576,9 @@ class SavePriorDataset:
             "informed_block_allocation": self.args.informed_block_allocation,
             "informed_task_family_probs": self.args.informed_task_family_probs,
             "informed_normal_block_allocation": self.args.informed_normal_block_allocation,
+            "informed_normal_block_allocation_ranges": self.args.informed_normal_block_allocation_ranges,
             "informed_inhibitor_block_allocation": self.args.informed_inhibitor_block_allocation,
+            "informed_inhibitor_block_allocation_ranges": self.args.informed_inhibitor_block_allocation_ranges,
             "informed_feature_block_strength": self.args.informed_feature_block_strength,
             "informed_interaction_strength": self.args.informed_interaction_strength,
             "informed_history_strength": self.args.informed_history_strength,
@@ -570,6 +586,9 @@ class SavePriorDataset:
             "informed_target_family": self.args.informed_target_family,
             "informed_physical_marginal_prob": self.args.informed_physical_marginal_prob,
             "informed_physical_marginal_profile": self.args.informed_physical_marginal_profile,
+            "epit_material_coef_scale": self.args.epit_material_coef_scale,
+            "epit_environment_coef_scale": self.args.epit_environment_coef_scale,
+            "epit_interaction_coef_scale": self.args.epit_interaction_coef_scale,
         }
         with open(self.save_dir / "metadata.json", "w") as f:
             json.dump(metadata, f, indent=2)
@@ -720,6 +739,8 @@ if __name__ == "__main__":
     parser.add_argument("--informed_task_family_probs", type=float, nargs=2, default=None)
     parser.add_argument("--informed_normal_block_allocation", type=float, nargs=9, default=None)
     parser.add_argument("--informed_inhibitor_block_allocation", type=float, nargs=9, default=None)
+    parser.add_argument("--informed_normal_block_allocation_ranges", type=float, nargs=18, default=None)
+    parser.add_argument("--informed_inhibitor_block_allocation_ranges", type=float, nargs=18, default=None)
     parser.add_argument("--informed_feature_block_strength", type=false_or_float, default=None)
     parser.add_argument("--informed_interaction_strength", type=false_or_float, default=None)
     parser.add_argument("--informed_history_strength", type=false_or_float, default=None)
@@ -732,6 +753,9 @@ if __name__ == "__main__":
     )
     parser.add_argument("--informed_physical_marginal_prob", type=false_or_float, default=None)
     parser.add_argument("--informed_physical_marginal_profile", type=str, default=None)
+    parser.add_argument("--epit_material_coef_scale", type=float, default=None)
+    parser.add_argument("--epit_environment_coef_scale", type=float, default=None)
+    parser.add_argument("--epit_interaction_coef_scale", type=float, default=None)
     parser.add_argument("--n_jobs", type=int, default=-1, help="Number of jobs for parallel processing")
     parser.add_argument("--num_threads_per_generate", type=int, default=1, help="Threads per generation")
     parser.add_argument(

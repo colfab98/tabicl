@@ -187,6 +187,66 @@ def test_pitting_target_family_lowers_target_with_environment_aggressiveness():
     assert y_new[0] > y_new[-1]
 
 
+def test_informed_block_allocation_ranges_override_fixed_allocation():
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["informed_task_family_probs"] = (1.0, 0.0)
+    fixed_hp["informed_normal_block_allocation"] = (0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    fixed_hp["informed_normal_block_allocation_ranges"] = (
+        0.8,
+        0.8,
+        0.2,
+        0.2,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    )
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+
+    blocks = prior._split_informed_blocks(10)
+
+    assert blocks["material"].start == 0
+    assert blocks["material"].stop == 8
+    assert blocks["environment"].start == 8
+    assert blocks["environment"].stop == 10
+    assert "process_history" not in blocks
+
+
+def test_pitting_target_family_honors_epit_coefficient_scales():
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["informed_target_family"] = "pitting_potential"
+    fixed_hp["epit_material_coef_scale"] = 0.0
+    fixed_hp["epit_environment_coef_scale"] = 0.0
+    fixed_hp["epit_interaction_coef_scale"] = 0.0
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.zeros(64, 2)
+    X[:, 0] = torch.linspace(-3.0, 3.0, steps=64)
+    X[:, 1] = torch.linspace(3.0, -3.0, steps=64)
+    y = torch.zeros(64)
+    blocks = {"material": slice(0, 1), "environment": slice(1, 2)}
+
+    _, y_new = prior._apply_informed_corrosion_mechanism(
+        X.clone(),
+        y.clone(),
+        blocks,
+        "normal_corrosion",
+        interaction_strength=1.0,
+        intervention_strength=0.0,
+    )
+
+    assert torch.allclose(y_new, y)
+
+
 
 def _pitting_fixed_hp() -> dict:
     fixed_hp = dict(DEFAULT_FIXED_HP)

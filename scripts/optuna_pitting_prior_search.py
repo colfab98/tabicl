@@ -27,6 +27,17 @@ import pandas as pd
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SPLIT_SEEDS = (1001, 1002, 1003, 1004, 1005)
 DEFAULT_INHIBITOR_ALLOCATION = (0.05, 0.08, 0.02, 0.02, 0.0, 0.05, 0.78, 0.0, 0.0)
+PITTING_NORMAL_BLOCK_ALLOCATION_RANGES = (
+    (0.70, 0.90),  # material: Epit table has 17/21 material features.
+    (0.05, 0.25),  # environment: Epit table has 3/21 environment features.
+    (0.00, 0.10),  # process_history: Epit table has 1/21 process/test-method feature.
+    (0.00, 0.00),
+    (0.00, 0.00),
+    (0.00, 0.00),
+    (0.00, 0.00),
+    (0.00, 0.00),
+    (0.00, 0.00),
+)
 
 
 @dataclass(frozen=True)
@@ -35,23 +46,9 @@ class TrialParams:
     informed_feature_block_strength: float
     informed_interaction_strength: float
     informed_physical_marginal_prob: float
-    alloc_material: float
-    alloc_environment: float
-    alloc_process_history: float
-
-    @property
-    def normal_block_allocation(self) -> tuple[float, ...]:
-        return (
-            self.alloc_material,
-            self.alloc_environment,
-            self.alloc_process_history,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        )
+    epit_material_coef_scale: float
+    epit_environment_coef_scale: float
+    epit_interaction_coef_scale: float
 
 
 class SuggestTrial(Protocol):
@@ -148,33 +145,35 @@ def build_optuna_storage(storage: str | None) -> Any:
 
 
 def sample_params(trial: SuggestTrial) -> TrialParams:
-    informed_prior_ratio = trial.suggest_categorical("informed_prior_ratio", [0.75, 1.00])
-    informed_feature_block_strength = trial.suggest_float("informed_feature_block_strength", 0.15, 0.45)
-    informed_interaction_strength = trial.suggest_float("informed_interaction_strength", 0.25, 0.55)
+    informed_prior_ratio = trial.suggest_categorical("informed_prior_ratio", [0.25, 0.50, 0.75, 1.00])
+    informed_feature_block_strength = trial.suggest_float("informed_feature_block_strength", 0.00, 0.95)
+    informed_interaction_strength = trial.suggest_float("informed_interaction_strength", 0.00, 1.00)
     informed_physical_marginal_prob = trial.suggest_categorical(
         "informed_physical_marginal_prob",
-        [0.25, 0.50, 0.75, 1.00],
+        [0.00, 0.25, 0.50, 0.75, 1.00],
     )
 
-    alloc_material = trial.suggest_float("alloc_material", 0.55, 0.85)
-    process_low = max(0.0, 0.65 - alloc_material)
-    process_high = min(0.15, 0.90 - alloc_material)
-    alloc_process_history = trial.suggest_float("alloc_process_history", process_low, process_high)
-    alloc_environment = 1.0 - alloc_material - alloc_process_history
+    epit_material_coef_scale = trial.suggest_float("epit_material_coef_scale", 0.50, 1.50)
+    epit_environment_coef_scale = trial.suggest_float("epit_environment_coef_scale", 0.50, 1.50)
+    epit_interaction_coef_scale = trial.suggest_float("epit_interaction_coef_scale", 0.50, 1.50)
 
     return TrialParams(
         informed_prior_ratio=float(informed_prior_ratio),
         informed_feature_block_strength=float(informed_feature_block_strength),
         informed_interaction_strength=float(informed_interaction_strength),
         informed_physical_marginal_prob=float(informed_physical_marginal_prob),
-        alloc_material=float(alloc_material),
-        alloc_environment=float(alloc_environment),
-        alloc_process_history=float(alloc_process_history),
+        epit_material_coef_scale=float(epit_material_coef_scale),
+        epit_environment_coef_scale=float(epit_environment_coef_scale),
+        epit_interaction_coef_scale=float(epit_interaction_coef_scale),
     )
 
 
 def format_float(value: float) -> str:
     return f"{value:.10g}"
+
+
+def format_range_values(ranges: tuple[tuple[float, float], ...]) -> tuple[str, ...]:
+    return tuple(format_float(value) for pair in ranges for value in pair)
 
 
 def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_dir: Path) -> list[str]:
@@ -228,8 +227,8 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         "--informed_task_family_probs",
         "1.0",
         "0.0",
-        "--informed_normal_block_allocation",
-        *(format_float(value) for value in params.normal_block_allocation),
+        "--informed_normal_block_allocation_ranges",
+        *format_range_values(PITTING_NORMAL_BLOCK_ALLOCATION_RANGES),
         "--informed_inhibitor_block_allocation",
         *(format_float(value) for value in DEFAULT_INHIBITOR_ALLOCATION),
         "--informed_feature_block_strength",
@@ -246,6 +245,12 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         format_float(params.informed_physical_marginal_prob),
         "--informed_physical_marginal_profile",
         args.physical_profile,
+        "--epit_material_coef_scale",
+        format_float(params.epit_material_coef_scale),
+        "--epit_environment_coef_scale",
+        format_float(params.epit_environment_coef_scale),
+        "--epit_interaction_coef_scale",
+        format_float(params.epit_interaction_coef_scale),
         "--prior_device",
         "cpu",
         "--prior_n_jobs",
@@ -373,6 +378,7 @@ def run_trial(args: argparse.Namespace, trial_number: int, params: TrialParams) 
         "trial_number": trial_number,
         "trial_name": trial_name,
         "params": asdict(params),
+        "fixed_normal_block_allocation_ranges": PITTING_NORMAL_BLOCK_ALLOCATION_RANGES,
         "checkpoint_dir": str(checkpoint_dir),
         "checkpoint_path": str(checkpoint_path),
         "eval_dir": str(eval_dir),

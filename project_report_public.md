@@ -37,7 +37,7 @@ The exact downstream dataset is not expected to appear in pretraining. The goal 
 
 A structural causal model, or SCM, is one way to generate synthetic tabular tasks. The basic idea is to create hidden causes, transform them through random mechanisms, and then select some variables as observed features and one variable as the target.
 
-The SCM generator first creates a few starting columns. Each starting column has one value per row. These starting columns are sampled directly from random distributions, for example normal or uniform distributions. They are called root variables because they are the first columns in the synthetic data-generation process.
+The SCM generator first creates a few starting columns. Each starting column has one value per row, and those values are sampled directly from random distributions, for example normal or uniform distributions. These starting columns are called root variables because they are the first columns in the synthetic data-generation process.
 
 The generator then applies random functions to these starting columns. In TabICL, these functions can be MLP layers or tree-based transformations. The functions create new columns from the starting columns.
 
@@ -152,7 +152,13 @@ all cell embeddings in row i -> one row vector r_i
 
 This is the main compression step. A row with many feature values becomes one learned row vector. That row vector is supposed to keep the information that is useful for prediction.
 
-TabICL uses learnable `CLS` tokens to create this summary. These tokens attend to the feature-cell embeddings in the row. Their outputs are combined to form the final row vector.
+TabICL uses learnable `CLS` tokens to create the row summary.
+
+A `CLS` token is not an input feature, not a real table column, and not a target label. It is an extra trainable vector that TabICL inserts next to the cell embeddings inside each row.
+
+This is needed because the row-wise transformer does not automatically turn many cell embeddings into one row vector. If a row enters the row-wise transformer as several cell embeddings, the transformer still outputs several updated cell embeddings. TabICL needs one fixed-size vector for the whole row before the next transformer can operate across rows.
+
+The `CLS` tokens provide this learned compression step. During row-wise attention, they attend to the cell embeddings in the same row and collect information from them. Their final outputs are concatenated to form the row vector. The `CLS` tokens are learned during training through the same optimization process as the rest of the model.
 
 After this step, the table is no longer represented as `n rows x d columns`. It is represented as a sequence of row vectors:
 
@@ -883,3 +889,385 @@ descriptor-heavy inhibitor table. The inhibitor-agent informed path creates some
 synthetic tasks where many columns describe the intervention agent, and where
 those descriptors can matter for the target through a conditional protective
 effect.
+
+
+## First Experiment Dataset: Epit Pitting Potential
+
+The first experiment used one corrosion task:
+
+```text
+electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg
+```
+
+This task comes from the `Pitting Potential` sheet of the `Electrochemical Metrics for Corrosion Resistant Alloys` workbook. The local source record identifies the public dataset as:
+
+```text
+dataset URL: https://figshare.com/articles/dataset/Electrochemical_Metrics_for_Corrosion_Resistant_Alloys/13038257
+paper DOI:   10.1038/s41597-021-00840-y
+local file:  corrosion_datasets/datasets/electrochemical_metrics_alloys/raw/CRA_database_Scientific_Data_Publication_12102020.xlsx
+```
+
+### Corrosion Context
+
+The target is pitting potential, written in the workbook as:
+
+```text
+Epit, mV (SCE) Avg.
+```
+
+Pitting corrosion is a localized corrosion mode where a passive surface film breaks down and stable pits begin to grow. `Epit` is the electrochemical potential at which this breakdown/pitting response is observed, reported here in millivolts versus a saturated calomel electrode reference. Within comparable experimental conditions, a higher pitting potential generally means that the alloy withstands a more oxidizing potential before pitting initiates, so it is often interpreted as stronger pitting resistance. It is still a measured electrochemical response, not a direct material label.
+
+This makes the task a normal corrosion regression task:
+
+```text
+alloy composition + environment/test condition -> pitting potential
+```
+
+It is relevant to the informed prior because it directly uses the material-composition block, the environment block, and a small procedure/history block to predict an electrochemical corrosion-response target.
+
+### Raw Table And Target Filtering
+
+The inspected `Pitting Potential` sheet has 810 data rows after the two header rows are combined. The evaluation target was the average pitting potential column, `Epit, mV (SCE) Avg.`. The evaluator kept only rows where this target could be parsed as a finite scalar number.
+
+Target filtering removed 50 rows:
+
+| removed target value | rows | reason |
+|---|---:|---|
+| `Transpassive` | 41 | non-numeric target entry |
+| `NA` | 9 | missing target entry |
+
+After this filtering, the task had 760 usable samples. The target was kept continuous; it was not converted into binary or quantile classes for this experiment. The target distribution in the usable table was:
+
+| statistic | value |
+|---|---:|
+| min | -875.0 |
+| median | 260.15 |
+| mean | 267.16 |
+| max | 1600.0 |
+| unique target values | 572 |
+
+### Retained Features
+
+The final evaluation task used 21 input features. They came from three feature groups:
+
+| group | count | retained columns |
+|---|---:|---|
+| material | 17 | `Composition, wt.% Fe`, `Cr`, `Ni`, `Mo`, `W`, `Nb`, `Al`, `V`, `Ta`, `Re`, `Ce`, `Ti`, `Co`, `B`, `Mg`, `Y`, `Gd` |
+| environment | 3 | `Test Temp. oC`, `[Cl-] M`, `[Cl-] pH` |
+| process/history | 1 | `[Cl-] Test Method` |
+
+The material features are alloy composition variables in weight percent. For example, `Composition, wt.% Cr` is the chromium mass fraction in the alloy, and `Composition, wt.% Ni` is the nickel mass fraction. These columns describe what the tested alloy is made of.
+
+The environment features describe the corrosion test solution and condition. `Test Temp. oC` is the test temperature in degrees Celsius. `[Cl-] M` is the chloride-ion concentration in molar units; chloride is important because chloride-containing environments are a common driver of pitting corrosion. `[Cl-] pH` is the pH of the chloride-containing solution. The retained procedure/history feature, `[Cl-] Test Method`, records the experimental method/protocol label as named by the combined-header loader.
+
+Several columns in the raw sheet were deliberately not used as inputs. The other pitting-potential columns, `Epit, mV (SCE) Max` and `Epit, mV (SCE) Min`, are response columns from the same experiment, so they were treated as target-like and excluded from the feature set. Metadata columns such as row number, comments, references, and material-class labels were also excluded.
+
+### Dropped Feature Columns
+
+The evaluator applied the same leakage-safe feature filtering used by `scripts/eval_corrosion_datasets.py`. Numeric-like columns were kept only when at least 80% of values were finite. Categorical columns were kept only when at least 80% of values were non-missing and their cardinality was not too high. Electrochemical control/downstream features were excluded by default unless explicitly requested.
+
+The following candidate features were dropped:
+
+| dropped column | reason |
+|---|---|
+| `Composition, wt.% N` | sparse numeric, finite ratio 0.34 |
+| `Composition, wt.% C` | sparse numeric, finite ratio 0.45 |
+| `Composition, wt.% Si` | sparse numeric, finite ratio 0.44 |
+| `Composition, wt.% Mn` | sparse numeric, finite ratio 0.41 |
+| `Composition, wt.% Cu` | sparse numeric, finite ratio 0.19 |
+| `Composition, wt.% P` | sparse numeric, finite ratio 0.23 |
+| `Composition, wt.% S` | sparse numeric, finite ratio 0.25 |
+| `Test Solution` | high-cardinality categorical feature |
+| `Heat treatment` | sparse categorical, non-missing ratio 0.54 |
+| `Microstructures` | sparse categorical, non-missing ratio 0.28 |
+
+`Scan Rate mV/s` was mapped to the electrochemical-control group by the audit-v2 grouping and was not included in the default leakage-safe feature groups for this run.
+
+
+### How The Informed Additions Apply To Epit
+
+The earlier sections described the informed-prior mechanisms in general. This section connects those mechanisms to the first evaluation dataset. The purpose was not to build a full corrosion simulator. It was to make some synthetic pretraining tasks resemble the kind of table used in the Epit experiment:
+
+```text
+alloy composition + chloride test environment + test method -> pitting potential
+```
+
+This is why the informed prior uses profiles. Corrosion datasets are not all the same. A target such as corrosion rate, inhibitor efficiency, impedance, or pitting potential can have a different meaning, a different sign convention, and different relevant feature groups. For this experiment, the profile was built around the Epit dataset, so that the synthetic tasks aligned with the dataset used for evaluation. In future work, several profiles could be added and selected for different corrosion targets or dataset types.
+
+#### Block Structure (`informed_normal_block_allocation`)
+
+The block step only decides which synthetic feature positions belong to which internal role. The model does not receive these role names. It still sees an ordinary table.
+
+For Epit, the relevant roles are material, environment, and test method/process history. This matches the retained input table: 17 alloy-composition columns, 3 chloride-environment/test-condition columns, and 1 test-method column.
+
+In the formulas below, `standardize(v)` means subtract the mean and divide by the standard deviation within the synthetic task.
+
+#### Within-Block Coupling (`informed_feature_block_strength`)
+
+Within-block coupling is the first step that changes the synthetic feature values. For each block with more than one column, the generator samples one hidden row-level signal and blends it into every column of that block:
+
+```text
+alpha = clip(informed_feature_block_strength, 0.0, 0.95)
+shared_block ~ Normal(0, 1)   # shape: rows x 1
+
+X_block <- (1 - alpha) * X_block + alpha * shared_block
+```
+
+Plainly, each value in the block becomes a weighted mix of its original synthetic value and one shared row-specific value. `alpha` controls how much of that shared value is added. At `alpha = 0`, the block is unchanged. As `alpha` increases, columns in the same block keep their own variation but contain more of the same hidden row-level pattern.
+
+Visualize `z_block` as one hidden row-level factor shared by all columns in that block. Say the material block has five columns:
+
+```text
+Cr   Ni   Mo   Fe   Mn
+```
+
+For each row, the generator samples one hidden value, here called `z_material`. Conceptually, the table looks like this:
+
+| row | `z_material` | Cr | Ni | Mo | Fe | Mn |
+|---:|---:|---|---|---|---|---|
+| 1 | 0.8 | ... | ... | ... | ... | ... |
+| 2 | -0.3 | ... | ... | ... | ... | ... |
+| 3 | 1.4 | ... | ... | ... | ... | ... |
+
+Then that same row's `z_material` is blended into all material columns:
+
+```text
+Cr <- (1 - alpha) * Cr + alpha * z_material
+Ni <- (1 - alpha) * Ni + alpha * z_material
+Mo <- (1 - alpha) * Mo + alpha * z_material
+Fe <- (1 - alpha) * Fe + alpha * z_material
+Mn <- (1 - alpha) * Mn + alpha * z_material
+```
+
+For row 1, the same `0.8` gets pushed into Cr, Ni, Mo, Fe, and Mn. For row 2, the same `-0.3` gets pushed into all those material columns.
+
+The effect is that material columns within the same row become partly tied together. They still have their own values, but they now share a common hidden pattern. A simple mental image is:
+
+```text
+before:
+Cr, Ni, Mo, Fe, Mn vary independently
+
+after:
+Cr, Ni, Mo, Fe, Mn all contain a little bit of the same hidden material factor
+```
+
+A one-column block is skipped because there is no within-block relationship to create.
+
+For Epit, this is most tangible for the composition columns. The material features are parts of one recipe, not unrelated measurements. For example, rows with approximately `Fe 69.7`, `Cr 18`, and `Ni 10` describe the same or very similar alloy composition. Rows with approximately `Fe 58`, `Cr 17`, and `Ni 20` describe another material recipe. The useful pattern is therefore not only that each element value can matter on its own, but that the combination of element values identifies the material.
+
+Without coupling, synthetic material columns could vary like unrelated random features: Fe-like, Cr-like, Ni-like, and Mo-like columns all moving independently. With coupling, the material columns in a synthetic row carry some trace of the same hidden material pattern. This encourages the model to read the composition columns together as a material recipe, instead of treating each retained element column as a separate unrelated input.
+
+#### Pitting-Potential Target Direction (`informed_target_family`)
+
+The Epit experiment uses:
+
+```text
+informed_target_family = pitting_potential
+```
+
+That setting chooses the sign convention before the material-environment formula is applied. For pitting potential, higher target values mean a higher breakdown threshold, not more corrosion damage. Therefore, in the Epit target formula, the material/passivity term is positive, while the environment and material-susceptibility-by-environment terms are negative:
+
+```text
+higher passivity                         -> higher synthetic Epit
+higher environment aggressiveness         -> lower synthetic Epit
+higher susceptibility in aggressive media -> lower synthetic Epit
+```
+
+Using this target direction matters because a corrosion-rate-style sign convention would teach the opposite relationship for this evaluation target.
+
+#### Material-Environment Target Structure (`informed_interaction_strength`)
+
+After `informed_target_family` has selected the pitting-potential sign convention, this mechanism controls the actual Epit-like target component. It changes the synthetic target, not the real Epit table. The generic synthetic generator already creates a target, called `old_y` below. The informed mechanism adds one extra Epit-like target component on top of it.
+
+The idea is:
+
+```text
+synthetic material columns + synthetic environment columns + synthetic test-method column
+-> one extra pitting-potential-like signal
+-> add that signal to the synthetic target
+```
+
+The first step is to turn each block into one number per synthetic row. This does not mean the dataset becomes one row. It means that, for every row, the generator makes a short summary of each feature group.
+
+For example, one synthetic row might have many material columns. The generator combines them into one material summary value for that row. The environment columns are also combined into one environment summary value for that row. The process/test-method block gives one process summary value for that row.
+
+When a block has several columns, the fallback rule is:
+
+```text
+w ~ Normal(0, 1)
+w <- w / ||w||
+block_summary = standardize(X_block @ w)
+```
+
+Plainly, this is a random weighted average of the columns in that block, followed by rescaling. So for each row:
+
+```text
+material block    -> m = one material summary number
+environment block -> e = one environment summary number
+process block     -> q = one process/test-method summary number
+```
+
+For the pitting profile, the material block can also produce a second material number:
+
+```text
+s = one material susceptibility summary number
+```
+
+Here, susceptibility means a synthetic tendency for the material to be vulnerable under an aggressive environment. It is not a measured alloy property from the real dataset. It is an internal synthetic signal used to create tasks where some material patterns are more sensitive to environment than others.
+
+The summaries are converted into bounded signals:
+
+```text
+passivity = tanh(m)
+susceptibility = sigmoid(s)        # fallback: sigmoid(-m)
+environment_drive = sigmoid(e)
+process_offset = tanh(q)
+```
+
+These functions keep the signals in controlled ranges. `sigmoid(...)` gives values between 0 and 1. `tanh(...)` gives values between -1 and 1.
+
+Then the generator builds `epit_drive`:
+
+```text
+epit_drive =
+    a_material    * passivity
+  - a_environment * environment_drive
+  - a_interaction * susceptibility * environment_drive
+  + a_process     * process_offset * (0.75 + 0.25 * environment_drive)
+```
+
+`epit_drive` is the extra synthetic pitting-potential signal. It is not the final target by itself. It is the part of the synthetic target that is meant to look more like an Epit task.
+
+The signs encode the Epit direction:
+
+```text
+passivity term is positive:
+  more passivating material pattern -> higher synthetic Epit
+
+environment term is negative:
+  more aggressive environment -> lower synthetic Epit
+
+susceptibility * environment term is negative:
+  susceptible material under aggressive environment -> extra lower synthetic Epit
+
+process/test-method term can shift the target:
+  different test-method/process patterns can move synthetic Epit up or down
+```
+
+The interaction term is the main material-environment part:
+
+```text
+susceptibility * environment_drive
+```
+
+It says the environment effect can depend on the material pattern. This is relevant to the real Epit dataset because the same chloride, pH, or temperature condition does not have to affect every alloy recipe in the same way. Likewise, the same alloy can have different measured pitting potentials under different chloride concentrations, pH values, temperatures, or test methods.
+
+For example, in the visible table, rows with approximately the same `Fe 69.7`, `Cr 18`, `Ni 10` composition have different `[Cl-] M` values and different Epit values. The model therefore needs practice with targets that depend on the combination of material and environment, not only on one block separately.
+
+Finally, the synthetic target is updated:
+
+```text
+new_y = old_y + informed_interaction_strength * standardize(epit_drive)
+```
+
+`old_y` is the original target from the generic synthetic task. `new_y` is the target after adding the informed Epit-like component.
+
+`standardize(epit_drive)` subtracts the mean and divides by the standard deviation inside the synthetic task. This is done so that the added Epit-like signal has a stable scale. Without standardization, one synthetic task might get a very large `epit_drive` and another might get a tiny one, making `informed_interaction_strength` hard to interpret. After standardization, `informed_interaction_strength` more directly controls how visible this Epit-like component is relative to the original synthetic target.
+
+The coefficients are sampled per synthetic task:
+
+```text
+a_material    ~ Uniform(0.45, 0.70)
+a_environment ~ Uniform(0.35, 0.65)
+a_interaction ~ Uniform(0.60, 0.95)
+a_process     ~ Uniform(0.12, 0.28)
+```
+
+If `informed_interaction_strength = 0`, this extra material-environment target structure is not added. Larger values make the synthetic target depend more strongly on the Epit-like material, environment, interaction, and process signals.
+
+#### Physical-Looking Feature Marginals (`informed_physical_marginal_profile`, `informed_physical_marginal_prob`)
+
+The physical marginal profile is applied only on a fraction of informed tasks:
+
+```text
+apply profile if random() < informed_physical_marginal_prob
+```
+
+For Epit, the selected profile is the pitting profile:
+
+```text
+informed_physical_marginal_profile = pitting_potential_v1
+```
+
+The common primitive is a rank transform:
+
+```text
+u = rank(x) / (n_rows + 1)
+```
+
+For composition-like material columns, one possible material style uses:
+
+```text
+shared = standardize(mean(material_logits across columns))
+logits <- 0.55 * logits + 0.45 * shared * latent_weights
+composition = softmax(logits * sharpness) * 100
+sharpness ~ Uniform(0.7, 1.8)
+```
+
+With probability `0.30`, the row is also multiplied by a small scale factor sampled from `Uniform(0.92, 1.08)`. The pitting material profile does not always use this exact composition style. It samples among material styles:
+
+```text
+composition_like            probability 0.30
+sparse_alloying             probability 0.22
+bounded_partial_composition probability 0.20
+descriptor_like             probability 0.18
+mixed_metadata              probability 0.10
+```
+
+For Epit-like environment columns, the profile can create chloride-, pH-, and temperature-like columns. The main forms are:
+
+```text
+chloride_like:
+  x = exp(log(1e-4) + u * (log(high) - log(1e-4)))
+  high ~ Uniform(1, 1e3)
+
+pH_like:
+  if u < 0.20: x = (u / 0.20) * 6
+  if 0.20 <= u < 0.80: x = 6 + ((u - 0.20) / 0.60) * 3
+  if u >= 0.80: x = 9 + ((u - 0.80) / 0.20) * 5
+
+temperature_like:
+  x = low + (high - low) * u
+  low ~ Uniform(-15, 10)
+  high ~ Uniform(70, 160)
+```
+
+For the process/test-method block, the profile can create categorical method-like variables or bounded process-score variables. This matches the Epit table shape: alloy weight-percent columns, `[Cl-] M`, `[Cl-] pH`, test temperature, and `[Cl-] Test Method`.
+
+#### Mechanisms Not Used For This Dataset (`informed_history_strength`, `informed_intervention_strength`, inactive blocks)
+
+Some informed additions are useful in the general framework but were not part of this Epit profile because their input blocks are not present in the leakage-safe Epit table.
+
+If temporal history were active, the formula would be:
+
+```text
+hist[t] <- informed_history_strength * hist[t-1]
+         + (1 - informed_history_strength) * hist[t]
+y <- y + 0.2 * mean(hist columns)
+```
+
+If direct intervention were active for a pitting-potential task, the formula would be:
+
+```text
+protection = sigmoid(intervention) * (0.60 + 0.40 * environment_drive)
+y <- y + informed_intervention_strength * standardize(protection)
+```
+
+If electrochemical proxy blocks were active, they would receive part of the same pitting drive:
+
+```text
+X_electro <- X_electro + 0.5 * informed_interaction_strength
+                         * tanh(standardize(epit_drive))
+```
+
+These formulas did not define the Epit dataset-specific profile because the retained inputs do not include temporal trajectories, inhibitor dose/coating/intervention controls, molecular inhibitor descriptors, or electrochemical proxy inputs. The resulting setup is intentionally narrow: synthetic informed tasks were shaped around pitting-potential prediction from alloy composition, chloride/test environment, and test method, while still keeping the task synthetic rather than hand-coding the real experiment.

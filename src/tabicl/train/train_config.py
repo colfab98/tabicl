@@ -264,6 +264,20 @@ def build_parser():
         help="Optional audit-v2 block allocation for inhibitor-agent synthetic tasks.",
     )
     parser.add_argument(
+        "--informed_normal_block_allocation_ranges",
+        type=float,
+        nargs=18,
+        default=None,
+        help="Optional low/high pairs for per-dataset normal-corrosion block allocation sampling.",
+    )
+    parser.add_argument(
+        "--informed_inhibitor_block_allocation_ranges",
+        type=float,
+        nargs=18,
+        default=None,
+        help="Optional low/high pairs for per-dataset inhibitor-agent block allocation sampling.",
+    )
+    parser.add_argument(
         "--informed_feature_block_strength",
         type=false_or_float,
         default=None,
@@ -311,6 +325,24 @@ def build_parser():
         type=str,
         default=None,
         help="Optional physical marginal profile for informed SCM features, e.g. corrosion_broad or pitting_potential_v1.",
+    )
+    parser.add_argument(
+        "--epit_material_coef_scale",
+        type=float,
+        default=None,
+        help="Optional multiplier for the material/passivity term in the Epit-like target drive.",
+    )
+    parser.add_argument(
+        "--epit_environment_coef_scale",
+        type=float,
+        default=None,
+        help="Optional multiplier for the environment-aggressiveness term in the Epit-like target drive.",
+    )
+    parser.add_argument(
+        "--epit_interaction_coef_scale",
+        type=float,
+        default=None,
+        help="Optional multiplier for the material-environment term in the Epit-like target drive.",
     )
     parser.add_argument("--prior_device", default="cpu", type=str, help="Device for prior data generation")
     parser.add_argument(

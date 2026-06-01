@@ -27,3 +27,7 @@ optuna-dashboard /home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna/pitting_prio
   --storage-class JournalFileStorage \
   --host 127.0.0.1 \
   --port 8080
+
+
+
+/home/fcolanto/miniconda3/bin/pandoc project_report_public.md -o project_report_public.pdf --pdf-engine=/home/fcolanto/miniconda3/bin/tectonic -V geometry:margin=0.85in -V fontsize=10pt -V papersize=a4 -H /home/fcolanto/tmp/pandoc_layout_fix.tex
