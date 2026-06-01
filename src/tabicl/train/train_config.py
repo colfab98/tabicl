@@ -305,10 +305,11 @@ def build_parser():
         "--informed_target_family",
         type=str,
         default=None,
-        choices=("generic_corrosion", "pitting_potential"),
+        choices=("generic_corrosion", "pitting_potential", "inhibitor_efficiency"),
         help=(
             "Optional target semantics for informed SCM target generation. "
-            "Use pitting_potential for Epit/passivity-breakdown threshold targets."
+            "Use pitting_potential for Epit/passivity-breakdown threshold targets; "
+            "use inhibitor_efficiency when higher targets mean stronger inhibitor protection."
         ),
     )
     parser.add_argument(
@@ -324,7 +325,7 @@ def build_parser():
         "--informed_physical_marginal_profile",
         type=str,
         default=None,
-        help="Optional physical marginal profile for informed SCM features, e.g. corrosion_broad or pitting_potential_v1.",
+        help="Optional physical marginal profile for informed SCM features, e.g. corrosion_broad, pitting_potential_v1, or inhibitor_efficiency_v1.",
     )
     parser.add_argument(
         "--epit_material_coef_scale",

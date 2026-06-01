@@ -67,6 +67,24 @@ class PittingProfileInfo:
             self.categorical_columns.append(col)
 
 
+@dataclass
+class InhibitorEfficiencyProfileInfo:
+    """Role metadata for inhibitor-efficiency synthetic feature profiles."""
+
+    applied: bool = False
+    role_columns: Dict[str, list[int]] = field(default_factory=dict)
+    categorical_columns: list[int] = field(default_factory=list)
+    descriptor_efficacy: Optional[Tensor] = None
+    environment_modifier: Optional[Tensor] = None
+    material_modifier: Optional[Tensor] = None
+    intervention_signal: Optional[Tensor] = None
+
+    def add_role(self, role: str, col: int, *, categorical: bool = False) -> None:
+        self.role_columns.setdefault(role, []).append(col)
+        if categorical:
+            self.categorical_columns.append(col)
+
+
 class Prior:
     """Abstract base class for dataset prior generators.
 
@@ -724,12 +742,21 @@ class SCMPrior(Prior):
             "epit": "pitting_potential_v1",
             "pitting_potential": "pitting_potential_v1",
             "pitting_potential_profile": "pitting_potential_v1",
+            "datacor": "inhibitor_efficiency_v1",
+            "inhibitor": "inhibitor_efficiency_v1",
+            "inhibitor_efficiency": "inhibitor_efficiency_v1",
+            "inhibition_efficiency": "inhibitor_efficiency_v1",
+            "inhibitor_efficiency_profile": "inhibitor_efficiency_v1",
         }
         return aliases.get(profile, profile)
 
     @staticmethod
     def _is_pitting_profile_name(profile: str) -> bool:
         return profile in {"pitting_potential_v1", "pitting_v1", "epit_v1"}
+
+    @staticmethod
+    def _is_inhibitor_efficiency_profile_name(profile: str) -> bool:
+        return profile in {"inhibitor_efficiency_v1", "inhibitor_v1", "datacor_v1"}
 
     @classmethod
     def _categorical_values_from_rank(cls, values: Tensor, n_categories: int) -> Tensor:
@@ -1034,6 +1061,136 @@ class SCMPrior(Prior):
         self._apply_pitting_intervention_profile(X, blocks, family, info)
         return torch.nan_to_num(X), info
 
+    def _apply_inhibitor_material_profile(
+        self, X: Tensor, blocks: Dict[str, slice], info: InhibitorEfficiencyProfileInfo
+    ) -> None:
+        material_slice = blocks.get("material")
+        if material_slice is None or material_slice.stop <= material_slice.start:
+            return
+
+        material_width = material_slice.stop - material_slice.start
+        terms = []
+        for col in range(material_slice.start, material_slice.stop):
+            if material_width == 1 or np.random.random() < 0.70:
+                n_categories = 2 if material_width == 1 else int(np.random.choice([2, 2, 3, 4]))
+                X[:, col] = self._categorical_values_from_rank(X[:, col], n_categories)
+                labels = X[:, col].long().clamp(min=0, max=n_categories - 1)
+                offsets = torch.randn(n_categories, device=X.device, dtype=X.dtype)
+                terms.append(self._standardize_signal(offsets[labels]))
+                info.add_role("alloy_category", col, categorical=True)
+            else:
+                family = str(np.random.choice(["material_bounded", "material_property", "descriptor_standard"]))
+                X[:, col] = self._corrosion_marginal_values(X[:, col], family)
+                terms.append(self._standardize_signal(X[:, col]))
+                info.add_role("alloy_descriptor", col)
+
+        if terms:
+            info.material_modifier = self._standardize_signal(torch.stack(terms, dim=-1).mean(dim=-1))
+
+    def _apply_inhibitor_environment_profile(
+        self, X: Tensor, blocks: Dict[str, slice], info: InhibitorEfficiencyProfileInfo
+    ) -> None:
+        env_slice = blocks.get("environment")
+        if env_slice is None or env_slice.stop <= env_slice.start:
+            return
+
+        env_width = env_slice.stop - env_slice.start
+        terms = []
+        for col in range(env_slice.start, env_slice.stop):
+            role = "ph_condition" if env_width == 1 else str(
+                np.random.choice(["ph_like", "ph_like", "environment_bounded", "solution_category"])
+            )
+            if role == "ph_like":
+                X[:, col] = self._piecewise_ph_from_rank(self._rank_uniform(X[:, col]).clamp(1e-6, 1.0 - 1e-6))
+                optimum = float(np.random.uniform(4.0, 10.5))
+                terms.append(self._standardize_signal(-torch.abs(X[:, col] - optimum)))
+                info.add_role(role, col)
+            elif role == "ph_condition":
+                u = self._rank_uniform(X[:, col]).clamp(1e-6, 1.0 - 1e-6)
+                X[:, col] = torch.where(u < 0.5, torch.full_like(X[:, col], 4.0), torch.full_like(X[:, col], 10.0))
+                terms.append(self._standardize_signal(torch.where(X[:, col] <= 7.0, 1.0, -1.0)))
+                info.add_role(role, col)
+            elif role == "solution_category":
+                n_categories = int(np.random.choice([2, 3, 4, 5]))
+                X[:, col] = self._categorical_values_from_rank(X[:, col], n_categories)
+                labels = X[:, col].long().clamp(min=0, max=n_categories - 1)
+                offsets = torch.randn(n_categories, device=X.device, dtype=X.dtype)
+                terms.append(self._standardize_signal(offsets[labels]))
+                info.add_role(role, col, categorical=True)
+            else:
+                X[:, col] = self._corrosion_marginal_values(X[:, col], "environment_bounded")
+                terms.append(self._standardize_signal(X[:, col]))
+                info.add_role(role, col)
+
+        if terms:
+            info.environment_modifier = self._standardize_signal(torch.stack(terms, dim=-1).mean(dim=-1))
+
+    def _apply_inhibitor_descriptor_profile(
+        self, X: Tensor, blocks: Dict[str, slice], info: InhibitorEfficiencyProfileInfo
+    ) -> None:
+        descriptor_slice = blocks.get("molecular_descriptor")
+        if descriptor_slice is None or descriptor_slice.stop <= descriptor_slice.start:
+            return
+
+        cols = list(range(descriptor_slice.start, descriptor_slice.stop))
+        for col in cols:
+            family = str(
+                np.random.choice(
+                    [
+                        "descriptor_standard",
+                        "descriptor_standard",
+                        "descriptor_bounded",
+                        "descriptor_positive",
+                        "descriptor_count",
+                    ]
+                )
+            )
+            X[:, col] = self._corrosion_marginal_values(X[:, col], family)
+            info.add_role("molecular_descriptor", col)
+        info.descriptor_efficacy = self._pitting_profile_block_signal(X, cols)
+
+    def _apply_inhibitor_intervention_profile(
+        self, X: Tensor, blocks: Dict[str, slice], info: InhibitorEfficiencyProfileInfo
+    ) -> None:
+        intervention_slice = blocks.get("direct_intervention")
+        if intervention_slice is None or intervention_slice.stop <= intervention_slice.start:
+            return
+
+        terms = []
+        for col in range(intervention_slice.start, intervention_slice.stop):
+            if np.random.random() < 0.40:
+                n_categories = int(np.random.choice([2, 3, 4]))
+                X[:, col] = self._categorical_values_from_rank(X[:, col], n_categories)
+                labels = X[:, col].long().clamp(min=0, max=n_categories - 1)
+                offsets = torch.randn(n_categories, device=X.device, dtype=X.dtype)
+                terms.append(self._standardize_signal(offsets[labels]))
+                info.add_role("dose_or_treatment_category", col, categorical=True)
+            else:
+                u = self._rank_uniform(X[:, col]).clamp(1e-6, 1.0 - 1e-6)
+                X[:, col] = torch.pow(u, float(np.random.uniform(0.45, 2.4)))
+                terms.append(self._standardize_signal(X[:, col]))
+                info.add_role("dose_like", col)
+
+        if terms:
+            info.intervention_signal = self._standardize_signal(torch.stack(terms, dim=-1).mean(dim=-1))
+
+    def _apply_inhibitor_efficiency_profile(
+        self, X: Tensor, blocks: Dict[str, slice], family: str
+    ) -> Tuple[Tensor, InhibitorEfficiencyProfileInfo]:
+        info = InhibitorEfficiencyProfileInfo()
+        marginal_prob = float(self.fixed_hp.get("informed_physical_marginal_prob", 0.0))
+        marginal_prob = float(np.clip(marginal_prob, 0.0, 1.0))
+        if marginal_prob <= 0.0 or np.random.random() >= marginal_prob:
+            return X, info
+
+        X = X.clone()
+        info.applied = True
+        self._apply_inhibitor_material_profile(X, blocks, info)
+        self._apply_inhibitor_environment_profile(X, blocks, info)
+        self._apply_inhibitor_descriptor_profile(X, blocks, info)
+        self._apply_inhibitor_intervention_profile(X, blocks, info)
+        return torch.nan_to_num(X), info
+
     def apply_informed_physical_marginals(self, X: Tensor, blocks: Dict[str, slice]) -> Tensor:
         """Apply physical marginal shapes to informed corrosion-like feature blocks."""
         profile = self._informed_physical_marginal_profile()
@@ -1041,6 +1198,9 @@ class SCMPrior(Prior):
             return X
         if self._is_pitting_profile_name(profile):
             X, _ = self._apply_pitting_potential_profile(X, blocks, "normal_corrosion")
+            return X
+        if self._is_inhibitor_efficiency_profile_name(profile):
+            X, _ = self._apply_inhibitor_efficiency_profile(X, blocks, "inhibitor_agent")
             return X
 
         marginal_prob = float(self.fixed_hp.get("informed_physical_marginal_prob", 0.0))
@@ -1317,12 +1477,17 @@ class SCMPrior(Prior):
             "epit": "pitting_potential",
             "breakdown_potential": "pitting_potential",
             "pitting_breakdown_potential": "pitting_potential",
+            "datacor": "inhibitor_efficiency",
+            "efficiency": "inhibitor_efficiency",
+            "inhibitor": "inhibitor_efficiency",
+            "inhibition_efficiency": "inhibitor_efficiency",
+            "protection_efficiency": "inhibitor_efficiency",
         }
         family = aliases.get(family, family)
-        if family not in {"generic_corrosion", "pitting_potential"}:
+        if family not in {"generic_corrosion", "pitting_potential", "inhibitor_efficiency"}:
             raise ValueError(
                 "Unsupported informed_target_family "
-                f"{family!r}. Expected one of: generic_corrosion, pitting_potential."
+                f"{family!r}. Expected one of: generic_corrosion, pitting_potential, inhibitor_efficiency."
             )
         return family
 
@@ -1340,6 +1505,69 @@ class SCMPrior(Prior):
         temperature_like = torch.sigmoid(env_tertiary)
         aggressiveness = 0.50 * chloride_like + 0.30 * pH_stress_like + 0.20 * temperature_like
         return self._standardize_signal(aggressiveness)
+
+    def _apply_informed_inhibitor_efficiency_mechanism(
+        self,
+        X: Tensor,
+        y: Tensor,
+        blocks: Dict[str, slice],
+        interaction_strength: float,
+        intervention_strength: float,
+        profile_info: Optional[InhibitorEfficiencyProfileInfo] = None,
+    ) -> Tuple[Tensor, Tensor]:
+        """Add an inhibitor-efficiency target where higher y means better protection."""
+        reference = y.to(dtype=X.dtype)
+        profile_applied = profile_info is not None and profile_info.applied
+
+        descriptor = (
+            profile_info.descriptor_efficacy
+            if profile_applied and profile_info.descriptor_efficacy is not None
+            else self._block_projection(X, blocks.get("molecular_descriptor"))
+        )
+        environment = (
+            profile_info.environment_modifier
+            if profile_applied and profile_info.environment_modifier is not None
+            else self._environment_aggressiveness(X, blocks, reference)
+        )
+        material = (
+            profile_info.material_modifier
+            if profile_applied and profile_info.material_modifier is not None
+            else self._block_projection(X, blocks.get("material"))
+        )
+        intervention = (
+            profile_info.intervention_signal
+            if profile_applied and profile_info.intervention_signal is not None
+            else self._block_projection(X, blocks.get("direct_intervention"))
+        )
+
+        if descriptor is None and intervention is None:
+            return X, y
+
+        descriptor_signal = self._optional_zero(descriptor, reference)
+        descriptor_efficacy = torch.sigmoid(descriptor_signal)
+        dose = torch.sigmoid(intervention) if intervention is not None else torch.ones_like(reference)
+        environment_gate = torch.sigmoid(environment)
+        material_gate = torch.sigmoid(self._optional_zero(material, reference))
+
+        inhibitor_drive = descriptor_efficacy * dose * (0.65 + 0.25 * environment_gate + 0.10 * material_gate)
+        inhibitor_drive = inhibitor_drive + 0.20 * torch.tanh(descriptor_signal)
+        if blocks.get("environment") is not None:
+            inhibitor_drive = inhibitor_drive + 0.12 * torch.tanh(environment)
+        if material is not None:
+            inhibitor_drive = inhibitor_drive + 0.08 * torch.tanh(material)
+
+        if torch.std(inhibitor_drive.float(), unbiased=False) > 1e-6:
+            y = y + intervention_strength * self._standardize_signal(inhibitor_drive).to(dtype=y.dtype)
+
+        condition_drive = torch.zeros_like(reference)
+        if blocks.get("environment") is not None:
+            condition_drive = condition_drive + 0.60 * environment_gate
+        if material is not None:
+            condition_drive = condition_drive + 0.40 * material_gate
+        if torch.std(condition_drive.float(), unbiased=False) > 1e-6:
+            y = y + 0.20 * interaction_strength * self._standardize_signal(condition_drive).to(dtype=y.dtype)
+
+        return X, y
 
     def _apply_informed_pitting_potential_mechanism(
         self,
@@ -1470,11 +1698,12 @@ class SCMPrior(Prior):
         family: str,
         interaction_strength: float,
         intervention_strength: float,
-        profile_info: Optional[PittingProfileInfo] = None,
+        profile_info: Optional[Union[PittingProfileInfo, InhibitorEfficiencyProfileInfo]] = None,
     ) -> Tuple[Tensor, Tensor]:
         """Add a broad corrosion-domain target mechanism over semantic blocks."""
         target_family = self._informed_target_family()
         if target_family == "pitting_potential":
+            pitting_info = profile_info if isinstance(profile_info, PittingProfileInfo) else None
             return self._apply_informed_pitting_potential_mechanism(
                 X,
                 y,
@@ -1482,7 +1711,17 @@ class SCMPrior(Prior):
                 family,
                 interaction_strength=interaction_strength,
                 intervention_strength=intervention_strength,
-                profile_info=profile_info,
+                profile_info=pitting_info,
+            )
+        if target_family == "inhibitor_efficiency":
+            inhibitor_info = profile_info if isinstance(profile_info, InhibitorEfficiencyProfileInfo) else None
+            return self._apply_informed_inhibitor_efficiency_mechanism(
+                X,
+                y,
+                blocks,
+                interaction_strength=interaction_strength,
+                intervention_strength=intervention_strength,
+                profile_info=inhibitor_info,
             )
 
         reference = y.to(dtype=X.dtype)
@@ -1592,6 +1831,17 @@ class SCMPrior(Prior):
                 intervention_strength=intervention_strength,
                 profile_info=profile_info,
             )
+        elif self._is_inhibitor_efficiency_profile_name(profile):
+            X, profile_info = self._apply_inhibitor_efficiency_profile(X, blocks, family)
+            X, y = self._apply_informed_corrosion_mechanism(
+                X,
+                y,
+                blocks,
+                family,
+                interaction_strength=interaction_strength,
+                intervention_strength=intervention_strength,
+                profile_info=profile_info,
+            )
         else:
             X, y = self._apply_informed_corrosion_mechanism(
                 X,
@@ -1640,7 +1890,7 @@ class SCMPrior(Prior):
             if params.get("informed_mode", False):
                 X, y = self.apply_informed_structure(X, y, params)
                 profile = self._informed_physical_marginal_profile()
-                if self._is_pitting_profile_name(profile):
+                if self._is_pitting_profile_name(profile) or self._is_inhibitor_efficiency_profile_name(profile):
                     reg2cls_params = {**params, "cat_prob": 0.0}
             X, y = Reg2Cls(reg2cls_params)(X, y)
 

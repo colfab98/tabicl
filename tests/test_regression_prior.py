@@ -143,6 +143,29 @@ def test_informed_corrosion_mechanism_changes_inhibitor_targets_from_descriptors
     assert torch.std(y_new - y, unbiased=False) > 0
 
 
+
+
+def test_inhibitor_efficiency_target_family_raises_target_with_descriptor_efficacy():
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["informed_target_family"] = "inhibitor_efficiency"
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.zeros(64, 1)
+    X[:, 0] = torch.linspace(-3.0, 3.0, steps=64)
+    y = torch.zeros(64)
+    blocks = {"molecular_descriptor": slice(0, 1)}
+
+    _, y_new = prior._apply_informed_corrosion_mechanism(
+        X.clone(),
+        y.clone(),
+        blocks,
+        "inhibitor_agent",
+        interaction_strength=0.0,
+        intervention_strength=1.0,
+    )
+
+    assert torch.isfinite(y_new).all()
+    assert y_new[-1] > y_new[0]
+
 def test_pitting_target_family_raises_target_with_material_passivity():
     fixed_hp = dict(DEFAULT_FIXED_HP)
     fixed_hp["informed_target_family"] = "pitting_potential"
@@ -330,3 +353,107 @@ def test_pitting_potential_v1_full_generation_is_finite_and_disables_generic_num
     assert torch.isfinite(y).all()
     assert (d > 0).all()
     assert y.dtype.is_floating_point
+
+
+def _inhibitor_efficiency_fixed_hp() -> dict:
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["informed_target_family"] = "inhibitor_efficiency"
+    fixed_hp["informed_physical_marginal_profile"] = "inhibitor_efficiency_v1"
+    fixed_hp["informed_physical_marginal_prob"] = 1.0
+    fixed_hp["informed_task_family_probs"] = (0.0, 1.0)
+    fixed_hp["informed_mix_probs"] = (1.0, 0.0)
+    fixed_hp["informed_inhibitor_block_allocation"] = (0.08, 0.10, 0.0, 0.0, 0.0, 0.02, 0.80, 0.0, 0.0)
+    return fixed_hp
+
+
+def test_datacor_inhibitor_allocation_matches_retained_feature_shape():
+    fixed_hp = _inhibitor_efficiency_fixed_hp()
+    fixed_hp["informed_inhibitor_block_allocation"] = (0.0625, 0.0625, 0.0, 0.0, 0.0, 0.0, 0.875, 0.0, 0.0)
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+
+    family, blocks = prior._split_informed_blocks_with_family(16)
+
+    assert family == "inhibitor_agent"
+    assert blocks["material"] == slice(0, 1)
+    assert blocks["environment"] == slice(1, 2)
+    assert blocks["molecular_descriptor"] == slice(2, 16)
+    assert "direct_intervention" not in blocks
+    assert set(blocks) == {"material", "environment", "molecular_descriptor"}
+
+
+def test_inhibitor_efficiency_v1_profile_records_roles_and_drives_target():
+    torch.manual_seed(3)
+    fixed_hp = _inhibitor_efficiency_fixed_hp()
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.randn(96, 12)
+    y = torch.zeros(96)
+    blocks = {
+        "material": slice(0, 1),
+        "environment": slice(1, 2),
+        "molecular_descriptor": slice(2, 12),
+    }
+
+    X_profile, info = prior._apply_inhibitor_efficiency_profile(X.clone(), blocks, "inhibitor_agent")
+    assert info.applied
+    assert info.descriptor_efficacy is not None
+    assert info.environment_modifier is not None
+    assert info.material_modifier is not None
+    assert info.role_columns.get("alloy_category") == [0]
+    assert info.role_columns.get("ph_condition") == [1]
+    assert set(torch.unique(X_profile[:, 0]).tolist()).issubset({0.0, 1.0})
+    assert set(torch.unique(X_profile[:, 1]).tolist()).issubset({4.0, 10.0})
+    assert torch.isfinite(X_profile).all()
+    assert torch.std(X_profile - X, unbiased=False) > 0
+
+    _, y_new = prior._apply_informed_corrosion_mechanism(
+        X_profile,
+        y.clone(),
+        blocks,
+        "inhibitor_agent",
+        interaction_strength=0.35,
+        intervention_strength=0.60,
+        profile_info=info,
+    )
+
+    assert torch.isfinite(y_new).all()
+    assert torch.std(y_new - y, unbiased=False) > 0
+
+
+def test_inhibitor_efficiency_v1_full_generation_is_finite_and_disables_generic_num2cat(monkeypatch):
+    seen_cat_probs = []
+    original_num2cat = Reg2Cls._num2cat
+
+    def spy_num2cat(self, X):
+        seen_cat_probs.append(float(self.hp.get("cat_prob", 0.0)))
+        return original_num2cat(self, X)
+
+    monkeypatch.setattr(Reg2Cls, "_num2cat", spy_num2cat)
+
+    fixed_hp = _inhibitor_efficiency_fixed_hp()
+    fixed_hp["cat_prob"] = 1.0
+    dataset = PriorDataset(
+        batch_size=2,
+        batch_size_per_gp=1,
+        min_features=8,
+        max_features=14,
+        max_classes=0,
+        min_seq_len=32,
+        max_seq_len=40,
+        min_train_size=0.4,
+        max_train_size=0.6,
+        prior_type="informed_scm",
+        scm_fixed_hp=fixed_hp,
+        scm_sampled_hp={},
+        n_jobs=1,
+        device="cpu",
+    )
+
+    X, y, d, _, _ = dataset.prior.get_batch()
+
+    assert seen_cat_probs
+    assert all(prob == 0.0 for prob in seen_cat_probs)
+    assert torch.isfinite(X).all()
+    assert torch.isfinite(y).all()
+    assert (d > 0).all()
+    assert y.dtype.is_floating_point
+

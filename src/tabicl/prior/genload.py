@@ -749,7 +749,7 @@ if __name__ == "__main__":
         "--informed_target_family",
         type=str,
         default=None,
-        choices=("generic_corrosion", "pitting_potential"),
+        choices=("generic_corrosion", "pitting_potential", "inhibitor_efficiency"),
     )
     parser.add_argument("--informed_physical_marginal_prob", type=false_or_float, default=None)
     parser.add_argument("--informed_physical_marginal_profile", type=str, default=None)
