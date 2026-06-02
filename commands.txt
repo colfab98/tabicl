@@ -2,9 +2,9 @@ source .venv/bin/activate
 
 git push -u fork HEAD
 
-
 git fetch fork
-git switch -C datacortech-prior fork/colfab98/datacortech-prior
+git switch datacortech-prior
+git reset --hard fork/colfab98/datacortech-prior
 
 
 sbatch ~/projects/tabicl/scripts/train_stage1_mini_generic.sbatch

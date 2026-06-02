@@ -56,6 +56,8 @@ DATACOR_INHIBITOR_BLOCK_MIN_COUNTS = (
     0,  # electrochem_control
     0,  # electrochem_downstream
 )
+DATACOR_INHIBITOR_DESCRIPTOR_COEF_SCALE = 1.0
+DATACOR_INHIBITOR_INTERVENTION_COEF_SCALE = 0.0
 
 
 @dataclass(frozen=True)
@@ -174,7 +176,9 @@ def sample_params(trial: SuggestTrial) -> TrialParams:
         "informed_physical_marginal_prob",
         [0.25, 0.50, 0.75, 1.00],
     )
-    inhibitor_descriptor_coef_scale = trial.suggest_float("inhibitor_descriptor_coef_scale", 0.50, 2.00)
+    # The inhibitor drive is standardized before being added to y, so absolute descriptor scale
+    # is mostly redundant. DATACOR also has no direct dose column in this fixed allocation.
+    inhibitor_descriptor_coef_scale = DATACOR_INHIBITOR_DESCRIPTOR_COEF_SCALE
     inhibitor_context_coef_scale = trial.suggest_float("inhibitor_context_coef_scale", 0.00, 1.25)
     inhibitor_environment_interaction_coef_scale = trial.suggest_float(
         "inhibitor_environment_interaction_coef_scale", 0.00, 2.00
@@ -182,7 +186,7 @@ def sample_params(trial: SuggestTrial) -> TrialParams:
     inhibitor_material_interaction_coef_scale = trial.suggest_float(
         "inhibitor_material_interaction_coef_scale", 0.00, 1.50
     )
-    inhibitor_intervention_coef_scale = trial.suggest_float("inhibitor_intervention_coef_scale", 0.00, 1.00)
+    inhibitor_intervention_coef_scale = DATACOR_INHIBITOR_INTERVENTION_COEF_SCALE
 
     return TrialParams(
         informed_prior_ratio=float(informed_prior_ratio),
