@@ -22,6 +22,11 @@ DEFAULT_FIXED_HP = {
     "epit_material_coef_scale": 1.0,
     "epit_environment_coef_scale": 1.0,
     "epit_interaction_coef_scale": 1.0,
+    "inhibitor_descriptor_coef_scale": 1.0,
+    "inhibitor_context_coef_scale": 1.0,
+    "inhibitor_environment_interaction_coef_scale": 1.0,
+    "inhibitor_material_interaction_coef_scale": 1.0,
+    "inhibitor_intervention_coef_scale": 1.0,
     # TreeSCM
     "tree_model": "xgboost",
     "tree_depth_lambda": 0.5,

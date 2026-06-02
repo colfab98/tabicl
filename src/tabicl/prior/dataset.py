@@ -1579,28 +1579,59 @@ class SCMPrior(Prior):
             return X, y
 
         descriptor_signal = self._optional_zero(descriptor, reference)
-        descriptor_efficacy = torch.sigmoid(descriptor_signal)
-        dose = torch.sigmoid(intervention) if intervention is not None else torch.ones_like(reference)
-        environment_gate = torch.sigmoid(environment)
-        material_gate = torch.sigmoid(self._optional_zero(material, reference))
+        descriptor_effect = torch.tanh(descriptor_signal)
+        dose = torch.sigmoid(self._optional_zero(intervention, reference)) if intervention is not None else None
+        environment_signal = self._optional_zero(environment, reference)
+        environment_effect = torch.tanh(environment_signal)
+        environment_gate = torch.sigmoid(environment_signal)
+        material_signal = self._optional_zero(material, reference)
+        material_effect = torch.tanh(material_signal)
+        material_gate = torch.sigmoid(material_signal)
 
-        inhibitor_drive = descriptor_efficacy * dose * (0.65 + 0.25 * environment_gate + 0.10 * material_gate)
-        inhibitor_drive = inhibitor_drive + 0.20 * torch.tanh(descriptor_signal)
+        descriptor_coef_scale = float(self.fixed_hp.get("inhibitor_descriptor_coef_scale", 1.0))
+        context_coef_scale = float(self.fixed_hp.get("inhibitor_context_coef_scale", 1.0))
+        environment_interaction_coef_scale = float(
+            self.fixed_hp.get("inhibitor_environment_interaction_coef_scale", 1.0)
+        )
+        material_interaction_coef_scale = float(self.fixed_hp.get("inhibitor_material_interaction_coef_scale", 1.0))
+        intervention_coef_scale = float(self.fixed_hp.get("inhibitor_intervention_coef_scale", 1.0))
+        coefficient_scales = np.asarray(
+            [
+                descriptor_coef_scale,
+                context_coef_scale,
+                environment_interaction_coef_scale,
+                material_interaction_coef_scale,
+                intervention_coef_scale,
+            ],
+            dtype=float,
+        )
+        if not np.all(np.isfinite(coefficient_scales)) or np.any(coefficient_scales < 0.0):
+            raise ValueError("Inhibitor coefficient scales must be finite and non-negative.")
+
+        descriptor_coef = descriptor_coef_scale * float(np.random.uniform(0.45, 0.85))
+        context_coef = context_coef_scale * float(np.random.uniform(0.06, 0.22))
+        environment_interaction_coef = environment_interaction_coef_scale * float(np.random.uniform(0.18, 0.55))
+        material_interaction_coef = material_interaction_coef_scale * float(np.random.uniform(0.10, 0.38))
+        intervention_coef = intervention_coef_scale * float(np.random.uniform(0.20, 0.55))
+
+        inhibitor_drive = descriptor_coef * descriptor_effect
         if blocks.get("environment") is not None:
-            inhibitor_drive = inhibitor_drive + 0.12 * torch.tanh(environment)
+            inhibitor_drive = inhibitor_drive + context_coef * environment_effect
+            inhibitor_drive = inhibitor_drive + interaction_strength * environment_interaction_coef * (
+                descriptor_effect * environment_effect
+            )
         if material is not None:
-            inhibitor_drive = inhibitor_drive + 0.08 * torch.tanh(material)
+            inhibitor_drive = inhibitor_drive + 0.75 * context_coef * material_effect
+            inhibitor_drive = inhibitor_drive + interaction_strength * material_interaction_coef * (
+                descriptor_effect * material_effect
+            )
+        if dose is not None:
+            inhibitor_drive = inhibitor_drive + intervention_coef * dose * (
+                0.70 + 0.20 * environment_gate + 0.10 * material_gate
+            )
 
         if torch.std(inhibitor_drive.float(), unbiased=False) > 1e-6:
             y = y + intervention_strength * self._standardize_signal(inhibitor_drive).to(dtype=y.dtype)
-
-        condition_drive = torch.zeros_like(reference)
-        if blocks.get("environment") is not None:
-            condition_drive = condition_drive + 0.60 * environment_gate
-        if material is not None:
-            condition_drive = condition_drive + 0.40 * material_gate
-        if torch.std(condition_drive.float(), unbiased=False) > 1e-6:
-            y = y + 0.20 * interaction_strength * self._standardize_signal(condition_drive).to(dtype=y.dtype)
 
         return X, y
 

@@ -3,8 +3,8 @@ source .venv/bin/activate
 git push -u fork HEAD
 
 
-git restore scripts/train_stage1_reg.sbatch
-git pull --ff-only origin colfab98/datacortech-prior
+git fetch fork
+git switch -C datacortech-prior fork/colfab98/datacortech-prior
 
 
 sbatch ~/projects/tabicl/scripts/train_stage1_mini_generic.sbatch

@@ -291,6 +291,20 @@ class Trainer:
                 scm_fixed_hp["epit_environment_coef_scale"] = self.config.epit_environment_coef_scale
             if self.config.epit_interaction_coef_scale is not None:
                 scm_fixed_hp["epit_interaction_coef_scale"] = self.config.epit_interaction_coef_scale
+            if self.config.inhibitor_descriptor_coef_scale is not None:
+                scm_fixed_hp["inhibitor_descriptor_coef_scale"] = self.config.inhibitor_descriptor_coef_scale
+            if self.config.inhibitor_context_coef_scale is not None:
+                scm_fixed_hp["inhibitor_context_coef_scale"] = self.config.inhibitor_context_coef_scale
+            if self.config.inhibitor_environment_interaction_coef_scale is not None:
+                scm_fixed_hp["inhibitor_environment_interaction_coef_scale"] = (
+                    self.config.inhibitor_environment_interaction_coef_scale
+                )
+            if self.config.inhibitor_material_interaction_coef_scale is not None:
+                scm_fixed_hp["inhibitor_material_interaction_coef_scale"] = (
+                    self.config.inhibitor_material_interaction_coef_scale
+                )
+            if self.config.inhibitor_intervention_coef_scale is not None:
+                scm_fixed_hp["inhibitor_intervention_coef_scale"] = self.config.inhibitor_intervention_coef_scale
 
             # Generate prior data on the fly
             dataset = PriorDataset(

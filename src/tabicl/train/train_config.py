@@ -359,6 +359,36 @@ def build_parser():
         default=None,
         help="Optional multiplier for the material-environment term in the Epit-like target drive.",
     )
+    parser.add_argument(
+        "--inhibitor_descriptor_coef_scale",
+        type=float,
+        default=None,
+        help="Optional multiplier for the molecular-descriptor main term in the inhibitor-efficiency target drive.",
+    )
+    parser.add_argument(
+        "--inhibitor_context_coef_scale",
+        type=float,
+        default=None,
+        help="Optional multiplier for pH/alloy main terms in the inhibitor-efficiency target drive.",
+    )
+    parser.add_argument(
+        "--inhibitor_environment_interaction_coef_scale",
+        type=float,
+        default=None,
+        help="Optional multiplier for descriptor-environment interactions in the inhibitor-efficiency target drive.",
+    )
+    parser.add_argument(
+        "--inhibitor_material_interaction_coef_scale",
+        type=float,
+        default=None,
+        help="Optional multiplier for descriptor-material interactions in the inhibitor-efficiency target drive.",
+    )
+    parser.add_argument(
+        "--inhibitor_intervention_coef_scale",
+        type=float,
+        default=None,
+        help="Optional multiplier for explicit dose/intervention terms in the inhibitor-efficiency target drive.",
+    )
     parser.add_argument("--prior_device", default="cpu", type=str, help="Device for prior data generation")
     parser.add_argument(
         "--prior_n_jobs",

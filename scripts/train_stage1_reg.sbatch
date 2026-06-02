@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=tabicl_s1_regression_pitting_optuna_worst_trial21
-#SBATCH --gpus=1
+#SBATCH --job-name=tabicl_s1_regression_datacor_inhibitor_best_trial2
+#SBATCH --gpus=2
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
 #SBATCH --output=/home/%u/tmp/%x.%j.out
@@ -20,7 +20,7 @@ cd ~/projects/tabicl
 source .venv/bin/activate
 
 
-torchrun --standalone --nproc_per_node=1 /home/fcolanto/projects/tabicl/src/tabicl/train/run.py \
+torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabicl/train/run.py \
             --wandb_log False \
             --wandb_project TabICL \
             --wandb_name Stage1 \
@@ -38,26 +38,26 @@ torchrun --standalone --nproc_per_node=1 /home/fcolanto/projects/tabicl/src/tabi
             --warmup_proportion 0.02 \
             --gradient_clipping 1.0 \
             --prior_type hybrid_scm \
-            --informed_prior_ratio 0.75 \
+            --informed_prior_ratio 0.25 \
             --mix_probs 0.7 0.3 \
             --informed_mix_probs 0.7 0.3 \
-            --informed_task_family_probs 1.0 0.0 \
-            --informed_normal_block_allocation 0.7209996920 0.1905883028 0.08841200518 0.0 0.0 0.0 0.0 0.0 0.0 \
-            --informed_inhibitor_block_allocation 0.05 0.08 0.02 0.02 0.0 0.05 0.78 0.0 0.0 \
-            --informed_feature_block_strength 0.3966906976 \
-            --informed_interaction_strength 0.1931080436 \
+            --informed_task_family_probs 0.0 1.0 \
+                        --informed_inhibitor_block_allocation 0.0625 0.0625 0.0 0.0 0.0 0.0 0.875 0.0 0.0 \
+            --informed_inhibitor_block_allocation_min_counts 1 1 0 0 0 0 1 0 0 \
+            --informed_feature_block_strength 0.2495724652 \
+            --informed_interaction_strength 0.3961514455 \
             --informed_history_strength 0.0 \
-            --informed_intervention_strength 0.0 \
-            --informed_target_family pitting_potential \
-            --informed_physical_marginal_prob 0.0 \
-            --informed_physical_marginal_profile corrosion_broad \
+            --informed_intervention_strength 0.7664749093 \
+            --informed_target_family inhibitor_efficiency \
+            --informed_physical_marginal_prob 0.75 \
+            --informed_physical_marginal_profile inhibitor_efficiency_v1 \
             --prior_device cpu \
             --prior_n_jobs "${PRIOR_N_JOBS}" \
             --dataloader_num_workers "${DATALOADER_NUM_WORKERS}" \
             --dataloader_prefetch_factor "${DATALOADER_PREFETCH_FACTOR}" \
             --batch_size_per_gp 4 \
-            --min_features 2 \
-            --max_features 100 \
+            --min_features 8 \
+            --max_features 32 \
             --max_classes 0 \
             --num_quantiles 999 \
             --max_seq_len 1024 \

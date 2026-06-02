@@ -65,6 +65,11 @@ class TrialParams:
     informed_interaction_strength: float
     informed_intervention_strength: float
     informed_physical_marginal_prob: float
+    inhibitor_descriptor_coef_scale: float
+    inhibitor_context_coef_scale: float
+    inhibitor_environment_interaction_coef_scale: float
+    inhibitor_material_interaction_coef_scale: float
+    inhibitor_intervention_coef_scale: float
 
 
 class SuggestTrial(Protocol):
@@ -127,7 +132,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--micro-batch-size", type=int, default=4)
     parser.add_argument("--batch-size-per-gp", type=int, default=4)
-    parser.add_argument("--min-features", type=int, default=8)
+    parser.add_argument("--min-features", type=int, default=11)
     parser.add_argument("--max-features", type=int, default=32)
     parser.add_argument("--max-seq-len", type=int, default=1024)
     parser.add_argument("--skip-existing", action="store_true", help="Reuse existing checkpoints/evals.")
@@ -169,6 +174,15 @@ def sample_params(trial: SuggestTrial) -> TrialParams:
         "informed_physical_marginal_prob",
         [0.25, 0.50, 0.75, 1.00],
     )
+    inhibitor_descriptor_coef_scale = trial.suggest_float("inhibitor_descriptor_coef_scale", 0.50, 2.00)
+    inhibitor_context_coef_scale = trial.suggest_float("inhibitor_context_coef_scale", 0.00, 1.25)
+    inhibitor_environment_interaction_coef_scale = trial.suggest_float(
+        "inhibitor_environment_interaction_coef_scale", 0.00, 2.00
+    )
+    inhibitor_material_interaction_coef_scale = trial.suggest_float(
+        "inhibitor_material_interaction_coef_scale", 0.00, 1.50
+    )
+    inhibitor_intervention_coef_scale = trial.suggest_float("inhibitor_intervention_coef_scale", 0.00, 1.00)
 
     return TrialParams(
         informed_prior_ratio=float(informed_prior_ratio),
@@ -176,6 +190,11 @@ def sample_params(trial: SuggestTrial) -> TrialParams:
         informed_interaction_strength=float(informed_interaction_strength),
         informed_intervention_strength=float(informed_intervention_strength),
         informed_physical_marginal_prob=float(informed_physical_marginal_prob),
+        inhibitor_descriptor_coef_scale=float(inhibitor_descriptor_coef_scale),
+        inhibitor_context_coef_scale=float(inhibitor_context_coef_scale),
+        inhibitor_environment_interaction_coef_scale=float(inhibitor_environment_interaction_coef_scale),
+        inhibitor_material_interaction_coef_scale=float(inhibitor_material_interaction_coef_scale),
+        inhibitor_intervention_coef_scale=float(inhibitor_intervention_coef_scale),
     )
 
 
@@ -252,6 +271,16 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         format_float(params.informed_physical_marginal_prob),
         "--informed_physical_marginal_profile",
         "inhibitor_efficiency_v1",
+        "--inhibitor_descriptor_coef_scale",
+        format_float(params.inhibitor_descriptor_coef_scale),
+        "--inhibitor_context_coef_scale",
+        format_float(params.inhibitor_context_coef_scale),
+        "--inhibitor_environment_interaction_coef_scale",
+        format_float(params.inhibitor_environment_interaction_coef_scale),
+        "--inhibitor_material_interaction_coef_scale",
+        format_float(params.inhibitor_material_interaction_coef_scale),
+        "--inhibitor_intervention_coef_scale",
+        format_float(params.inhibitor_intervention_coef_scale),
         "--prior_device",
         "cpu",
         "--prior_n_jobs",

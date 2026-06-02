@@ -2,7 +2,7 @@
 #SBATCH --job-name=datacor_inhibitor_prior_search
 #SBATCH --gpus=2
 #SBATCH --mem=32G
-#SBATCH --time=48:00:00
+#SBATCH --time=10:00:00
 #SBATCH --output=/home/%u/tmp/%x.%j.out
 #SBATCH --error=/home/%u/tmp/%x.%j.err
 
@@ -16,7 +16,7 @@ N_TRIALS="${N_TRIALS:-12}"
 STUDY_NAME="${STUDY_NAME:-datacor_inhibitor_prior_search}"
 MAX_STEPS="${MAX_STEPS:-1000}"
 SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-10000}"
-MIN_FEATURES="${MIN_FEATURES:-8}"
+MIN_FEATURES="${MIN_FEATURES:-11}"
 MAX_FEATURES="${MAX_FEATURES:-32}"
 SPLIT_SEEDS="${SPLIT_SEEDS:-11 22 33 44 55}"
 STUDY_DIR="/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/datacor_inhibitor_prior_search/${STUDY_NAME}"
