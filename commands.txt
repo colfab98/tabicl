@@ -1,6 +1,6 @@
 source .venv/bin/activate
 
-git push -u fork HEAD
+git push -u fork HEAD:colfab98/datacortech-prior
 
 git fetch fork
 git switch datacortech-prior

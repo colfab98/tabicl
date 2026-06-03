@@ -285,12 +285,20 @@ class Trainer:
                 scm_fixed_hp["informed_physical_marginal_prob"] = self.config.informed_physical_marginal_prob
             if self.config.informed_physical_marginal_profile is not None:
                 scm_fixed_hp["informed_physical_marginal_profile"] = self.config.informed_physical_marginal_profile
-            if self.config.epit_material_coef_scale is not None:
-                scm_fixed_hp["epit_material_coef_scale"] = self.config.epit_material_coef_scale
-            if self.config.epit_environment_coef_scale is not None:
-                scm_fixed_hp["epit_environment_coef_scale"] = self.config.epit_environment_coef_scale
-            if self.config.epit_interaction_coef_scale is not None:
-                scm_fixed_hp["epit_interaction_coef_scale"] = self.config.epit_interaction_coef_scale
+            if self.config.pitting_material_dirichlet_prob is not None:
+                scm_fixed_hp["pitting_material_dirichlet_prob"] = self.config.pitting_material_dirichlet_prob
+            if self.config.pitting_material_dirichlet_concentration is not None:
+                scm_fixed_hp["pitting_material_dirichlet_concentration"] = (
+                    self.config.pitting_material_dirichlet_concentration
+                )
+            if self.config.pitting_material_dirichlet_active_prob is not None:
+                scm_fixed_hp["pitting_material_dirichlet_active_prob"] = self.config.pitting_material_dirichlet_active_prob
+            if self.config.epit_material_coef is not None:
+                scm_fixed_hp["epit_material_coef"] = self.config.epit_material_coef
+            if self.config.epit_environment_coef is not None:
+                scm_fixed_hp["epit_environment_coef"] = self.config.epit_environment_coef
+            if self.config.epit_interaction_coef is not None:
+                scm_fixed_hp["epit_interaction_coef"] = self.config.epit_interaction_coef
             if self.config.inhibitor_descriptor_coef_scale is not None:
                 scm_fixed_hp["inhibitor_descriptor_coef_scale"] = self.config.inhibitor_descriptor_coef_scale
             if self.config.inhibitor_context_coef_scale is not None:

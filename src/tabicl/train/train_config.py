@@ -342,22 +342,40 @@ def build_parser():
         help="Optional physical marginal profile for informed SCM features, e.g. corrosion_broad, pitting_potential_v1, or inhibitor_efficiency_v1.",
     )
     parser.add_argument(
-        "--epit_material_coef_scale",
-        type=float,
+        "--pitting_material_dirichlet_prob",
+        type=false_or_float,
         default=None,
-        help="Optional multiplier for the material/passivity term in the Epit-like target drive.",
+        help="Optional probability of using masked Dirichlet composition in pitting material composition-like blocks.",
     )
     parser.add_argument(
-        "--epit_environment_coef_scale",
+        "--pitting_material_dirichlet_concentration",
         type=float,
         default=None,
-        help="Optional multiplier for the environment-aggressiveness term in the Epit-like target drive.",
+        help="Optional concentration for masked Dirichlet alloy-composition sampling in the pitting profile.",
     )
     parser.add_argument(
-        "--epit_interaction_coef_scale",
+        "--pitting_material_dirichlet_active_prob",
         type=float,
         default=None,
-        help="Optional multiplier for the material-environment term in the Epit-like target drive.",
+        help="Optional per-column active probability for masked Dirichlet alloy-composition sampling in the pitting profile.",
+    )
+    parser.add_argument(
+        "--epit_material_coef",
+        type=float,
+        default=None,
+        help="Fixed material/passivity coefficient in the Epit-like target drive.",
+    )
+    parser.add_argument(
+        "--epit_environment_coef",
+        type=float,
+        default=None,
+        help="Fixed environment-aggressiveness coefficient in the Epit-like target drive.",
+    )
+    parser.add_argument(
+        "--epit_interaction_coef",
+        type=float,
+        default=None,
+        help="Fixed material-environment interaction coefficient in the Epit-like target drive.",
     )
     parser.add_argument(
         "--inhibitor_descriptor_coef_scale",

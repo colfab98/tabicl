@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=tabicl_s1_regression_datacor_inhibitor_best_trial2
+#SBATCH --job-name=tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k
 #SBATCH --gpus=2
 #SBATCH --mem=32G
-#SBATCH --time=48:00:00
+#SBATCH --time=5:00:00
 #SBATCH --output=/home/%u/tmp/%x.%j.out
 #SBATCH --error=/home/%u/tmp/%x.%j.err
 
@@ -30,7 +30,7 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --dtype float32 \
             --np_seed 42 \
             --torch_seed 42 \
-            --max_steps 10000 \
+            --max_steps 2000 \
             --batch_size 512 \
             --micro_batch_size 4 \
             --lr 1e-4 \
@@ -38,25 +38,30 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --warmup_proportion 0.02 \
             --gradient_clipping 1.0 \
             --prior_type hybrid_scm \
-            --informed_prior_ratio 0.25 \
+            --informed_prior_ratio 0.75 \
             --mix_probs 0.7 0.3 \
             --informed_mix_probs 0.7 0.3 \
             --informed_task_family_probs 0.0 1.0 \
                         --informed_inhibitor_block_allocation 0.0625 0.0625 0.0 0.0 0.0 0.0 0.875 0.0 0.0 \
             --informed_inhibitor_block_allocation_min_counts 1 1 0 0 0 0 1 0 0 \
-            --informed_feature_block_strength 0.2495724652 \
-            --informed_interaction_strength 0.3961514455 \
+            --informed_feature_block_strength 0.3184540531 \
+            --informed_interaction_strength 0.5598148465 \
             --informed_history_strength 0.0 \
-            --informed_intervention_strength 0.7664749093 \
+            --informed_intervention_strength 0.8707861702 \
             --informed_target_family inhibitor_efficiency \
             --informed_physical_marginal_prob 0.75 \
             --informed_physical_marginal_profile inhibitor_efficiency_v1 \
+            --inhibitor_descriptor_coef_scale 1 \
+            --inhibitor_context_coef_scale 1.180351404 \
+            --inhibitor_environment_interaction_coef_scale 0.6126554573 \
+            --inhibitor_material_interaction_coef_scale 0.7763001316 \
+            --inhibitor_intervention_coef_scale 0 \
             --prior_device cpu \
             --prior_n_jobs "${PRIOR_N_JOBS}" \
             --dataloader_num_workers "${DATALOADER_NUM_WORKERS}" \
             --dataloader_prefetch_factor "${DATALOADER_PREFETCH_FACTOR}" \
             --batch_size_per_gp 4 \
-            --min_features 8 \
+            --min_features 11 \
             --max_features 32 \
             --max_classes 0 \
             --num_quantiles 999 \
@@ -77,4 +82,5 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --norm_first True \
             --checkpoint_dir "/home/fcolanto/projects/tabicl/checkpoints/${RUN_NAME}" \
             --save_temp_every 100 \
-            --save_perm_every 500
+            --save_perm_every 500 \
+            --scheduler_total_steps 10000

@@ -532,12 +532,18 @@ class SavePriorDataset:
             scm_fixed_hp["informed_physical_marginal_prob"] = self.args.informed_physical_marginal_prob
         if self.args.informed_physical_marginal_profile is not None:
             scm_fixed_hp["informed_physical_marginal_profile"] = self.args.informed_physical_marginal_profile
-        if self.args.epit_material_coef_scale is not None:
-            scm_fixed_hp["epit_material_coef_scale"] = self.args.epit_material_coef_scale
-        if self.args.epit_environment_coef_scale is not None:
-            scm_fixed_hp["epit_environment_coef_scale"] = self.args.epit_environment_coef_scale
-        if self.args.epit_interaction_coef_scale is not None:
-            scm_fixed_hp["epit_interaction_coef_scale"] = self.args.epit_interaction_coef_scale
+        if self.args.pitting_material_dirichlet_prob is not None:
+            scm_fixed_hp["pitting_material_dirichlet_prob"] = self.args.pitting_material_dirichlet_prob
+        if self.args.pitting_material_dirichlet_concentration is not None:
+            scm_fixed_hp["pitting_material_dirichlet_concentration"] = self.args.pitting_material_dirichlet_concentration
+        if self.args.pitting_material_dirichlet_active_prob is not None:
+            scm_fixed_hp["pitting_material_dirichlet_active_prob"] = self.args.pitting_material_dirichlet_active_prob
+        if self.args.epit_material_coef is not None:
+            scm_fixed_hp["epit_material_coef"] = self.args.epit_material_coef
+        if self.args.epit_environment_coef is not None:
+            scm_fixed_hp["epit_environment_coef"] = self.args.epit_environment_coef
+        if self.args.epit_interaction_coef is not None:
+            scm_fixed_hp["epit_interaction_coef"] = self.args.epit_interaction_coef
         if self.args.inhibitor_descriptor_coef_scale is not None:
             scm_fixed_hp["inhibitor_descriptor_coef_scale"] = self.args.inhibitor_descriptor_coef_scale
         if self.args.inhibitor_context_coef_scale is not None:
@@ -610,9 +616,12 @@ class SavePriorDataset:
             "informed_target_family": self.args.informed_target_family,
             "informed_physical_marginal_prob": self.args.informed_physical_marginal_prob,
             "informed_physical_marginal_profile": self.args.informed_physical_marginal_profile,
-            "epit_material_coef_scale": self.args.epit_material_coef_scale,
-            "epit_environment_coef_scale": self.args.epit_environment_coef_scale,
-            "epit_interaction_coef_scale": self.args.epit_interaction_coef_scale,
+            "pitting_material_dirichlet_prob": self.args.pitting_material_dirichlet_prob,
+            "pitting_material_dirichlet_concentration": self.args.pitting_material_dirichlet_concentration,
+            "pitting_material_dirichlet_active_prob": self.args.pitting_material_dirichlet_active_prob,
+            "epit_material_coef": self.args.epit_material_coef,
+            "epit_environment_coef": self.args.epit_environment_coef,
+            "epit_interaction_coef": self.args.epit_interaction_coef,
             "inhibitor_descriptor_coef_scale": self.args.inhibitor_descriptor_coef_scale,
             "inhibitor_context_coef_scale": self.args.inhibitor_context_coef_scale,
             "inhibitor_environment_interaction_coef_scale": self.args.inhibitor_environment_interaction_coef_scale,
@@ -784,9 +793,12 @@ if __name__ == "__main__":
     )
     parser.add_argument("--informed_physical_marginal_prob", type=false_or_float, default=None)
     parser.add_argument("--informed_physical_marginal_profile", type=str, default=None)
-    parser.add_argument("--epit_material_coef_scale", type=float, default=None)
-    parser.add_argument("--epit_environment_coef_scale", type=float, default=None)
-    parser.add_argument("--epit_interaction_coef_scale", type=float, default=None)
+    parser.add_argument("--pitting_material_dirichlet_prob", type=false_or_float, default=None)
+    parser.add_argument("--pitting_material_dirichlet_concentration", type=float, default=None)
+    parser.add_argument("--pitting_material_dirichlet_active_prob", type=float, default=None)
+    parser.add_argument("--epit_material_coef", type=float, default=None)
+    parser.add_argument("--epit_environment_coef", type=float, default=None)
+    parser.add_argument("--epit_interaction_coef", type=float, default=None)
     parser.add_argument("--inhibitor_descriptor_coef_scale", type=float, default=None)
     parser.add_argument("--inhibitor_context_coef_scale", type=float, default=None)
     parser.add_argument("--inhibitor_environment_interaction_coef_scale", type=float, default=None)

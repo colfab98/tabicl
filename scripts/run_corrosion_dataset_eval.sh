@@ -271,7 +271,7 @@ sbatch <<EOF
 #SBATCH --job-name=${JOB_NAME}
 #SBATCH --gpus=1
 #SBATCH --mem=24G
-#SBATCH --time=04:00:00
+#SBATCH --time=00:30:00
 #SBATCH --output=/home/${USER}/tmp/${JOB_NAME}.%j.out
 #SBATCH --error=/home/${USER}/tmp/${JOB_NAME}.%j.err
 

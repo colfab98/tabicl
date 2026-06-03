@@ -792,6 +792,58 @@ class SCMPrior(Prior):
         weights = weights / torch.linalg.vector_norm(weights).clamp_min(1e-6)
         return self._standardize_signal(block @ weights)
 
+    def _pitting_material_dirichlet_prob(self) -> float:
+        prob = float(self.fixed_hp.get("pitting_material_dirichlet_prob", 0.0))
+        if not np.isfinite(prob):
+            raise ValueError("pitting_material_dirichlet_prob must be finite.")
+        return float(np.clip(prob, 0.0, 1.0))
+
+    def _pitting_material_dirichlet_concentration(self) -> float:
+        concentration = float(self.fixed_hp.get("pitting_material_dirichlet_concentration", 1.0))
+        if not np.isfinite(concentration) or concentration <= 0.0:
+            raise ValueError("pitting_material_dirichlet_concentration must be finite and positive.")
+        return float(np.clip(concentration, 1e-3, 100.0))
+
+    def _pitting_material_dirichlet_active_prob(self, width: int) -> float:
+        active_prob = float(self.fixed_hp.get("pitting_material_dirichlet_active_prob", 0.45))
+        if not np.isfinite(active_prob):
+            raise ValueError("pitting_material_dirichlet_active_prob must be finite.")
+        return float(np.clip(active_prob, 0.0, 1.0))
+
+    def _apply_masked_dirichlet_composition_marginal(self, X: Tensor, feature_slice: slice) -> None:
+        width = feature_slice.stop - feature_slice.start
+        if width <= 1:
+            return
+
+        n_rows = X.shape[0]
+        device = X.device
+        sample_dtype = torch.float32 if X.dtype in (torch.float16, torch.bfloat16) else X.dtype
+        concentration = self._pitting_material_dirichlet_concentration()
+        active_prob = self._pitting_material_dirichlet_active_prob(width)
+
+        mask = torch.rand(n_rows, width, device=device) < active_prob
+        min_active = min(width, 2)
+        active_counts = mask.sum(dim=-1)
+        needs_forced = active_counts < min_active
+        if torch.any(needs_forced):
+            forced_scores = torch.rand(n_rows, width, device=device)
+            forced_idx = torch.topk(forced_scores, k=min_active, dim=-1).indices
+            forced_mask = torch.zeros_like(mask)
+            forced_mask.scatter_(1, forced_idx, True)
+            mask = torch.where(needs_forced.unsqueeze(-1), mask | forced_mask, mask)
+
+        alpha = torch.full((n_rows, width), concentration, device=device, dtype=sample_dtype)
+        gamma = torch.distributions.Gamma(alpha, torch.ones_like(alpha)).sample()
+        gamma = gamma * mask.to(dtype=sample_dtype)
+        row_sum = gamma.sum(dim=-1, keepdim=True)
+        empty_rows = row_sum <= 1e-20
+        if torch.any(empty_rows):
+            gamma = torch.where(empty_rows, mask.to(dtype=sample_dtype), gamma)
+            row_sum = gamma.sum(dim=-1, keepdim=True)
+
+        composition = gamma / row_sum.clamp_min(1e-12) * 100.0
+        X[:, feature_slice] = composition.to(dtype=X.dtype)
+
     def _apply_pitting_material_profile(self, X: Tensor, blocks: Dict[str, slice], info: PittingProfileInfo) -> None:
         material_slice = blocks.get("material")
         if material_slice is None or material_slice.stop <= material_slice.start:
@@ -821,18 +873,24 @@ class SCMPrior(Prior):
         categorical_cols: set[int] = set()
 
         if style == "composition_like":
-            logits = torch.nan_to_num(X[:, material_slice], nan=0.0, posinf=0.0, neginf=0.0)
-            shared = self._standardize_signal(logits.mean(dim=-1)).unsqueeze(-1)
-            latent_weights = torch.randn(1, width, device=X.device, dtype=X.dtype)
-            sharpness = float(np.random.uniform(0.7, 1.8))
-            logits = 0.55 * logits + 0.45 * shared * latent_weights
-            composition = torch.softmax(logits * sharpness, dim=-1) * 100.0
-            if np.random.random() < 0.30:
-                row_scale = torch.empty(X.shape[0], 1, device=X.device, dtype=X.dtype).uniform_(0.92, 1.08)
-                composition = composition * row_scale
-            X[:, material_slice] = composition
+            if np.random.random() < self._pitting_material_dirichlet_prob():
+                self._apply_masked_dirichlet_composition_marginal(X, material_slice)
+                info.material_style = "masked_dirichlet_composition"
+                role = "material_dirichlet_composition"
+            else:
+                logits = torch.nan_to_num(X[:, material_slice], nan=0.0, posinf=0.0, neginf=0.0)
+                shared = self._standardize_signal(logits.mean(dim=-1)).unsqueeze(-1)
+                latent_weights = torch.randn(1, width, device=X.device, dtype=X.dtype)
+                sharpness = float(np.random.uniform(0.7, 1.8))
+                logits = 0.55 * logits + 0.45 * shared * latent_weights
+                composition = torch.softmax(logits * sharpness, dim=-1) * 100.0
+                if np.random.random() < 0.30:
+                    row_scale = torch.empty(X.shape[0], 1, device=X.device, dtype=X.dtype).uniform_(0.92, 1.08)
+                    composition = composition * row_scale
+                X[:, material_slice] = composition
+                role = "material_composition"
             for col in cols:
-                info.add_role("material_composition", col)
+                info.add_role(role, col)
             signal_cols = cols
             log_positive = True
         elif style == "sparse_alloying":
@@ -1697,18 +1755,12 @@ class SCMPrior(Prior):
         exposure_drive = torch.sigmoid(self._optional_zero(exposure, reference))
         history_damage = torch.sigmoid(self._optional_zero(history, reference))
 
-        material_coef_scale = float(self.fixed_hp.get("epit_material_coef_scale", 1.0))
-        environment_coef_scale = float(self.fixed_hp.get("epit_environment_coef_scale", 1.0))
-        interaction_coef_scale = float(self.fixed_hp.get("epit_interaction_coef_scale", 1.0))
-        coefficient_scales = np.asarray(
-            [material_coef_scale, environment_coef_scale, interaction_coef_scale], dtype=float
-        )
-        if not np.all(np.isfinite(coefficient_scales)) or np.any(coefficient_scales < 0.0):
-            raise ValueError("Epit coefficient scales must be finite and non-negative.")
-
-        material_coef = material_coef_scale * float(np.random.uniform(0.45, 0.70))
-        environment_coef = environment_coef_scale * float(np.random.uniform(0.35, 0.65))
-        interaction_coef = interaction_coef_scale * float(np.random.uniform(0.60, 0.95))
+        material_coef = float(self.fixed_hp.get("epit_material_coef", 0.575))
+        environment_coef = float(self.fixed_hp.get("epit_environment_coef", 0.50))
+        interaction_coef = float(self.fixed_hp.get("epit_interaction_coef", 0.775))
+        coefficients = np.asarray([material_coef, environment_coef, interaction_coef], dtype=float)
+        if not np.all(np.isfinite(coefficients)) or np.any(coefficients < 0.0):
+            raise ValueError("Epit coefficients must be finite and non-negative.")
         exposure_coef = float(np.random.uniform(0.12, 0.28))
         process_coef = float(np.random.uniform(0.12, 0.28))
         history_coef = float(np.random.uniform(0.08, 0.20))

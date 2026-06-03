@@ -1,0 +1,247 @@
+{
+  "created_at": "2026-06-03T11:57:54",
+  "repeated_split_eval": true,
+  "split_seeds": [
+    11,
+    22,
+    33,
+    44,
+    55
+  ],
+  "seed_outputs": [
+    {
+      "split_seed": 11,
+      "json": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_11/results.json",
+      "rows_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_11/rows.csv",
+      "wide_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_11/wide.csv",
+      "summary_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_11/summary.csv"
+    },
+    {
+      "split_seed": 22,
+      "json": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_22/results.json",
+      "rows_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_22/rows.csv",
+      "wide_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_22/wide.csv",
+      "summary_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_22/summary.csv"
+    },
+    {
+      "split_seed": 33,
+      "json": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_33/results.json",
+      "rows_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_33/rows.csv",
+      "wide_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_33/wide.csv",
+      "summary_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_33/summary.csv"
+    },
+    {
+      "split_seed": 44,
+      "json": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_44/results.json",
+      "rows_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_44/rows.csv",
+      "wide_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_44/wide.csv",
+      "summary_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_44/summary.csv"
+    },
+    {
+      "split_seed": 55,
+      "json": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_55/results.json",
+      "rows_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_55/rows.csv",
+      "wide_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_55/wide.csv",
+      "summary_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_55/summary.csv"
+    }
+  ],
+  "runs": [],
+  "checkpoint": "latest",
+  "target_mode": "primary",
+  "target_binning": "continuous",
+  "target_bins": 2,
+  "regression_output": "median",
+  "regression_uncertainty": false,
+  "primary_metric": "test_spearman",
+  "metric_sort_specs": [
+    [
+      "test_spearman",
+      false
+    ],
+    [
+      "test_nmae_iqr",
+      true
+    ],
+    [
+      "test_npinball_iqr",
+      true
+    ],
+    [
+      "test_interval_80_coverage_error",
+      true
+    ],
+    [
+      "test_mae",
+      true
+    ],
+    [
+      "test_rmse",
+      true
+    ]
+  ],
+  "test_size": 0.25,
+  "n_estimators": 8,
+  "rows": [],
+  "errors": [
+    {
+      "model": "trial_0004",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "datacor_aluminum_inhibitors__datacor_long_efficiency__efficiency_score",
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "target": "efficiency_score",
+      "task_quality_flags": "grouped_molecular_descriptor,small_inhibitor_descriptor_table",
+      "split_strategy": "grouped_molecular_descriptor",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "split_seed": 11,
+      "seed_output_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_11"
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "datacor_aluminum_inhibitors__datacor_long_efficiency__efficiency_score",
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "target": "efficiency_score",
+      "task_quality_flags": "grouped_molecular_descriptor,small_inhibitor_descriptor_table",
+      "split_strategy": "grouped_molecular_descriptor",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "split_seed": 11,
+      "seed_output_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_11"
+    },
+    {
+      "model": "trial_0004",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "datacor_aluminum_inhibitors__datacor_long_efficiency__efficiency_score",
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "target": "efficiency_score",
+      "task_quality_flags": "grouped_molecular_descriptor,small_inhibitor_descriptor_table",
+      "split_strategy": "grouped_molecular_descriptor",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "split_seed": 22,
+      "seed_output_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_22"
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "datacor_aluminum_inhibitors__datacor_long_efficiency__efficiency_score",
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "target": "efficiency_score",
+      "task_quality_flags": "grouped_molecular_descriptor,small_inhibitor_descriptor_table",
+      "split_strategy": "grouped_molecular_descriptor",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "split_seed": 22,
+      "seed_output_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_22"
+    },
+    {
+      "model": "trial_0004",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "datacor_aluminum_inhibitors__datacor_long_efficiency__efficiency_score",
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "target": "efficiency_score",
+      "task_quality_flags": "grouped_molecular_descriptor,small_inhibitor_descriptor_table",
+      "split_strategy": "grouped_molecular_descriptor",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "split_seed": 33,
+      "seed_output_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_33"
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "datacor_aluminum_inhibitors__datacor_long_efficiency__efficiency_score",
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "target": "efficiency_score",
+      "task_quality_flags": "grouped_molecular_descriptor,small_inhibitor_descriptor_table",
+      "split_strategy": "grouped_molecular_descriptor",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "split_seed": 33,
+      "seed_output_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_33"
+    },
+    {
+      "model": "trial_0004",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "datacor_aluminum_inhibitors__datacor_long_efficiency__efficiency_score",
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "target": "efficiency_score",
+      "task_quality_flags": "grouped_molecular_descriptor,small_inhibitor_descriptor_table",
+      "split_strategy": "grouped_molecular_descriptor",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "split_seed": 44,
+      "seed_output_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_44"
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "datacor_aluminum_inhibitors__datacor_long_efficiency__efficiency_score",
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "target": "efficiency_score",
+      "task_quality_flags": "grouped_molecular_descriptor,small_inhibitor_descriptor_table",
+      "split_strategy": "grouped_molecular_descriptor",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "split_seed": 44,
+      "seed_output_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_44"
+    },
+    {
+      "model": "trial_0004",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "datacor_aluminum_inhibitors__datacor_long_efficiency__efficiency_score",
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "target": "efficiency_score",
+      "task_quality_flags": "grouped_molecular_descriptor,small_inhibitor_descriptor_table",
+      "split_strategy": "grouped_molecular_descriptor",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "split_seed": 55,
+      "seed_output_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_55"
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "datacor_aluminum_inhibitors__datacor_long_efficiency__efficiency_score",
+      "dataset": "datacor_aluminum_inhibitors",
+      "table": "DataCor_long_efficiency",
+      "target": "efficiency_score",
+      "task_quality_flags": "grouped_molecular_descriptor,small_inhibitor_descriptor_table",
+      "split_strategy": "grouped_molecular_descriptor",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "split_seed": 55,
+      "seed_output_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/seed_55"
+    }
+  ],
+  "output_files": {
+    "artifact_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k",
+    "json": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/results.json",
+    "csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/rows.csv",
+    "wide_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/wide.csv",
+    "summary_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/datacor_inhibitor_prior_search_v3/datacor_grouped_splits_tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k/summary.csv",
+    "plot_dir": null,
+    "plots": [],
+    "task_tables": []
+  }
+}

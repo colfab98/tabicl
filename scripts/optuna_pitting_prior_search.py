@@ -38,6 +38,9 @@ PITTING_NORMAL_BLOCK_ALLOCATION_RANGES = (
     (0.00, 0.00),
     (0.00, 0.00),
 )
+EPIT_MATERIAL_COEF_RANGE = (0.45, 0.70)
+EPIT_ENVIRONMENT_COEF_RANGE = (0.35, 0.65)
+EPIT_INTERACTION_COEF_RANGE = (0.60, 0.95)
 
 
 @dataclass(frozen=True)
@@ -46,9 +49,12 @@ class TrialParams:
     informed_feature_block_strength: float
     informed_interaction_strength: float
     informed_physical_marginal_prob: float
-    epit_material_coef_scale: float
-    epit_environment_coef_scale: float
-    epit_interaction_coef_scale: float
+    pitting_material_dirichlet_prob: float
+    pitting_material_dirichlet_concentration: float
+    pitting_material_dirichlet_active_prob: float
+    epit_material_coef: float
+    epit_environment_coef: float
+    epit_interaction_coef: float
 
 
 class SuggestTrial(Protocol):
@@ -152,19 +158,34 @@ def sample_params(trial: SuggestTrial) -> TrialParams:
         "informed_physical_marginal_prob",
         [0.00, 0.25, 0.50, 0.75, 1.00],
     )
+    pitting_material_dirichlet_prob = trial.suggest_categorical(
+        "pitting_material_dirichlet_prob",
+        [0.00, 0.50, 1.00],
+    )
+    pitting_material_dirichlet_concentration = trial.suggest_categorical(
+        "pitting_material_dirichlet_concentration",
+        [0.10, 0.25, 0.50, 1.00, 2.00, 5.00],
+    )
+    pitting_material_dirichlet_active_prob = trial.suggest_categorical(
+        "pitting_material_dirichlet_active_prob",
+        [0.20, 0.35, 0.50, 0.70, 0.90],
+    )
 
-    epit_material_coef_scale = trial.suggest_float("epit_material_coef_scale", 0.50, 1.50)
-    epit_environment_coef_scale = trial.suggest_float("epit_environment_coef_scale", 0.50, 1.50)
-    epit_interaction_coef_scale = trial.suggest_float("epit_interaction_coef_scale", 0.50, 1.50)
+    epit_material_coef = trial.suggest_float("epit_material_coef", *EPIT_MATERIAL_COEF_RANGE)
+    epit_environment_coef = trial.suggest_float("epit_environment_coef", *EPIT_ENVIRONMENT_COEF_RANGE)
+    epit_interaction_coef = trial.suggest_float("epit_interaction_coef", *EPIT_INTERACTION_COEF_RANGE)
 
     return TrialParams(
         informed_prior_ratio=float(informed_prior_ratio),
         informed_feature_block_strength=float(informed_feature_block_strength),
         informed_interaction_strength=float(informed_interaction_strength),
         informed_physical_marginal_prob=float(informed_physical_marginal_prob),
-        epit_material_coef_scale=float(epit_material_coef_scale),
-        epit_environment_coef_scale=float(epit_environment_coef_scale),
-        epit_interaction_coef_scale=float(epit_interaction_coef_scale),
+        pitting_material_dirichlet_prob=float(pitting_material_dirichlet_prob),
+        pitting_material_dirichlet_concentration=float(pitting_material_dirichlet_concentration),
+        pitting_material_dirichlet_active_prob=float(pitting_material_dirichlet_active_prob),
+        epit_material_coef=float(epit_material_coef),
+        epit_environment_coef=float(epit_environment_coef),
+        epit_interaction_coef=float(epit_interaction_coef),
     )
 
 
@@ -245,12 +266,18 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         format_float(params.informed_physical_marginal_prob),
         "--informed_physical_marginal_profile",
         args.physical_profile,
-        "--epit_material_coef_scale",
-        format_float(params.epit_material_coef_scale),
-        "--epit_environment_coef_scale",
-        format_float(params.epit_environment_coef_scale),
-        "--epit_interaction_coef_scale",
-        format_float(params.epit_interaction_coef_scale),
+        "--pitting_material_dirichlet_prob",
+        format_float(params.pitting_material_dirichlet_prob),
+        "--pitting_material_dirichlet_concentration",
+        format_float(params.pitting_material_dirichlet_concentration),
+        "--pitting_material_dirichlet_active_prob",
+        format_float(params.pitting_material_dirichlet_active_prob),
+        "--epit_material_coef",
+        format_float(params.epit_material_coef),
+        "--epit_environment_coef",
+        format_float(params.epit_environment_coef),
+        "--epit_interaction_coef",
+        format_float(params.epit_interaction_coef),
         "--prior_device",
         "cpu",
         "--prior_n_jobs",

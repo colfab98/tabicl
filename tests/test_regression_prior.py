@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 from tabicl.prior.dataset import PriorDataset, SCMPrior
@@ -245,12 +246,12 @@ def test_informed_block_allocation_ranges_override_fixed_allocation():
     assert "process_history" not in blocks
 
 
-def test_pitting_target_family_honors_epit_coefficient_scales():
+def test_pitting_target_family_honors_epit_coefficients():
     fixed_hp = dict(DEFAULT_FIXED_HP)
     fixed_hp["informed_target_family"] = "pitting_potential"
-    fixed_hp["epit_material_coef_scale"] = 0.0
-    fixed_hp["epit_environment_coef_scale"] = 0.0
-    fixed_hp["epit_interaction_coef_scale"] = 0.0
+    fixed_hp["epit_material_coef"] = 0.0
+    fixed_hp["epit_environment_coef"] = 0.0
+    fixed_hp["epit_interaction_coef"] = 0.0
     prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
     X = torch.zeros(64, 2)
     X[:, 0] = torch.linspace(-3.0, 3.0, steps=64)
@@ -270,6 +271,40 @@ def test_pitting_target_family_honors_epit_coefficient_scales():
     assert torch.allclose(y_new, y)
 
 
+def test_pitting_target_family_uses_fixed_epit_coefficients_across_random_seeds():
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["informed_target_family"] = "pitting_potential"
+    fixed_hp["epit_material_coef"] = 0.575
+    fixed_hp["epit_environment_coef"] = 0.50
+    fixed_hp["epit_interaction_coef"] = 0.775
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.zeros(64, 2)
+    X[:, 0] = torch.linspace(-3.0, 3.0, steps=64)
+    X[:, 1] = torch.linspace(3.0, -3.0, steps=64)
+    y = torch.zeros(64)
+    blocks = {"material": slice(0, 1), "environment": slice(1, 2)}
+
+    np.random.seed(1)
+    _, y_first = prior._apply_informed_corrosion_mechanism(
+        X.clone(),
+        y.clone(),
+        blocks,
+        "normal_corrosion",
+        interaction_strength=1.0,
+        intervention_strength=0.0,
+    )
+    np.random.seed(999)
+    _, y_second = prior._apply_informed_corrosion_mechanism(
+        X.clone(),
+        y.clone(),
+        blocks,
+        "normal_corrosion",
+        interaction_strength=1.0,
+        intervention_strength=0.0,
+    )
+
+    assert torch.allclose(y_first, y_second)
+
 
 def _pitting_fixed_hp() -> dict:
     fixed_hp = dict(DEFAULT_FIXED_HP)
@@ -280,6 +315,23 @@ def _pitting_fixed_hp() -> dict:
     fixed_hp["informed_mix_probs"] = (1.0, 0.0)
     fixed_hp["informed_normal_block_allocation"] = (0.65, 0.25, 0.10, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     return fixed_hp
+
+
+def test_masked_dirichlet_material_composition_is_sparse_and_sums_to_100():
+    torch.manual_seed(11)
+    fixed_hp = _pitting_fixed_hp()
+    fixed_hp["pitting_material_dirichlet_concentration"] = 0.50
+    fixed_hp["pitting_material_dirichlet_active_prob"] = 0.15
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.randn(48, 8)
+
+    prior._apply_masked_dirichlet_composition_marginal(X, slice(0, 8))
+
+    material = X[:, :8]
+    assert torch.isfinite(material).all()
+    assert (material >= 0).all()
+    assert torch.allclose(material.sum(dim=-1), torch.full((48,), 100.0), atol=1e-4)
+    assert (material == 0).float().mean() > 0.40
 
 
 def test_pitting_potential_v1_profile_records_roles_and_drives_target():
