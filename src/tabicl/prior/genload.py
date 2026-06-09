@@ -546,18 +546,42 @@ class SavePriorDataset:
             scm_fixed_hp["epit_interaction_coef"] = self.args.epit_interaction_coef
         if self.args.inhibitor_descriptor_coef_scale is not None:
             scm_fixed_hp["inhibitor_descriptor_coef_scale"] = self.args.inhibitor_descriptor_coef_scale
+            if self.args.inhibitor_descriptor_coef is None:
+                scm_fixed_hp["inhibitor_descriptor_coef"] = 0.65 * self.args.inhibitor_descriptor_coef_scale
         if self.args.inhibitor_context_coef_scale is not None:
             scm_fixed_hp["inhibitor_context_coef_scale"] = self.args.inhibitor_context_coef_scale
+            if self.args.inhibitor_context_coef is None:
+                scm_fixed_hp["inhibitor_context_coef"] = 0.14 * self.args.inhibitor_context_coef_scale
         if self.args.inhibitor_environment_interaction_coef_scale is not None:
             scm_fixed_hp["inhibitor_environment_interaction_coef_scale"] = (
                 self.args.inhibitor_environment_interaction_coef_scale
             )
+            if self.args.inhibitor_environment_interaction_coef is None:
+                scm_fixed_hp["inhibitor_environment_interaction_coef"] = (
+                    0.365 * self.args.inhibitor_environment_interaction_coef_scale
+                )
         if self.args.inhibitor_material_interaction_coef_scale is not None:
             scm_fixed_hp["inhibitor_material_interaction_coef_scale"] = (
                 self.args.inhibitor_material_interaction_coef_scale
             )
+            if self.args.inhibitor_material_interaction_coef is None:
+                scm_fixed_hp["inhibitor_material_interaction_coef"] = (
+                    0.24 * self.args.inhibitor_material_interaction_coef_scale
+                )
         if self.args.inhibitor_intervention_coef_scale is not None:
             scm_fixed_hp["inhibitor_intervention_coef_scale"] = self.args.inhibitor_intervention_coef_scale
+            if self.args.inhibitor_intervention_coef is None:
+                scm_fixed_hp["inhibitor_intervention_coef"] = 0.375 * self.args.inhibitor_intervention_coef_scale
+        if self.args.inhibitor_descriptor_coef is not None:
+            scm_fixed_hp["inhibitor_descriptor_coef"] = self.args.inhibitor_descriptor_coef
+        if self.args.inhibitor_context_coef is not None:
+            scm_fixed_hp["inhibitor_context_coef"] = self.args.inhibitor_context_coef
+        if self.args.inhibitor_environment_interaction_coef is not None:
+            scm_fixed_hp["inhibitor_environment_interaction_coef"] = self.args.inhibitor_environment_interaction_coef
+        if self.args.inhibitor_material_interaction_coef is not None:
+            scm_fixed_hp["inhibitor_material_interaction_coef"] = self.args.inhibitor_material_interaction_coef
+        if self.args.inhibitor_intervention_coef is not None:
+            scm_fixed_hp["inhibitor_intervention_coef"] = self.args.inhibitor_intervention_coef
 
         self.prior = PriorDataset(
             batch_size=self.args.batch_size,
@@ -627,6 +651,11 @@ class SavePriorDataset:
             "inhibitor_environment_interaction_coef_scale": self.args.inhibitor_environment_interaction_coef_scale,
             "inhibitor_material_interaction_coef_scale": self.args.inhibitor_material_interaction_coef_scale,
             "inhibitor_intervention_coef_scale": self.args.inhibitor_intervention_coef_scale,
+            "inhibitor_descriptor_coef": self.args.inhibitor_descriptor_coef,
+            "inhibitor_context_coef": self.args.inhibitor_context_coef,
+            "inhibitor_environment_interaction_coef": self.args.inhibitor_environment_interaction_coef,
+            "inhibitor_material_interaction_coef": self.args.inhibitor_material_interaction_coef,
+            "inhibitor_intervention_coef": self.args.inhibitor_intervention_coef,
         }
         with open(self.save_dir / "metadata.json", "w") as f:
             json.dump(metadata, f, indent=2)
@@ -804,6 +833,11 @@ if __name__ == "__main__":
     parser.add_argument("--inhibitor_environment_interaction_coef_scale", type=float, default=None)
     parser.add_argument("--inhibitor_material_interaction_coef_scale", type=float, default=None)
     parser.add_argument("--inhibitor_intervention_coef_scale", type=float, default=None)
+    parser.add_argument("--inhibitor_descriptor_coef", type=float, default=None)
+    parser.add_argument("--inhibitor_context_coef", type=float, default=None)
+    parser.add_argument("--inhibitor_environment_interaction_coef", type=float, default=None)
+    parser.add_argument("--inhibitor_material_interaction_coef", type=float, default=None)
+    parser.add_argument("--inhibitor_intervention_coef", type=float, default=None)
     parser.add_argument("--n_jobs", type=int, default=-1, help="Number of jobs for parallel processing")
     parser.add_argument("--num_threads_per_generate", type=int, default=1, help="Threads per generation")
     parser.add_argument(

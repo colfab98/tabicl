@@ -3,9 +3,9 @@
 
 Each trial trains one TabICL regression checkpoint, evaluates it on the DATACOR
 aluminum-inhibitor efficiency task with grouped molecular-descriptor splits, and
-optimizes mean Spearman. The inhibitor-agent block allocation is fixed from the
-retained DATACOR model-input table shape: 1 material, 1 environment, and 14
-molecular-descriptor features out of 16 total features.
+optimizes mean Spearman. The inhibitor-agent block allocation is sampled from
+DATACOR-shaped ranges: 1 material, 1 environment, and descriptor-heavy molecular
+features in the retained 16-column model-input table.
 """
 
 from __future__ import annotations
@@ -33,16 +33,16 @@ PRETRAINED_LABEL = "pretrained_tabicl_v2"
 DEFAULT_SPLIT_SEEDS = (11, 22, 33, 44, 55)
 
 # DATACOR retained features: alloy=1, pH=1, molecular descriptors=14.
-DATACOR_INHIBITOR_BLOCK_ALLOCATION = (
-    0.0625,  # material
-    0.0625,  # environment
-    0.0,     # process_history
-    0.0,     # exposure_duration
-    0.0,     # temporal_history
-    0.0,     # direct_intervention; DATACOR has no dose/control column
-    0.875,   # molecular_descriptor
-    0.0,     # electrochem_control
-    0.0,     # electrochem_downstream
+DATACOR_INHIBITOR_BLOCK_ALLOCATION_RANGES = (
+    (0.05, 0.08),  # material/alloy
+    (0.05, 0.08),  # environment/pH condition
+    (0.00, 0.00),  # process_history
+    (0.00, 0.00),  # exposure_duration
+    (0.00, 0.00),  # temporal_history
+    (0.00, 0.00),  # direct_intervention; DATACOR has no dose/control column
+    (0.84, 0.90),  # molecular_descriptor
+    (0.00, 0.00),  # electrochem_control
+    (0.00, 0.00),  # electrochem_downstream
 )
 
 DATACOR_INHIBITOR_BLOCK_MIN_COUNTS = (
@@ -56,8 +56,11 @@ DATACOR_INHIBITOR_BLOCK_MIN_COUNTS = (
     0,  # electrochem_control
     0,  # electrochem_downstream
 )
-DATACOR_INHIBITOR_DESCRIPTOR_COEF_SCALE = 1.0
-DATACOR_INHIBITOR_INTERVENTION_COEF_SCALE = 0.0
+INHIBITOR_DESCRIPTOR_COEF_RANGE = (0.45, 0.85)
+INHIBITOR_CONTEXT_COEF_RANGE = (0.00, 0.275)
+INHIBITOR_ENVIRONMENT_INTERACTION_COEF_RANGE = (0.00, 1.10)
+INHIBITOR_MATERIAL_INTERACTION_COEF_RANGE = (0.00, 0.57)
+DATACOR_INHIBITOR_INTERVENTION_COEF = 0.0
 
 
 @dataclass(frozen=True)
@@ -67,11 +70,11 @@ class TrialParams:
     informed_interaction_strength: float
     informed_intervention_strength: float
     informed_physical_marginal_prob: float
-    inhibitor_descriptor_coef_scale: float
-    inhibitor_context_coef_scale: float
-    inhibitor_environment_interaction_coef_scale: float
-    inhibitor_material_interaction_coef_scale: float
-    inhibitor_intervention_coef_scale: float
+    inhibitor_descriptor_coef: float
+    inhibitor_context_coef: float
+    inhibitor_environment_interaction_coef: float
+    inhibitor_material_interaction_coef: float
+    inhibitor_intervention_coef: float
 
 
 class SuggestTrial(Protocol):
@@ -176,17 +179,15 @@ def sample_params(trial: SuggestTrial) -> TrialParams:
         "informed_physical_marginal_prob",
         [0.25, 0.50, 0.75, 1.00],
     )
-    # The inhibitor drive is standardized before being added to y, so absolute descriptor scale
-    # is mostly redundant. DATACOR also has no direct dose column in this fixed allocation.
-    inhibitor_descriptor_coef_scale = DATACOR_INHIBITOR_DESCRIPTOR_COEF_SCALE
-    inhibitor_context_coef_scale = trial.suggest_float("inhibitor_context_coef_scale", 0.00, 1.25)
-    inhibitor_environment_interaction_coef_scale = trial.suggest_float(
-        "inhibitor_environment_interaction_coef_scale", 0.00, 2.00
+    inhibitor_descriptor_coef = trial.suggest_float("inhibitor_descriptor_coef", *INHIBITOR_DESCRIPTOR_COEF_RANGE)
+    inhibitor_context_coef = trial.suggest_float("inhibitor_context_coef", *INHIBITOR_CONTEXT_COEF_RANGE)
+    inhibitor_environment_interaction_coef = trial.suggest_float(
+        "inhibitor_environment_interaction_coef", *INHIBITOR_ENVIRONMENT_INTERACTION_COEF_RANGE
     )
-    inhibitor_material_interaction_coef_scale = trial.suggest_float(
-        "inhibitor_material_interaction_coef_scale", 0.00, 1.50
+    inhibitor_material_interaction_coef = trial.suggest_float(
+        "inhibitor_material_interaction_coef", *INHIBITOR_MATERIAL_INTERACTION_COEF_RANGE
     )
-    inhibitor_intervention_coef_scale = DATACOR_INHIBITOR_INTERVENTION_COEF_SCALE
+    inhibitor_intervention_coef = DATACOR_INHIBITOR_INTERVENTION_COEF
 
     return TrialParams(
         informed_prior_ratio=float(informed_prior_ratio),
@@ -194,16 +195,20 @@ def sample_params(trial: SuggestTrial) -> TrialParams:
         informed_interaction_strength=float(informed_interaction_strength),
         informed_intervention_strength=float(informed_intervention_strength),
         informed_physical_marginal_prob=float(informed_physical_marginal_prob),
-        inhibitor_descriptor_coef_scale=float(inhibitor_descriptor_coef_scale),
-        inhibitor_context_coef_scale=float(inhibitor_context_coef_scale),
-        inhibitor_environment_interaction_coef_scale=float(inhibitor_environment_interaction_coef_scale),
-        inhibitor_material_interaction_coef_scale=float(inhibitor_material_interaction_coef_scale),
-        inhibitor_intervention_coef_scale=float(inhibitor_intervention_coef_scale),
+        inhibitor_descriptor_coef=float(inhibitor_descriptor_coef),
+        inhibitor_context_coef=float(inhibitor_context_coef),
+        inhibitor_environment_interaction_coef=float(inhibitor_environment_interaction_coef),
+        inhibitor_material_interaction_coef=float(inhibitor_material_interaction_coef),
+        inhibitor_intervention_coef=float(inhibitor_intervention_coef),
     )
 
 
 def format_float(value: float) -> str:
     return f"{value:.10g}"
+
+
+def format_range_values(ranges: tuple[tuple[float, float], ...]) -> tuple[str, ...]:
+    return tuple(format_float(value) for pair in ranges for value in pair)
 
 
 def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_dir: Path) -> list[str]:
@@ -257,8 +262,8 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         "--informed_task_family_probs",
         "0.0",
         "1.0",
-        "--informed_inhibitor_block_allocation",
-        *(format_float(value) for value in DATACOR_INHIBITOR_BLOCK_ALLOCATION),
+        "--informed_inhibitor_block_allocation_ranges",
+        *format_range_values(DATACOR_INHIBITOR_BLOCK_ALLOCATION_RANGES),
         "--informed_inhibitor_block_allocation_min_counts",
         *(str(value) for value in DATACOR_INHIBITOR_BLOCK_MIN_COUNTS),
         "--informed_feature_block_strength",
@@ -275,16 +280,16 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         format_float(params.informed_physical_marginal_prob),
         "--informed_physical_marginal_profile",
         "inhibitor_efficiency_v1",
-        "--inhibitor_descriptor_coef_scale",
-        format_float(params.inhibitor_descriptor_coef_scale),
-        "--inhibitor_context_coef_scale",
-        format_float(params.inhibitor_context_coef_scale),
-        "--inhibitor_environment_interaction_coef_scale",
-        format_float(params.inhibitor_environment_interaction_coef_scale),
-        "--inhibitor_material_interaction_coef_scale",
-        format_float(params.inhibitor_material_interaction_coef_scale),
-        "--inhibitor_intervention_coef_scale",
-        format_float(params.inhibitor_intervention_coef_scale),
+        "--inhibitor_descriptor_coef",
+        format_float(params.inhibitor_descriptor_coef),
+        "--inhibitor_context_coef",
+        format_float(params.inhibitor_context_coef),
+        "--inhibitor_environment_interaction_coef",
+        format_float(params.inhibitor_environment_interaction_coef),
+        "--inhibitor_material_interaction_coef",
+        format_float(params.inhibitor_material_interaction_coef),
+        "--inhibitor_intervention_coef",
+        format_float(params.inhibitor_intervention_coef),
         "--prior_device",
         "cpu",
         "--prior_n_jobs",
@@ -482,7 +487,7 @@ def run_trial(args: argparse.Namespace, trial_number: int, params: TrialParams) 
         "trial_number": trial_number,
         "trial_name": trial_name,
         "params": asdict(params),
-        "fixed_inhibitor_block_allocation": DATACOR_INHIBITOR_BLOCK_ALLOCATION,
+        "fixed_inhibitor_block_allocation_ranges": DATACOR_INHIBITOR_BLOCK_ALLOCATION_RANGES,
         "fixed_inhibitor_block_min_counts": DATACOR_INHIBITOR_BLOCK_MIN_COUNTS,
         "dataset": DATACOR_DATASET,
         "task_id": DATACOR_TASK_ID,

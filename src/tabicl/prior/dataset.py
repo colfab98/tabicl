@@ -1646,31 +1646,48 @@ class SCMPrior(Prior):
         material_effect = torch.tanh(material_signal)
         material_gate = torch.sigmoid(material_signal)
 
-        descriptor_coef_scale = float(self.fixed_hp.get("inhibitor_descriptor_coef_scale", 1.0))
-        context_coef_scale = float(self.fixed_hp.get("inhibitor_context_coef_scale", 1.0))
-        environment_interaction_coef_scale = float(
-            self.fixed_hp.get("inhibitor_environment_interaction_coef_scale", 1.0)
+        descriptor_coef = float(
+            self.fixed_hp.get(
+                "inhibitor_descriptor_coef",
+                0.65 * float(self.fixed_hp.get("inhibitor_descriptor_coef_scale", 1.0)),
+            )
         )
-        material_interaction_coef_scale = float(self.fixed_hp.get("inhibitor_material_interaction_coef_scale", 1.0))
-        intervention_coef_scale = float(self.fixed_hp.get("inhibitor_intervention_coef_scale", 1.0))
-        coefficient_scales = np.asarray(
+        context_coef = float(
+            self.fixed_hp.get(
+                "inhibitor_context_coef",
+                0.14 * float(self.fixed_hp.get("inhibitor_context_coef_scale", 1.0)),
+            )
+        )
+        environment_interaction_coef = float(
+            self.fixed_hp.get(
+                "inhibitor_environment_interaction_coef",
+                0.365 * float(self.fixed_hp.get("inhibitor_environment_interaction_coef_scale", 1.0)),
+            )
+        )
+        material_interaction_coef = float(
+            self.fixed_hp.get(
+                "inhibitor_material_interaction_coef",
+                0.24 * float(self.fixed_hp.get("inhibitor_material_interaction_coef_scale", 1.0)),
+            )
+        )
+        intervention_coef = float(
+            self.fixed_hp.get(
+                "inhibitor_intervention_coef",
+                0.375 * float(self.fixed_hp.get("inhibitor_intervention_coef_scale", 1.0)),
+            )
+        )
+        coefficients = np.asarray(
             [
-                descriptor_coef_scale,
-                context_coef_scale,
-                environment_interaction_coef_scale,
-                material_interaction_coef_scale,
-                intervention_coef_scale,
+                descriptor_coef,
+                context_coef,
+                environment_interaction_coef,
+                material_interaction_coef,
+                intervention_coef,
             ],
             dtype=float,
         )
-        if not np.all(np.isfinite(coefficient_scales)) or np.any(coefficient_scales < 0.0):
-            raise ValueError("Inhibitor coefficient scales must be finite and non-negative.")
-
-        descriptor_coef = descriptor_coef_scale * float(np.random.uniform(0.45, 0.85))
-        context_coef = context_coef_scale * float(np.random.uniform(0.06, 0.22))
-        environment_interaction_coef = environment_interaction_coef_scale * float(np.random.uniform(0.18, 0.55))
-        material_interaction_coef = material_interaction_coef_scale * float(np.random.uniform(0.10, 0.38))
-        intervention_coef = intervention_coef_scale * float(np.random.uniform(0.20, 0.55))
+        if not np.all(np.isfinite(coefficients)) or np.any(coefficients < 0.0):
+            raise ValueError("Inhibitor coefficients must be finite and non-negative.")
 
         inhibitor_drive = descriptor_coef * descriptor_effect
         if blocks.get("environment") is not None:

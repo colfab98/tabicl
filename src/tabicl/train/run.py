@@ -301,18 +301,44 @@ class Trainer:
                 scm_fixed_hp["epit_interaction_coef"] = self.config.epit_interaction_coef
             if self.config.inhibitor_descriptor_coef_scale is not None:
                 scm_fixed_hp["inhibitor_descriptor_coef_scale"] = self.config.inhibitor_descriptor_coef_scale
+                if self.config.inhibitor_descriptor_coef is None:
+                    scm_fixed_hp["inhibitor_descriptor_coef"] = 0.65 * self.config.inhibitor_descriptor_coef_scale
             if self.config.inhibitor_context_coef_scale is not None:
                 scm_fixed_hp["inhibitor_context_coef_scale"] = self.config.inhibitor_context_coef_scale
+                if self.config.inhibitor_context_coef is None:
+                    scm_fixed_hp["inhibitor_context_coef"] = 0.14 * self.config.inhibitor_context_coef_scale
             if self.config.inhibitor_environment_interaction_coef_scale is not None:
                 scm_fixed_hp["inhibitor_environment_interaction_coef_scale"] = (
                     self.config.inhibitor_environment_interaction_coef_scale
                 )
+                if self.config.inhibitor_environment_interaction_coef is None:
+                    scm_fixed_hp["inhibitor_environment_interaction_coef"] = (
+                        0.365 * self.config.inhibitor_environment_interaction_coef_scale
+                    )
             if self.config.inhibitor_material_interaction_coef_scale is not None:
                 scm_fixed_hp["inhibitor_material_interaction_coef_scale"] = (
                     self.config.inhibitor_material_interaction_coef_scale
                 )
+                if self.config.inhibitor_material_interaction_coef is None:
+                    scm_fixed_hp["inhibitor_material_interaction_coef"] = (
+                        0.24 * self.config.inhibitor_material_interaction_coef_scale
+                    )
             if self.config.inhibitor_intervention_coef_scale is not None:
                 scm_fixed_hp["inhibitor_intervention_coef_scale"] = self.config.inhibitor_intervention_coef_scale
+                if self.config.inhibitor_intervention_coef is None:
+                    scm_fixed_hp["inhibitor_intervention_coef"] = 0.375 * self.config.inhibitor_intervention_coef_scale
+            if self.config.inhibitor_descriptor_coef is not None:
+                scm_fixed_hp["inhibitor_descriptor_coef"] = self.config.inhibitor_descriptor_coef
+            if self.config.inhibitor_context_coef is not None:
+                scm_fixed_hp["inhibitor_context_coef"] = self.config.inhibitor_context_coef
+            if self.config.inhibitor_environment_interaction_coef is not None:
+                scm_fixed_hp["inhibitor_environment_interaction_coef"] = (
+                    self.config.inhibitor_environment_interaction_coef
+                )
+            if self.config.inhibitor_material_interaction_coef is not None:
+                scm_fixed_hp["inhibitor_material_interaction_coef"] = self.config.inhibitor_material_interaction_coef
+            if self.config.inhibitor_intervention_coef is not None:
+                scm_fixed_hp["inhibitor_intervention_coef"] = self.config.inhibitor_intervention_coef
 
             # Generate prior data on the fly
             dataset = PriorDataset(

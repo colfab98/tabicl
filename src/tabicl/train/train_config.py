@@ -405,7 +405,37 @@ def build_parser():
         "--inhibitor_intervention_coef_scale",
         type=float,
         default=None,
-        help="Optional multiplier for explicit dose/intervention terms in the inhibitor-efficiency target drive.",
+        help="Legacy deterministic multiplier for explicit dose/intervention terms when --inhibitor_intervention_coef is unset.",
+    )
+    parser.add_argument(
+        "--inhibitor_descriptor_coef",
+        type=float,
+        default=None,
+        help="Fixed molecular-descriptor main coefficient in the inhibitor-efficiency target drive.",
+    )
+    parser.add_argument(
+        "--inhibitor_context_coef",
+        type=float,
+        default=None,
+        help="Fixed pH/alloy context coefficient in the inhibitor-efficiency target drive.",
+    )
+    parser.add_argument(
+        "--inhibitor_environment_interaction_coef",
+        type=float,
+        default=None,
+        help="Fixed descriptor-environment interaction coefficient in the inhibitor-efficiency target drive.",
+    )
+    parser.add_argument(
+        "--inhibitor_material_interaction_coef",
+        type=float,
+        default=None,
+        help="Fixed descriptor-material interaction coefficient in the inhibitor-efficiency target drive.",
+    )
+    parser.add_argument(
+        "--inhibitor_intervention_coef",
+        type=float,
+        default=None,
+        help="Fixed explicit dose/intervention coefficient in the inhibitor-efficiency target drive.",
     )
     parser.add_argument("--prior_device", default="cpu", type=str, help="Device for prior data generation")
     parser.add_argument(

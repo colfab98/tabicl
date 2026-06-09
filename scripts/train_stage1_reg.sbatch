@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=tabicl_s1_regression_datacor_inhibitor_v3_best_trial4_2k
+#SBATCH --job-name=tabicl_s1_regression_pitting_v6_epit_best_trial11
 #SBATCH --gpus=2
 #SBATCH --mem=32G
-#SBATCH --time=5:00:00
+#SBATCH --time=48:00:00
 #SBATCH --output=/home/%u/tmp/%x.%j.out
 #SBATCH --error=/home/%u/tmp/%x.%j.err
 
@@ -30,7 +30,7 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --dtype float32 \
             --np_seed 42 \
             --torch_seed 42 \
-            --max_steps 2000 \
+            --max_steps 6000 \
             --batch_size 512 \
             --micro_batch_size 4 \
             --lr 1e-4 \
@@ -38,31 +38,32 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --warmup_proportion 0.02 \
             --gradient_clipping 1.0 \
             --prior_type hybrid_scm \
-            --informed_prior_ratio 0.75 \
+            --informed_prior_ratio 1.0 \
             --mix_probs 0.7 0.3 \
             --informed_mix_probs 0.7 0.3 \
-            --informed_task_family_probs 0.0 1.0 \
-                        --informed_inhibitor_block_allocation 0.0625 0.0625 0.0 0.0 0.0 0.0 0.875 0.0 0.0 \
-            --informed_inhibitor_block_allocation_min_counts 1 1 0 0 0 0 1 0 0 \
-            --informed_feature_block_strength 0.3184540531 \
-            --informed_interaction_strength 0.5598148465 \
+            --informed_task_family_probs 1.0 0.0 \
+            --informed_normal_block_allocation_ranges 0.7 0.9 0.05 0.25 0.0 0.1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 \
+            --informed_inhibitor_block_allocation 0.05 0.08 0.02 0.02 0.0 0.05 0.78 0.0 0.0 \
+            --informed_feature_block_strength 0.6652148023102392 \
+            --informed_interaction_strength 0.997279233446061 \
             --informed_history_strength 0.0 \
-            --informed_intervention_strength 0.8707861702 \
-            --informed_target_family inhibitor_efficiency \
+            --informed_intervention_strength 0.0 \
+            --informed_target_family pitting_potential \
             --informed_physical_marginal_prob 0.75 \
-            --informed_physical_marginal_profile inhibitor_efficiency_v1 \
-            --inhibitor_descriptor_coef_scale 1 \
-            --inhibitor_context_coef_scale 1.180351404 \
-            --inhibitor_environment_interaction_coef_scale 0.6126554573 \
-            --inhibitor_material_interaction_coef_scale 0.7763001316 \
-            --inhibitor_intervention_coef_scale 0 \
+            --informed_physical_marginal_profile pitting_potential_v1 \
+            --pitting_material_dirichlet_prob 0.0 \
+            --pitting_material_dirichlet_concentration 0.1 \
+            --pitting_material_dirichlet_active_prob 0.7 \
+            --epit_material_coef 0.5677247609274653 \
+            --epit_environment_coef 0.4764951348946006 \
+            --epit_interaction_coef 0.9064006374181608 \
             --prior_device cpu \
             --prior_n_jobs "${PRIOR_N_JOBS}" \
             --dataloader_num_workers "${DATALOADER_NUM_WORKERS}" \
             --dataloader_prefetch_factor "${DATALOADER_PREFETCH_FACTOR}" \
             --batch_size_per_gp 4 \
-            --min_features 11 \
-            --max_features 32 \
+            --min_features 2 \
+            --max_features 100 \
             --max_classes 0 \
             --num_quantiles 999 \
             --max_seq_len 1024 \

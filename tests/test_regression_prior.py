@@ -407,6 +407,86 @@ def test_pitting_potential_v1_full_generation_is_finite_and_disables_generic_num
     assert y.dtype.is_floating_point
 
 
+def test_inhibitor_target_family_uses_fixed_coefficients_across_random_seeds():
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["informed_target_family"] = "inhibitor_efficiency"
+    fixed_hp["inhibitor_descriptor_coef"] = 0.65
+    fixed_hp["inhibitor_context_coef"] = 0.14
+    fixed_hp["inhibitor_environment_interaction_coef"] = 0.365
+    fixed_hp["inhibitor_material_interaction_coef"] = 0.24
+    fixed_hp["inhibitor_intervention_coef"] = 0.0
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.zeros(64, 3)
+    X[:, 0] = torch.linspace(-3.0, 3.0, steps=64)
+    X[:, 1] = torch.linspace(3.0, -3.0, steps=64)
+    X[:, 2] = torch.linspace(-1.5, 1.5, steps=64)
+    y = torch.zeros(64)
+    blocks = {
+        "material": slice(0, 1),
+        "environment": slice(1, 2),
+        "molecular_descriptor": slice(2, 3),
+    }
+
+    np.random.seed(1)
+    _, y_first = prior._apply_informed_corrosion_mechanism(
+        X.clone(),
+        y.clone(),
+        blocks,
+        "inhibitor_agent",
+        interaction_strength=1.0,
+        intervention_strength=1.0,
+    )
+    np.random.seed(999)
+    _, y_second = prior._apply_informed_corrosion_mechanism(
+        X.clone(),
+        y.clone(),
+        blocks,
+        "inhibitor_agent",
+        interaction_strength=1.0,
+        intervention_strength=1.0,
+    )
+
+    assert torch.allclose(y_first, y_second)
+
+
+def test_datacor_inhibitor_allocation_ranges_preserve_descriptor_heavy_shape():
+    fixed_hp = _inhibitor_efficiency_fixed_hp()
+    fixed_hp["informed_inhibitor_block_allocation_ranges"] = (
+        0.05,
+        0.08,
+        0.05,
+        0.08,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.84,
+        0.90,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    )
+    fixed_hp["informed_inhibitor_block_allocation_min_counts"] = (1, 1, 0, 0, 0, 0, 1, 0, 0)
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+
+    for seed, num_features in enumerate((11, 16, 32), start=10):
+        np.random.seed(seed)
+        family, blocks = prior._split_informed_blocks_with_family(num_features)
+
+        assert family == "inhibitor_agent"
+        assert blocks["material"].stop - blocks["material"].start >= 1
+        assert blocks["environment"].stop - blocks["environment"].start >= 1
+        assert blocks["molecular_descriptor"].stop - blocks["molecular_descriptor"].start >= 1
+        assert "direct_intervention" not in blocks
+        assert set(blocks) == {"material", "environment", "molecular_descriptor"}
+        assert blocks["molecular_descriptor"].stop == num_features
+
+
 def _inhibitor_efficiency_fixed_hp() -> dict:
     fixed_hp = dict(DEFAULT_FIXED_HP)
     fixed_hp["informed_target_family"] = "inhibitor_efficiency"

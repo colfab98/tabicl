@@ -14,7 +14,7 @@ source .venv/bin/activate
 BACKEND="${BACKEND:-optuna}"
 N_TRIALS="${N_TRIALS:-4}"
 STUDY_NAME="${STUDY_NAME:-pitting_prior_search}"
-MAX_STEPS="${MAX_STEPS:-1000}"
+MAX_STEPS="${MAX_STEPS:-2000}"
 SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-10000}"
 STUDY_DIR="/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/pitting_prior_search/${STUDY_NAME}"
 STORAGE="${STORAGE:-sqlite:///${STUDY_DIR}/${STUDY_NAME}.db}"
