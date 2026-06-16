@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=tabicl_s1_regression_pitting_v6_epit_best_trial11
+#SBATCH --job-name=tabicl_s1_regression_datacor_inhibitor_v6_best_trial22
 #SBATCH --gpus=2
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
@@ -30,7 +30,7 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --dtype float32 \
             --np_seed 42 \
             --torch_seed 42 \
-            --max_steps 6000 \
+            --max_steps 2000 \
             --batch_size 512 \
             --micro_batch_size 4 \
             --lr 1e-4 \
@@ -38,31 +38,30 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --warmup_proportion 0.02 \
             --gradient_clipping 1.0 \
             --prior_type hybrid_scm \
-            --informed_prior_ratio 1.0 \
+            --informed_prior_ratio 0.25 \
             --mix_probs 0.7 0.3 \
             --informed_mix_probs 0.7 0.3 \
-            --informed_task_family_probs 1.0 0.0 \
-            --informed_normal_block_allocation_ranges 0.7 0.9 0.05 0.25 0.0 0.1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 \
-            --informed_inhibitor_block_allocation 0.05 0.08 0.02 0.02 0.0 0.05 0.78 0.0 0.0 \
-            --informed_feature_block_strength 0.6652148023102392 \
-            --informed_interaction_strength 0.997279233446061 \
+            --informed_task_family_probs 0.0 1.0 \
+            --informed_inhibitor_block_allocation_ranges 0.05 0.08 0.05 0.08 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.84 0.90 0.0 0.0 0.0 0.0 \
+            --informed_inhibitor_block_allocation_min_counts 1 1 0 0 0 0 1 0 0 \
+            --informed_feature_block_strength 0.6377325854445148 \
+            --informed_interaction_strength 0.5901923954080739 \
             --informed_history_strength 0.0 \
-            --informed_intervention_strength 0.0 \
-            --informed_target_family pitting_potential \
-            --informed_physical_marginal_prob 0.75 \
-            --informed_physical_marginal_profile pitting_potential_v1 \
-            --pitting_material_dirichlet_prob 0.0 \
-            --pitting_material_dirichlet_concentration 0.1 \
-            --pitting_material_dirichlet_active_prob 0.7 \
-            --epit_material_coef 0.5677247609274653 \
-            --epit_environment_coef 0.4764951348946006 \
-            --epit_interaction_coef 0.9064006374181608 \
+            --informed_intervention_strength 0.28526656198018574 \
+            --informed_target_family inhibitor_efficiency \
+            --informed_physical_marginal_prob 0.25 \
+            --informed_physical_marginal_profile inhibitor_efficiency_v1 \
+            --inhibitor_descriptor_coef 0.6253925155793919 \
+            --inhibitor_context_coef 0.2609208986165346 \
+            --inhibitor_environment_interaction_coef 1.0921608281114663 \
+            --inhibitor_material_interaction_coef 0.3985004501217137 \
+            --inhibitor_intervention_coef 0.0 \
             --prior_device cpu \
             --prior_n_jobs "${PRIOR_N_JOBS}" \
             --dataloader_num_workers "${DATALOADER_NUM_WORKERS}" \
             --dataloader_prefetch_factor "${DATALOADER_PREFETCH_FACTOR}" \
             --batch_size_per_gp 4 \
-            --min_features 2 \
+            --min_features 3 \
             --max_features 100 \
             --max_classes 0 \
             --num_quantiles 999 \
@@ -83,5 +82,5 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --norm_first True \
             --checkpoint_dir "/home/fcolanto/projects/tabicl/checkpoints/${RUN_NAME}" \
             --save_temp_every 100 \
-            --save_perm_every 500 \
-            --scheduler_total_steps 10000
+            --save_perm_every 100 \
+            --scheduler_total_steps 2000

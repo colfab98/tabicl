@@ -25,6 +25,8 @@ DEFAULT_FIXED_HP = {
     "pitting_material_dirichlet_prob": 0.0,
     "pitting_material_dirichlet_concentration": 1.0,
     "pitting_material_dirichlet_active_prob": 0.45,
+    "pitting_process_role": None,
+    "pitting_process_category_count": None,
     "inhibitor_descriptor_coef": 0.65,
     "inhibitor_context_coef": 0.14,
     "inhibitor_environment_interaction_coef": 0.365,

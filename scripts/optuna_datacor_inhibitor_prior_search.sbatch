@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=datacor_inhibitor_prior_search
+#SBATCH --job-name=datacor_inhibitor_prior_search_v6
 #SBATCH --gpus=2
 #SBATCH --mem=32G
-#SBATCH --time=10:00:00
+#SBATCH --time=48:00:00
 #SBATCH --output=/home/%u/tmp/%x.%j.out
 #SBATCH --error=/home/%u/tmp/%x.%j.err
 
@@ -12,13 +12,13 @@ cd /home/fcolanto/projects/tabicl
 source .venv/bin/activate
 
 BACKEND="${BACKEND:-optuna}"
-N_TRIALS="${N_TRIALS:-12}"
-STUDY_NAME="${STUDY_NAME:-datacor_inhibitor_prior_search}"
-MAX_STEPS="${MAX_STEPS:-1000}"
-SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-10000}"
-MIN_FEATURES="${MIN_FEATURES:-11}"
-MAX_FEATURES="${MAX_FEATURES:-32}"
-SPLIT_SEEDS="${SPLIT_SEEDS:-11 22 33 44 55}"
+N_TRIALS="${N_TRIALS:-50}"
+STUDY_NAME="${STUDY_NAME:-datacor_inhibitor_prior_search_v6}"
+MAX_STEPS="${MAX_STEPS:-500}"
+SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-2000}"
+MIN_FEATURES="${MIN_FEATURES:-3}"
+MAX_FEATURES="${MAX_FEATURES:-100}"
+SPLIT_SEEDS="${SPLIT_SEEDS:-1001 1002 1003 1004 1005}"
 STUDY_DIR="/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/datacor_inhibitor_prior_search/${STUDY_NAME}"
 STORAGE="${STORAGE:-sqlite:///${STUDY_DIR}/${STUDY_NAME}.db}"
 BASE_RUN_NAME="${BASE_RUN_NAME:-tabicl_datacor_inhibitor_prior_${STUDY_NAME}_${SLURM_JOB_ID}}"

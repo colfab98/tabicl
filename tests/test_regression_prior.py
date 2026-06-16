@@ -368,6 +368,27 @@ def test_pitting_potential_v1_profile_records_roles_and_drives_target():
     assert torch.std(y_new - y, unbiased=False) > 0
 
 
+def test_pitting_process_profile_can_force_category_role_and_count_without_physical_marginals():
+    torch.manual_seed(7)
+    fixed_hp = _pitting_fixed_hp()
+    fixed_hp["informed_physical_marginal_prob"] = 0.0
+    fixed_hp["pitting_process_role"] = "test_method_category"
+    fixed_hp["pitting_process_category_count"] = 3
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.randn(96, 1)
+    blocks = {"process_history": slice(0, 1)}
+
+    X_profile, info = prior._apply_pitting_potential_profile(X.clone(), blocks, "normal_corrosion")
+
+    values = torch.unique(X_profile[:, 0])
+    assert info.applied
+    assert info.role_columns.get("test_method_category") == [0]
+    assert info.categorical_columns == [0]
+    assert values.numel() == 3
+    assert set(values.tolist()) == {0.0, 1.0, 2.0}
+    assert torch.allclose(X_profile[:, 0], torch.floor(X_profile[:, 0]))
+
+
 def test_pitting_potential_v1_full_generation_is_finite_and_disables_generic_num2cat(monkeypatch):
     seen_cat_probs = []
     original_num2cat = Reg2Cls._num2cat

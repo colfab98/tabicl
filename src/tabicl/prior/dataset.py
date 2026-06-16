@@ -1035,12 +1035,31 @@ class SCMPrior(Prior):
             "surface_process_score",
             "exposure_history_proxy",
         ]
+        fixed_role = self.fixed_hp.get("pitting_process_role")
+        if fixed_role is not None:
+            fixed_role = str(fixed_role).strip().replace("-", "_")
+            if fixed_role not in role_pool:
+                raise ValueError(
+                    "pitting_process_role must be one of: " + ", ".join(role_pool)
+                )
+
+        fixed_category_count = self.fixed_hp.get("pitting_process_category_count")
+        if fixed_category_count is not None:
+            fixed_category_count_float = float(fixed_category_count)
+            if (
+                not np.isfinite(fixed_category_count_float)
+                or fixed_category_count_float < 2
+                or not fixed_category_count_float.is_integer()
+            ):
+                raise ValueError("pitting_process_category_count must be an integer >= 2.")
+            fixed_category_count = int(fixed_category_count_float)
+
         offset_terms = []
         damage_terms = []
         for col in range(process_slice.start, process_slice.stop):
-            role = str(np.random.choice(role_pool, p=[0.28, 0.20, 0.18, 0.22, 0.12]))
+            role = fixed_role or str(np.random.choice(role_pool, p=[0.28, 0.20, 0.18, 0.22, 0.12]))
             if role.endswith("category"):
-                n_categories = int(np.random.choice([2, 3, 4, 5]))
+                n_categories = fixed_category_count or int(np.random.choice([2, 3, 4, 5]))
                 X[:, col] = self._categorical_values_from_rank(X[:, col], n_categories)
                 labels = X[:, col].long().clamp(min=0, max=n_categories - 1)
                 offsets = torch.randn(n_categories, device=X.device, dtype=X.dtype)
@@ -1107,16 +1126,20 @@ class SCMPrior(Prior):
         info = PittingProfileInfo()
         marginal_prob = float(self.fixed_hp.get("informed_physical_marginal_prob", 0.0))
         marginal_prob = float(np.clip(marginal_prob, 0.0, 1.0))
-        if marginal_prob <= 0.0 or np.random.random() >= marginal_prob:
+        apply_full_profile = marginal_prob > 0.0 and np.random.random() < marginal_prob
+        force_process_profile = self.fixed_hp.get("pitting_process_role") is not None
+        if not apply_full_profile and not force_process_profile:
             return X, info
 
         X = X.clone()
         info.applied = True
-        self._apply_pitting_material_profile(X, blocks, info)
-        self._apply_pitting_environment_profile(X, blocks, info)
+        if apply_full_profile:
+            self._apply_pitting_material_profile(X, blocks, info)
+            self._apply_pitting_environment_profile(X, blocks, info)
         self._apply_pitting_process_profile(X, blocks, info)
-        self._apply_pitting_descriptor_profile(X, blocks, info)
-        self._apply_pitting_intervention_profile(X, blocks, family, info)
+        if apply_full_profile:
+            self._apply_pitting_descriptor_profile(X, blocks, info)
+            self._apply_pitting_intervention_profile(X, blocks, family, info)
         return torch.nan_to_num(X), info
 
     def _apply_inhibitor_material_profile(
