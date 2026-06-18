@@ -293,6 +293,21 @@ class Trainer:
                 )
             if self.config.pitting_material_dirichlet_active_prob is not None:
                 scm_fixed_hp["pitting_material_dirichlet_active_prob"] = self.config.pitting_material_dirichlet_active_prob
+            pitting_process_role = getattr(self.config, "pitting_process_role", None)
+            if pitting_process_role is not None:
+                scm_fixed_hp["pitting_process_role"] = pitting_process_role
+            pitting_process_category_count = getattr(self.config, "pitting_process_category_count", None)
+            if pitting_process_category_count is not None:
+                scm_fixed_hp["pitting_process_category_count"] = pitting_process_category_count
+            pitting_fixed_epit_schema = getattr(self.config, "pitting_fixed_epit_schema", None)
+            if pitting_fixed_epit_schema is not None:
+                scm_fixed_hp["pitting_fixed_epit_schema"] = pitting_fixed_epit_schema
+            cat_prob = getattr(self.config, "cat_prob", None)
+            if cat_prob is not None:
+                scm_fixed_hp["cat_prob"] = cat_prob
+            permute_features = getattr(self.config, "permute_features", None)
+            if permute_features is not None:
+                scm_fixed_hp["permute_features"] = permute_features
             if self.config.epit_material_coef is not None:
                 scm_fixed_hp["epit_material_coef"] = self.config.epit_material_coef
             if self.config.epit_environment_coef is not None:

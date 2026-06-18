@@ -360,6 +360,43 @@ def build_parser():
         help="Optional per-column active probability for masked Dirichlet alloy-composition sampling in the pitting profile.",
     )
     parser.add_argument(
+        "--pitting_process_role",
+        type=str,
+        default=None,
+        choices=(
+            "test_method_category",
+            "heat_treatment_category",
+            "microstructure_category",
+            "surface_process_score",
+            "exposure_history_proxy",
+        ),
+        help="Optional fixed role for the pitting process/history block.",
+    )
+    parser.add_argument(
+        "--pitting_process_category_count",
+        type=int,
+        default=None,
+        help="Optional fixed category count for categorical pitting process roles.",
+    )
+    parser.add_argument(
+        "--pitting_fixed_epit_schema",
+        default=None,
+        type=str2bool,
+        help="If set, force the fixed EPIT feature schema used by the direct-prior diagnostic.",
+    )
+    parser.add_argument(
+        "--cat_prob",
+        type=float,
+        default=None,
+        help="Optional prior override for feature-to-category conversion probability.",
+    )
+    parser.add_argument(
+        "--permute_features",
+        default=None,
+        type=str2bool,
+        help="Optional prior override for random feature permutation.",
+    )
+    parser.add_argument(
         "--epit_material_coef",
         type=float,
         default=None,

@@ -55,6 +55,7 @@ class PittingProfileInfo:
     categorical_columns: list[int] = field(default_factory=list)
     material_passivity: Optional[Tensor] = None
     material_susceptibility: Optional[Tensor] = None
+    physical_profile_applied: bool = False
     environment_aggressiveness: Optional[Tensor] = None
     process_offset: Optional[Tensor] = None
     exposure_damage: Optional[Tensor] = None
@@ -599,6 +600,9 @@ class SCMPrior(Prior):
             raise ValueError("informed_prior_ratio must be in [0, 1].")
         self.informed_prior_ratio = informed_prior_ratio
         self.device = device
+        self.last_pitting_target_rule: Optional[Dict[str, Any]] = None
+        self.last_pitting_target_component: Optional[Tensor] = None
+        self.last_pitting_target_drive: Optional[Tensor] = None
 
     def hp_sampling(self) -> Dict[str, Any]:
         """Sample hyperparameters for dataset generation.
@@ -762,6 +766,262 @@ class SCMPrior(Prior):
     def _categorical_values_from_rank(cls, values: Tensor, n_categories: int) -> Tensor:
         u = cls._rank_uniform(values).clamp(0.0, 1.0 - 1e-6)
         return torch.floor(u * n_categories).clamp(max=n_categories - 1)
+
+
+    def _fixed_epit_schema_enabled(self) -> bool:
+        return bool(self.fixed_hp.get("pitting_fixed_epit_schema", False))
+
+    @staticmethod
+    def _standardize_array(values: np.ndarray) -> np.ndarray:
+        values = np.nan_to_num(np.asarray(values, dtype=float).reshape(-1), nan=0.0, posinf=0.0, neginf=0.0)
+        if values.size <= 1:
+            return np.zeros_like(values, dtype=float)
+        centered = values - float(values.mean())
+        scale = float(centered.std(ddof=0))
+        if not np.isfinite(scale) or scale <= 1e-6:
+            return np.zeros_like(values, dtype=float)
+        return centered / scale
+
+    @staticmethod
+    def _rank_uniform_array(values: np.ndarray) -> np.ndarray:
+        values = np.nan_to_num(np.asarray(values, dtype=float).reshape(-1), nan=0.0, posinf=0.0, neginf=0.0)
+        if values.size <= 1:
+            return np.full_like(values, 0.5, dtype=float)
+        order = np.argsort(values, kind="mergesort")
+        ranks = np.empty(values.size, dtype=float)
+        ranks[order] = np.arange(1, values.size + 1, dtype=float)
+        return ranks / float(values.size + 1)
+
+    @staticmethod
+    def _log_uniform_from_rank_array(u: np.ndarray, low: float, high: float) -> np.ndarray:
+        u = np.asarray(u, dtype=float)
+        return np.exp(math.log(float(low)) + u * (math.log(float(high)) - math.log(float(low))))
+
+    @staticmethod
+    def _piecewise_ph_from_rank_array(u: np.ndarray) -> np.ndarray:
+        u = np.asarray(u, dtype=float)
+        acidic = np.clip(u / 0.20, 0.0, 1.0) * 6.0
+        near_neutral = 6.0 + np.clip((u - 0.20) / 0.60, 0.0, 1.0) * 3.0
+        alkaline = 9.0 + np.clip((u - 0.80) / 0.20, 0.0, 1.0) * 5.0
+        return np.where(u < 0.20, acidic, np.where(u < 0.80, near_neutral, alkaline))
+
+    @staticmethod
+    def _fixed_epit_material_anchor(width: int) -> np.ndarray:
+        # Fixed EPIT material columns are Fe, Cr, Ni, Mo, W, then minor alloying elements.
+        anchor = np.zeros(int(width), dtype=float)
+        if int(width) > 1:
+            anchor[1] = 1.0
+        if int(width) > 2:
+            anchor[2] = 0.25
+        if int(width) > 3:
+            anchor[3] = 3.3
+        if int(width) > 4:
+            anchor[4] = 1.65
+        return anchor
+
+    def _sample_fixed_epit_material_weights(
+        self, width: int, device: torch.device, dtype: torch.dtype
+    ) -> Tuple[Tensor, np.ndarray]:
+        anchor_np = self._fixed_epit_material_anchor(width)
+        anchor = torch.as_tensor(anchor_np, device=device, dtype=dtype)
+        weights = anchor + 0.15 * torch.randn(int(width), device=device, dtype=dtype)
+        for idx in (1, 2, 3, 4):
+            if idx < int(width) and anchor_np[idx] > 0.0:
+                weights[idx] = weights[idx].clamp_min(0.05 * float(anchor_np[idx]))
+        weights = weights / torch.linalg.vector_norm(weights).clamp_min(1e-6)
+        return weights, anchor_np
+
+    def _sample_fixed_epit_target_rule(
+        self,
+        X: Tensor,
+        blocks: Dict[str, slice],
+        interaction_strength: float,
+        profile_info: Optional[PittingProfileInfo],
+    ) -> Dict[str, Any]:
+        material_slice = blocks.get("material")
+        env_slice = blocks.get("environment")
+        process_slice = blocks.get("process_history")
+        if material_slice is None or material_slice.stop <= material_slice.start:
+            raise ValueError("Fixed EPIT schema requires a material block.")
+        if env_slice is None or env_slice.stop - env_slice.start < 3:
+            raise ValueError("Fixed EPIT schema requires temperature, chloride, and pH environment columns.")
+        if process_slice is None or process_slice.stop <= process_slice.start:
+            raise ValueError("Fixed EPIT schema requires a process/test-method column.")
+
+        material_width = material_slice.stop - material_slice.start
+        material_weights, material_anchor_weights = self._sample_fixed_epit_material_weights(
+            material_width, X.device, X.dtype
+        )
+        environment_weights = np.asarray(
+            [
+                float(np.random.uniform(0.03, 0.12)),
+                float(np.random.uniform(0.75, 1.10)),
+                float(np.random.uniform(0.05, 0.18)),
+            ],
+            dtype=float,
+        )
+        process_count = self.fixed_hp.get("pitting_process_category_count")
+        if process_count is None:
+            process_values = X[:, process_slice.start].detach()
+            process_count = int(torch.nan_to_num(process_values, nan=0.0).long().clamp(min=0).max().item()) + 1
+        process_count = int(process_count)
+        if process_count < 2:
+            raise ValueError("Fixed EPIT process category count must be >= 2.")
+        process_offsets = torch.randn(process_count, device=X.device, dtype=X.dtype)
+
+        physical_profile_applied = bool(profile_info is not None and profile_info.physical_profile_applied)
+        material_coef = float(self.fixed_hp.get("epit_material_coef", 0.575))
+        environment_coef = float(self.fixed_hp.get("epit_environment_coef", 0.50))
+        interaction_coef = float(self.fixed_hp.get("epit_interaction_coef", 0.775))
+        coefficients = np.asarray([material_coef, environment_coef, interaction_coef], dtype=float)
+        if not np.all(np.isfinite(coefficients)) or np.any(coefficients < 0.0):
+            raise ValueError("Epit coefficients must be finite and non-negative.")
+
+        return {
+            "rule_type": "fixed_epit_target_rule_v2_pren_anchor",
+            "material_anchor_type": "pren_like_cr_mo_w_weak_ni_v1",
+            "environment_rule_type": "chloride_dominant_weak_temp_ph_v1",
+            "material_cols": list(range(material_slice.start, material_slice.stop)),
+            "temperature_col": int(env_slice.start),
+            "chloride_col": int(env_slice.start + 1),
+            "ph_col": int(env_slice.start + 2),
+            "process_col": int(process_slice.start),
+            "material_anchor_weights": material_anchor_weights,
+            "material_weights": material_weights.detach().cpu().numpy().astype(float),
+            "environment_weights": environment_weights,
+            "ph_neutral": float(np.random.uniform(6.3, 8.2)),
+            "process_offsets": process_offsets.detach().cpu().numpy().astype(float),
+            "process_category_count": process_count,
+            "material_coef": material_coef,
+            "environment_coef": environment_coef,
+            "interaction_coef": interaction_coef,
+            "exposure_coef": float(np.random.uniform(0.12, 0.28)),
+            "process_coef": float(np.random.uniform(0.03, 0.10)),
+            "history_coef": float(np.random.uniform(0.08, 0.20)),
+            "descriptor_coef": float(np.random.uniform(0.03, 0.10)),
+            "interaction_strength": float(interaction_strength),
+            "synthetic_environment_mode": "raw" if physical_profile_applied else "rank_semantic",
+        }
+
+    def _fixed_epit_environment_terms_tensor(
+        self, X: Tensor, rule: Dict[str, Any], environment_mode: str
+    ) -> Tuple[Tensor, Tensor]:
+        temperature_col = int(rule["temperature_col"])
+        chloride_col = int(rule["chloride_col"])
+        ph_col = int(rule["ph_col"])
+        neutral = float(rule["ph_neutral"])
+        if environment_mode == "rank_semantic":
+            temp_u = self._rank_uniform(X[:, temperature_col]).clamp(1e-6, 1.0 - 1e-6)
+            chloride_u = self._rank_uniform(X[:, chloride_col]).clamp(1e-6, 1.0 - 1e-6)
+            ph_u = self._rank_uniform(X[:, ph_col]).clamp(1e-6, 1.0 - 1e-6)
+            temperature_values = -10.0 + 130.0 * temp_u
+            chloride_values = self._log_uniform_from_rank(chloride_u, 1e-4, 1e3)
+            ph_values = self._piecewise_ph_from_rank(ph_u)
+        else:
+            temperature_values = torch.nan_to_num(X[:, temperature_col], nan=0.0, posinf=0.0, neginf=0.0)
+            chloride_values = torch.nan_to_num(X[:, chloride_col], nan=0.0, posinf=0.0, neginf=0.0)
+            ph_values = torch.nan_to_num(X[:, ph_col], nan=neutral, posinf=neutral, neginf=neutral)
+
+        temperature_term = self._standardize_signal(temperature_values)
+        chloride_term = self._standardize_signal(torch.log10(chloride_values.clamp_min(1e-12)))
+        ph_term = self._standardize_signal(torch.abs(ph_values - neutral))
+        weights = torch.as_tensor(rule["environment_weights"], device=X.device, dtype=X.dtype)
+        environment_signal = self._standardize_signal(
+            weights[0] * temperature_term + weights[1] * chloride_term + weights[2] * ph_term
+        )
+        return environment_signal, chloride_term
+
+    def _fixed_epit_environment_signal_tensor(self, X: Tensor, rule: Dict[str, Any], environment_mode: str) -> Tensor:
+        environment_signal, _ = self._fixed_epit_environment_terms_tensor(X, rule, environment_mode)
+        return environment_signal
+
+    def _evaluate_fixed_epit_target_rule_tensor(
+        self, X: Tensor, rule: Dict[str, Any], *, environment_mode: Optional[str] = None
+    ) -> Tuple[Tensor, Tensor]:
+        material_cols = [int(col) for col in rule["material_cols"]]
+        material = X[:, material_cols]
+        material_weights = torch.as_tensor(rule["material_weights"], device=X.device, dtype=X.dtype)
+        material_signal = self._standardize_signal(material @ material_weights)
+        material_passivity = torch.tanh(material_signal)
+        material_susceptibility = torch.sigmoid(-material_signal)
+
+        mode = str(environment_mode or rule.get("synthetic_environment_mode", "raw"))
+        environment_signal, chloride_signal = self._fixed_epit_environment_terms_tensor(X, rule, mode)
+        environment_drive = torch.sigmoid(environment_signal)
+        chloride_drive = torch.sigmoid(chloride_signal)
+
+        process_col = int(rule["process_col"])
+        offsets = torch.as_tensor(rule["process_offsets"], device=X.device, dtype=X.dtype)
+        labels = torch.nan_to_num(X[:, process_col], nan=0.0, posinf=0.0, neginf=0.0).round().long()
+        labels = labels.clamp(min=0, max=max(0, offsets.numel() - 1))
+        process_signal = self._standardize_signal(offsets[labels])
+        process_offset = torch.tanh(process_signal)
+
+        epit_drive = torch.zeros(X.shape[0], device=X.device, dtype=X.dtype)
+        epit_drive = epit_drive + float(rule["material_coef"]) * material_passivity
+        epit_drive = epit_drive - float(rule["environment_coef"]) * environment_drive
+        epit_drive = epit_drive - float(rule["interaction_coef"]) * material_susceptibility * chloride_drive
+        epit_drive = epit_drive + float(rule["process_coef"]) * process_offset
+
+        if torch.std(epit_drive.float(), unbiased=False) > 1e-6:
+            target_component = float(rule["interaction_strength"]) * self._standardize_signal(epit_drive)
+        else:
+            target_component = torch.zeros_like(epit_drive)
+        return target_component, epit_drive
+
+    @classmethod
+    def evaluate_fixed_epit_target_rule_numpy(
+        cls, X: np.ndarray, rule: Dict[str, Any], *, environment_mode: str = "raw"
+    ) -> np.ndarray:
+        X = np.asarray(X, dtype=float)
+        if X.ndim != 2:
+            raise ValueError(f"Expected a 2D feature table, got shape {X.shape}.")
+        material_cols = [int(col) for col in rule["material_cols"]]
+        material_weights = np.asarray(rule["material_weights"], dtype=float).reshape(-1)
+        material_signal = cls._standardize_array(X[:, material_cols] @ material_weights)
+        material_passivity = np.tanh(material_signal)
+        material_susceptibility = 1.0 / (1.0 + np.exp(material_signal))
+
+        temperature_col = int(rule["temperature_col"])
+        chloride_col = int(rule["chloride_col"])
+        ph_col = int(rule["ph_col"])
+        neutral = float(rule["ph_neutral"])
+        if environment_mode == "rank_semantic":
+            temp_u = np.clip(cls._rank_uniform_array(X[:, temperature_col]), 1e-6, 1.0 - 1e-6)
+            chloride_u = np.clip(cls._rank_uniform_array(X[:, chloride_col]), 1e-6, 1.0 - 1e-6)
+            ph_u = np.clip(cls._rank_uniform_array(X[:, ph_col]), 1e-6, 1.0 - 1e-6)
+            temperature_values = -10.0 + 130.0 * temp_u
+            chloride_values = cls._log_uniform_from_rank_array(chloride_u, 1e-4, 1e3)
+            ph_values = cls._piecewise_ph_from_rank_array(ph_u)
+        else:
+            temperature_values = np.nan_to_num(X[:, temperature_col], nan=0.0, posinf=0.0, neginf=0.0)
+            chloride_values = np.nan_to_num(X[:, chloride_col], nan=0.0, posinf=0.0, neginf=0.0)
+            ph_values = np.nan_to_num(X[:, ph_col], nan=neutral, posinf=neutral, neginf=neutral)
+
+        temperature_term = cls._standardize_array(temperature_values)
+        chloride_term = cls._standardize_array(np.log10(np.clip(chloride_values, 1e-12, None)))
+        ph_term = cls._standardize_array(np.abs(ph_values - neutral))
+        env_weights = np.asarray(rule["environment_weights"], dtype=float).reshape(-1)
+        environment_signal = cls._standardize_array(
+            env_weights[0] * temperature_term + env_weights[1] * chloride_term + env_weights[2] * ph_term
+        )
+        environment_drive = 1.0 / (1.0 + np.exp(-environment_signal))
+        chloride_drive = 1.0 / (1.0 + np.exp(-chloride_term))
+
+        process_col = int(rule["process_col"])
+        offsets = np.asarray(rule["process_offsets"], dtype=float).reshape(-1)
+        labels = np.rint(np.nan_to_num(X[:, process_col], nan=0.0, posinf=0.0, neginf=0.0)).astype(int)
+        labels = np.clip(labels, 0, max(0, offsets.size - 1))
+        process_signal = cls._standardize_array(offsets[labels])
+        process_offset = np.tanh(process_signal)
+
+        epit_drive = np.zeros(X.shape[0], dtype=float)
+        epit_drive += float(rule["material_coef"]) * material_passivity
+        epit_drive -= float(rule["environment_coef"]) * environment_drive
+        epit_drive -= float(rule["interaction_coef"]) * material_susceptibility * chloride_drive
+        epit_drive += float(rule["process_coef"]) * process_offset
+        standardized_drive = cls._standardize_array(epit_drive)
+        return float(rule["interaction_strength"]) * standardized_drive
 
     def _pitting_profile_block_signal(
         self,
@@ -948,6 +1208,8 @@ class SCMPrior(Prior):
         info.material_susceptibility = self._standardize_signal(-0.75 * passivity + 0.25 * susceptibility_noise)
 
     def _sample_pitting_environment_roles(self, width: int) -> list[str]:
+        if self._fixed_epit_schema_enabled() and width >= 3:
+            return ["temperature_like", "chloride_like", "ph_like"] + ["environment_proxy"] * (width - 3)
         candidates = [
             ("chloride_like", 0.78),
             ("ph_like", 0.55),
@@ -1127,6 +1389,7 @@ class SCMPrior(Prior):
         marginal_prob = float(self.fixed_hp.get("informed_physical_marginal_prob", 0.0))
         marginal_prob = float(np.clip(marginal_prob, 0.0, 1.0))
         apply_full_profile = marginal_prob > 0.0 and np.random.random() < marginal_prob
+        info.physical_profile_applied = bool(apply_full_profile)
         force_process_profile = self.fixed_hp.get("pitting_process_role") is not None
         if not apply_full_profile and not force_process_profile:
             return X, info
@@ -1746,6 +2009,14 @@ class SCMPrior(Prior):
         """Add an Epit-like target where higher y means stronger pitting resistance."""
         reference = y.to(dtype=X.dtype)
         profile_applied = profile_info is not None and profile_info.applied
+        if self._fixed_epit_schema_enabled():
+            rule = self._sample_fixed_epit_target_rule(X, blocks, interaction_strength, profile_info)
+            target_component, epit_drive = self._evaluate_fixed_epit_target_rule_tensor(X, rule)
+            self.last_pitting_target_rule = rule
+            self.last_pitting_target_component = target_component.detach().cpu()
+            self.last_pitting_target_drive = epit_drive.detach().cpu()
+            y = y + target_component.to(dtype=y.dtype)
+            return X, y
 
         material = (
             profile_info.material_passivity
@@ -1953,6 +2224,9 @@ class SCMPrior(Prior):
 
         X = X.clone()
         y = y.clone()
+        self.last_pitting_target_rule = None
+        self.last_pitting_target_component = None
+        self.last_pitting_target_drive = None
 
         block_strength = float(self.fixed_hp.get("informed_feature_block_strength", 0.30))
         block_strength = float(np.clip(block_strength, 0.0, 0.95))

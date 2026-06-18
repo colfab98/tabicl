@@ -538,6 +538,21 @@ class SavePriorDataset:
             scm_fixed_hp["pitting_material_dirichlet_concentration"] = self.args.pitting_material_dirichlet_concentration
         if self.args.pitting_material_dirichlet_active_prob is not None:
             scm_fixed_hp["pitting_material_dirichlet_active_prob"] = self.args.pitting_material_dirichlet_active_prob
+        pitting_process_role = getattr(self.args, "pitting_process_role", None)
+        if pitting_process_role is not None:
+            scm_fixed_hp["pitting_process_role"] = pitting_process_role
+        pitting_process_category_count = getattr(self.args, "pitting_process_category_count", None)
+        if pitting_process_category_count is not None:
+            scm_fixed_hp["pitting_process_category_count"] = pitting_process_category_count
+        pitting_fixed_epit_schema = getattr(self.args, "pitting_fixed_epit_schema", None)
+        if pitting_fixed_epit_schema is not None:
+            scm_fixed_hp["pitting_fixed_epit_schema"] = pitting_fixed_epit_schema
+        cat_prob = getattr(self.args, "cat_prob", None)
+        if cat_prob is not None:
+            scm_fixed_hp["cat_prob"] = cat_prob
+        permute_features = getattr(self.args, "permute_features", None)
+        if permute_features is not None:
+            scm_fixed_hp["permute_features"] = permute_features
         if self.args.epit_material_coef is not None:
             scm_fixed_hp["epit_material_coef"] = self.args.epit_material_coef
         if self.args.epit_environment_coef is not None:
@@ -643,6 +658,11 @@ class SavePriorDataset:
             "pitting_material_dirichlet_prob": self.args.pitting_material_dirichlet_prob,
             "pitting_material_dirichlet_concentration": self.args.pitting_material_dirichlet_concentration,
             "pitting_material_dirichlet_active_prob": self.args.pitting_material_dirichlet_active_prob,
+            "pitting_process_role": getattr(self.args, "pitting_process_role", None),
+            "pitting_process_category_count": getattr(self.args, "pitting_process_category_count", None),
+            "pitting_fixed_epit_schema": getattr(self.args, "pitting_fixed_epit_schema", None),
+            "cat_prob": getattr(self.args, "cat_prob", None),
+            "permute_features": getattr(self.args, "permute_features", None),
             "epit_material_coef": self.args.epit_material_coef,
             "epit_environment_coef": self.args.epit_environment_coef,
             "epit_interaction_coef": self.args.epit_interaction_coef,
@@ -825,6 +845,22 @@ if __name__ == "__main__":
     parser.add_argument("--pitting_material_dirichlet_prob", type=false_or_float, default=None)
     parser.add_argument("--pitting_material_dirichlet_concentration", type=float, default=None)
     parser.add_argument("--pitting_material_dirichlet_active_prob", type=float, default=None)
+    parser.add_argument(
+        "--pitting_process_role",
+        type=str,
+        default=None,
+        choices=(
+            "test_method_category",
+            "heat_treatment_category",
+            "microstructure_category",
+            "surface_process_score",
+            "exposure_history_proxy",
+        ),
+    )
+    parser.add_argument("--pitting_process_category_count", type=int, default=None)
+    parser.add_argument("--pitting_fixed_epit_schema", default=None, type=str2bool)
+    parser.add_argument("--cat_prob", type=float, default=None)
+    parser.add_argument("--permute_features", default=None, type=str2bool)
     parser.add_argument("--epit_material_coef", type=float, default=None)
     parser.add_argument("--epit_environment_coef", type=float, default=None)
     parser.add_argument("--epit_interaction_coef", type=float, default=None)

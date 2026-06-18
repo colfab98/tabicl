@@ -4,10 +4,15 @@ from argparse import Namespace
 import numpy as np
 import pandas as pd
 import pytest
+import torch
+
+import scripts.eval_epit_direct_prior as epit_direct_prior
 
 from scripts.eval_epit_direct_prior import (
     EPIT_PROCESS_COLUMN,
     EPIT_TASK_ID,
+    TARGET_RULE_DIAGNOSTIC,
+    THETA_ARTIFACT_FORMAT,
     EXPECTED_EPIT_FEATURE_GROUP_COUNTS,
     EXPECTED_EPIT_FEATURE_COUNT,
     build_phase1_candidates,
@@ -17,12 +22,18 @@ from scripts.eval_epit_direct_prior import (
     load_epit_task,
     preprocess_real_epit,
     read_phase1_summary,
+    read_target_rule_artifact,
+    read_theta_artifact,
+    run_candidates_with_artifacts,
     run_phase1,
     run_phase2,
     sample_and_score_eta,
     sample_synthetic_dataset,
+    score_target_rule_theta,
+    summarize_target_rule_eta,
     spearman_loss,
-    weights_from_spearman,
+    theta_artifact_path,
+    uniform_theta_weights,
     write_phase1_outputs,
     write_phase2_outputs,
     write_smoke_outputs,
@@ -79,6 +90,8 @@ def test_preprocess_real_epit_keeps_fixed_21_column_schema(epit_task):
     assert processed.category_count == len(processed.category_mapping)
     assert processed.category_count > 1
     assert np.isfinite(processed.X).all()
+    assert np.isfinite(processed.X_raw).all()
+    assert processed.X_raw.shape == processed.X.shape
     assert np.isfinite(processed.y_z).all()
     assert np.allclose(processed.X.mean(axis=0), 0.0, atol=1e-12)
     assert np.allclose(processed.X.std(axis=0, ddof=1), 1.0, atol=1e-12)
@@ -105,6 +118,31 @@ def test_sample_synthetic_epit_dataset_keeps_fixed_schema(epit_task):
     assert sample.process_unique_count == processed.category_count
     assert np.isfinite(sample.X).all()
     assert np.isfinite(sample.y).all()
+    assert sample.target_rule["rule_type"] == "fixed_epit_target_rule_v2_pren_anchor"
+    assert sample.target_rule["material_cols"] == list(range(17))
+    assert sample.target_rule["temperature_col"] == 17
+    assert sample.target_rule["chloride_col"] == 18
+    assert sample.target_rule["ph_col"] == 19
+    assert sample.target_rule["process_col"] == 20
+    assert sample.target_rule["material_anchor_type"] == "pren_like_cr_mo_w_weak_ni_v1"
+    assert sample.target_rule["environment_rule_type"] == "chloride_dominant_weak_temp_ph_v1"
+    anchor = np.asarray(sample.target_rule["material_anchor_weights"], dtype=float)
+    weights = np.asarray(sample.target_rule["material_weights"], dtype=float)
+    env_weights = np.asarray(sample.target_rule["environment_weights"], dtype=float)
+    assert anchor.shape == (17,)
+    assert np.isclose(anchor[1], 1.0)
+    assert np.isclose(anchor[2], 0.25)
+    assert np.isclose(anchor[3], 3.3)
+    assert np.isclose(anchor[4], 1.65)
+    assert weights.shape == (17,)
+    assert np.isclose(np.linalg.norm(weights), 1.0)
+    assert weights[1] > 0.0
+    assert weights[2] > 0.0
+    assert weights[3] > 0.0
+    assert weights[4] > 0.0
+    assert env_weights[1] > env_weights[0]
+    assert env_weights[1] > env_weights[2]
+    assert sample.target_rule["process_coef"] < 0.11
     assert float(np.std(sample.y, ddof=0)) > 0.0
 
 
@@ -127,14 +165,92 @@ def test_fit_and_score_single_synthetic_surrogate(epit_task):
     assert score.standardized_rmse >= 0.0
 
 
-def test_spearman_weights_normalize_and_prefer_better_scores():
-    weights = weights_from_spearman(np.array([-0.5, 0.0, 0.5]), temperature=0.10)
+def test_score_target_rule_oracle_uses_raw_real_schema(epit_task):
+    processed = preprocess_real_epit(epit_task)
+    sample = sample_synthetic_dataset(
+        category_count=processed.category_count,
+        synthetic_seed=0,
+        seq_len=processed.n_rows,
+    )
 
+    score = score_target_rule_theta(processed, sample)
+
+    assert score.predictions.shape == (processed.n_rows,)
+    assert np.isfinite(score.predictions).all()
+    assert -1.0 <= score.spearman <= 1.0
+    assert np.isfinite(score.standardized_mae)
+    assert np.isfinite(score.standardized_rmse)
+    assert score.standardized_mae >= 0.0
+    assert score.standardized_rmse >= 0.0
+
+
+def test_sample_synthetic_epit_dataset_retries_left_packed_schema(monkeypatch):
+    class FakePriorDataset:
+        calls = 0
+
+        def __init__(self, **kwargs):
+            self.seq_len = int(kwargs["max_seq_len"])
+            self.prior = Namespace(
+                last_pitting_target_rule={
+                    "rule_type": "fixed_epit_target_rule_v2_pren_anchor",
+                    "material_cols": list(range(17)),
+                    "temperature_col": 17,
+                    "chloride_col": 18,
+                    "ph_col": 19,
+                    "process_col": 20,
+                    "material_anchor_type": "pren_like_cr_mo_w_weak_ni_v1",
+                    "environment_rule_type": "chloride_dominant_weak_temp_ph_v1",
+                    "material_anchor_weights": np.asarray([0.0, 1.0, 0.25, 3.3, 1.65] + [0.0] * 12),
+                    "material_weights": np.full(17, 1.0 / np.sqrt(17.0)),
+                    "environment_weights": np.asarray([0.08, 0.90, 0.10]),
+                    "ph_neutral": 7.0,
+                    "process_offsets": np.asarray([-0.5, 0.0, 0.5]),
+                    "process_category_count": 3,
+                    "material_coef": 0.575,
+                    "environment_coef": 0.50,
+                    "interaction_coef": 0.775,
+                    "exposure_coef": 0.20,
+                    "process_coef": 0.05,
+                    "history_coef": 0.10,
+                    "descriptor_coef": 0.05,
+                    "interaction_strength": 0.35,
+                    "synthetic_environment_mode": "rank_semantic",
+                }
+            )
+
+        def get_batch(self):
+            FakePriorDataset.calls += 1
+            seq_len = self.seq_len
+            X = torch.randn(1, seq_len, EXPECTED_EPIT_FEATURE_COUNT)
+            X[0, :, -1] = torch.arange(seq_len) % 3
+            y = torch.linspace(-1.0, 1.0, seq_len).reshape(1, seq_len)
+            d_value = 18 if FakePriorDataset.calls == 1 else EXPECTED_EPIT_FEATURE_COUNT
+            d = torch.tensor([d_value], dtype=torch.long)
+            seq_lens = torch.tensor([seq_len], dtype=torch.long)
+            train_sizes = torch.tensor([seq_len // 2], dtype=torch.long)
+            return X, y, d, seq_lens, train_sizes
+
+    monkeypatch.setattr(epit_direct_prior, "PriorDataset", FakePriorDataset)
+
+    sample = sample_synthetic_dataset(category_count=3, synthetic_seed=100000, seq_len=32)
+
+    assert FakePriorDataset.calls == 2
+    assert sample.synthetic_seed == 100000
+    assert sample.sampling_seed != sample.synthetic_seed
+    assert sample.schema_attempts == 2
+    assert sample.X.shape == (32, EXPECTED_EPIT_FEATURE_COUNT)
+    assert sample.d == EXPECTED_EPIT_FEATURE_COUNT
+    assert sample.process_unique_count == 3
+
+
+def test_uniform_weights_match_training_aligned_eta_average():
+    weights = uniform_theta_weights(3)
+
+    assert np.allclose(weights, np.full(3, 1.0 / 3.0))
     assert np.isclose(weights.sum(), 1.0)
-    assert weights[2] > weights[1] > weights[0]
     assert spearman_loss(1.0) == 0.0
     assert spearman_loss(-1.0) == 1.0
-    assert 1.0 <= effective_sample_size(weights) <= 3.0
+    assert np.isclose(effective_sample_size(weights), 3.0)
 
 
 def test_sample_and_score_one_eta_multiple_seeds(epit_task):
@@ -151,12 +267,143 @@ def test_sample_and_score_one_eta_multiple_seeds(epit_task):
     assert len(samples) == 2
     assert len(scores) == 2
     assert summary.n_synth == 2
+    expected_ensemble = np.mean(np.vstack([score.predictions for score in scores]), axis=0)
     assert summary.ensemble_predictions.shape == (processed.n_rows,)
+    assert np.allclose(summary.ensemble_predictions, expected_ensemble)
+    assert np.allclose(summary.weights, np.full(2, 0.5))
     assert np.isclose(summary.weights.sum(), 1.0)
-    assert 1.0 <= summary.ess <= 2.0
+    assert np.isclose(summary.ess, 2.0)
+    assert summary.weighting_scheme == "uniform_theta_average"
     assert -1.0 <= summary.ensemble_spearman <= 1.0
 
+    target_rule_scores = [score_target_rule_theta(processed, sample) for sample in samples]
+    target_rule_summary = summarize_target_rule_eta(
+        processed,
+        target_rule_scores,
+        temperature=0.10,
+        eta_id=summary.eta_id,
+        phase=summary.phase,
+        anchored_regime=summary.anchored_regime,
+        core_anchor=summary.core_anchor,
+    )
+    expected_target_ensemble = np.mean(np.vstack([score.predictions for score in target_rule_scores]), axis=0)
+    assert target_rule_summary.ensemble_predictions.shape == (processed.n_rows,)
+    assert np.allclose(target_rule_summary.ensemble_predictions, expected_target_ensemble)
+    assert np.allclose(target_rule_summary.weights, np.full(2, 0.5))
+    assert -1.0 <= target_rule_summary.ensemble_spearman <= 1.0
 
+
+
+
+def test_artifact_runner_writes_and_resumes_phase1(epit_task, tmp_path):
+    processed = preprocess_real_epit(epit_task)
+    candidates = build_phase1_candidates(max_etas=1)
+    args = Namespace(
+        phase="phase1",
+        random_state=42,
+        synthetic_seed=0,
+        n_synth=2,
+        temperature=0.10,
+        max_etas=1,
+        phase2_source_dir=None,
+        phase2_top_regimes=2,
+        n_core_samples=64,
+        n_workers=1,
+        chunk_size=1,
+        progress_interval=0.0,
+        no_resume=False,
+    )
+
+    _, scores_by_eta, summaries = run_candidates_with_artifacts(
+        processed,
+        candidates,
+        tmp_path,
+        args,
+        phase="phase1",
+        scope="phase1_anchor_regime_grid",
+        n_synth=2,
+        synthetic_seed_start=0,
+        seq_len=processed.n_rows,
+        temperature=0.10,
+        n_workers=1,
+        chunk_size=1,
+        resume=True,
+        progress_interval=0.0,
+    )
+
+    eta_id = candidates[0].eta_id
+    assert len(scores_by_eta[eta_id]) == 2
+    assert len(summaries) == 1
+    assert (tmp_path / "manifest.csv").exists()
+    assert (tmp_path / "progress.json").exists()
+    assert (tmp_path / "progress.log").exists()
+    assert (tmp_path / "summary.csv").exists()
+    assert (tmp_path / "theta_scores.csv").exists()
+    assert (tmp_path / "target_rule_summary.csv").exists()
+    assert (tmp_path / "target_rule_theta_scores.csv").exists()
+    assert (tmp_path / "target_rule_weights.csv").exists()
+    assert (tmp_path / "eta_diagnostic_comparison.csv").exists()
+    weights = pd.read_csv(tmp_path / "weights.csv")
+    assert np.allclose(weights["weight"].to_numpy(), np.full(2, 0.5))
+    assert set(weights["weighting_scheme"]) == {"uniform_theta_average"}
+
+    artifact_path = theta_artifact_path(tmp_path, eta_id, 0)
+    assert artifact_path.exists()
+    artifact_score = read_theta_artifact(tmp_path, eta_id, 0, expected_n_rows=processed.n_rows, strict=True)
+    assert artifact_score is not None
+    assert artifact_score.predictions.shape == (processed.n_rows,)
+    assert np.isclose(artifact_score.spearman, scores_by_eta[eta_id][0].spearman)
+    target_artifact_score = read_target_rule_artifact(
+        tmp_path, eta_id, 0, expected_n_rows=processed.n_rows, strict=True
+    )
+    assert target_artifact_score is not None
+    assert target_artifact_score.predictions.shape == (processed.n_rows,)
+    with np.load(artifact_path, allow_pickle=False) as artifact:
+        assert str(artifact["artifact_format"]) == THETA_ARTIFACT_FORMAT
+        assert artifact["target_rule_predictions"].shape == (processed.n_rows,)
+        assert str(artifact["target_rule_type"]) == "fixed_epit_target_rule_v2_pren_anchor"
+
+    _, resumed_scores_by_eta, resumed_summaries = run_candidates_with_artifacts(
+        processed,
+        candidates,
+        tmp_path,
+        args,
+        phase="phase1",
+        scope="phase1_anchor_regime_grid",
+        n_synth=2,
+        synthetic_seed_start=0,
+        seq_len=processed.n_rows,
+        temperature=0.10,
+        n_workers=1,
+        chunk_size=1,
+        resume=True,
+        progress_interval=0.0,
+    )
+
+    progress = json.loads((tmp_path / "progress.json").read_text())
+    assert progress["skipped_theta"] == 2
+    assert len(resumed_scores_by_eta[eta_id]) == 2
+    assert np.isclose(resumed_summaries[0].ensemble_spearman, summaries[0].ensemble_spearman)
+
+
+
+
+def test_read_phase1_summary_rejects_stale_weighted_outputs(tmp_path):
+    pd.DataFrame(
+        [
+            {
+                "selected_rank": 1,
+                "eta_id": "plain__balanced",
+                "phase": "phase1",
+                "anchored_regime": "plain",
+                "ensemble_spearman": 0.10,
+                "ESS": 5.0,
+            }
+        ]
+    ).to_csv(tmp_path / "summary.csv", index=False)
+
+    with pytest.raises(ValueError, match="uniform-theta scorer"):
+        read_phase1_summary(tmp_path)
 
 
 def test_build_phase2_candidates_uses_top_phase1_regimes(tmp_path):
@@ -167,6 +414,7 @@ def test_build_phase2_candidates_uses_top_phase1_regimes(tmp_path):
                 "selected_rank": 1,
                 "eta_id": "physical_no_dirichlet__balanced",
                 "phase": "phase1",
+                "weighting_scheme": "uniform_theta_average",
                 "anchored_regime": "physical_no_dirichlet",
                 "ensemble_spearman": 0.20,
                 "ESS": 8.0,
@@ -175,6 +423,7 @@ def test_build_phase2_candidates_uses_top_phase1_regimes(tmp_path):
                 "selected_rank": 2,
                 "eta_id": "plain__strong_prior",
                 "phase": "phase1",
+                "weighting_scheme": "uniform_theta_average",
                 "anchored_regime": "plain",
                 "ensemble_spearman": 0.18,
                 "ESS": 7.0,
@@ -183,6 +432,7 @@ def test_build_phase2_candidates_uses_top_phase1_regimes(tmp_path):
                 "selected_rank": 3,
                 "eta_id": "physical_no_dirichlet__weak_prior",
                 "phase": "phase1",
+                "weighting_scheme": "uniform_theta_average",
                 "anchored_regime": "physical_no_dirichlet",
                 "ensemble_spearman": 0.17,
                 "ESS": 6.0,
@@ -234,12 +484,19 @@ def test_limited_phase1_run_writes_grid_tables(epit_task, tmp_path):
 
     assert config["phase"] == "phase1"
     assert config["n_etas"] == 2
+    assert config["ensemble_weighting_scheme"] == "uniform_theta_average"
+    assert config["target_rule_diagnostic"] == TARGET_RULE_DIAGNOSTIC
     assert etas.shape[0] == 2
     assert theta_scores.shape[0] == 2
     assert weights.shape[0] == 2
     assert summary.shape[0] == 2
     assert summary["selected_rank"].tolist() == [1, 2]
     assert set(summary["phase"]) == {"phase1"}
+    target_rule_summary = pd.read_csv(tmp_path / "target_rule_summary.csv")
+    comparison = pd.read_csv(tmp_path / "eta_diagnostic_comparison.csv")
+    assert target_rule_summary.shape[0] == 2
+    assert comparison.shape[0] == 2
+    assert "target_rule_ensemble_spearman" in comparison.columns
     assert np.allclose(weights.groupby("eta_id")["weight"].sum().to_numpy(), 1.0)
 
 
@@ -255,6 +512,7 @@ def test_limited_phase2_run_writes_space_filling_tables(epit_task, tmp_path):
                 "selected_rank": 1,
                 "eta_id": "plain__balanced",
                 "phase": "phase1",
+                "weighting_scheme": "uniform_theta_average",
                 "anchored_regime": "plain",
                 "ensemble_spearman": 0.10,
                 "ESS": 5.0,
@@ -263,6 +521,7 @@ def test_limited_phase2_run_writes_space_filling_tables(epit_task, tmp_path):
                 "selected_rank": 2,
                 "eta_id": "physical_no_dirichlet__balanced",
                 "phase": "phase1",
+                "weighting_scheme": "uniform_theta_average",
                 "anchored_regime": "physical_no_dirichlet",
                 "ensemble_spearman": 0.08,
                 "ESS": 4.0,
@@ -301,10 +560,16 @@ def test_limited_phase2_run_writes_space_filling_tables(epit_task, tmp_path):
     assert config["phase"] == "phase2"
     assert config["n_etas"] == 2
     assert config["n_core_samples"] == 1
+    assert config["ensemble_weighting_scheme"] == "uniform_theta_average"
+    assert config["target_rule_diagnostic"] == TARGET_RULE_DIAGNOSTIC
     assert etas.shape[0] == 2
     assert summary.shape[0] == 2
     assert set(summary["phase"]) == {"phase2"}
     assert set(etas["core_anchor"]) == {"space_filling_0000"}
+    target_rule_summary = pd.read_csv(phase2_dir / "target_rule_summary.csv")
+    comparison = pd.read_csv(phase2_dir / "eta_diagnostic_comparison.csv")
+    assert target_rule_summary.shape[0] == 2
+    assert comparison.shape[0] == 2
     assert np.allclose(weights.groupby("eta_id")["weight"].sum().to_numpy(), 1.0)
 
 
@@ -328,6 +593,8 @@ def test_write_smoke_outputs_records_schema(epit_task, tmp_path):
     smoke_score = json.loads((tmp_path / "theta_smoke_score.json").read_text())
     summary_json = json.loads((tmp_path / "eta_smoke_summary.json").read_text())
     assert config["phase"] == "smoke"
+    assert config["ensemble_weighting_scheme"] == "uniform_theta_average"
+    assert config["target_rule_diagnostic"] == TARGET_RULE_DIAGNOSTIC
     assert schema["n_rows"] == 760
     assert schema["n_features"] == EXPECTED_EPIT_FEATURE_COUNT
     assert schema["category_count"] == processed.category_count
@@ -338,7 +605,12 @@ def test_write_smoke_outputs_records_schema(epit_task, tmp_path):
     assert smoke_score["synthetic_seed"] == samples[0].synthetic_seed
     assert -1.0 <= smoke_score["spearman"] <= 1.0
     assert summary_json["n_synth"] == 2
-    assert 1.0 <= summary_json["ESS"] <= 2.0
+    assert summary_json["weighting_scheme"] == "uniform_theta_average"
+    assert np.isclose(summary_json["ESS"], 2.0)
     assert (tmp_path / "theta_scores.csv").exists()
     assert (tmp_path / "weights.csv").exists()
     assert (tmp_path / "summary.csv").exists()
+    assert (tmp_path / "target_rule_theta_scores.csv").exists()
+    assert (tmp_path / "target_rule_weights.csv").exists()
+    assert (tmp_path / "target_rule_summary.csv").exists()
+    assert (tmp_path / "eta_diagnostic_comparison.csv").exists()
