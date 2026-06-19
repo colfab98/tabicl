@@ -67,6 +67,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--split-seeds", nargs="+", type=int, default=list(DEFAULT_SPLIT_SEEDS))
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--n-estimators", type=int, default=8)
+    parser.add_argument(
+        "--tabicl-feat-shuffle-method",
+        choices=("none", "random", "latin", "shift"),
+        default="latin",
+        help="Feature shuffle method passed through to eval_corrosion_datasets.py. Use none for fixed-schema checkpoints.",
+    )
     parser.add_argument("--test-size", type=float, default=0.25)
     parser.add_argument("--regression-output", choices=("mean", "median"), default="median")
     parser.add_argument(
@@ -162,6 +168,8 @@ def run_seed_eval(args: argparse.Namespace, seed: int, seed_dir: Path) -> pd.Dat
         args.device,
         "--n-estimators",
         str(args.n_estimators),
+        "--tabicl-feat-shuffle-method",
+        args.tabicl_feat_shuffle_method,
         "--regression-output",
         args.regression_output,
         "--output-json",
@@ -279,6 +287,7 @@ def main() -> None:
                 "test_size": args.test_size,
                 "device": args.device,
                 "n_estimators": args.n_estimators,
+                "tabicl_feat_shuffle_method": args.tabicl_feat_shuffle_method,
                 "regression_output": args.regression_output,
                 "regression_uncertainty": bool(args.regression_uncertainty),
                 "compare_pretrained_tabicl": bool(args.compare_pretrained_tabicl),

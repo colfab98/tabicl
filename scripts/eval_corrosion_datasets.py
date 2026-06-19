@@ -327,6 +327,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--n-estimators", type=int, default=8)
     parser.add_argument(
+        "--tabicl-feat-shuffle-method",
+        choices=("none", "random", "latin", "shift"),
+        default="latin",
+        help="Feature shuffle method passed to TabICL estimators. Use none for fixed-schema checkpoints.",
+    )
+    parser.add_argument(
         "--no-model-cache",
         dest="model_cache",
         action="store_false",
@@ -1423,10 +1429,12 @@ def make_tabicl_classifier(
     n_estimators: int,
     random_state: int,
     allow_auto_download: bool,
+    feat_shuffle_method: str = "latin",
 ) -> TabICLClassifier:
     kwargs: dict[str, Any] = {
         "device": device,
         "n_estimators": n_estimators,
+        "feat_shuffle_method": feat_shuffle_method,
         "random_state": random_state,
         "allow_auto_download": allow_auto_download,
     }
@@ -1445,10 +1453,12 @@ def make_tabicl_regressor(
     n_estimators: int,
     random_state: int,
     allow_auto_download: bool,
+    feat_shuffle_method: str = "latin",
 ) -> TabICLRegressor:
     kwargs: dict[str, Any] = {
         "device": device,
         "n_estimators": n_estimators,
+        "feat_shuffle_method": feat_shuffle_method,
         "random_state": random_state,
         "allow_auto_download": allow_auto_download,
     }
@@ -2775,6 +2785,7 @@ def run_repeated_split_eval(args: argparse.Namespace) -> None:
         "metric_sort_specs": metric_sort_specs,
         "test_size": args.test_size,
         "n_estimators": args.n_estimators,
+        "tabicl_feat_shuffle_method": args.tabicl_feat_shuffle_method,
         "rows": all_rows,
         "errors": all_errors,
         "output_files": {
@@ -2875,13 +2886,20 @@ def main() -> None:
                     n_estimators=args.n_estimators,
                     random_state=args.random_state,
                     allow_auto_download=False,
+                    feat_shuffle_method=args.tabicl_feat_shuffle_method,
                 )
                 jobs.append(
                     {
                         "model_label": spec.label,
                         "model_kind": "local_tabicl_regressor",
                         "factory": factory,
-                        "cache_key": ("local_tabicl_regressor", model_path, args.device),
+                        "cache_key": (
+                            "local_tabicl_regressor",
+                            model_path,
+                            args.device,
+                            args.n_estimators,
+                            args.tabicl_feat_shuffle_method,
+                        ),
                     }
                 )
             else:
@@ -2892,13 +2910,20 @@ def main() -> None:
                     n_estimators=args.n_estimators,
                     random_state=args.random_state,
                     allow_auto_download=False,
+                    feat_shuffle_method=args.tabicl_feat_shuffle_method,
                 )
                 jobs.append(
                     {
                         "model_label": spec.label,
                         "model_kind": "local_tabicl_classifier",
                         "factory": factory,
-                        "cache_key": ("local_tabicl_classifier", model_path, args.device),
+                        "cache_key": (
+                            "local_tabicl_classifier",
+                            model_path,
+                            args.device,
+                            args.n_estimators,
+                            args.tabicl_feat_shuffle_method,
+                        ),
                     }
                 )
 
@@ -2911,13 +2936,20 @@ def main() -> None:
                     n_estimators=args.n_estimators,
                     random_state=args.random_state,
                     allow_auto_download=args.baseline_auto_download,
+                    feat_shuffle_method=args.tabicl_feat_shuffle_method,
                 )
                 jobs.append(
                     {
                         "model_label": "pretrained_tabicl_v2",
                         "model_kind": "pretrained_tabicl_regressor",
                         "factory": factory,
-                        "cache_key": ("pretrained_tabicl_regressor", pretrained_checkpoint_version, args.device),
+                        "cache_key": (
+                            "pretrained_tabicl_regressor",
+                            pretrained_checkpoint_version,
+                            args.device,
+                            args.n_estimators,
+                            args.tabicl_feat_shuffle_method,
+                        ),
                         "reuse_static_baseline": reuse_pretrained_tabicl,
                     }
                 )
@@ -2929,13 +2961,20 @@ def main() -> None:
                     n_estimators=args.n_estimators,
                     random_state=args.random_state,
                     allow_auto_download=args.baseline_auto_download,
+                    feat_shuffle_method=args.tabicl_feat_shuffle_method,
                 )
                 jobs.append(
                     {
                         "model_label": "pretrained_tabicl_v2",
                         "model_kind": "pretrained_tabicl_classifier",
                         "factory": factory,
-                        "cache_key": ("pretrained_tabicl_classifier", pretrained_checkpoint_version, args.device),
+                        "cache_key": (
+                            "pretrained_tabicl_classifier",
+                            pretrained_checkpoint_version,
+                            args.device,
+                            args.n_estimators,
+                            args.tabicl_feat_shuffle_method,
+                        ),
                         "reuse_static_baseline": reuse_pretrained_tabicl,
                     }
                 )
@@ -3153,6 +3192,7 @@ def main() -> None:
         "default_summary_excluded_datasets": list(DEFAULT_SUMMARY_EXCLUDED_DATASETS),
         "excluded_quality_flags": list(args.exclude_quality_flag or []),
         "n_estimators": args.n_estimators,
+        "tabicl_feat_shuffle_method": args.tabicl_feat_shuffle_method,
         "feature_groups_default": list(DEFAULT_FEATURE_GROUPS),
         "electrochem_feature_groups": list(ELECTROCHEM_FEATURE_GROUPS),
         "include_electrochem_features": args.include_electrochem_features,
