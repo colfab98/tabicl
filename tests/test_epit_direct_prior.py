@@ -57,9 +57,9 @@ def test_load_epit_task_uses_existing_evaluator_schema(epit_task):
 def test_build_phase1_candidates_matches_planned_grid():
     candidates = build_phase1_candidates()
 
-    assert len(candidates) == 24
-    assert candidates[0].eta_id == "plain__material_dominant"
-    assert candidates[-1].eta_id == "physical_sparse_dirichlet__strong_prior"
+    assert len(candidates) == 120
+    assert candidates[0].eta_id == "plain__material_dominant__mlp000"
+    assert candidates[-1].eta_id == "physical_sparse_dirichlet__strong_prior__mlp100"
     assert {candidate.anchored_regime for candidate in candidates} == {
         "plain",
         "physical_no_dirichlet",
@@ -74,9 +74,32 @@ def test_build_phase1_candidates_matches_planned_grid():
         "weak_prior",
         "strong_prior",
     }
+    assert {candidate.eta_params["informed_mlp_prob"] for candidate in candidates} == {
+        0.0,
+        0.25,
+        0.50,
+        0.75,
+        1.0,
+    }
     assert candidates[0].eta_params["informed_physical_marginal_prob"] == 0.0
+    assert candidates[0].eta_params["informed_mlp_prob"] == 0.0
     assert candidates[-1].eta_params["pitting_material_dirichlet_concentration"] == 0.25
     assert candidates[-1].eta_params["informed_interaction_strength"] == 0.85
+    assert candidates[-1].eta_params["informed_mlp_prob"] == 1.0
+
+
+def test_informed_mlp_prob_maps_to_prior_mix_probs():
+    fixed_hp = epit_direct_prior.build_fixed_hp_for_eta(
+        category_count=3,
+        eta_params={"informed_mlp_prob": 0.25},
+    )
+
+    assert fixed_hp["mix_probs"] == (0.25, 0.75)
+    assert fixed_hp["informed_mix_probs"] == (0.25, 0.75)
+    assert "informed_mlp_prob" not in fixed_hp
+
+    with pytest.raises(ValueError, match="informed_mlp_prob"):
+        epit_direct_prior.build_fixed_hp_for_eta(category_count=3, eta_params={"informed_mlp_prob": 1.1})
 
 
 def test_preprocess_real_epit_keeps_fixed_21_column_schema(epit_task):
@@ -412,7 +435,7 @@ def test_build_phase2_candidates_uses_top_phase1_regimes(tmp_path):
         [
             {
                 "selected_rank": 1,
-                "eta_id": "physical_no_dirichlet__balanced",
+                "eta_id": "physical_no_dirichlet__balanced__mlp075",
                 "phase": "phase1",
                 "weighting_scheme": "uniform_theta_average",
                 "anchored_regime": "physical_no_dirichlet",
@@ -421,7 +444,7 @@ def test_build_phase2_candidates_uses_top_phase1_regimes(tmp_path):
             },
             {
                 "selected_rank": 2,
-                "eta_id": "plain__strong_prior",
+                "eta_id": "plain__strong_prior__mlp025",
                 "phase": "phase1",
                 "weighting_scheme": "uniform_theta_average",
                 "anchored_regime": "plain",
@@ -430,7 +453,7 @@ def test_build_phase2_candidates_uses_top_phase1_regimes(tmp_path):
             },
             {
                 "selected_rank": 3,
-                "eta_id": "physical_no_dirichlet__weak_prior",
+                "eta_id": "physical_no_dirichlet__weak_prior__mlp000",
                 "phase": "phase1",
                 "weighting_scheme": "uniform_theta_average",
                 "anchored_regime": "physical_no_dirichlet",
@@ -439,6 +462,13 @@ def test_build_phase2_candidates_uses_top_phase1_regimes(tmp_path):
             },
         ]
     ).to_csv(summary_path, index=False)
+    pd.DataFrame(
+        [
+            {"eta_id": "physical_no_dirichlet__balanced__mlp075", "informed_mlp_prob": 0.75},
+            {"eta_id": "plain__strong_prior__mlp025", "informed_mlp_prob": 0.25},
+            {"eta_id": "physical_no_dirichlet__weak_prior__mlp000", "informed_mlp_prob": 0.0},
+        ]
+    ).to_csv(tmp_path / "etas.csv", index=False)
 
     phase1_summary = read_phase1_summary(tmp_path)
     candidates = build_phase2_candidates(
@@ -459,6 +489,8 @@ def test_build_phase2_candidates_uses_top_phase1_regimes(tmp_path):
         assert 0.60 <= candidate.eta_params["epit_interaction_coef"] <= 0.95
         assert 0.00 <= candidate.eta_params["informed_feature_block_strength"] <= 0.95
         assert 0.00 <= candidate.eta_params["informed_interaction_strength"] <= 1.00
+    assert all(0.50 <= candidate.eta_params["informed_mlp_prob"] <= 1.00 for candidate in candidates[:3])
+    assert all(0.00 <= candidate.eta_params["informed_mlp_prob"] <= 0.50 for candidate in candidates[3:])
 
 
 def test_limited_phase1_run_writes_grid_tables(epit_task, tmp_path):
@@ -486,6 +518,7 @@ def test_limited_phase1_run_writes_grid_tables(epit_task, tmp_path):
     assert config["n_etas"] == 2
     assert config["ensemble_weighting_scheme"] == "uniform_theta_average"
     assert config["target_rule_diagnostic"] == TARGET_RULE_DIAGNOSTIC
+    assert config["informed_mlp_prob_search"]["phase1_grid"] == [0.0, 0.25, 0.5, 0.75, 1.0]
     assert etas.shape[0] == 2
     assert theta_scores.shape[0] == 2
     assert weights.shape[0] == 2
@@ -510,7 +543,7 @@ def test_limited_phase2_run_writes_space_filling_tables(epit_task, tmp_path):
         [
             {
                 "selected_rank": 1,
-                "eta_id": "plain__balanced",
+                "eta_id": "plain__balanced__mlp050",
                 "phase": "phase1",
                 "weighting_scheme": "uniform_theta_average",
                 "anchored_regime": "plain",
@@ -519,7 +552,7 @@ def test_limited_phase2_run_writes_space_filling_tables(epit_task, tmp_path):
             },
             {
                 "selected_rank": 2,
-                "eta_id": "physical_no_dirichlet__balanced",
+                "eta_id": "physical_no_dirichlet__balanced__mlp100",
                 "phase": "phase1",
                 "weighting_scheme": "uniform_theta_average",
                 "anchored_regime": "physical_no_dirichlet",
@@ -528,6 +561,12 @@ def test_limited_phase2_run_writes_space_filling_tables(epit_task, tmp_path):
             },
         ]
     ).to_csv(phase1_dir / "summary.csv", index=False)
+    pd.DataFrame(
+        [
+            {"eta_id": "plain__balanced__mlp050", "informed_mlp_prob": 0.50},
+            {"eta_id": "physical_no_dirichlet__balanced__mlp100", "informed_mlp_prob": 1.0},
+        ]
+    ).to_csv(phase1_dir / "etas.csv", index=False)
     args = Namespace(
         phase="phase2",
         random_state=42,
@@ -562,10 +601,12 @@ def test_limited_phase2_run_writes_space_filling_tables(epit_task, tmp_path):
     assert config["n_core_samples"] == 1
     assert config["ensemble_weighting_scheme"] == "uniform_theta_average"
     assert config["target_rule_diagnostic"] == TARGET_RULE_DIAGNOSTIC
+    assert config["informed_mlp_prob_search"]["phase2_window"] == 0.25
     assert etas.shape[0] == 2
     assert summary.shape[0] == 2
     assert set(summary["phase"]) == {"phase2"}
     assert set(etas["core_anchor"]) == {"space_filling_0000"}
+    assert set(etas["informed_mlp_prob"]).issubset({0.5, 0.875})
     target_rule_summary = pd.read_csv(phase2_dir / "target_rule_summary.csv")
     comparison = pd.read_csv(phase2_dir / "eta_diagnostic_comparison.csv")
     assert target_rule_summary.shape[0] == 2

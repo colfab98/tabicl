@@ -64,8 +64,11 @@ DEFAULT_CHUNK_SIZE = 4
 DEFAULT_PROGRESS_INTERVAL_SECONDS = 30.0
 DEFAULT_SCHEMA_RETRY_ATTEMPTS = 50
 SCHEMA_RETRY_SEED_STRIDE = 1_000_003
-THETA_ARTIFACT_FORMAT = "theta_npz_v3_pren_epit_rule"
+THETA_ARTIFACT_FORMAT = "theta_npz_v4_mlp_mix_pren_epit_rule"
 TARGET_RULE_DIAGNOSTIC = "epit_target_rule_oracle"
+DEFAULT_INFORMED_MLP_PROB = 0.70
+PHASE1_INFORMED_MLP_PROB_GRID = (0.0, 0.25, 0.50, 0.75, 1.0)
+PHASE2_INFORMED_MLP_PROB_WINDOW = 0.25
 
 
 _WORKER_X_REAL: np.ndarray | None = None
@@ -430,18 +433,27 @@ def build_phase1_candidates(max_etas: int = 0) -> list[EtaCandidate]:
     candidates: list[EtaCandidate] = []
     for regime_name, regime_params in anchored_regimes().items():
         for anchor_name, anchor_params in core_anchors().items():
-            eta_params = {**regime_params, **anchor_params}
-            candidates.append(
-                EtaCandidate(
-                    eta_id=f"{regime_name}__{anchor_name}",
-                    anchored_regime=regime_name,
-                    core_anchor=anchor_name,
-                    eta_params=eta_params,
+            for mlp_prob in PHASE1_INFORMED_MLP_PROB_GRID:
+                eta_params = {
+                    **regime_params,
+                    **anchor_params,
+                    "informed_mlp_prob": float(mlp_prob),
+                }
+                candidates.append(
+                    EtaCandidate(
+                        eta_id=f"{regime_name}__{anchor_name}__mlp{_mlp_prob_label(mlp_prob)}",
+                        anchored_regime=regime_name,
+                        core_anchor=anchor_name,
+                        eta_params=eta_params,
+                    )
                 )
-            )
     if max_etas > 0:
         return candidates[: int(max_etas)]
     return candidates
+
+
+def _mlp_prob_label(value: float) -> str:
+    return f"{int(round(float(value) * 100.0)):03d}"
 
 
 def core_search_ranges() -> dict[str, tuple[float, float]]:
@@ -474,6 +486,27 @@ def read_phase1_summary(source_dir: Path) -> pd.DataFrame:
             "Phase 2 requires a Phase 1 summary scored with "
             f"{ENSEMBLE_WEIGHTING_SCHEME}; got {sorted(schemes)}."
         )
+    etas_path = Path(source_dir) / "etas.csv"
+    if "informed_mlp_prob" not in frame.columns:
+        if not etas_path.exists():
+            raise ValueError(
+                f"Phase 2 requires Phase 1 eta metadata with informed_mlp_prob at {etas_path}. "
+                "Rerun Phase 1 with the current MLP/tree split search."
+            )
+        etas = pd.read_csv(etas_path)
+        eta_required = {"eta_id", "informed_mlp_prob"}
+        eta_missing = sorted(eta_required - set(etas.columns))
+        if eta_missing:
+            raise ValueError(
+                f"Phase 1 etas.csv is missing required columns: {eta_missing}. "
+                "Rerun Phase 1 with the current MLP/tree split search."
+            )
+        frame = frame.merge(etas[["eta_id", "informed_mlp_prob"]], on="eta_id", how="left")
+    if frame["informed_mlp_prob"].isna().any():
+        raise ValueError(
+            "Phase 1 summary is missing informed_mlp_prob for one or more selected etas. "
+            "Rerun Phase 1 with the current MLP/tree split search."
+        )
     if "selected_rank" in frame.columns:
         frame = frame.sort_values("selected_rank", kind="mergesort")
     else:
@@ -481,29 +514,58 @@ def read_phase1_summary(source_dir: Path) -> pd.DataFrame:
     return frame.reset_index(drop=True)
 
 
+def _validate_informed_mlp_prob(value: float) -> float:
+    value = float(value)
+    if not np.isfinite(value) or value < 0.0 or value > 1.0:
+        raise ValueError(f"informed_mlp_prob must be finite and in [0, 1], got {value!r}.")
+    return value
+
+
+def phase2_mlp_prob_range(anchor_prob: float, window: float = PHASE2_INFORMED_MLP_PROB_WINDOW) -> tuple[float, float]:
+    anchor_prob = _validate_informed_mlp_prob(anchor_prob)
+    window = float(window)
+    if not np.isfinite(window) or window < 0.0:
+        raise ValueError(f"window must be finite and non-negative, got {window!r}.")
+    return max(0.0, anchor_prob - window), min(1.0, anchor_prob + window)
+
+
 def select_phase2_regimes(phase1_summary: pd.DataFrame, top_regimes: int) -> list[str]:
+    return [regime for regime, _ in select_phase2_regime_anchors(phase1_summary, top_regimes=top_regimes)]
+
+
+def select_phase2_regime_anchors(phase1_summary: pd.DataFrame, top_regimes: int) -> list[tuple[str, float]]:
     if int(top_regimes) <= 0:
         raise ValueError("top_regimes must be positive.")
-    regimes: list[str] = []
-    for value in phase1_summary["anchored_regime"].tolist():
-        regime = str(value)
+    if "informed_mlp_prob" not in phase1_summary.columns:
+        raise ValueError("Phase 2 regime selection requires informed_mlp_prob in the Phase 1 summary.")
+    regime_anchors: list[tuple[str, float]] = []
+    seen: set[str] = set()
+    for _, row in phase1_summary.iterrows():
+        regime = str(row["anchored_regime"])
         if regime not in anchored_regimes():
             raise ValueError(f"Unknown anchored regime in Phase 1 summary: {regime}")
-        if regime not in regimes:
-            regimes.append(regime)
-        if len(regimes) == int(top_regimes):
+        if regime not in seen:
+            regime_anchors.append((regime, _validate_informed_mlp_prob(float(row["informed_mlp_prob"]))))
+            seen.add(regime)
+        if len(regime_anchors) == int(top_regimes):
             break
-    if not regimes:
+    if not regime_anchors:
         raise ValueError("Could not select any Phase 2 regimes from Phase 1 summary.")
-    return regimes
+    return regime_anchors
 
 
-def latin_hypercube_core_params(n_samples: int, random_state: int) -> list[dict[str, float]]:
+def latin_hypercube_core_params(
+    n_samples: int,
+    random_state: int,
+    extra_ranges: dict[str, tuple[float, float]] | None = None,
+) -> list[dict[str, float]]:
     if int(n_samples) <= 0:
         raise ValueError("n_core_samples must be positive.")
     n_samples = int(n_samples)
     rng = np.random.default_rng(int(random_state))
     ranges = core_search_ranges()
+    if extra_ranges:
+        ranges = {**ranges, **extra_ranges}
     params_by_sample = [dict() for _ in range(n_samples)]
     for name, (low, high) in ranges.items():
         centers = (np.arange(n_samples, dtype=float) + 0.5) / float(n_samples)
@@ -521,11 +583,16 @@ def build_phase2_candidates(
     n_core_samples: int = PHASE2_DEFAULT_CORE_SAMPLES,
     random_state: int = 42,
 ) -> list[EtaCandidate]:
-    selected_regimes = select_phase2_regimes(phase1_summary, top_regimes=top_regimes)
-    core_samples = latin_hypercube_core_params(n_core_samples, random_state=random_state)
+    selected_regimes = select_phase2_regime_anchors(phase1_summary, top_regimes=top_regimes)
     regimes = anchored_regimes()
     candidates: list[EtaCandidate] = []
-    for regime in selected_regimes:
+    for regime, mlp_anchor_prob in selected_regimes:
+        mlp_low, mlp_high = phase2_mlp_prob_range(mlp_anchor_prob)
+        core_samples = latin_hypercube_core_params(
+            n_core_samples,
+            random_state=random_state,
+            extra_ranges={"informed_mlp_prob": (mlp_low, mlp_high)},
+        )
         for idx, core_params in enumerate(core_samples):
             eta_params = {**regimes[regime], **core_params}
             core_anchor = f"space_filling_{idx:04d}"
@@ -545,11 +612,16 @@ def build_fixed_hp_for_eta(category_count: int, eta_params: dict[str, Any] | Non
     if int(category_count) < 2:
         raise ValueError("category_count must be >= 2 for the forced EPIT process slot.")
 
+    eta_params = dict(eta_params or {})
+    informed_mlp_prob = _validate_informed_mlp_prob(
+        eta_params.pop("informed_mlp_prob", DEFAULT_INFORMED_MLP_PROB)
+    )
+    informed_mix_probs = (informed_mlp_prob, 1.0 - informed_mlp_prob)
     fixed_hp = dict(DEFAULT_FIXED_HP)
     fixed_hp.update(
         {
-            "mix_probs": (0.7, 0.3),
-            "informed_mix_probs": (0.7, 0.3),
+            "mix_probs": informed_mix_probs,
+            "informed_mix_probs": informed_mix_probs,
             "informed_task_family_probs": (1.0, 0.0),
             "informed_normal_block_allocation": DIRECT_EPIT_BLOCK_ALLOCATION,
             "informed_normal_block_allocation_min_counts": DIRECT_EPIT_BLOCK_ALLOCATION,
@@ -573,8 +645,7 @@ def build_fixed_hp_for_eta(category_count: int, eta_params: dict[str, Any] | Non
             "permute_features": False,
         }
     )
-    if eta_params:
-        fixed_hp.update(eta_params)
+    fixed_hp.update(eta_params)
     return fixed_hp
 
 
@@ -1498,6 +1569,11 @@ def _artifact_run_config(
         "artifact_format": THETA_ARTIFACT_FORMAT,
         "target_rule_diagnostic": TARGET_RULE_DIAGNOSTIC,
         "target_rule_real_feature_input": "raw_imputed_original_units",
+        "informed_mlp_prob_search": {
+            "phase1_grid": list(PHASE1_INFORMED_MLP_PROB_GRID),
+            "phase2_window": PHASE2_INFORMED_MLP_PROB_WINDOW,
+            "full_training_mapping": "--informed_mix_probs p 1-p",
+        },
     }
     if args.phase == "phase1":
         config["max_etas"] = args.max_etas
@@ -1900,6 +1976,11 @@ def write_phase1_outputs(
         "ensemble_weighting_scheme": ENSEMBLE_WEIGHTING_SCHEME,
         "target_rule_diagnostic": TARGET_RULE_DIAGNOSTIC,
         "target_rule_real_feature_input": "raw_imputed_original_units",
+        "informed_mlp_prob_search": {
+            "phase1_grid": list(PHASE1_INFORMED_MLP_PROB_GRID),
+            "phase2_window": PHASE2_INFORMED_MLP_PROB_WINDOW,
+            "full_training_mapping": "--informed_mix_probs p 1-p",
+        },
         "max_etas": args.max_etas,
         "n_etas": len(candidates),
         "task_id": EPIT_TASK_ID,
@@ -2021,6 +2102,11 @@ def write_phase2_outputs(
         "ensemble_weighting_scheme": ENSEMBLE_WEIGHTING_SCHEME,
         "target_rule_diagnostic": TARGET_RULE_DIAGNOSTIC,
         "target_rule_real_feature_input": "raw_imputed_original_units",
+        "informed_mlp_prob_search": {
+            "phase1_grid": list(PHASE1_INFORMED_MLP_PROB_GRID),
+            "phase2_window": PHASE2_INFORMED_MLP_PROB_WINDOW,
+            "full_training_mapping": "--informed_mix_probs p 1-p",
+        },
         "phase2_source_dir": str(args.phase2_source_dir),
         "phase2_top_regimes": args.phase2_top_regimes,
         "n_core_samples": args.n_core_samples,
@@ -2172,7 +2258,7 @@ def parse_args() -> argparse.Namespace:
         "--max-etas",
         type=int,
         default=0,
-        help="Limit Phase 1 to the first N etas for debugging. Default 0 runs all 24.",
+        help="Limit Phase 1 to the first N etas for debugging. Default 0 runs the full grid.",
     )
     parser.add_argument(
         "--phase2-source-dir",
