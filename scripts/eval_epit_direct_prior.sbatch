@@ -107,8 +107,10 @@ elif [[ "$PHASE" == "phase2" ]]; then
     --phase2-top-regimes "$PHASE2_TOP_REGIMES"
     --n-core-samples "$N_CORE_SAMPLES"
   )
+elif [[ "$PHASE" == "baseline_prior_control" ]]; then
+  :
 else
-  echo "PHASE must be phase1 or phase2 for this sbatch script, got '$PHASE'." >&2
+  echo "PHASE must be phase1, phase2, or baseline_prior_control for this sbatch script, got '$PHASE'." >&2
   exit 1
 fi
 

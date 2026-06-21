@@ -71,7 +71,8 @@ class TransformToNumerical(TransformerMixin, BaseEstimator):
         The fitted transformer that handles the conversion of different column types.
 
         - If input is a DataFrame: a ``ColumnTransformer`` with ``OrdinalEncoder``
-          for categorical columns and ``SimpleImputer`` for numeric columns.
+          for categorical columns and ``SimpleImputer`` for numeric columns. The
+          transformed output is restored to the original DataFrame column order.
         - If input is not a DataFrame: a ``FunctionTransformer`` that passes data
           through unchanged.
     """
@@ -106,6 +107,7 @@ class TransformToNumerical(TransformerMixin, BaseEstimator):
             # no dataframe
             # check if dtype is bool, object, byte sting, or unicode string
             is_categorical = np.asarray(X).dtype.kind in {"b", "O", "S", "U"}
+            self._preserve_dataframe_column_order_ = False
             self.tfm_ = cat_tfm if is_categorical else num_tfm
             self.tfm_.fit(X)
             return self
@@ -115,6 +117,13 @@ class TransformToNumerical(TransformerMixin, BaseEstimator):
 
         numeric_cols = make_column_selector(dtype_include="number")(X)
         numeric_pos = [X.columns.get_loc(col) for col in numeric_cols]
+
+        self._preserve_dataframe_column_order_ = True
+        self._selected_input_positions_ = sorted(cat_pos + numeric_pos)
+        self._transformed_output_positions_ = {
+            **{input_pos: output_pos for output_pos, input_pos in enumerate(cat_pos)},
+            **{input_pos: len(cat_pos) + output_pos for output_pos, input_pos in enumerate(numeric_pos)},
+        }
 
         self.tfm_ = ColumnTransformer(
             transformers=[("categorical", cat_tfm, cat_pos), ("continuous", num_tfm, numeric_pos)]
@@ -148,7 +157,12 @@ class TransformToNumerical(TransformerMixin, BaseEstimator):
         X_out : ndarray of shape (n_samples, n_features)
             Transformed array with numerical representations.
         """
-        return self.tfm_.transform(X)
+        X_out = self.tfm_.transform(X)
+        if not getattr(self, "_preserve_dataframe_column_order_", False):
+            return X_out
+
+        original_order_indices = [self._transformed_output_positions_[pos] for pos in self._selected_input_positions_]
+        return X_out[:, original_order_indices]
 
 
 class UniqueFeatureFilter(TransformerMixin, BaseEstimator):

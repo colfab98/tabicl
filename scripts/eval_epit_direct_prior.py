@@ -69,6 +69,14 @@ TARGET_RULE_DIAGNOSTIC = "epit_target_rule_oracle"
 DEFAULT_INFORMED_MLP_PROB = 0.70
 PHASE1_INFORMED_MLP_PROB_GRID = (0.0, 0.25, 0.50, 0.75, 1.0)
 PHASE2_INFORMED_MLP_PROB_WINDOW = 0.25
+BASELINE_PRIOR_CONTROL_ID = "tabicl_default_prior_conditioned_d21"
+BASELINE_PRIOR_CONTROL_PHASE = "baseline_prior_control"
+BASELINE_PRIOR_CONTROL_ARTIFACT_FORMAT = "baseline_prior_npz_v1_default_conditioned_d21"
+BASELINE_PRIOR_CONTROL_FEATURE_MODE = "default_variable_conditioned_d21"
+BASELINE_PRIOR_CONTROL_PRIOR_TYPE = "mix_scm"
+BASELINE_PRIOR_CONTROL_MIN_FEATURES = 2
+BASELINE_PRIOR_CONTROL_MAX_FEATURES = 100
+DEFAULT_BASELINE_CONTROL_MAX_ATTEMPTS = 2_000
 
 
 _WORKER_X_REAL: np.ndarray | None = None
@@ -230,6 +238,17 @@ class EtaSummary:
             "collapse_threshold": self.collapse_threshold,
             "collapsed": self.collapsed,
         }
+
+
+@dataclass(frozen=True)
+class BaselinePriorControlRecord:
+    score: ThetaSurrogateScore
+    sampling_seed: int
+    schema_attempts: int
+    d: int
+    seq_len: int
+    train_size: int
+    raw_feature_count: int
 
 
 def make_epit_task_args(random_state: int = 42) -> argparse.Namespace:
@@ -746,6 +765,92 @@ def sample_synthetic_dataset(
         f"Last error: {last_error}."
     )
 
+
+def build_baseline_prior_control_fixed_hp() -> dict[str, Any]:
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["mix_probs"] = (0.7, 0.3)
+    return fixed_hp
+
+
+def sample_baseline_prior_control_dataset(
+    *,
+    synthetic_seed: int,
+    seq_len: int,
+    max_schema_attempts: int = DEFAULT_BASELINE_CONTROL_MAX_ATTEMPTS,
+) -> SyntheticEpitSample:
+    if int(seq_len) < 16:
+        raise ValueError("seq_len must be at least 16 for a usable baseline prior control sample.")
+    if int(max_schema_attempts) <= 0:
+        raise ValueError("max_schema_attempts must be positive.")
+
+    last_error: str | None = None
+    for attempt in range(int(max_schema_attempts)):
+        sampling_seed = _schema_retry_seed(int(synthetic_seed), attempt)
+        np.random.seed(sampling_seed)
+        random.seed(sampling_seed)
+        torch.manual_seed(sampling_seed)
+
+        dataset = PriorDataset(
+            batch_size=1,
+            batch_size_per_gp=1,
+            min_features=BASELINE_PRIOR_CONTROL_MIN_FEATURES,
+            max_features=BASELINE_PRIOR_CONTROL_MAX_FEATURES,
+            max_classes=0,
+            min_seq_len=None,
+            max_seq_len=int(seq_len),
+            min_train_size=0.1,
+            max_train_size=0.9,
+            prior_type=BASELINE_PRIOR_CONTROL_PRIOR_TYPE,
+            scm_fixed_hp=build_baseline_prior_control_fixed_hp(),
+            scm_sampled_hp=DEFAULT_SAMPLED_HP,
+            n_jobs=1,
+            device="cpu",
+        )
+        X, y, d, seq_lens, train_sizes = dataset.get_batch()
+        X_np_full = X[0].detach().cpu().numpy().astype(float)
+        y_np = y[0].detach().cpu().numpy().astype(float)
+        d_value = int(d[0].item())
+        seq_len_value = int(seq_lens[0].item())
+        train_size_value = int(train_sizes[0].item())
+
+        if X_np_full.shape[0] != int(seq_len):
+            last_error = f"expected synthetic row count {int(seq_len)}, got {X_np_full.shape[0]}"
+            continue
+        if d_value != EXPECTED_EPIT_FEATURE_COUNT:
+            last_error = f"expected accepted default-prior draw with d={EXPECTED_EPIT_FEATURE_COUNT}, got d={d_value}"
+            continue
+        X_np = X_np_full[:, :EXPECTED_EPIT_FEATURE_COUNT]
+        if X_np.shape != (int(seq_len), EXPECTED_EPIT_FEATURE_COUNT):
+            last_error = f"expected accepted synthetic shape {(int(seq_len), EXPECTED_EPIT_FEATURE_COUNT)}, got {X_np.shape}"
+            continue
+        if not np.isfinite(X_np).all() or not np.isfinite(y_np).all():
+            last_error = "baseline prior control sample contains non-finite values"
+            continue
+        if float(np.std(y_np, ddof=0)) <= 0.0:
+            last_error = "baseline prior control target has zero variance"
+            continue
+
+        final_column_unique = np.unique(X_np[:, -1])
+        return SyntheticEpitSample(
+            X=X_np,
+            y=y_np,
+            d=d_value,
+            seq_len=seq_len_value,
+            train_size=train_size_value,
+            synthetic_seed=int(synthetic_seed),
+            sampling_seed=int(sampling_seed),
+            schema_attempts=int(attempt) + 1,
+            process_unique_count=int(final_column_unique.size),
+            process_unique_values=[float(value) for value in final_column_unique.tolist()],
+            target_rule={},
+        )
+
+    raise RuntimeError(
+        "Could not sample a default TabICL baseline prior control dataset conditioned on d=21 after "
+        f"{int(max_schema_attempts)} attempts for requested seed {int(synthetic_seed)}. "
+        f"Last error: {last_error}."
+    )
+
 def spearman_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     y_true = np.asarray(y_true, dtype=float).reshape(-1)
     y_pred = np.asarray(y_pred, dtype=float).reshape(-1)
@@ -970,6 +1075,81 @@ def sample_and_score_eta(
     return samples, scores, summary
 
 
+def sample_and_score_baseline_prior_control(
+    processed: ProcessedEpitData,
+    *,
+    n_synth: int,
+    synthetic_seed_start: int,
+    seq_len: int,
+    temperature: float = DEFAULT_TEMPERATURE,
+    phase: str = "baseline_control",
+    max_schema_attempts: int = DEFAULT_BASELINE_CONTROL_MAX_ATTEMPTS,
+) -> tuple[list[SyntheticEpitSample], list[ThetaSurrogateScore], EtaSummary]:
+    if int(n_synth) <= 0:
+        raise ValueError("n_synth must be positive.")
+
+    samples: list[SyntheticEpitSample] = []
+    scores: list[ThetaSurrogateScore] = []
+    for offset in range(int(n_synth)):
+        synthetic = sample_baseline_prior_control_dataset(
+            synthetic_seed=int(synthetic_seed_start) + offset,
+            seq_len=seq_len,
+            max_schema_attempts=max_schema_attempts,
+        )
+        samples.append(synthetic)
+        scores.append(fit_and_score_theta(processed, synthetic))
+
+    summary = summarize_eta(
+        processed,
+        scores,
+        temperature=temperature,
+        eta_id=BASELINE_PRIOR_CONTROL_ID,
+        phase=phase,
+        anchored_regime="tabicl_default_prior",
+        core_anchor=BASELINE_PRIOR_CONTROL_FEATURE_MODE,
+    )
+    return samples, scores, summary
+
+
+def baseline_prior_control_records(
+    samples: list[SyntheticEpitSample], scores: list[ThetaSurrogateScore]
+) -> list[BaselinePriorControlRecord]:
+    if len(samples) != len(scores):
+        raise ValueError(f"Expected equal sample and score counts, got {len(samples)} and {len(scores)}.")
+    records: list[BaselinePriorControlRecord] = []
+    for sample, score in zip(samples, scores):
+        records.append(
+            BaselinePriorControlRecord(
+                score=score,
+                sampling_seed=sample.sampling_seed,
+                schema_attempts=sample.schema_attempts,
+                d=sample.d,
+                seq_len=sample.seq_len,
+                train_size=sample.train_size,
+                raw_feature_count=BASELINE_PRIOR_CONTROL_MAX_FEATURES,
+            )
+        )
+    return records
+
+
+def summarize_baseline_prior_control_records(
+    processed: ProcessedEpitData,
+    records: list[BaselinePriorControlRecord],
+    *,
+    temperature: float,
+    phase: str,
+) -> EtaSummary:
+    return summarize_eta(
+        processed,
+        [record.score for record in records],
+        temperature=temperature,
+        eta_id=BASELINE_PRIOR_CONTROL_ID,
+        phase=phase,
+        anchored_regime="tabicl_default_prior",
+        core_anchor=BASELINE_PRIOR_CONTROL_FEATURE_MODE,
+    )
+
+
 def sample_target_rule_scores_for_eta(
     processed: ProcessedEpitData,
     candidate: EtaCandidate,
@@ -1035,6 +1215,59 @@ def weights_frame(scores: list[ThetaSurrogateScore], summary: EtaSummary) -> pd.
                 "weight": float(weight),
             }
         )
+    return pd.DataFrame(rows)
+
+
+def baseline_prior_control_metadata(records: list[BaselinePriorControlRecord]) -> dict[str, Any]:
+    attempts = np.asarray([record.schema_attempts for record in records], dtype=float)
+    total_attempts = int(attempts.sum()) if attempts.size else 0
+    return {
+        "diagnostic": "ridge_direct_prior_control",
+        "control_id": BASELINE_PRIOR_CONTROL_ID,
+        "prior_type": BASELINE_PRIOR_CONTROL_PRIOR_TYPE,
+        "feature_mode": BASELINE_PRIOR_CONTROL_FEATURE_MODE,
+        "training_prior_min_features": BASELINE_PRIOR_CONTROL_MIN_FEATURES,
+        "training_prior_max_features": BASELINE_PRIOR_CONTROL_MAX_FEATURES,
+        "ridge_feature_count": EXPECTED_EPIT_FEATURE_COUNT,
+        "target_rule_diagnostic": "not_applicable",
+        "n_requested": len(records),
+        "n_accepted_d21": len(records),
+        "total_schema_attempts": total_attempts,
+        "acceptance_rate": (float(len(records)) / float(total_attempts)) if total_attempts > 0 else np.nan,
+        "median_schema_attempts": float(np.median(attempts)) if attempts.size else np.nan,
+        "max_schema_attempts": int(np.max(attempts)) if attempts.size else 0,
+    }
+
+
+def baseline_prior_summary_frame(summary: EtaSummary, records: list[BaselinePriorControlRecord]) -> pd.DataFrame:
+    frame = summaries_frame([summary])
+    for key, value in baseline_prior_control_metadata(records).items():
+        frame[key] = value
+    return frame
+
+
+def baseline_prior_theta_scores_frame(
+    records: list[BaselinePriorControlRecord], summary: EtaSummary
+) -> pd.DataFrame:
+    rows = []
+    for record in records:
+        row = {
+            "eta_id": summary.eta_id,
+            "phase": summary.phase,
+            "anchored_regime": summary.anchored_regime,
+            "core_anchor": summary.core_anchor,
+            "control_id": BASELINE_PRIOR_CONTROL_ID,
+            "prior_type": BASELINE_PRIOR_CONTROL_PRIOR_TYPE,
+            "feature_mode": BASELINE_PRIOR_CONTROL_FEATURE_MODE,
+            "sampling_seed": record.sampling_seed,
+            "schema_attempts": record.schema_attempts,
+            "d": record.d,
+            "seq_len": record.seq_len,
+            "train_size": record.train_size,
+            "raw_feature_count": record.raw_feature_count,
+        }
+        row.update(record.score.metrics_dict())
+        rows.append(row)
     return pd.DataFrame(rows)
 
 
@@ -1123,6 +1356,15 @@ def _eta_artifact_dirname(eta_id: str) -> str:
 
 def theta_artifact_path(output_dir: Path, eta_id: str, synthetic_seed: int) -> Path:
     return Path(output_dir) / "theta_artifacts" / _eta_artifact_dirname(eta_id) / f"seed_{int(synthetic_seed):06d}.npz"
+
+
+def baseline_prior_artifact_path(output_dir: Path, synthetic_seed: int) -> Path:
+    return (
+        Path(output_dir)
+        / "baseline_prior_artifacts"
+        / _eta_artifact_dirname(BASELINE_PRIOR_CONTROL_ID)
+        / f"seed_{int(synthetic_seed):06d}.npz"
+    )
 
 
 def _atomic_write_text(path: Path, text: str) -> None:
@@ -1228,6 +1470,93 @@ def write_theta_artifact(
         )
     tmp_path.replace(path)
     return path
+
+
+def write_baseline_prior_artifact(
+    output_dir: Path,
+    *,
+    phase: str,
+    score: ThetaSurrogateScore,
+    synthetic: SyntheticEpitSample,
+) -> Path:
+    path = baseline_prior_artifact_path(output_dir, score.synthetic_seed)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = path.with_name(path.name + ".tmp")
+    with tmp_path.open("wb") as handle:
+        np.savez(
+            handle,
+            artifact_format=np.asarray(BASELINE_PRIOR_CONTROL_ARTIFACT_FORMAT),
+            control_id=np.asarray(BASELINE_PRIOR_CONTROL_ID),
+            phase=np.asarray(str(phase)),
+            prior_type=np.asarray(BASELINE_PRIOR_CONTROL_PRIOR_TYPE),
+            feature_mode=np.asarray(BASELINE_PRIOR_CONTROL_FEATURE_MODE),
+            synthetic_seed=np.asarray(int(score.synthetic_seed), dtype=np.int64),
+            sampling_seed=np.asarray(int(synthetic.sampling_seed), dtype=np.int64),
+            schema_attempts=np.asarray(int(synthetic.schema_attempts), dtype=np.int64),
+            spearman=np.asarray(float(score.spearman), dtype=np.float64),
+            standardized_mae=np.asarray(float(score.standardized_mae), dtype=np.float64),
+            standardized_rmse=np.asarray(float(score.standardized_rmse), dtype=np.float64),
+            predictions=np.asarray(score.predictions, dtype=np.float32),
+            n_rows=np.asarray(int(synthetic.X.shape[0]), dtype=np.int64),
+            n_features=np.asarray(int(synthetic.X.shape[1]), dtype=np.int64),
+            d=np.asarray(int(synthetic.d), dtype=np.int64),
+            seq_len=np.asarray(int(synthetic.seq_len), dtype=np.int64),
+            train_size=np.asarray(int(synthetic.train_size), dtype=np.int64),
+            raw_feature_count=np.asarray(BASELINE_PRIOR_CONTROL_MAX_FEATURES, dtype=np.int64),
+            target_mean=np.asarray(float(np.mean(synthetic.y)), dtype=np.float64),
+            target_std=np.asarray(float(np.std(synthetic.y, ddof=0)), dtype=np.float64),
+        )
+    tmp_path.replace(path)
+    return path
+
+
+def read_baseline_prior_artifact(
+    output_dir: Path,
+    synthetic_seed: int,
+    *,
+    expected_n_rows: int,
+    strict: bool = False,
+) -> BaselinePriorControlRecord | None:
+    path = baseline_prior_artifact_path(output_dir, synthetic_seed)
+    try:
+        with np.load(path, allow_pickle=False) as data:
+            if "artifact_format" not in data or str(data["artifact_format"]) != BASELINE_PRIOR_CONTROL_ARTIFACT_FORMAT:
+                got = "missing" if "artifact_format" not in data else str(data["artifact_format"])
+                raise ValueError(
+                    f"Baseline prior artifact {path} has format {got!r}; "
+                    f"expected {BASELINE_PRIOR_CONTROL_ARTIFACT_FORMAT!r}."
+                )
+            seed = int(data["synthetic_seed"])
+            if seed != int(synthetic_seed):
+                raise ValueError(f"Baseline prior artifact seed mismatch for {path}: {seed} != {synthetic_seed}")
+            predictions = np.asarray(data["predictions"], dtype=float).reshape(-1)
+            if predictions.shape != (int(expected_n_rows),):
+                raise ValueError(f"Baseline prior predictions shape mismatch for {path}: {predictions.shape}")
+            if not np.isfinite(predictions).all():
+                raise ValueError(f"Baseline prior predictions contain non-finite values: {path}")
+            score = ThetaSurrogateScore(
+                synthetic_seed=seed,
+                spearman=float(data["spearman"]),
+                standardized_mae=float(data["standardized_mae"]),
+                standardized_rmse=float(data["standardized_rmse"]),
+                predictions=predictions,
+            )
+            metrics = np.asarray([score.spearman, score.standardized_mae, score.standardized_rmse], dtype=float)
+            if not np.isfinite(metrics).all():
+                raise ValueError(f"Baseline prior artifact metrics contain non-finite values: {path}")
+            return BaselinePriorControlRecord(
+                score=score,
+                sampling_seed=int(data["sampling_seed"]),
+                schema_attempts=int(data["schema_attempts"]),
+                d=int(data["d"]),
+                seq_len=int(data["seq_len"]),
+                train_size=int(data["train_size"]),
+                raw_feature_count=int(data["raw_feature_count"]),
+            )
+    except Exception:
+        if strict:
+            raise
+        return None
 
 
 def _validate_theta_artifact_arrays(
@@ -1356,6 +1685,54 @@ def load_target_rule_scores_for_candidate(
             raise RuntimeError(f"Missing target-rule artifact for {candidate.eta_id} seed {seed}.")
         scores.append(score)
     return scores
+
+
+def load_baseline_prior_control_records(
+    output_dir: Path,
+    *,
+    synthetic_seed_start: int,
+    n_synth: int,
+    expected_n_rows: int,
+) -> list[BaselinePriorControlRecord]:
+    records: list[BaselinePriorControlRecord] = []
+    for offset in range(int(n_synth)):
+        seed = int(synthetic_seed_start) + offset
+        record = read_baseline_prior_artifact(
+            output_dir,
+            seed,
+            expected_n_rows=expected_n_rows,
+            strict=True,
+        )
+        if record is None:
+            raise RuntimeError(f"Missing baseline prior control artifact for seed {seed}.")
+        records.append(record)
+    return records
+
+
+def write_baseline_prior_control_outputs(
+    processed: ProcessedEpitData,
+    records: list[BaselinePriorControlRecord],
+    output_dir: Path,
+    *,
+    phase: str,
+    temperature: float,
+) -> EtaSummary:
+    summary = summarize_baseline_prior_control_records(
+        processed,
+        records,
+        temperature=temperature,
+        phase=phase,
+    )
+    baseline_prior_theta_scores_frame(records, summary).to_csv(
+        Path(output_dir) / "baseline_prior_theta_scores.csv", index=False
+    )
+    weights_frame([record.score for record in records], summary).to_csv(
+        Path(output_dir) / "baseline_prior_weights.csv", index=False
+    )
+    baseline_prior_summary_frame(summary, records).to_csv(
+        Path(output_dir) / "baseline_prior_summary.csv", index=False
+    )
+    return summary
 
 
 def write_theta_manifest(
@@ -1491,6 +1868,38 @@ def _score_theta_chunk(payload: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+def _score_baseline_prior_control_chunk(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    if _WORKER_SEQ_LEN is None:
+        raise RuntimeError("Theta worker was not initialized with synthetic sampling settings.")
+    output_dir = Path(payload["output_dir"])
+    max_schema_attempts = int(payload.get("max_schema_attempts", DEFAULT_BASELINE_CONTROL_MAX_ATTEMPTS))
+    rows: list[dict[str, Any]] = []
+    for seed in payload["synthetic_seeds"]:
+        synthetic = sample_baseline_prior_control_dataset(
+            synthetic_seed=int(seed),
+            seq_len=_WORKER_SEQ_LEN,
+            max_schema_attempts=max_schema_attempts,
+        )
+        score = _fit_and_score_theta_worker_arrays(synthetic)
+        write_baseline_prior_artifact(
+            output_dir,
+            phase=payload["phase"],
+            score=score,
+            synthetic=synthetic,
+        )
+        rows.append(
+            {
+                "synthetic_seed": int(seed),
+                "sampling_seed": synthetic.sampling_seed,
+                "schema_attempts": synthetic.schema_attempts,
+                "spearman": score.spearman,
+                "standardized_mae": score.standardized_mae,
+                "standardized_rmse": score.standardized_rmse,
+            }
+        )
+    return rows
+
+
 def _chunk_values(values: list[int], chunk_size: int) -> list[list[int]]:
     chunk_size = max(1, int(chunk_size))
     return [values[idx : idx + chunk_size] for idx in range(0, len(values), chunk_size)]
@@ -1543,6 +1952,106 @@ def _build_missing_theta_chunks(
     return chunks, skipped, completed_by_eta
 
 
+def _build_missing_baseline_prior_control_chunks(
+    output_dir: Path,
+    *,
+    n_synth: int,
+    synthetic_seed_start: int,
+    expected_n_rows: int,
+    phase: str,
+    chunk_size: int,
+    resume: bool,
+    max_schema_attempts: int,
+) -> tuple[list[dict[str, Any]], int]:
+    chunks: list[dict[str, Any]] = []
+    skipped = 0
+    missing_seeds: list[int] = []
+    for offset in range(int(n_synth)):
+        seed = int(synthetic_seed_start) + offset
+        existing = None
+        if resume:
+            existing = read_baseline_prior_artifact(
+                output_dir,
+                seed,
+                expected_n_rows=expected_n_rows,
+                strict=False,
+            )
+        if existing is not None:
+            skipped += 1
+        else:
+            missing_seeds.append(seed)
+
+    for seed_chunk in _chunk_values(missing_seeds, chunk_size):
+        chunks.append(
+            {
+                "output_dir": str(output_dir),
+                "phase": phase,
+                "synthetic_seeds": seed_chunk,
+                "max_schema_attempts": int(max_schema_attempts),
+            }
+        )
+    return chunks, skipped
+
+
+def baseline_prior_control_enabled(args: argparse.Namespace) -> bool:
+    phase = str(getattr(args, "phase", ""))
+    if phase == BASELINE_PRIOR_CONTROL_PHASE:
+        return True
+    return phase in {"phase1", "phase2"} and not bool(getattr(args, "no_baseline_prior_control", True))
+
+
+def baseline_control_max_attempts(args: argparse.Namespace) -> int:
+    return int(getattr(args, "baseline_control_max_attempts", DEFAULT_BASELINE_CONTROL_MAX_ATTEMPTS))
+
+
+def baseline_prior_control_config(enabled: bool, max_attempts: int) -> dict[str, Any]:
+    return {
+        "enabled": bool(enabled),
+        "control_id": BASELINE_PRIOR_CONTROL_ID,
+        "prior_type": BASELINE_PRIOR_CONTROL_PRIOR_TYPE,
+        "feature_mode": BASELINE_PRIOR_CONTROL_FEATURE_MODE,
+        "training_prior_min_features": BASELINE_PRIOR_CONTROL_MIN_FEATURES,
+        "training_prior_max_features": BASELINE_PRIOR_CONTROL_MAX_FEATURES,
+        "ridge_feature_count": EXPECTED_EPIT_FEATURE_COUNT,
+        "same_n_synth_as_eta": True,
+        "target_rule_diagnostic": "not_applicable",
+        "max_schema_attempts_per_theta": int(max_attempts),
+    }
+
+
+def write_baseline_prior_control_run_metadata(
+    processed: ProcessedEpitData,
+    output_dir: Path,
+    args: argparse.Namespace,
+    *,
+    n_workers: int,
+    chunk_size: int,
+    resume: bool,
+) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    config = {
+        "phase": args.phase,
+        "random_state": args.random_state,
+        "synthetic_seed_start": args.synthetic_seed,
+        "n_synth": args.n_synth,
+        "temperature": args.temperature,
+        "ensemble_weighting_scheme": ENSEMBLE_WEIGHTING_SCHEME,
+        "n_workers": n_workers,
+        "chunk_size": chunk_size,
+        "resume": bool(resume),
+        "progress_interval_seconds": args.progress_interval,
+        "n_etas": 1,
+        "task_id": EPIT_TASK_ID,
+        "scope": "baseline_prior_control_default_tabicl_regression_prior",
+        "artifact_format": BASELINE_PRIOR_CONTROL_ARTIFACT_FORMAT,
+        "target_rule_diagnostic": "not_applicable",
+        "baseline_prior_only": True,
+        "baseline_prior_control": baseline_prior_control_config(True, baseline_control_max_attempts(args)),
+    }
+    _atomic_write_json(output_dir / "config.json", config)
+    _atomic_write_json(output_dir / "real_schema.json", processed.schema_dict())
+
+
 def _artifact_run_config(
     args: argparse.Namespace,
     *,
@@ -1574,7 +2083,11 @@ def _artifact_run_config(
             "phase2_window": PHASE2_INFORMED_MLP_PROB_WINDOW,
             "full_training_mapping": "--informed_mix_probs p 1-p",
         },
+        "baseline_prior_control": baseline_prior_control_config(
+            baseline_prior_control_enabled(args), baseline_control_max_attempts(args)
+        ),
     }
+
     if args.phase == "phase1":
         config["max_etas"] = args.max_etas
     if args.phase == "phase2":
@@ -1692,6 +2205,136 @@ def write_artifact_final_outputs(
         output_dir / "eta_diagnostic_comparison.csv", index=False
     )
     return scores_by_eta, summaries
+
+
+def run_baseline_prior_control_with_artifacts(
+    processed: ProcessedEpitData,
+    output_dir: Path,
+    *,
+    phase: str,
+    n_synth: int,
+    synthetic_seed_start: int,
+    seq_len: int,
+    temperature: float,
+    n_workers: int,
+    chunk_size: int,
+    resume: bool,
+    progress_interval: float,
+    max_schema_attempts: int,
+) -> tuple[list[BaselinePriorControlRecord], EtaSummary]:
+    if int(n_synth) <= 0:
+        raise ValueError("n_synth must be positive.")
+
+    chunks, skipped = _build_missing_baseline_prior_control_chunks(
+        output_dir,
+        n_synth=n_synth,
+        synthetic_seed_start=synthetic_seed_start,
+        expected_n_rows=processed.n_rows,
+        phase=phase,
+        chunk_size=chunk_size,
+        resume=resume,
+        max_schema_attempts=max_schema_attempts,
+    )
+    total_theta = int(n_synth)
+    completed_theta = skipped
+    start_time = time.monotonic()
+    last_progress = 0.0
+
+    print(
+        f"Starting baseline prior control: id={BASELINE_PRIOR_CONTROL_ID}, n_synth={n_synth}, "
+        f"skipped={skipped}, missing={sum(len(chunk['synthetic_seeds']) for chunk in chunks)}, "
+        f"workers={n_workers}, chunk_size={chunk_size}, resume={resume}",
+        flush=True,
+    )
+
+    def emit_progress(force: bool = False) -> None:
+        nonlocal last_progress
+        now = time.monotonic()
+        if not force and (now - last_progress) < float(progress_interval):
+            return
+        elapsed = max(0.0, now - start_time)
+        fresh_completed = max(0, completed_theta - skipped)
+        rate = fresh_completed / elapsed if elapsed > 0.0 and fresh_completed > 0 else 0.0
+        remaining = max(0, total_theta - completed_theta)
+        eta_seconds = remaining / rate if rate > 0.0 else None
+        payload = {
+            "phase": phase,
+            "control_id": BASELINE_PRIOR_CONTROL_ID,
+            "total_theta": total_theta,
+            "completed_theta": completed_theta,
+            "skipped_theta": skipped,
+            "missing_theta": remaining,
+            "elapsed_seconds": elapsed,
+            "theta_per_second": rate,
+            "estimated_remaining_seconds": eta_seconds,
+            "n_workers": n_workers,
+            "chunk_size": chunk_size,
+            "max_schema_attempts": int(max_schema_attempts),
+        }
+        payload["updated_at"] = datetime.now().isoformat(timespec="seconds")
+        _atomic_write_json(Path(output_dir) / "baseline_prior_progress.json", payload)
+        message = (
+            f"Progress baseline prior control: theta {completed_theta}/{total_theta} "
+            f"({100.0 * completed_theta / max(1, total_theta):.1f}%), skipped {skipped}, "
+            f"rate {rate:.2f} theta/s, elapsed {_format_seconds(elapsed)}, ETA {_format_seconds(eta_seconds)}"
+        )
+        print(message, flush=True)
+        _append_progress_log(output_dir, message)
+        last_progress = now
+
+    emit_progress(force=True)
+    _init_theta_worker(processed.X, processed.X_raw, processed.y_z, processed.category_count, seq_len)
+
+    def mark_completed(rows: list[dict[str, Any]]) -> None:
+        nonlocal completed_theta
+        completed_theta += len(rows)
+        emit_progress(force=False)
+
+    if chunks:
+        if n_workers <= 1:
+            for chunk in chunks:
+                rows = _score_baseline_prior_control_chunk(chunk)
+                mark_completed(rows)
+        else:
+            with ProcessPoolExecutor(
+                max_workers=n_workers,
+                initializer=_init_theta_worker,
+                initargs=(processed.X, processed.X_raw, processed.y_z, processed.category_count, seq_len),
+            ) as executor:
+                future_to_size = {
+                    executor.submit(_score_baseline_prior_control_chunk, chunk): len(chunk['synthetic_seeds'])
+                    for chunk in chunks
+                }
+                for future in as_completed(future_to_size):
+                    rows = future.result()
+                    mark_completed(rows)
+
+    emit_progress(force=True)
+    if completed_theta != total_theta:
+        raise RuntimeError(f"Incomplete baseline prior control artifacts: completed {completed_theta}/{total_theta}.")
+
+    records = load_baseline_prior_control_records(
+        output_dir,
+        synthetic_seed_start=synthetic_seed_start,
+        n_synth=n_synth,
+        expected_n_rows=processed.n_rows,
+    )
+    summary = write_baseline_prior_control_outputs(
+        processed,
+        records,
+        output_dir,
+        phase=phase,
+        temperature=temperature,
+    )
+    metadata = baseline_prior_control_metadata(records)
+    final_message = (
+        f"Baseline prior control complete: n_synth={n_synth}, "
+        f"spearman={summary.ensemble_spearman:.6f}, MAE={summary.standardized_mae:.6f}, "
+        f"RMSE={summary.standardized_rmse:.6f}, acceptance_rate={float(metadata['acceptance_rate']):.6f}"
+    )
+    print(final_message, flush=True)
+    _append_progress_log(output_dir, final_message)
+    return records, summary
 
 
 def run_candidates_with_artifacts(
@@ -1856,7 +2499,7 @@ def run_candidates_with_artifacts(
                 initializer=_init_theta_worker,
                 initargs=(processed.X, processed.X_raw, processed.y_z, processed.category_count, seq_len),
             ) as executor:
-                future_to_size = {executor.submit(_score_theta_chunk, chunk): len(chunk["synthetic_seeds"]) for chunk in chunks}
+                future_to_size = {executor.submit(_score_theta_chunk, chunk): len(chunk['synthetic_seeds']) for chunk in chunks}
                 for future in as_completed(future_to_size):
                     rows = future.result()
                     mark_completed(rows)
@@ -1885,6 +2528,22 @@ def run_candidates_with_artifacts(
     )
     print(final_message, flush=True)
     _append_progress_log(output_dir, final_message)
+
+    if baseline_prior_control_enabled(args):
+        run_baseline_prior_control_with_artifacts(
+            processed,
+            output_dir,
+            phase=phase,
+            n_synth=n_synth,
+            synthetic_seed_start=synthetic_seed_start,
+            seq_len=seq_len,
+            temperature=temperature,
+            n_workers=n_workers,
+            chunk_size=chunk_size,
+            resume=resume,
+            progress_interval=progress_interval,
+            max_schema_attempts=baseline_control_max_attempts(args),
+        )
     return first_sample, scores_by_eta, summaries
 
 def evaluate_candidate_eta(
@@ -1981,6 +2640,9 @@ def write_phase1_outputs(
             "phase2_window": PHASE2_INFORMED_MLP_PROB_WINDOW,
             "full_training_mapping": "--informed_mix_probs p 1-p",
         },
+        "baseline_prior_control": baseline_prior_control_config(
+            baseline_prior_control_enabled(args), baseline_control_max_attempts(args)
+        ),
         "max_etas": args.max_etas,
         "n_etas": len(candidates),
         "task_id": EPIT_TASK_ID,
@@ -2025,6 +2687,23 @@ def write_phase1_outputs(
     diagnostic_comparison_frame(summaries, target_rule_summaries).to_csv(
         output_dir / "eta_diagnostic_comparison.csv", index=False
     )
+    if baseline_prior_control_enabled(args):
+        baseline_samples, baseline_scores, _ = sample_and_score_baseline_prior_control(
+            processed,
+            n_synth=args.n_synth,
+            synthetic_seed_start=args.synthetic_seed,
+            seq_len=first_sample.seq_len,
+            temperature=args.temperature,
+            phase="phase1",
+            max_schema_attempts=baseline_control_max_attempts(args),
+        )
+        write_baseline_prior_control_outputs(
+            processed,
+            baseline_prior_control_records(baseline_samples, baseline_scores),
+            output_dir,
+            phase="phase1",
+            temperature=args.temperature,
+        )
 
 
 
@@ -2107,6 +2786,9 @@ def write_phase2_outputs(
             "phase2_window": PHASE2_INFORMED_MLP_PROB_WINDOW,
             "full_training_mapping": "--informed_mix_probs p 1-p",
         },
+        "baseline_prior_control": baseline_prior_control_config(
+            baseline_prior_control_enabled(args), baseline_control_max_attempts(args)
+        ),
         "phase2_source_dir": str(args.phase2_source_dir),
         "phase2_top_regimes": args.phase2_top_regimes,
         "n_core_samples": args.n_core_samples,
@@ -2153,6 +2835,23 @@ def write_phase2_outputs(
     diagnostic_comparison_frame(summaries, target_rule_summaries).to_csv(
         output_dir / "eta_diagnostic_comparison.csv", index=False
     )
+    if baseline_prior_control_enabled(args):
+        baseline_samples, baseline_scores, _ = sample_and_score_baseline_prior_control(
+            processed,
+            n_synth=args.n_synth,
+            synthetic_seed_start=args.synthetic_seed,
+            seq_len=first_sample.seq_len,
+            temperature=args.temperature,
+            phase="phase2",
+            max_schema_attempts=baseline_control_max_attempts(args),
+        )
+        write_baseline_prior_control_outputs(
+            processed,
+            baseline_prior_control_records(baseline_samples, baseline_scores),
+            output_dir,
+            phase="phase2",
+            temperature=args.temperature,
+        )
 
 
 
@@ -2226,9 +2925,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--phase",
-        choices=("smoke", "phase1", "phase2"),
+        choices=("smoke", "phase1", "phase2", BASELINE_PRIOR_CONTROL_PHASE),
         default="smoke",
-        help="Direct-prior phase. Phase 1 runs the anchored regime/core-anchor grid.",
+        help="Direct-prior phase. Phase 1/2 search informed etas; baseline_prior_control runs only the default TabICL prior control.",
     )
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--random-state", type=int, default=42)
@@ -2301,6 +3000,20 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Recompute theta artifacts instead of skipping valid existing artifacts.",
     )
+    parser.add_argument(
+        "--no-baseline-prior-control",
+        action="store_true",
+        help=(
+            "Skip the default TabICL prior Ridge control. By default phase1/phase2 also score one "
+            "unsearched mix_scm baseline prior conditioned to accepted d=21 draws."
+        ),
+    )
+    parser.add_argument(
+        "--baseline-control-max-attempts",
+        type=int,
+        default=DEFAULT_BASELINE_CONTROL_MAX_ATTEMPTS,
+        help="Maximum default-prior sampling attempts per accepted d=21 baseline-control theta.",
+    )
     parser.add_argument("--no-write", action="store_true", help="Load and preprocess without writing artifacts.")
     return parser.parse_args()
 
@@ -2327,8 +3040,57 @@ def main() -> None:
     print(
         "Execution settings: "
         f"workers={n_workers}, chunk_size={chunk_size}, resume={resume}, "
-        f"progress_interval={args.progress_interval}s"
+        f"progress_interval={args.progress_interval}s, "
+        f"baseline_prior_control={baseline_prior_control_enabled(args)}"
     )
+
+
+    if args.phase == BASELINE_PRIOR_CONTROL_PHASE:
+        if args.no_baseline_prior_control:
+            raise SystemExit("--no-baseline-prior-control cannot be used with --phase baseline_prior_control.")
+        if args.no_write:
+            samples, scores, summary = sample_and_score_baseline_prior_control(
+                processed,
+                n_synth=args.n_synth,
+                synthetic_seed_start=args.synthetic_seed,
+                seq_len=synthetic_seq_len,
+                temperature=args.temperature,
+                phase=BASELINE_PRIOR_CONTROL_PHASE,
+                max_schema_attempts=baseline_control_max_attempts(args),
+            )
+            records = baseline_prior_control_records(samples, scores)
+            metadata = baseline_prior_control_metadata(records)
+            print(
+                "Baseline prior control complete: "
+                f"n_synth={args.n_synth}, spearman={summary.ensemble_spearman:.6f}, "
+                f"MAE={summary.standardized_mae:.6f}, RMSE={summary.standardized_rmse:.6f}, "
+                f"acceptance_rate={float(metadata['acceptance_rate']):.6f}"
+            )
+        else:
+            write_baseline_prior_control_run_metadata(
+                processed,
+                output_dir,
+                args,
+                n_workers=n_workers,
+                chunk_size=chunk_size,
+                resume=resume,
+            )
+            run_baseline_prior_control_with_artifacts(
+                processed,
+                output_dir,
+                phase=BASELINE_PRIOR_CONTROL_PHASE,
+                n_synth=args.n_synth,
+                synthetic_seed_start=args.synthetic_seed,
+                seq_len=synthetic_seq_len,
+                temperature=args.temperature,
+                n_workers=n_workers,
+                chunk_size=chunk_size,
+                resume=resume,
+                progress_interval=args.progress_interval,
+                max_schema_attempts=baseline_control_max_attempts(args),
+            )
+            print(f"Wrote {output_dir}")
+        return
 
     if args.phase == "phase1":
         candidates = build_phase1_candidates(max_etas=args.max_etas)

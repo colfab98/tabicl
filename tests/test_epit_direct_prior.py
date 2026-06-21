@@ -10,11 +10,15 @@ import scripts.eval_epit_direct_prior as epit_direct_prior
 
 from scripts.eval_epit_direct_prior import (
     EPIT_PROCESS_COLUMN,
+    BASELINE_PRIOR_CONTROL_FEATURE_MODE,
+    BASELINE_PRIOR_CONTROL_ID,
+    BASELINE_PRIOR_CONTROL_PHASE,
     EPIT_TASK_ID,
     TARGET_RULE_DIAGNOSTIC,
     THETA_ARTIFACT_FORMAT,
     EXPECTED_EPIT_FEATURE_GROUP_COUNTS,
     EXPECTED_EPIT_FEATURE_COUNT,
+    baseline_prior_control_records,
     build_phase1_candidates,
     build_phase2_candidates,
     effective_sample_size,
@@ -24,10 +28,14 @@ from scripts.eval_epit_direct_prior import (
     read_phase1_summary,
     read_target_rule_artifact,
     read_theta_artifact,
+    read_baseline_prior_artifact,
+    run_baseline_prior_control_with_artifacts,
     run_candidates_with_artifacts,
     run_phase1,
     run_phase2,
+    sample_and_score_baseline_prior_control,
     sample_and_score_eta,
+    sample_baseline_prior_control_dataset,
     sample_synthetic_dataset,
     score_target_rule_theta,
     summarize_target_rule_eta,
@@ -35,6 +43,8 @@ from scripts.eval_epit_direct_prior import (
     theta_artifact_path,
     uniform_theta_weights,
     write_phase1_outputs,
+    write_baseline_prior_artifact,
+    write_baseline_prior_control_outputs,
     write_phase2_outputs,
     write_smoke_outputs,
 )
@@ -264,6 +274,169 @@ def test_sample_synthetic_epit_dataset_retries_left_packed_schema(monkeypatch):
     assert sample.X.shape == (32, EXPECTED_EPIT_FEATURE_COUNT)
     assert sample.d == EXPECTED_EPIT_FEATURE_COUNT
     assert sample.process_unique_count == 3
+
+
+def test_baseline_prior_control_conditions_default_prior_on_d21(monkeypatch):
+    class FakePriorDataset:
+        calls = 0
+        init_kwargs = []
+
+        def __init__(self, **kwargs):
+            self.seq_len = int(kwargs["max_seq_len"])
+            self.max_features = int(kwargs["max_features"])
+            FakePriorDataset.init_kwargs.append(kwargs)
+
+        def get_batch(self):
+            FakePriorDataset.calls += 1
+            seq_len = self.seq_len
+            X = torch.randn(1, seq_len, self.max_features)
+            y = torch.linspace(-1.0, 1.0, seq_len).reshape(1, seq_len)
+            d_value = 18 if FakePriorDataset.calls == 1 else EXPECTED_EPIT_FEATURE_COUNT
+            d = torch.tensor([d_value], dtype=torch.long)
+            seq_lens = torch.tensor([seq_len], dtype=torch.long)
+            train_sizes = torch.tensor([max(1, seq_len // 3)], dtype=torch.long)
+            return X, y, d, seq_lens, train_sizes
+
+    monkeypatch.setattr(epit_direct_prior, "PriorDataset", FakePriorDataset)
+
+    sample = sample_baseline_prior_control_dataset(synthetic_seed=200000, seq_len=32, max_schema_attempts=5)
+
+    assert FakePriorDataset.calls == 2
+    first_kwargs = FakePriorDataset.init_kwargs[0]
+    assert first_kwargs["prior_type"] == "mix_scm"
+    assert first_kwargs["min_features"] == 2
+    assert first_kwargs["max_features"] == 100
+    assert first_kwargs["max_classes"] == 0
+    assert first_kwargs["scm_fixed_hp"]["pitting_fixed_epit_schema"] is False
+    assert sample.X.shape == (32, EXPECTED_EPIT_FEATURE_COUNT)
+    assert sample.d == EXPECTED_EPIT_FEATURE_COUNT
+    assert sample.schema_attempts == 2
+    assert sample.sampling_seed != sample.synthetic_seed
+    assert sample.target_rule == {}
+
+
+def test_baseline_prior_control_scores_and_writes_separate_outputs(monkeypatch, epit_task, tmp_path):
+    class FakePriorDataset:
+        def __init__(self, **kwargs):
+            self.seq_len = int(kwargs["max_seq_len"])
+            self.max_features = int(kwargs["max_features"])
+
+        def get_batch(self):
+            seq_len = self.seq_len
+            X = torch.randn(1, seq_len, self.max_features)
+            y = torch.linspace(-1.0, 1.0, seq_len).reshape(1, seq_len)
+            d = torch.tensor([EXPECTED_EPIT_FEATURE_COUNT], dtype=torch.long)
+            seq_lens = torch.tensor([seq_len], dtype=torch.long)
+            train_sizes = torch.tensor([seq_len // 2], dtype=torch.long)
+            return X, y, d, seq_lens, train_sizes
+
+    monkeypatch.setattr(epit_direct_prior, "PriorDataset", FakePriorDataset)
+    processed = preprocess_real_epit(epit_task)
+
+    samples, scores, summary = sample_and_score_baseline_prior_control(
+        processed,
+        n_synth=2,
+        synthetic_seed_start=10,
+        seq_len=32,
+        temperature=0.10,
+        phase="phase1",
+        max_schema_attempts=3,
+    )
+    records = baseline_prior_control_records(samples, scores)
+
+    assert summary.eta_id == BASELINE_PRIOR_CONTROL_ID
+    assert summary.core_anchor == BASELINE_PRIOR_CONTROL_FEATURE_MODE
+    assert summary.n_synth == 2
+    assert len(records) == 2
+    assert all(record.d == EXPECTED_EPIT_FEATURE_COUNT for record in records)
+    assert all(record.raw_feature_count == 100 for record in records)
+
+    write_baseline_prior_artifact(tmp_path, phase="phase1", score=scores[0], synthetic=samples[0])
+    artifact_record = read_baseline_prior_artifact(
+        tmp_path, samples[0].synthetic_seed, expected_n_rows=processed.n_rows, strict=True
+    )
+    assert artifact_record is not None
+    assert np.isclose(artifact_record.score.spearman, scores[0].spearman)
+    assert artifact_record.score.predictions.shape == (processed.n_rows,)
+
+    write_baseline_prior_control_outputs(
+        processed,
+        records,
+        tmp_path,
+        phase="phase1",
+        temperature=0.10,
+    )
+    baseline_summary = pd.read_csv(tmp_path / "baseline_prior_summary.csv")
+    baseline_scores = pd.read_csv(tmp_path / "baseline_prior_theta_scores.csv")
+    baseline_weights = pd.read_csv(tmp_path / "baseline_prior_weights.csv")
+
+    assert baseline_summary.loc[0, "control_id"] == BASELINE_PRIOR_CONTROL_ID
+    assert baseline_summary.loc[0, "target_rule_diagnostic"] == "not_applicable"
+    assert baseline_summary.loc[0, "n_accepted_d21"] == 2
+    assert baseline_scores.shape[0] == 2
+    assert set(baseline_scores["feature_mode"]) == {BASELINE_PRIOR_CONTROL_FEATURE_MODE}
+    assert np.allclose(baseline_weights["weight"].to_numpy(), np.full(2, 0.5))
+
+
+def test_baseline_prior_control_artifact_runner_is_baseline_only(monkeypatch, epit_task, tmp_path):
+    class FakePriorDataset:
+        def __init__(self, **kwargs):
+            self.seq_len = int(kwargs["max_seq_len"])
+            self.max_features = int(kwargs["max_features"])
+
+        def get_batch(self):
+            seq_len = self.seq_len
+            X = torch.randn(1, seq_len, self.max_features)
+            y = torch.linspace(-1.0, 1.0, seq_len).reshape(1, seq_len)
+            d = torch.tensor([EXPECTED_EPIT_FEATURE_COUNT], dtype=torch.long)
+            seq_lens = torch.tensor([seq_len], dtype=torch.long)
+            train_sizes = torch.tensor([seq_len // 2], dtype=torch.long)
+            return X, y, d, seq_lens, train_sizes
+
+    monkeypatch.setattr(epit_direct_prior, "PriorDataset", FakePriorDataset)
+    processed = preprocess_real_epit(epit_task)
+
+    records, summary = run_baseline_prior_control_with_artifacts(
+        processed,
+        tmp_path,
+        phase=BASELINE_PRIOR_CONTROL_PHASE,
+        n_synth=2,
+        synthetic_seed_start=40,
+        seq_len=32,
+        temperature=0.10,
+        n_workers=1,
+        chunk_size=1,
+        resume=True,
+        progress_interval=0.0,
+        max_schema_attempts=3,
+    )
+
+    assert summary.eta_id == BASELINE_PRIOR_CONTROL_ID
+    assert summary.phase == BASELINE_PRIOR_CONTROL_PHASE
+    assert len(records) == 2
+    assert (tmp_path / "baseline_prior_summary.csv").exists()
+    assert (tmp_path / "baseline_prior_theta_scores.csv").exists()
+    assert (tmp_path / "baseline_prior_weights.csv").exists()
+    assert (tmp_path / "baseline_prior_progress.json").exists()
+    assert not (tmp_path / "summary.csv").exists()
+    assert not (tmp_path / "theta_scores.csv").exists()
+    assert not (tmp_path / "target_rule_summary.csv").exists()
+
+    progress = json.loads((tmp_path / "baseline_prior_progress.json").read_text())
+    assert progress["phase"] == BASELINE_PRIOR_CONTROL_PHASE
+    assert progress["completed_theta"] == 2
+    artifact_record = read_baseline_prior_artifact(tmp_path, 40, expected_n_rows=processed.n_rows, strict=True)
+    assert artifact_record is not None
+    assert artifact_record.d == EXPECTED_EPIT_FEATURE_COUNT
+
+
+def test_baseline_prior_control_enabled_for_dedicated_phase():
+    assert epit_direct_prior.baseline_prior_control_enabled(
+        Namespace(phase=BASELINE_PRIOR_CONTROL_PHASE, no_baseline_prior_control=True)
+    )
+    assert epit_direct_prior.baseline_prior_control_enabled(Namespace(phase="phase1", no_baseline_prior_control=False))
+    assert not epit_direct_prior.baseline_prior_control_enabled(Namespace(phase="phase1", no_baseline_prior_control=True))
+    assert not epit_direct_prior.baseline_prior_control_enabled(Namespace(phase="smoke", no_baseline_prior_control=False))
 
 
 def test_uniform_weights_match_training_aligned_eta_average():

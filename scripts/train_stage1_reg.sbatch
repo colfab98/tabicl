@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=tabicl_s1_regression_pitting_direct_prior_v8_8k
+#SBATCH --job-name=tabicl_s1_regression_test1_v6_trial11_reproduction
 #SBATCH --gpus=2
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
@@ -30,45 +30,40 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --dtype float32 \
             --np_seed 42 \
             --torch_seed 42 \
-            --max_steps 8000 \
+            --max_steps 6000 \
             --batch_size 512 \
             --micro_batch_size 4 \
             --lr 1e-4 \
             --scheduler cosine_warmup \
             --warmup_proportion 0.02 \
             --gradient_clipping 1.0 \
-            --prior_type informed_scm \
+            --prior_type hybrid_scm \
             --informed_prior_ratio 1.0 \
             --mix_probs 0.7 0.3 \
             --informed_mix_probs 0.7 0.3 \
             --informed_task_family_probs 1.0 0.0 \
-            --informed_normal_block_allocation 17 3 1 0 0 0 0 0 0 \
-            --informed_normal_block_allocation_min_counts 17 3 1 0 0 0 0 0 0 \
-            --informed_feature_block_strength 0.033398 \
-            --informed_interaction_strength 0.863281 \
+            --informed_normal_block_allocation_ranges 0.7 0.9 0.05 0.25 0.0 0.1 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 \
+            --informed_inhibitor_block_allocation 0.05 0.08 0.02 0.02 0.0 0.05 0.78 0.0 0.0 \
+            --informed_feature_block_strength 0.6652148023102392 \
+            --informed_interaction_strength 0.997279233446061 \
             --informed_history_strength 0.0 \
             --informed_intervention_strength 0.0 \
             --informed_target_family pitting_potential \
-            --informed_physical_marginal_prob 1.0 \
+            --informed_physical_marginal_prob 0.75 \
             --informed_physical_marginal_profile pitting_potential_v1 \
-            --pitting_material_dirichlet_prob 1.0 \
-            --pitting_material_dirichlet_concentration 0.25 \
-            --pitting_material_dirichlet_active_prob 0.35 \
-            --pitting_process_role test_method_category \
-            --pitting_process_category_count 52 \
-            --pitting_fixed_epit_schema True \
-            --cat_prob 0.0 \
-            --permute_features False \
-            --epit_material_coef 0.626758 \
-            --epit_environment_coef 0.456641 \
-            --epit_interaction_coef 0.645117 \
+            --pitting_material_dirichlet_prob 0.0 \
+            --pitting_material_dirichlet_concentration 0.1 \
+            --pitting_material_dirichlet_active_prob 0.7 \
+            --epit_material_coef 0.5677247609274653 \
+            --epit_environment_coef 0.4764951348946006 \
+            --epit_interaction_coef 0.9064006374181608 \
             --prior_device cpu \
             --prior_n_jobs "${PRIOR_N_JOBS}" \
             --dataloader_num_workers "${DATALOADER_NUM_WORKERS}" \
             --dataloader_prefetch_factor "${DATALOADER_PREFETCH_FACTOR}" \
             --batch_size_per_gp 4 \
-            --min_features 21 \
-            --max_features 21 \
+            --min_features 2 \
+            --max_features 100 \
             --max_classes 0 \
             --num_quantiles 999 \
             --max_seq_len 1024 \
@@ -88,5 +83,5 @@ torchrun --standalone --nproc_per_node=2 /home/fcolanto/projects/tabicl/src/tabi
             --norm_first True \
             --checkpoint_dir "/home/fcolanto/projects/tabicl/checkpoints/${RUN_NAME}" \
             --save_temp_every 100 \
-            --save_perm_every 100 \
-            --scheduler_total_steps 8000
+            --save_perm_every 500 \
+            --scheduler_total_steps 10000
