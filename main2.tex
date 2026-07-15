@@ -1601,4 +1601,142 @@ The ablations indicate that restricting feature counts and removing generic task
 
 These experiments establish a mismatch between the direct Ridge objective and the task distribution from which the transformer learned. Direct-prior analysis was useful for developing and validating the EPIT formula, but the configuration maximizing the direct surrogate objective was not the configuration producing the strongest pretrained transformer.
 
+
+\section{Additional Diagnostic Checks}
+
+\subsection{Feature-shuffle evaluation check}
+
+\textbf{Model:} \texttt{pitting\_direct\_prior\_v8\_8k}
+
+\textbf{Checkpoint:} \texttt{step-5000.ckpt}
+
+\textbf{Task:} EPIT / pitting potential
+
+\textbf{Seeds:} \texttt{1001, 1002, 1003, 1004, 1005}
+
+\textbf{Test:}
+\begin{itemize}
+    \item Evaluation with feature shuffle: \texttt{latin}
+    \item Evaluation with fixed feature order: \texttt{none}
+\end{itemize}
+
+\textbf{Results:}
+\begin{itemize}
+    \item \texttt{latin} mean Spearman: $0.797805$
+    \item \texttt{none} mean Spearman: $0.798439$
+    \item Difference: $+0.000634$ for \texttt{none}
+\end{itemize}
+
+\textbf{Reference:}
+\begin{itemize}
+    \item Pretrained TabICL mean Spearman: $\sim 0.851$--$0.852$
+    \item PReN model under pretrained by $\sim 0.053$
+    \item PReN MAE: $\sim 181$--$183$
+    \item Pretrained MAE: $\sim 126$
+\end{itemize}
+
+\textbf{Conclusion:}
+Feature-shuffle setting has negligible effect. Fixed 21-feature order does not rescue the checkpoint. Underperformance is not explained by evaluation-time feature shuffling.
+
+\subsection{Fixed-PREN Optuna trial direct-prior check}
+\label{sec:fixed-pren-optuna-direct-check}
+
+\textbf{Question.}
+Two direct-prior diagnostics were under consideration:
+\begin{itemize}
+    \item Ridge score: train a Ridge model on synthetic data, then test it on the real EPIT table.
+    \item PREN target score: apply the fixed PREN rule directly to the real EPIT table.
+\end{itemize}
+
+In the fixed-PREN Optuna study, only the Ridge score is a meaningful trial-ranking test. The PREN target score uses almost the same fixed rule for all informed samples. It mostly checks whether the rule points in the right direction. It should not be expected to separate good and bad Optuna trials.
+
+\textbf{Controlled setup.}
+\begin{itemize}
+    \item New fixed-PREN Optuna study.
+    \item Fixed EPIT schema: \(17\) material, three environment, one process feature.
+    \item No feature-order shuffling.
+    \item Fixed PREN-inspired EPIT target rule.
+    \item Hybrid generator retained; each trial keeps its own informed-prior ratio.
+    \item Post-hoc direct-prior evaluation: \(256\) synthetic mechanisms per completed trial.
+    \item Comparison target: actual Optuna trial score, i.e. mean test Spearman across repeated EPIT splits.
+\end{itemize}
+
+\textbf{Score definitions.}
+\begin{description}
+    \item[\texttt{all\_score\_spearman}] Train Ridge models on all sampled synthetic datasets for the trial: informed plus generic. Report Spearman on the real EPIT table.
+    \item[\texttt{informed\_score\_spearman}] Same Ridge test, but using only informed synthetic datasets.
+    \item[\texttt{generic\_score\_spearman}] Same Ridge test, but using only generic synthetic datasets.
+    \item[\texttt{pren\_score\_spearman}] Apply the sampled PREN/EPIT rule directly to the real EPIT table; no Ridge model. In this fixed-rule study, mostly a sanity check.
+    \item[\texttt{fake\_pren\_score\_spearman}] Control for generic samples. Apply a fake PREN-like rule using column positions.
+\end{description}
+
+Here, each score is compared with the trained transformer's Optuna trial score. The trial count \(n\) is the number of completed trials used in that comparison.
+
+\begin{table}[htbp]
+\centering
+\caption{How well each direct-prior score matches the actual transformer trial scores.}
+\label{tab:fixed-pren-direct-trial-correlations}
+\begin{tabular}{lrrr}
+\hline
+Direct score & Trials & Spearman vs trial score & Kendall \(\tau\) \\
+\hline
+\texttt{all\_score\_spearman}
+    & 32 & \(0.232\) & \(0.137\) \\
+\texttt{informed\_score\_spearman}
+    & 32 & \(0.267\) & \(0.153\) \\
+\texttt{generic\_score\_spearman}
+    & 15 & \(-0.432\) & \(-0.295\) \\
+\texttt{pren\_score\_spearman}
+    & 32 & \(-0.085\) & \(-0.052\) \\
+\texttt{fake\_pren\_score\_spearman}
+    & 15 & \(-0.025\) & \(-0.029\) \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Main Ridge result.}
+\begin{itemize}
+    \item Main test: does the Ridge score rank trials like the trained transformer does?
+    \item \texttt{all\_score\_spearman}: weak correlation, Spearman \(0.232\).
+    \item \texttt{informed\_score\_spearman}: best Ridge signal, but still weak, Spearman \(0.267\).
+    \item \texttt{generic\_score\_spearman}: negative over hybrid trials; not a useful selection signal here.
+    \item Conclusion: even with matched schema and no shuffling, the Ridge score does not reliably rank \(\eta\) by PFN performance.
+\end{itemize}
+
+\textbf{PREN target-score result.}
+\begin{itemize}
+    \item \texttt{pren\_score\_spearman}: essentially no trial-ranking signal, Spearman \(-0.085\).
+    \item Values nearly flat, around \(0.49\)--\(0.50\).
+    \item Expected here: the fixed PREN rule is almost the same across informed samples.
+    \item Interpretation: useful to check that the PREN rule points in the right direction, not to choose \(\eta\).
+    \item \texttt{fake\_pren\_score\_spearman}: no signal, as expected for the positional control.
+\end{itemize}
+
+\textbf{Top-trial ranking check.}
+\begin{itemize}
+    \item Actual top five transformer trials: 28, 25, 29, 27, 24.
+    \item Top five by \texttt{all\_score\_spearman}: overlap \(0/5\).
+    \item Top five by \texttt{informed\_score\_spearman}: overlap \(3/5\).
+    \item Top five by \texttt{pren\_score\_spearman}: overlap \(0/5\). This is not the main failure, because this score is not expected to rank fixed-rule trials.
+\end{itemize}
+
+\textbf{Ridge-score counterexample.}
+Trial~25:
+\begin{itemize}
+    \item actual transformer rank: 2 of 32;
+    \item actual mean test Spearman: \(0.8315\);
+    \item \texttt{all\_score\_spearman}: \(-0.2121\);
+    \item \texttt{informed\_score\_spearman}: \(-0.2121\);
+    \item Ridge ranking: bottom of the study.
+\end{itemize}
+
+\textbf{Interpretation.}
+\begin{itemize}
+    \item Main failure: Ridge score only weakly matches the actual Optuna trial score.
+    \item PREN target score is not the main issue here; it is mostly constant by construction.
+    \item Matched schema and no feature shuffling do not fix the Ridge-versus-PFN mismatch.
+    \item Direct-prior analysis remains useful for rule development and sanity checks.
+    \item Actual Optuna transformer score remains the better way to choose \(\eta\).
+    \item MAE/RMSE direct scores are de-emphasized because some Ridge fits had unstable prediction scales.
+\end{itemize}
 \end{document}
