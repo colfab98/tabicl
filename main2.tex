@@ -1,0 +1,1604 @@
+\documentclass{article}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{svg}
+
+\title{CorrPFN}
+\author{}
+\date{June 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Pitting corrosion is a localized degradation process in which a protective passive film breaks down and stable pits begin to form. A commonly reported measure of this transition is the pitting potential, denoted here by EPIT. Under comparable environmental and experimental conditions, a more positive EPIT generally indicates that a higher applied potential is required to initiate sustained pitting and therefore corresponds to greater resistance to passive-film breakdown. Predicting EPIT from alloy composition, exposure conditions, and test information is nevertheless difficult because the available data are heterogeneous, sparse relative to the number of possible material--environment combinations, and strongly affected by measurement protocol.
+
+This work investigates whether a Prior-Data Fitted Network can be specialized for EPIT prediction by modifying the synthetic task distribution used during pretraining. The starting point is TabICL, which learns an in-context prediction procedure from many synthetically generated tabular tasks. Its generic prior produces diverse nonlinear and tree-structured prediction problems, but its features are scientifically anonymous and its target has no fixed physical interpretation. It therefore does not explicitly represent the material, environment, and process structure of an EPIT dataset or the physical direction of a pitting-potential target.
+
+CorrPFN introduces an informed synthetic prior that retains the statistical diversity of the generic TabICL generators while adding EPIT-relevant structure. Synthetic features are assigned internal material, environment, and process roles; optional marginal transformations create composition-like, environmental, and categorical feature behavior; and an EPIT-informed component is added to the generic synthetic target. The added component represents broad probabilistic tendencies rather than a deterministic corrosion model: material passivity tends to increase EPIT, environmental aggressiveness tends to decrease it, material--environment interactions can further reduce it, and test protocol can shift the reported value in either direction.
+
+Two complementary forms of the informed prior are considered. A flexible mechanism supports variable feature counts, block allocations, and feature order and is intended for diverse EPIT-like pretraining tasks. A fixed-schema mechanism uses stable material, environment, and process positions aligned with the evaluated EPIT table while remaining stochastic across sampled synthetic tasks.
+
+Before transformer pretraining, candidate prior configurations are examined through a direct prior-alignment procedure. For each configuration, synthetic mechanisms are sampled and evaluated using both a Ridge transfer surrogate and a replay of the fixed EPIT target rule on the real feature table. These diagnostics use the complete observed EPIT dataset to compare and select prior configurations. They are therefore supervised calibration tools, not leakage-free estimates of downstream generalization and not Bayesian posterior model averaging. Their purpose is to determine whether the proposed synthetic structure is meaningfully aligned with the real EPIT task before assessing what a transformer can learn from it.
+
+The scope of this report is limited to pitting-potential prediction. It documents the generic-prior baseline, the EPIT dataset and target interpretation, the informed feature and target mechanisms, the direct alignment diagnostics, and the configuration search used to select EPIT-relevant synthetic priors. The central question is whether physically motivated but deliberately probabilistic synthetic structure can provide a more useful pretraining distribution for EPIT prediction than a scientifically anonymous generic tabular prior.
+
+\section{Generic TabICL Prior and PFN Interpretation}
+\label{sec:generic-prior}
+
+TabICL is pretrained on a distribution of synthetic supervised-learning tasks. In this context, the \emph{prior} is the stochastic procedure that generates those tasks, not one fixed synthetic dataset. Each sampled task contains a feature table \(X\), a target \(y\), and a context/query split. During pretraining, the model receives all feature rows and the targets associated with the context rows, and it learns to predict the withheld query targets.
+
+\subsection{Generic Synthetic Task Generation}
+
+The generic TabICL prior is domain-independent. Its purpose is to expose the model to diverse tabular relationships from which it can learn a reusable in-context prediction procedure. The principal generator choices are
+
+\begin{itemize}
+    \item \texttt{mlp\_scm}, which produces nonlinear relationships using a randomly sampled multilayer perceptron;
+    \item \texttt{tree\_scm}, which produces split-based and piecewise relationships using a random tree or ensemble;
+    \item \texttt{mix\_scm}, which samples between the MLP and tree generators using configurable probabilities.
+\end{itemize}
+
+The MLP generator supports two internal topologies through the sampled parameter \texttt{is\_causal}. When it is true, latent root variables are transformed into intermediate variables from which the observed features and target are selected. When it is false, the sampled variables are used directly as features and the final MLP output becomes the target. The tree generator currently uses the latter, direct predictive structure. Conceptually,
+
+\begin{equation}
+\begin{aligned}
+\text{causal-style MLP:}\quad
+&z \longrightarrow h \longrightarrow (X,y),\\
+\text{direct MLP or tree:}\quad
+&X=z,\qquad y=f(X).
+\end{aligned}
+\label{eq:generic-generator-modes}
+\end{equation}
+
+Here, \(z\) denotes sampled root variables and \(h\) denotes generated intermediate variables. 
+
+After generation, the synthetic task passes through the standard TabICL preprocessing pipeline. Depending on the configuration, numerical columns can be converted into categorical-like columns, extreme values can be limited, features can be standardized and permuted, and unused feature positions can be padded. Constant or invalid features are removed, and unusable tasks are rejected and resampled. The target is standardized for regression or converted into class labels for classification. The EPIT experiments considered here use regression and therefore retain a continuous target. This continuous-target regression path was added for the present project and is not native to the original TabICL V1 implementation.
+
+These mechanisms allow the generic prior to produce nonlinear effects, interactions, correlated or redundant features, irrelevant variables, different feature counts, and different context/query sizes. However, its columns remain scientifically anonymous: no feature is inherently identified as an alloy-composition variable, an environmental condition, or a test parameter.
+
+\subsection{PFN Interpretation}
+
+Let \(\theta\) denote the complete latent mechanism sampled for one synthetic task. It can include the generator family, network or tree parameters, feature distributions, dependency structure, noise, and other task-specific random quantities. A synthetic dataset is then sampled conditionally on that mechanism. Thus, \(\theta\) describes how one task is generated; it is not the generated dataset itself.
+
+The TabICL transformer has a separate set of shared parameters, denoted by \(\phi\). During pretraining, many mechanisms \(\theta\) and their associated datasets are sampled, while \(\phi\) is optimized across all tasks.
+
+For a labeled context dataset
+\[
+\mathcal{D}_{\mathrm{c}}
+=
+\{(x_i,y_i)\}_{i=1}^{n}
+\]
+and a query input \(x^\ast\), the posterior predictive distribution induced by a task prior \(p(\theta)\) is
+
+\begin{equation}
+p(y^\ast\mid x^\ast,\mathcal{D}_{\mathrm{c}})
+=
+\int
+p(y^\ast\mid x^\ast,\theta)
+p(\theta\mid\mathcal{D}_{\mathrm{c}})
+\,d\theta.
+\label{eq:posterior-predictive}
+\end{equation}
+
+A PFN is trained to amortize this inference. Its predictive distribution is intended to approximate the posterior predictive distribution associated with its synthetic training prior:
+
+\begin{equation}
+q_{\phi}(y^\ast\mid x^\ast,\mathcal{D}_{\mathrm{c}})
+\approx
+p(y^\ast\mid x^\ast,\mathcal{D}_{\mathrm{c}}).
+\label{eq:pfn-approximation}
+\end{equation}
+
+At inference time, the transformer produces predictions in one forward pass. Its parameters \(\phi\) remain fixed: it does not retrain on the context data, enumerate possible mechanisms, or numerically evaluate the integral in Equation~\eqref{eq:posterior-predictive}.
+
+This interpretation is conditional on the synthetic training distribution. The model is not guaranteed to approximate the unknown posterior predictive distribution of real corrosion data. Transfer depends on how well the synthetic prior covers the statistical structure of the real task, as well as on model capacity, training diversity, optimization, and the amount and quality of context data.
+
+\subsection{Motivation for an EPIT-Informed Prior}
+
+The generic prior provides broad tabular diversity but does not encode the scientific organization of the EPIT problem. In particular, it does not distinguish material, environment, and process information; assign a physical direction to the target; or deliberately reproduce the material-heavy structure of the evaluated dataset.
+
+This mismatch motivates the informed prior developed in the following sections. The informed construction retains a generic MLP- or tree-generated task and adds probabilistic EPIT-relevant feature and target structure. It is therefore an extension of the generic prior rather than a separate deterministic corrosion simulator.
+
+\section{EPIT Dataset and Target Definition}
+\label{sec:epit-dataset}
+
+The evaluated EPIT task is derived from the public dataset
+\textit{Electrochemical Metrics for Corrosion Resistant Alloys}, released on
+Figshare and described by Nyby et al. in \textit{Scientific Data}
+\cite{nyby2021electrochemical}. In this project, the dataset is identified as
+\texttt{electrochemical\_metrics\_alloys}, and the evaluated task identifier is
+\texttt{electrochemical\_metrics\_alloys\_\_pitting\_potential\_\_epit\_mv\_sce\_avg}.
+The source workbook table is \texttt{Pitting Potential}, and the prediction target
+is \texttt{Epit, mV (SCE) Avg.}, where SCE denotes the saturated calomel reference
+electrode. This section defines the real EPIT task used for evaluation; the
+following subsections describe its row filtering, fixed input schema, target
+meaning, data representation, and implications for the informed prior.
+
+\subsection{Rows and Feature Schema}
+
+The source table contains \(810\) observed rows. Of these, \(760\) have a usable numeric value for the selected average EPIT target. The remaining \(50\) rows are excluded because the target is missing or cannot be interpreted as a numeric EPIT measurement.
+
+The evaluated input schema contains \(21\) features:
+
+\begin{equation}
+21 \text{ features}
+=
+17 \text{ material}
++
+3 \text{ environment}
++
+1 \text{ process/history}.
+\label{eq:epit-schema}
+\end{equation}
+
+This subset is aligned with the feature set used by the reference modelling study, allowing results to be compared under a consistent input definition. Columns omitted from the source workbook should not therefore be interpreted as scientifically irrelevant.
+
+The \(17\) material features are alloy-composition values reported in weight percent:
+
+\[
+\mathrm{Fe,\ Cr,\ Ni,\ Mo,\ W,\ Nb,\ Al,\ V,\ Ta,\ Re,\ Ce,\ Ti,\ Co,\ B,\ Mg,\ Y,\ Gd}.
+\]
+
+They are retained as separate inputs rather than being reduced to one aggregate alloy descriptor.
+
+The three environmental features are
+
+\begin{itemize}
+    \item \texttt{Test Temp. oC}, the test temperature in degrees Celsius;
+    \item \texttt{[Cl-] M}, the chloride-ion concentration in molar units;
+    \item \texttt{[Cl-] pH}, the reported pH of the chloride-containing solution.
+\end{itemize}
+
+The process/history feature is \texttt{[Cl-] Test Method}. It records the experimental method or protocol associated with the measurement. It is classified as process/history information because polarization procedure, scan conditions, specimen preparation, stabilization time, and the operational breakdown criterion can all affect the reported EPIT.
+
+\subsection{Target Meaning and Experimental Heterogeneity}
+
+EPIT is the reported electrochemical potential associated with passive-film breakdown or the onset of sustained pitting. Under comparable reference-electrode, environmental, surface, and test-protocol conditions, a more positive EPIT indicates that a higher applied potential is required before the reported breakdown criterion is reached. It is therefore generally interpreted as stronger resistance to pit initiation.
+
+This interpretation is conditional rather than universal. The workbook combines measurements obtained using potentiodynamic, potentiostatic, scratch-based, and other polarization procedures. Different studies can identify breakdown using different current thresholds, scan rates, stabilization periods, or visual criteria. Consequently, the operational meaning of the reported EPIT is not identical for every row.
+
+A measured EPIT depends jointly on
+
+\begin{itemize}
+    \item alloy composition and microstructure;
+    \item chloride concentration and other solution chemistry;
+    \item pH and temperature;
+    \item surface preparation and prior exposure;
+    \item polarization method and scan rate;
+    \item the criterion used to identify breakdown.
+\end{itemize}
+
+A higher raw EPIT therefore does not by itself prove that one alloy is intrinsically more resistant than another when the measurements were obtained under different environments or protocols.
+
+\subsection{Data Representation}
+
+The \(20\) material and environment columns are converted to numeric values. Missing entries are replaced with the mean of the corresponding column.
+
+The test-method feature is categorical and contains \(52\) encoded categories, including one category for missing values. To retain the fixed \(21\)-column schema, it is represented by a single integer-coded column rather than one-hot encoding:
+
+\[
+\text{test-method category}_k \longmapsto k.
+\]
+
+These integers are nominal identifiers. They do not define a physical ordering or distance between experimental methods. Any method that treats this column as continuous therefore introduces an approximation. This limitation is particularly relevant to the Ridge transfer diagnostic described in Section~\ref{sec:direct-prior-method}.
+
+\subsection{Implications for the Informed Prior}
+
+The physical direction of EPIT differs from that of corrosion-rate or degradation-severity targets. For EPIT, a larger value generally represents a higher breakdown threshold and therefore better pitting resistance under comparable conditions.
+
+The informed prior must consequently distinguish between material resistance and environmental aggressiveness. Its broad intended tendencies are that stronger material passivity increases the synthetic EPIT response, aggressive environmental conditions reduce it, and material--environment interactions can further modify the breakdown threshold. Process or test-method effects are allowed to shift the reported value in either direction.
+
+These tendencies are probabilistic structural assumptions, not universal physical laws. Chloride concentration and, in many systems, temperature tend to reduce EPIT, but their effects depend on the alloy and experimental range. The influence of pH is likewise alloy- and range-dependent and should not be represented by one universal monotonic rule.
+
+This dataset definition establishes the feature roles and target direction that the informed prior must represent. The corresponding synthetic mechanisms are defined in Section~\ref{sec:epit-mechanisms}.
+
+
+\section{EPIT-Informed Prior Architecture}
+\label{sec:informed-architecture}
+
+The informed prior extends the generic TabICL prior rather than replacing its synthetic-data generators. Every informed task begins with an MLP- or tree-generated feature table and target. EPIT-specific structure is then added before standard TabICL preprocessing.
+
+\subsection{Generation Pipeline}
+
+Let \(G_{\theta}\) denote one sampled generic task mechanism:
+
+\[
+(X_0,y_0)=G_{\theta}(z),
+\]
+
+where \(z\) represents the sampled root variables and other random inputs. The resulting task can already contain nonlinear effects, interactions, correlated or irrelevant variables, and generator-specific noise.
+
+For an informed task, an EPIT transformation \(T_{\mathrm{EPIT}}\) modifies the generated features and adds an informed target component. A final preprocessing operator \(\mathcal{P}\) prepares the task for TabICL:
+
+\begin{equation}
+(X_0,y_0)
+\xrightarrow{\;T_{\mathrm{EPIT}}\;}
+(X_1,y_1)
+\xrightarrow{\;\mathcal{P}\;}
+(\widetilde X,\widetilde y).
+\label{eq:informed-pipeline}
+\end{equation}
+
+The informed transformation can assign semantic roles to columns, introduce within-block dependence, remap feature marginals, and construct an EPIT-related target drive. Here, the EPIT-related drive denotes a scalar synthetic score
+\(g_{\mathrm{EPIT}}(X_1)\) computed from the assigned material, environment,
+interaction, and process roles, which is added to the generic target as
+
+\begin{equation}
+y_1
+=
+y_0
++
+\beta\,
+\operatorname{standardize}
+\left(g_{\mathrm{EPIT}}(X_1)\right).
+\end{equation} Final preprocessing standardizes the features and target, removes unusable columns, applies feature permutation when enabled, pads unused positions, and rejects invalid tasks.
+
+\subsection{Prior Routing}
+
+Three routing modes are relevant to the EPIT experiments:
+
+\begin{center}
+\small
+\begin{tabular}{p{0.24\linewidth}p{0.25\linewidth}p{0.36\linewidth}}
+\hline
+\textbf{Prior type} & \textbf{Task selection} & \textbf{Base-generator probabilities} \\
+\hline
+\texttt{mix\_scm} & always generic & \texttt{mix\_probs} \\
+\texttt{informed\_scm} & always informed & \texttt{informed\_mix\_probs} \\
+\texttt{hybrid\_scm} & generic or informed & branch-dependent \\
+\hline
+\end{tabular}
+\end{center}
+
+The generic control uses \texttt{mix\_scm} and receives no EPIT transformation. In \texttt{informed\_scm}, every task receives the transformation, and \texttt{informed\_mix\_probs} determines whether its base mechanism is an MLP or tree. The parameter \texttt{informed\_prior\_ratio} has no effect in this mode because all tasks are informed by definition.
+
+In \texttt{hybrid\_scm}, let \(r=\texttt{informed\_prior\_ratio}\). Each subgroup is informed with probability \(r\) and generic with probability \(1-r\). Generic subgroups use \texttt{mix\_probs}; informed subgroups use \texttt{informed\_mix\_probs} and then receive \(T_{\mathrm{EPIT}}\). Thus, \(r\) controls whether the additional transformation is applied, not whether the underlying MLP or tree generator exists.
+
+The routing decision is sampled per synthetic subgroup rather than independently for every dataset. Datasets within one subgroup share the selected generator family, informed status, sampled feature count, and several generator hyperparameters while retaining separately sampled data and noise. A standard transformer-training subgroup commonly contains four datasets. The direct-prior analysis instead uses subgroup size one.
+This subgroup-level sampling behavior is inherited from the TabICL training
+implementation and was not introduced by the EPIT-specific modifications in this
+project. 
+
+\subsection{EPIT Configuration Layers}
+
+For the EPIT-informed prior used in this project, the generator separates three
+configuration decisions:
+
+\begin{itemize}
+    \item \texttt{informed\_task\_family\_probs} assigns probability one to the
+    \texttt{normal\_corrosion} feature-structure family and zero to other families;
+    \item \texttt{informed\_target\_family}=\texttt{pitting\_potential} selects the
+    EPIT target direction and target-drive terms;
+    \item \texttt{informed\_physical\_marginal\_profile}=\texttt{pitting\_potential\_v1}
+    selects the EPIT physical profile used for feature roles and marginal
+    transformations.
+\end{itemize}
+
+These settings are independent. Selecting the pitting-potential target family does
+not automatically activate the physical profile or determine the block allocation.
+The EPIT configurations used here set all three explicitly.
+
+\subsection{Semantic Feature Blocks}
+
+The informed transformation assigns existing synthetic columns to internal semantic blocks. For the evaluated EPIT task, the principal blocks are
+
+\begin{itemize}
+    \item \texttt{material}, representing alloy composition or material state;
+    \item \texttt{environment}, representing temperature, chloride concentration, pH, or related exposure conditions;
+    \item \texttt{process\_history}, representing test protocol, processing route, heat treatment, microstructure, or surface history.
+\end{itemize}
+
+Block assignments are generator-internal metadata. Synthetic columns are not given textual labels such as ``chromium,'' ``chloride,'' or ``temperature.'' The metadata are used only to construct feature distributions and dependencies.
+
+\subsection{Block Allocation}
+
+The informed generator uses block-allocation values to decide how many feature
+columns are assigned to each semantic block. These values are relative weights,
+not literal column counts. The code normalizes them, converts them to integer
+block sizes for the sampled feature count, and keeps the total number of columns
+unchanged.
+
+Thus, a larger material weight gives more material columns on average, while a
+small nonzero weight may still receive no columns when the sampled table is small.
+The fixed EPIT setting uses
+\texttt{informed\_normal\_block\_allocation} to match the evaluated schema, whereas
+the flexible prior can sample weights from
+\texttt{informed\_normal\_block\_allocation\_ranges} to create material-heavy EPIT
+tasks without forcing the same schema every time.
+
+Before final preprocessing, allocated blocks occupy contiguous slices in a documented order. Feature permutation can subsequently remove this positional structure. Flexible pretraining generally permits permutation, whereas fixed-schema generation requires it to be disabled.
+
+\subsection{Within-Block Feature Structure}
+
+The parameter \texttt{informed\_feature\_block\_strength} controls a shared row-level component within multi-column blocks. Let \(\alpha=\texttt{informed\_feature\_block\_strength}\). For a block \(B\) with at least two columns,
+
+\begin{equation}
+X_B\leftarrow(1-\alpha)X_B+\alpha z_B,
+\qquad 0\leq\alpha\leq0.95,
+\label{eq:block-coupling}
+\end{equation}
+
+where \(z_B\in\mathbb{R}^{n\times1}\) contains one shared value per row and is broadcast across the block. Increasing \(\alpha\) generally strengthens within-block dependence. Single-column blocks, including the process block in the fixed EPIT schema, are skipped.
+
+This operation creates statistical block structure but does not enforce alloy mass balance, phase constraints, thermodynamic compatibility, or calibrated correlations. Rank-based physical transformations can preserve part of the induced dependence, whereas composition sampling can overwrite much of it.
+
+\subsection{EPIT Target Addition}
+
+The informed transformation retains the generic target \(y_0\) and adds one standardized EPIT drive:
+
+\begin{equation}
+y_1
+=
+y_0
++
+\beta\,
+\operatorname{standardize}
+\left(g_{\mathrm{EPIT}}(X_1)\right),
+\label{eq:epit-target-addition}
+\end{equation}
+
+where \(\beta=\texttt{informed\_interaction\_strength}\).
+
+Despite its implementation name, \(\beta\) controls the overall magnitude of the complete EPIT-informed component, not only the material--environment interaction. The relative material, environment, interaction, and process contributions inside \(g_{\mathrm{EPIT}}\) are defined in Section~\ref{sec:epit-mechanisms}.
+
+Retaining \(y_0\) preserves part of the diversity inherited from the generic MLP or tree task. The informed component biases this task toward EPIT-relevant relationships without converting it into a deterministic physical simulator. Final target standardization removes any literal millivolt scale.
+
+\subsection{What the Model Observes}
+
+Under flexible pretraining, the model receives anonymous standardized columns and can encounter different block sizes and feature orders. It must infer predictive relationships from labeled context rather than explicit semantic labels.
+
+In fixed-schema experiments, feature permutation is disabled and column positions remain stable. The model still receives no textual feature names, but it can learn position-dependent regularities. This makes the fixed setting narrower than the flexible informed prior.
+
+\section{EPIT Feature and Target Mechanisms}
+\label{sec:epit-mechanisms}
+
+The EPIT-informed transformation combines two mechanisms. A physical marginal profile modifies the distributions and internal roles of selected feature blocks, while an EPIT target rule converts those blocks into an informed target drive. The flexible mode is intended for diverse pretraining tasks; the fixed mode provides a controlled positional rule aligned with the evaluated dataset.
+
+\subsection{Pitting-Potential Physical Profile}
+
+The physical profile is selected with
+\texttt{informed\_physical\_marginal\_profile} and activated per informed dataset with probability
+
+\[
+p=\texttt{informed\_physical\_marginal\_prob}.
+\]
+
+An indicator \(A\sim\operatorname{Bernoulli}(p)\) determines whether the complete material and environment profile is applied. The decision is made once per dataset rather than independently for every column. Selecting \texttt{pitting\_potential\_v1} therefore identifies the profile but does not guarantee its activation unless \(p=1\).
+The activation decision is made once for the whole synthetic dataset, not
+independently for each column. If activated, the selected profile is then applied
+to the relevant material and environment columns in that dataset.
+
+Most profile transformations preserve the ordering of the original synthetic values. For a column with \(n\) rows, define
+
+\[
+u_i=\frac{\operatorname{rank}(x_i)}{n+1},
+\qquad 0<u_i<1.
+\]
+
+The physicalized value is obtained through a selected quantile map,
+
+\[
+x_i^{\mathrm{phys}}=F^{-1}(u_i).
+\]
+
+This changes the marginal scale and shape while retaining rank information and part of the dependence inherited from the generic generator or Equation~\eqref{eq:block-coupling}.
+
+When active, the pitting profile can construct material-passivity, material-susceptibility, environment-aggressiveness, and process-offset signals. In flexible mode, these stored signals can be consumed directly by the target rule. When the profile is inactive, the flexible rule instead constructs random projections from the available feature blocks.
+
+\subsection{Material Profiles and Sparse Compositions}
+
+The pitting profile samples among several material styles, including composition-like, sparse-alloying, bounded partial-composition, property-like, and mixed-metadata features. Activating the profile therefore does not imply that every material block is a complete alloy composition.
+
+The masked Dirichlet mechanism is available only when
+
+\begin{itemize}
+    \item the complete pitting profile is active;
+    \item the material block has at least two columns;
+    \item the sampled material style is composition-like.
+\end{itemize}
+
+Conditional on these requirements,
+\texttt{pitting\_material\_dirichlet\_prob} determines whether the mechanism is used. A value of one therefore means ``always for a composition-like style,'' not ``for every pitting task.''
+
+For each row, an active-element mask \(m_{ij}\) is sampled using
+\texttt{pitting\_material\_dirichlet\_active\_prob}, with at least two active columns enforced. Positive Gamma values \(g_{ij}\) are then normalized:
+
+\begin{equation}
+x_{ij}
+=
+100\frac{g_{ij}m_{ij}}{\sum_k g_{ik}m_{ik}},
+\qquad
+\sum_jx_{ij}\approx100.
+\label{eq:masked-dirichlet}
+\end{equation}
+
+The active probability primarily controls sparsity. The parameter
+\texttt{pitting\_material\_dirichlet\_concentration} controls how evenly the total is distributed among active columns: smaller values produce more uneven compositions, whereas larger values produce more balanced proportions.
+
+Because the material vectors are newly sampled, this transformation can overwrite dependence previously introduced by within-block coupling.
+
+\subsection{Environment and Process Roles}
+
+In flexible mode, environment columns can receive chloride-, pH-, temperature-, concentration-, solution-category-, or bounded-proxy roles. The available block width and random profile sampling determine which roles appear; every task need not contain all of them.
+
+Process/history columns can represent test method, heat treatment, microstructure, surface processing, or exposure history. Categorical values are created by dividing empirical ranks into integer-coded bins. These codes are nominal synthetic categories and do not identify real experimental protocols.
+
+The parameter \texttt{pitting\_process\_role} can force one process role. For the evaluated dataset, it is set to
+
+\[
+\texttt{pitting\_process\_role}
+=
+\texttt{test\_method\_category}.
+\]
+
+This forced process transformation is applied even when the complete material and environment profile is inactive, ensuring that the process column remains categorical in every direct-EPIT draw.
+
+The category count is controlled by
+\texttt{pitting\_process\_category\_count}. The direct configuration uses \(52\) categories to match the cardinality of the real test-method feature. Matching the count does not reproduce the identities, frequencies, or scientific meaning of the real protocols.
+
+\subsection{Flexible EPIT Target Rule}
+
+The principal configuration-level coefficients are
+
+\[
+c_{\mathrm{mat}}
+=
+\texttt{epit\_material\_coef},
+\qquad
+c_{\mathrm{env}}
+=
+\texttt{epit\_environment\_coef},
+\qquad
+c_{\mathrm{int}}
+=
+\texttt{epit\_interaction\_coef}.
+\]
+
+They are finite, nonnegative, and dimensionless. They control relative contributions inside the EPIT drive, whereas \(\beta\) in Equation~\eqref{eq:epit-target-addition} controls the magnitude of the complete standardized drive relative to the generic target.
+
+The flexible rule includes a term only when its required block is present. Its general form is
+
+\begin{equation}
+\begin{aligned}
+g_{\mathrm{EPIT}}^{\mathrm{flex}}(X)
+={}&
++c_{\mathrm{mat}}s_{\mathrm{passivity}}
+-c_{\mathrm{env}}s_{\mathrm{environment}}\\
+&-c_{\mathrm{int}}
+s_{\mathrm{susceptibility}}
+s_{\mathrm{environment}}
++c_{\mathrm{proc}}s_{\mathrm{process}}.
+\end{aligned}
+\label{eq:flexible-epit-drive}
+\end{equation}
+
+The three principal coefficients remain fixed within one prior configuration. Smaller coefficients and the underlying block projections can vary among sampled task mechanisms.
+
+The flexible rule assumes no fixed correspondence between a column position and a particular element or environmental variable. It therefore permits variable feature counts, block allocations, and feature permutation.
+
+\subsection{Fixed-Schema EPIT Rule}
+
+The fixed mechanism is activated with
+
+\[
+\texttt{pitting\_fixed\_epit\_schema}
+=
+\texttt{True}.
+\]
+
+The switch fixes the positional interpretation and mathematical form of the rule, but sampled weights and synthetic data remain stochastic. It requires at least one material column, three environment columns, and one process/history column.
+
+The fixed rule is PREN-inspired. PREN denotes the pitting resistance equivalent
+number, a heuristic alloy index commonly used to summarize the effect of
+passivity-promoting alloying elements such as Cr, Mo, W, and N on pitting
+resistance. In this project the rule is not a literal PREN formula, because the
+retained EPIT schema does not include nitrogen. Instead, the code uses a
+PREN-like material anchor over the fixed material positions, with positive
+weights on Cr, weak Ni, Mo, and W.
+
+This PREN-like drive requires a fixed positional schema in the present
+implementation because the generator must know which columns correspond to Cr,
+Ni, Mo, W, temperature, chloride concentration, pH, and test method. In the
+flexible prior, columns are anonymous and may be permuted or allocated
+differently, so applying the same PREN weights would assign physical meaning to
+arbitrary columns.
+
+The exact schema in Equation~\eqref{eq:epit-schema} is obtained by additionally fixing the total feature count, block allocation, minimum counts, process role, category count, and feature order.
+
+\subsubsection{Material Signal}
+
+The leading material positions are interpreted in the order given in Section~\ref{sec:epit-dataset}. The fixed rule begins from the PREN-inspired anchor
+
+\[
+a_{\mathrm{material}}
+=
+(0,1,0.25,3.3,1.65,0,\ldots,0),
+\]
+
+corresponding to the Fe, Cr, Ni, Mo, and W positions.
+
+This is not an exact PREN equation. Nitrogen is absent from the retained schema, and the weak Ni contribution is heuristic. Random perturbations are added to all material positions for each sampled mechanism, after which the vector is normalized to obtain \(w_{\mathrm{material}}\).
+
+The resulting signals are
+
+\begin{equation}
+\begin{aligned}
+s_{\mathrm{material}}
+&=
+\operatorname{standardize}
+\left(
+X_{\mathrm{material}}w_{\mathrm{material}}
+\right),\\
+s_{\mathrm{passivity}}
+&=
+\tanh(s_{\mathrm{material}}),\\
+s_{\mathrm{susceptibility}}
+&=
+\sigma(-s_{\mathrm{material}}).
+\end{aligned}
+\label{eq:fixed-material-signals}
+\end{equation}
+
+A stronger positive material projection therefore increases the passivity contribution and decreases susceptibility.
+
+\subsubsection{Environment Signal}
+
+The first three environment positions are interpreted as temperature, chloride concentration, and pH. The standardized inputs are
+
+\begin{equation}
+\begin{aligned}
+s_T
+&=
+\operatorname{standardize}(T),\\
+s_{\mathrm{Cl}}
+&=
+\operatorname{standardize}
+\left(
+\log_{10}[\mathrm{Cl}^{-}]
+\right),\\
+s_{\mathrm{pH}}
+&=
+\operatorname{standardize}
+\left(
+\left|
+\mathrm{pH}
+-
+\mathrm{pH}_{\mathrm{neutral}}
+\right|
+\right),
+\end{aligned}
+\label{eq:fixed-environment-inputs}
+\end{equation}
+
+where the near-neutral reference is sampled separately for each mechanism.
+
+The environment weights are sampled from
+
+\[
+w_T
+\sim
+\operatorname{Uniform}(0.03,0.12),
+\]
+
+\[
+w_{\mathrm{Cl}}
+\sim
+\operatorname{Uniform}(0.75,1.10),
+\]
+
+and
+
+\[
+w_{\mathrm{pH}}
+\sim
+\operatorname{Uniform}(0.05,0.18).
+\]
+
+The environment and chloride drives are
+
+\begin{equation}
+\begin{aligned}
+s_{\mathrm{environment}}
+&=
+\operatorname{standardize}
+\left(
+w_Ts_T
++
+w_{\mathrm{Cl}}s_{\mathrm{Cl}}
++
+w_{\mathrm{pH}}s_{\mathrm{pH}}
+\right),\\
+d_{\mathrm{environment}}
+&=
+\sigma(s_{\mathrm{environment}}),\\
+d_{\mathrm{chloride}}
+&=
+\sigma(s_{\mathrm{Cl}}).
+\end{aligned}
+\label{eq:fixed-environment-drive}
+\end{equation}
+
+The sampled ranges make the environment term chloride-dominant. The absolute pH-departure term treats acidic and alkaline departures as potentially aggressive; this is a synthetic heuristic rather than a universal physical law.
+
+\subsubsection{Process Signal}
+
+For each sampled mechanism, a random offset \(o_k\) is drawn for every synthetic process category. A row assigned category \(k_i\) receives
+
+\begin{equation}
+s_{\mathrm{process},i}
+=
+\tanh
+\left(
+\operatorname{standardize}(o_{k_i})
+\right).
+\label{eq:fixed-process-signal}
+\end{equation}
+
+The contribution can be positive or negative and represents protocol-dependent measurement variation rather than an ordered effect of the integer category code.
+
+\subsubsection{Combined Fixed Rule}
+
+The complete fixed drive is
+
+\begin{equation}
+\begin{aligned}
+g_{\mathrm{EPIT}}^{\mathrm{fixed}}(X)
+={}&
++c_{\mathrm{mat}}s_{\mathrm{passivity}}
+-c_{\mathrm{env}}d_{\mathrm{environment}}\\
+&-c_{\mathrm{int}}
+s_{\mathrm{susceptibility}}
+d_{\mathrm{chloride}}
++c_{\mathrm{proc}}s_{\mathrm{process}}.
+\end{aligned}
+\label{eq:fixed-epit-drive}
+\end{equation}
+
+This drive is inserted into the target update in Equation~\eqref{eq:epit-target-addition}. The material, environment, and interaction coefficients are configuration-level values. Material perturbations, environment weights, the neutral-pH reference, process offsets, and the process coefficient vary among sampled mechanisms.
+
+The fixed rule omits the broader optional exposure and history terms used by the flexible rule. Its material--environment interaction specifically uses the chloride drive rather than the complete temperature--chloride--pH environment drive.
+
+\subsection{Interaction With Preprocessing}
+
+When the complete physical profile is active, the fixed rule operates on physicalized material and environment features. When it is inactive, the rule can derive internal temperature-, chloride-, and pH-like values from the ranks of the designated environment columns. The positional target interpretation therefore remains available in both physical regimes.
+
+For informed pitting-profile tasks, generic random numerical-to-categorical conversion is disabled by passing
+
+\[
+\texttt{cat\_prob}=0.
+\]
+
+Intended categorical features are instead produced explicitly by the physical profile. This override applies only to informed pitting-profile tasks; generic subgroups in a hybrid prior can retain their configured categorical-conversion probability.
+
+Flexible tasks can retain feature permutation. Fixed-schema tasks require
+
+\[
+\texttt{permute\_features}
+=
+\texttt{False}
+\]
+
+so that the generated target rule and observed column order remain consistent.
+
+The physical profile is physically inspired rather than empirically calibrated. Its marginal families and coefficient ranges are hand-designed and are not fitted distributions or physical slopes estimated from the \(760\) real EPIT rows.
+
+\subsection{Flexible and Fixed Modes}
+
+\begin{center}
+\small
+\begin{tabular}{p{0.28\linewidth}p{0.28\linewidth}p{0.28\linewidth}}
+\hline
+& \textbf{Flexible mode} & \textbf{Fixed mode} \\
+\hline
+Feature count & variable & fixed for direct analysis \\
+Block allocation & variable & Equation~\eqref{eq:epit-schema} \\
+Feature roles & sampled & positional \\
+Feature permutation & allowed & disabled \\
+Target inputs & available EPIT blocks & material, environment, process \\
+Primary use & diverse pretraining & schema-specific diagnostics \\
+\hline
+\end{tabular}
+\end{center}
+
+The fixed mode is structurally closer to the processed EPIT table, but it is not a replica of the real data-generating process. Its feature values remain synthetic, its coefficients are heuristic, and the generic target remains part of the final synthetic target.
+
+\section{Direct Prior-Alignment Method}
+\label{sec:direct-prior-method}
+
+The direct prior-alignment procedure evaluates candidate informed-prior configurations without training a TabICL transformer. Its purpose is to determine whether synthetic mechanisms sampled from one configuration produce relationships that align with the observed EPIT task.
+
+\subsection{Configuration and Mechanism Notation}
+
+Let \(\eta\) denote one complete prior configuration. It specifies quantities such as the MLP/tree mixture, physical-profile regime, block-coupling strength, overall EPIT strength, and material, environment, and interaction coefficients.
+
+A fixed \(\eta\) defines a distribution over synthetic task mechanisms:
+
+\begin{equation}
+\theta\sim p_{\eta}(\theta).
+\label{eq:eta-mechanism-distribution}
+\end{equation}
+
+The distinction between \(\eta\) and \(\theta\) is important. The configuration \(\eta\) controls the distribution from which tasks are generated, whereas \(\theta\) contains the random quantities associated with one sampled task. Consequently, one configuration can produce many different mechanisms, datasets, weights, and noise realizations.
+
+For each candidate configuration, the procedure samples
+
+\begin{equation}
+\theta^{(1)},\ldots,\theta^{(S)}
+\sim
+p_{\eta}(\theta)
+\label{eq:sampled-theta-mechanisms}
+\end{equation}
+
+and generates one accepted synthetic dataset from each mechanism.
+
+This procedure does not update TabICL parameters, perform in-context inference, or calculate the posterior distribution \(p_{\eta}(\theta\mid\mathcal{D}_{\mathrm{c}})\). It is a prior-alignment diagnostic rather than PFN inference.
+
+\subsection{Calibration Scope}
+
+The direct analysis uses all \(760\) real EPIT rows. The complete feature table and target labels are used to preprocess the data, score sampled mechanisms, compare configurations, and select the preferred \(\eta\).
+
+The resulting scores answer the question
+
+\begin{quote}
+How well does this synthetic prior configuration align with the complete observed EPIT dataset?
+\end{quote}
+
+They do not provide a leakage-free estimate of performance on an independent dataset. The procedure is supervised calibration of the synthetic prior to the available EPIT task, not a context/query evaluation or an external validation experiment.
+
+\subsection{Real-Data Preprocessing}
+
+Starting from the representation defined in Section~\ref{sec:epit-dataset}, let
+
+\[
+X_{\mathrm{real,raw}}
+\]
+
+denote the mean-imputed \(21\)-column table in its original numeric units, including the integer-coded test-method feature.
+
+For the Ridge diagnostic, each feature is standardized using the complete real dataset:
+
+\begin{equation}
+X_{\mathrm{real},j}
+=
+\frac{
+X_{\mathrm{real,raw},j}
+-
+\overline X_{\mathrm{real,raw},j}
+}{
+s_{\mathrm{real},j}
+},
+\label{eq:real-feature-standardization}
+\end{equation}
+
+where \(s_{\mathrm{real},j}\) is calculated with one sample degree of freedom.
+
+The target is standardized as
+
+\begin{equation}
+y_{\mathrm{real},z}
+=
+\frac{
+y_{\mathrm{real}}
+-
+\overline y_{\mathrm{real}}
+}{
+\sigma_{\mathrm{real}}
+},
+\label{eq:real-target-standardization}
+\end{equation}
+
+where \(\sigma_{\mathrm{real}}\) is the full-dataset population standard deviation.
+
+Both feature representations are retained. The standardized table \(X_{\mathrm{real}}\) is used by the Ridge transfer diagnostic, whereas \(X_{\mathrm{real,raw}}\) is used by the fixed-rule oracle.
+
+\subsection{Synthetic Direct-EPIT Configuration}
+
+The informed direct analysis uses
+
+\[
+\texttt{prior\_type}
+=
+\texttt{informed\_scm},
+\]
+
+with the pitting-potential target family, pitting physical profile, and fixed EPIT schema described in Sections~\ref{sec:informed-architecture} and \ref{sec:epit-mechanisms}.
+
+The synthetic table uses the fixed schema in Equation~\eqref{eq:epit-schema}. Its process role, category count, and feature-order controls are defined once in Section~\ref{sec:configuration-search}.
+
+Together, these settings create the positional correspondence
+
+\[
+\text{synthetic column }j
+\longleftrightarrow
+\text{real column }j
+\]
+
+required by both diagnostics.
+
+The synthetic row count defaults to the number of real observations:
+
+\[
+n_{\mathrm{synth}}=760.
+\]
+
+The generator also records a synthetic train-size position at approximately half the rows. This split is used by the prior's validity checks but not to fit the Ridge surrogate, which uses the complete accepted synthetic dataset.
+
+\subsection{Schema Validation and Retry}
+
+A request for \(21\) synthetic columns does not guarantee that all columns survive normal preprocessing. Constant or unusable features can be removed and the remaining columns can be left-packed, which would invalidate their positional interpretation.
+
+A synthetic draw is accepted only if
+
+\begin{itemize}
+    \item its final shape is \(n_{\mathrm{synth}}\times21\);
+    \item all \(21\) feature positions remain active;
+    \item every feature and target value is finite;
+    \item the target has nonzero variance;
+    \item a valid fixed-rule trace has been captured.
+\end{itemize}
+
+If a draw fails, the evaluator derives a new sampling seed and retries. The default maximum is \(50\) schema attempts for each requested synthetic seed.
+
+\subsection{Ridge Transfer Diagnostic}
+
+For mechanism \(\theta^{(s)}\), let the accepted synthetic task be
+
+\[
+\left(
+X_{\mathrm{synth}}^{(s)},
+y_{\mathrm{synth}}^{(s)}
+\right).
+\]
+
+These arrays have already passed through the standard prior preprocessing, including feature and target standardization.
+
+A Ridge pipeline is fitted to the complete synthetic task:
+
+\begin{equation}
+\widehat f_{\theta^{(s)}}
+=
+\texttt{StandardScaler}
++
+\texttt{Ridge}(\alpha=1.0).
+\label{eq:ridge-surrogate}
+\end{equation}
+
+The pipeline's scaler is fitted on \(X_{\mathrm{synth}}^{(s)}\). The standardized real table \(X_{\mathrm{real}}\) is subsequently transformed using these synthetic-fitted scaling statistics before prediction:
+
+\begin{equation}
+\widehat y_{\theta^{(s)}}^{\mathrm{Ridge}}
+=
+\widehat f_{\theta^{(s)}}
+\left(
+X_{\mathrm{real}}
+\right).
+\label{eq:theta-ridge-prediction}
+\end{equation}
+
+The real EPIT labels are not used to fit an individual Ridge model. They are used afterward to evaluate its transferred predictions.
+
+For every mechanism, the recorded metrics include
+
+\begin{itemize}
+    \item Spearman rank correlation;
+    \item standardized mean absolute error;
+    \item standardized root mean squared error.
+\end{itemize}
+
+The Ridge model is a transfer surrogate. It is not an exact evaluation of the conditional distribution \(p(y^\ast\mid x^\ast,\theta)\). It measures whether a simple linear model fitted to one synthetic task transfers useful structure to the real EPIT table.
+
+\subsection{Uniform Configuration-Level Aggregation}
+
+All accepted mechanisms receive equal weight:
+
+\[
+w_s=\frac{1}{S}.
+\]
+
+The configuration-level Ridge prediction is
+
+\begin{equation}
+\widehat y_{\eta}^{\mathrm{Ridge}}
+=
+\frac{1}{S}
+\sum_{s=1}^{S}
+\widehat y_{\theta^{(s)}}^{\mathrm{Ridge}}.
+\label{eq:uniform-ridge-ensemble}
+\end{equation}
+
+The implementation records this aggregation as
+\texttt{uniform\_theta\_average}. Real-data compatibility scores do not modify the mechanism weights. Equation~\eqref{eq:uniform-ridge-ensemble} is therefore a uniform prior-sample ensemble, not posterior weighting or Bayesian model averaging.
+
+The command-line interface retains a temperature parameter for compatibility with earlier weighted implementations, but it does not affect current predictions or rankings.
+
+The effective sample size is
+
+\[
+\operatorname{ESS}
+=
+\frac{1}{\sum_sw_s^2}.
+\]
+
+Under uniform weighting,
+
+\[
+\operatorname{ESS}=S.
+\]
+
+ESS therefore reflects only the number of accepted mechanisms and does not measure posterior-weight concentration in the current implementation.
+
+The configuration-level outputs include ensemble Spearman correlation, standardized MAE and RMSE, median individual-mechanism Spearman, and maximum individual-mechanism Spearman.
+
+\subsection{Fixed-Rule Oracle}
+
+The fixed-rule oracle evaluates the sampled EPIT rule without fitting a surrogate model. During synthetic generation, the implementation records the exact quantities used by each mechanism, including
+
+\begin{itemize}
+    \item material weights;
+    \item environment weights;
+    \item the sampled neutral-pH reference;
+    \item process-category offsets;
+    \item material, environment, interaction, and process coefficients;
+    \item the overall EPIT-component strength.
+\end{itemize}
+
+The oracle reuses this captured trace rather than sampling a nominally equivalent replacement. It applies the recorded fixed rule directly to the raw real feature table:
+
+\begin{equation}
+\widehat y_{\theta^{(s)}}^{\mathrm{oracle}}
+=
+g_{\theta^{(s)}}^{\mathrm{fixed}}
+\left(
+X_{\mathrm{real,raw}}
+\right).
+\label{eq:theta-oracle-prediction}
+\end{equation}
+
+The real material and environment columns are interpreted according to their fixed positions and original imputed units. The oracle evaluates the informed EPIT component; it cannot reconstruct the generic synthetic target \(y_0\) for the real table.
+
+Real process codes are used only as indices into the sampled synthetic category offsets. A real code does not identify the corresponding synthetic category semantically. This artificial indexing is a limitation of the oracle rather than a mapping between experimental protocols.
+
+The configuration-level oracle prediction is
+
+\begin{equation}
+\widehat y_{\eta}^{\mathrm{oracle}}
+=
+\frac{1}{S}
+\sum_{s=1}^{S}
+\widehat y_{\theta^{(s)}}^{\mathrm{oracle}}.
+\label{eq:uniform-oracle-ensemble}
+\end{equation}
+
+Spearman correlation is calculated directly from these predictions. For standardized MAE and RMSE, the oracle predictions are standardized before comparison with \(y_{\mathrm{real},z}\).
+
+The oracle and Ridge diagnostic answer different questions:
+
+\begin{itemize}
+    \item Does the sampled fixed EPIT rule itself align with the observed target?
+    \item Can a Ridge model trained on the complete synthetic task transfer useful structure to the real table?
+\end{itemize}
+
+The oracle is explanatory. Configuration selection is based on the Ridge ensemble unless stated otherwise.
+
+\subsection{Generic-Prior Baseline}
+
+The direct analysis includes a generic TabICL control using
+
+\[
+\texttt{prior\_type}
+=
+\texttt{mix\_scm},
+\qquad
+\texttt{mix\_probs}
+=
+(0.7,0.3).
+\]
+
+The generic prior samples tasks with between \(2\) and \(100\) requested features until a draw with exactly \(21\) active features is obtained. These columns have no material, environment, or process interpretation.
+
+The control is therefore width-matched to the real table but not schema-matched. It is evaluated using the same Ridge procedure, uniform aggregation, and number of accepted mechanisms as the informed configurations. No fixed-rule oracle is available because the generic prior has no EPIT-specific rule to replay.
+
+\subsection{Interpretation}
+
+The direct procedure can determine whether
+
+\begin{itemize}
+    \item a sampled fixed EPIT rule follows broad trends in the real target;
+    \item synthetic relationships transfer through a Ridge surrogate;
+    \item one prior configuration aligns more strongly than another;
+    \item the informed prior outperforms a width-matched generic control under the same diagnostic.
+\end{itemize}
+
+It cannot establish whether
+
+\begin{itemize}
+    \item the sampled mechanisms have high Bayesian posterior probability;
+    \item uniform averaging is a posterior predictive distribution;
+    \item the selected configuration generalizes to an unseen dataset;
+    \item a TabICL transformer will learn most effectively from that configuration.
+\end{itemize}
+
+The final question requires transformer pretraining and controlled downstream evaluation. Direct prior alignment is therefore a diagnostic used before or alongside transformer experiments, not a substitute for them.
+
+\section{Direct Prior Configuration Search}
+\label{sec:configuration-search}
+
+The direct prior-alignment method in Section~\ref{sec:direct-prior-method} is used to compare candidate configurations \(\eta\). The search is organized into two phases:
+
+\begin{itemize}
+    \item Phase 1 evaluates an interpretable grid of anchored configurations;
+    \item Phase 2 performs a space-filling refinement within the most promising Phase 1 regimes.
+\end{itemize}
+
+\subsection{Settings Fixed Across Candidates}
+
+All informed candidates use the same EPIT task definition and fixed schema:
+
+\begin{center}
+\small
+\begin{tabular}{p{0.57\linewidth}p{0.27\linewidth}}
+\hline
+\textbf{Implementation parameter} & \textbf{Fixed EPIT value} \\
+\hline
+\texttt{prior\_type} & \texttt{informed\_scm} \\
+\texttt{informed\_task\_family\_probs} & \texttt{normal\_corrosion}: \(1\) \\
+\texttt{informed\_target\_family} & \texttt{pitting\_potential} \\
+\texttt{informed\_physical\_marginal\_profile} & \texttt{pitting\_potential\_v1} \\
+\texttt{pitting\_fixed\_epit\_schema} & \texttt{True} \\
+\texttt{informed\_normal\_block\_allocation} & Equation~\eqref{eq:epit-schema} \\
+\texttt{pitting\_process\_role} & \texttt{test\_method\_category} \\
+\texttt{pitting\_process\_category\_count} & \(52\) \\
+\texttt{informed\_history\_strength} & \(0\) \\
+\texttt{cat\_prob} & \(0\) \\
+\texttt{permute\_features} & \texttt{False} \\
+\hline
+\end{tabular}
+\end{center}
+
+Optional target effects that do not correspond to the evaluated schema are disabled. The search therefore varies the physical-profile regime, material-generation settings, EPIT coefficients, within-block coupling, overall EPIT strength, and MLP/tree mixture while keeping the direct-evaluation schema fixed.
+
+\subsection{Phase 1 Construction}
+
+Each Phase 1 configuration combines
+
+\begin{enumerate}
+    \item one physical/material regime;
+    \item one EPIT core anchor;
+    \item one MLP/tree mixture.
+\end{enumerate}
+
+Conceptually,
+
+\[
+\eta
+=
+\eta_{\mathrm{regime}}
+\cup
+\eta_{\mathrm{core}}
+\cup
+\eta_{\mathrm{mix}}.
+\]
+
+\subsection{Physical and Material Regimes}
+
+The physical regime fixes
+
+\begin{itemize}
+    \item \texttt{informed\_physical\_marginal\_prob};
+    \item \texttt{pitting\_material\_dirichlet\_prob};
+    \item \texttt{pitting\_material\_dirichlet\_concentration};
+    \item \texttt{pitting\_material\_dirichlet\_active\_prob}.
+\end{itemize}
+
+The four Phase 1 regimes are
+
+\begin{center}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\hline
+\textbf{Regime}
+& \textbf{Physical prob.}
+& \textbf{Dirichlet prob.}
+& \textbf{Concentration}
+& \textbf{Active prob.} \\
+\hline
+\texttt{plain}
+& 0.0 & 0.0 & 1.0 & 0.45 \\
+\texttt{physical\_no\_dirichlet}
+& 1.0 & 0.0 & 1.0 & 0.45 \\
+\texttt{physical\_mild\_dirichlet}
+& 1.0 & 0.5 & 1.0 & 0.50 \\
+\texttt{physical\_sparse\_dirichlet}
+& 1.0 & 1.0 & 0.25 & 0.35 \\
+\hline
+\end{tabular}%
+}
+\end{center}
+
+The \texttt{plain} regime disables the complete material and environment profile. The process column remains a forced categorical test-method feature, as described in Section~\ref{sec:epit-mechanisms}.
+
+The \texttt{physical\_no\_dirichlet} regime always applies the complete pitting profile but disables masked Dirichlet composition sampling.
+
+The \texttt{physical\_mild\_dirichlet} regime applies the complete profile and uses the masked Dirichlet mechanism with conditional probability \(0.5\).
+
+The \texttt{physical\_sparse\_dirichlet} regime uses masked Dirichlet sampling whenever the profile selects a composition-like material style. Its smaller concentration and active probability favor more uneven and sparse compositions.
+
+These Dirichlet probabilities remain conditional on the material profile selecting the composition-like style.
+
+\subsection{EPIT Core Anchors}
+
+The core anchors fix five parameters:
+
+\begin{itemize}
+    \item \texttt{epit\_material\_coef};
+    \item \texttt{epit\_environment\_coef};
+    \item \texttt{epit\_interaction\_coef};
+    \item \texttt{informed\_feature\_block\_strength};
+    \item \texttt{informed\_interaction\_strength}.
+\end{itemize}
+
+The six Phase 1 anchors are
+
+\begin{center}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccc}
+\hline
+\textbf{Anchor}
+& \textbf{Material}
+& \textbf{Environment}
+& \textbf{Interaction}
+& \textbf{Block}
+& \textbf{Overall EPIT} \\
+\hline
+\texttt{material\_dominant}
+& 0.70 & 0.40 & 0.65 & 0.35 & 0.50 \\
+\texttt{environment\_dominant}
+& 0.50 & 0.65 & 0.65 & 0.35 & 0.50 \\
+\texttt{interaction\_dominant}
+& 0.55 & 0.45 & 0.95 & 0.35 & 0.75 \\
+\texttt{balanced}
+& 0.575 & 0.50 & 0.775 & 0.30 & 0.35 \\
+\texttt{weak\_prior}
+& 0.50 & 0.40 & 0.65 & 0.15 & 0.20 \\
+\texttt{strong\_prior}
+& 0.65 & 0.60 & 0.90 & 0.60 & 0.85 \\
+\hline
+\end{tabular}%
+}
+\end{center}
+
+The \emph{Block} column is
+\texttt{informed\_feature\_block\_strength}. The \emph{Overall EPIT} column is
+\texttt{informed\_interaction\_strength}, corresponding to \(\beta\) in Equation~\eqref{eq:epit-target-addition}.
+
+The anchor names describe relative emphasis and should not be interpreted as calibrated physical parameter estimates.
+
+\subsection{MLP/Tree Mixture}
+
+The search parameter
+
+\[
+p_{\mathrm{MLP}}
+=
+\texttt{informed\_mlp\_prob}
+\]
+
+is a direct-search convenience variable. It is mapped to the native generator setting
+
+\[
+\texttt{informed\_mix\_probs}
+=
+(p_{\mathrm{MLP}},1-p_{\mathrm{MLP}}).
+\]
+
+The configuration builder also assigns the same vector to \texttt{mix\_probs}. Because the informed candidates use \texttt{informed\_scm}, their base-generator selection is controlled by \texttt{informed\_mix\_probs}.
+
+Phase 1 evaluates
+
+\[
+p_{\mathrm{MLP}}
+\in
+\{0,0.25,0.50,0.75,1.0\}.
+\]
+
+These values range from tree-only to MLP-only generation, with three intermediate mixtures.
+
+\subsection{Phase 1 Size and Scoring}
+
+The complete Phase 1 grid contains
+
+\[
+4 \text{ regimes}
+\times
+6 \text{ core anchors}
+\times
+5 \text{ mixtures}
+=
+120
+\]
+
+candidate configurations.
+
+Each candidate is evaluated using the same requested number of sampled mechanisms. The default Phase 1 budget is
+
+\[
+S=32
+\]
+
+mechanisms per configuration.
+
+Configurations are ranked using
+
+\begin{enumerate}
+    \item higher Ridge-ensemble Spearman correlation;
+    \item higher effective sample size;
+    \item lower standardized RMSE.
+\end{enumerate}
+
+Because the mechanism weights are uniform and candidates normally contain the same number of accepted mechanisms,
+
+\[
+\operatorname{ESS}=S
+\]
+
+for every candidate. ESS therefore does not normally affect the ranking. Ensemble Spearman is the primary criterion, with standardized RMSE acting as the relevant later tie-breaker.
+
+The fixed-rule oracle is scored separately for diagnostic comparison. It does not determine the selected Phase 1 configuration or the Phase 2 search region.
+
+\subsection{Phase 2 Regime Selection}
+
+Phase 2 begins from the ranked Phase 1 Ridge results. The implementation scans the ranking from best to worst and retains the first occurrence of each distinct physical/material regime.
+
+With the default
+
+\[
+\texttt{phase2\_top\_regimes}=2,
+\]
+
+two distinct regimes are retained.
+
+For each retained regime, the MLP probability of its highest-ranked Phase 1 configuration is denoted by \(p_{\mathrm{MLP}}^\ast\). Phase 2 searches the local interval
+
+\[
+p_{\mathrm{MLP}}
+\in
+\left[
+\max(0,p_{\mathrm{MLP}}^\ast-0.25),
+\min(1,p_{\mathrm{MLP}}^\ast+0.25)
+\right].
+\]
+
+The physical-profile and Dirichlet parameters remain fixed at the values defined by the retained regime.
+
+\subsection{Phase 2 Continuous Space}
+
+Within each retained regime, Phase 2 varies the five EPIT core parameters over
+
+\[
+\texttt{epit\_material\_coef}
+\in
+[0.45,0.70],
+\]
+
+\[
+\texttt{epit\_environment\_coef}
+\in
+[0.35,0.65],
+\]
+
+\[
+\texttt{epit\_interaction\_coef}
+\in
+[0.60,0.95],
+\]
+
+\[
+\texttt{informed\_feature\_block\_strength}
+\in
+[0,0.95],
+\]
+
+and
+
+\[
+\texttt{informed\_interaction\_strength}
+\in
+[0,1].
+\]
+
+The locally bounded MLP probability is included as a sixth continuous search dimension.
+
+Phase 2 does not continuously vary the physical-profile probability or Dirichlet parameters. Those values remain anchored by the retained Phase 1 regime.
+
+\subsection{Space-Filling Construction}
+
+Phase 2 uses a Latin-hypercube-style construction. For \(N\) requested candidates, each continuous range is divided into \(N\) equal strata. The midpoint of stratum \(k\) is
+
+\[
+u_k
+=
+\frac{k+\tfrac{1}{2}}{N},
+\qquad
+k=0,\ldots,N-1.
+\]
+
+For a parameter with range \([a,b]\), the corresponding value is
+
+\[
+x_k=a+u_k(b-a).
+\]
+
+The midpoint values are independently permuted for every parameter before being assigned to candidate rows. Every stratum is therefore represented exactly once in each dimension.
+
+The parameter \texttt{n\_core\_samples} specifies the number of Phase 2 candidates generated per retained regime, not the total across all regimes. With the defaults,
+
+\[
+2 \text{ regimes}
+\times
+64 \text{ candidates per regime}
+=
+128
+\]
+
+Phase 2 configurations.
+
+The default Phase 2 sampling budget is
+
+\[
+S=64
+\]
+
+mechanisms per configuration. Larger values can be used to reduce Monte Carlo variability.
+
+\subsection{Generic Control}
+
+Each search phase can also evaluate the unsearched generic-prior control defined in Section~\ref{sec:direct-prior-method}. The control uses the same number of accepted mechanisms and the same Ridge evaluation procedure as the informed candidates.
+
+It provides a width-matched reference but does not participate in the informed parameter search and has no fixed-rule oracle.
+
+\subsection{Selection Scope}
+
+Both phases use the complete real EPIT labels to score and rank configurations. Phase 2 is therefore a refinement of the same supervised calibration performed in Phase 1, not an independent validation of the Phase 1 result.
+
+The selected configuration should be interpreted as the tested synthetic prior whose uniform Ridge ensemble aligns most strongly with the complete observed EPIT dataset. It should not be interpreted as a Bayesian estimate of physical corrosion parameters or evidence of generalization to an unseen dataset.
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Evaluation Setting and Comparators}
+\label{sec:results-evaluation}
+
+Downstream performance was evaluated on the EPIT task defined in Section~\ref{sec:epit-dataset}. All reported transformer experiments use the same \(760\) observations and \(21\)-feature input table. Five repeated \(75/25\) train--test splits were generated with seeds \(1001\) to \(1005\), and results are summarized by the mean across these splits.
+
+Spearman rank correlation is the primary evaluation metric and was also the objective used to select configurations in the Optuna searches. The EPIT target covers a wide numerical range and contains extreme values, so magnitude-based errors such as MAE and RMSE can be strongly influenced by a small number of observations. Spearman correlation instead measures whether predicted and observed EPIT values have a consistent monotonic ordering and is less sensitive to the magnitude of individual errors. MAE, RMSE, and \(R^2\) are nevertheless reported as secondary metrics because good ranking alone does not guarantee accurate predictions on the millivolt scale. Since the informed configurations were optimized for Spearman correlation, improvements in rank correlation are the primary criterion, while improvements in MAE are not necessarily expected.
+
+Two reference models are used. The \emph{generic retrained baseline} uses the same local TabICL architecture and core training settings as the informed models, but is pretrained on the unmodified generic \texttt{mix\_scm} prior with MLP and tree probabilities of \(0.7\) and \(0.3\). It therefore isolates the effect of replacing generic synthetic pretraining with EPIT-informed task generation. The \emph{pretrained TabICL V2} checkpoint provides a stronger external reference. However, it is not an architecture-matched control because the informed models use the available TabICL V1 implementation and may therefore lack later model and training changes included in V2.
+
+Earlier experiments used TabICL's default feature-order ensemble at inference, whereas the later fixed-schema experiments disabled feature shuffling to preserve the semantic feature positions required by the prior. This caused small shifts in the reference scores; comparisons are therefore made primarily between models evaluated under the same inference setting.
+
+All locally trained models use Stage~1 of the curriculum provided in the original TabICL repository. Stage~1 trains the model from scratch on synthetic tables containing up to \(1{,}024\) rows. Stage~2 continues from a Stage~1 checkpoint using a lower learning rate and longer sequences of \(1{,}000\) to \(40{,}000\) rows. Stage~3 continues from Stage~2 on sequences of \(40{,}000\) to \(60{,}000\) rows, reduces the learning rate further, and freezes the column and row encoders. These later stages primarily extend long-context capability and were unnecessary for the EPIT dataset, which contains only \(760\) observations. Most full training runs were limited to \(8{,}000\) optimization steps and evaluated at checkpoint \texttt{step-8000}, because downstream performance had largely converged by this point.
+
+\subsection{Initial Informed-Prior Training}
+\label{sec:results-initial-informed}
+
+The first systematic informed-prior experiment used the hybrid SCM generator and the \texttt{pitting\_potential\_v1} physical-marginal profile. Optuna evaluated each configuration after \(1{,}000\) Stage~1 training steps using the five repeated EPIT splits. Mean test Spearman correlation was used as the optimization objective. Of the 23 recorded trials, 19 completed successfully, one failed, and three remained unfinished when the search was stopped.
+
+Six independent prior parameters were optimized:
+
+\begin{itemize}
+    \item the informed-task ratio, selected from \(\{0.75,1.00\}\);
+    \item feature-block strength, sampled from \([0.15,0.45]\);
+    \item interaction strength, sampled from \([0.25,0.55]\);
+    \item physical-marginal probability, selected from
+    \(\{0.25,0.50,0.75,1.00\}\);
+    \item the material block allocation \(a_{\mathrm{mat}}\), sampled from
+    \([0.55,0.85]\); and
+    \item the process-history allocation, sampled from
+    \[
+    \left[
+    \max(0,0.65-a_{\mathrm{mat}}),
+    \min(0.15,0.90-a_{\mathrm{mat}})
+    \right].
+    \]
+\end{itemize}
+
+The environment allocation was not optimized independently. It was calculated as the remaining fraction after the material and process-history allocations.
+
+Figure~\ref{fig:initial-optuna-parallel} presents the Optuna search as a parallel-coordinate plot. Each line represents one completed trial and connects its parameter values with the resulting mean test Spearman correlation. The figure therefore shows the joint configurations explored during optimization rather than treating each parameter independently.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]
+    {images/initial_informed_optuna_parallel_coordinates.png}
+    \caption{Parallel-coordinate visualization of the initial informed-prior Optuna search. Each completed trial was evaluated after \(1{,}000\) Stage~1 training steps using five repeated EPIT splits. The objective is mean test Spearman correlation.}
+    \label{fig:initial-optuna-parallel}
+\end{figure}
+
+Trial~18 achieved the highest mean Spearman correlation of \(0.8102\). It used an informed-task ratio of \(1.0\), feature-block strength \(0.306\), interaction strength \(0.547\), and physical-marginal probability \(0.75\). Its feature-block allocation was \(0.685\) for material, \(0.263\) for environment, and \(0.053\) for process history. The corresponding proxy-run MAE, RMSE, and \(R^2\) were \(160.8\) mV, \(245.7\) mV, and \(0.667\), respectively.
+
+This Trial~18 belongs to the \texttt{pitting\_profile\_v3} Optuna study. It should not be confused with Trial~18 from the later \texttt{pitting\_target\_v4} study.
+
+The selected Trial~18 configuration was subsequently retrained from scratch for \(10{,}000\) Stage~1 steps. It was compared with the generic retrained baseline and pretrained TabICL V2 at every common checkpoint. Table~\ref{tab:initial-informed-results} reports the mean results at the final checkpoint.
+
+The informed model achieved the highest Spearman correlation and \(R^2\), together with the lowest RMSE. Relative to the generic baseline, it increased Spearman correlation from \(0.8372\) to \(0.8670\), reduced MAE by \(17.9\) mV, and reduced RMSE by \(14.5\) mV. Relative to pretrained TabICL V2, it increased Spearman correlation by \(0.0142\), reduced RMSE by \(9.5\) mV, and increased \(R^2\) by \(0.0226\). Its MAE was, however, \(7.9\) mV higher. This difference is consistent with the configuration being optimized for rank correlation rather than absolute prediction error.
+
+\begin{table}[htbp]
+\centering
+\caption{Mean performance across five repeated EPIT splits at \(10{,}000\) training steps.}
+\label{tab:initial-informed-results}
+\begin{tabular}{lrrrr}
+\hline
+Model & Spearman & MAE (mV) & RMSE (mV) & \(R^2\) \\
+\hline
+Informed Trial~18
+    & \textbf{0.8670} & 133.5 & \textbf{198.2} & \textbf{0.7817} \\
+Generic retrained baseline
+    & 0.8372 & 151.4 & 212.7 & 0.7481 \\
+Pretrained TabICL V2
+    & 0.8528 & \textbf{125.6} & 207.7 & 0.7592 \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:initial-spearman-checkpoints} shows the development of mean Spearman correlation during training. The informed model first surpassed pretrained TabICL V2 at approximately \(2{,}000\) steps and remained above both reference models during the later part of training. Most improvement had been reached by \(8{,}000\) steps: mean Spearman was \(0.8658\) at step \(8{,}000\) and \(0.8670\) at step \(10{,}000\). This convergence motivated the \(8{,}000\)-step limit used for most later full-training runs. It was not a separate checkpoint-selection procedure.
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[
+    width=0.88\linewidth,
+    inkscapelatex=false
+]{images/initial_informed_spearman_checkpoints.svg}
+    \caption{Mean test Spearman correlation across five repeated EPIT splits as a function of the training checkpoint. The informed Trial~18 model is compared with the generic retrained baseline and pretrained TabICL V2.}
+    \label{fig:initial-spearman-checkpoints}
+\end{figure}
+
+\subsection{Expanded Pitting-Prior Search}
+\label{sec:results-expanded-pitting}
+
+A later pitting-prior search, denoted \texttt{pitting\_target\_v6}, expanded the configuration space used in the initial experiment. The principal changes were:
+
+\begin{itemize}
+    \item three explicit coefficients were added for the material, environment, and material--environment interaction contributions to the EPIT target;
+    \item three masked-Dirichlet controls were added for composition generation: its application probability, concentration, and probability of activating individual material features;
+    \item the optimized material and process-history block allocations were removed and replaced by fixed dataset-derived allocation ranges; and
+    \item the existing informed-task ratio, feature-block strength, interaction strength, and physical-marginal probability were searched over broader ranges.
+\end{itemize}
+
+The explicit material, environment, and interaction coefficients were sampled from \([0.45,0.70]\), \([0.35,0.65]\), and \([0.60,0.95]\), respectively. The masked-Dirichlet probability was selected from \(\{0,0.5,1\}\), its concentration from \(\{0.1,0.25,0.5,1,2,5\}\), and its feature-activation probability from \(\{0.2,0.35,0.5,0.7,0.9\}\).
+
+Fifty trials completed successfully. Trial~11 achieved the highest Optuna objective, with a mean test Spearman correlation of \(0.8638\) after \(2{,}000\) Stage~1 training steps. It used an informed-task ratio of \(1.0\), feature-block strength \(0.665\), interaction strength \(0.997\), and physical-marginal probability \(0.75\). Its material, environment, and interaction coefficients were \(0.568\), \(0.476\), and \(0.906\), respectively.
+
+The winning configuration set the masked-Dirichlet probability to zero. Consequently, its sampled concentration of \(0.1\) and feature-activation probability of \(0.7\) had no effect during training. Thus, the additional masked-composition mechanism was not used by the best V6 configuration.
+
+Trial~11 was then trained as a full Stage~1 model and compared with the earlier informed Trial~18, the generic retrained baseline, and pretrained TabICL V2. Table~\ref{tab:expanded-v6-results} reports the last common evaluated checkpoint, step \(5{,}500\). V6 Trial~11 obtained a mean Spearman correlation of \(0.8579\). This was slightly higher than pretrained TabICL V2 at \(0.8528\) and clearly higher than the generic baseline at \(0.8399\). It also produced a lower RMSE and higher \(R^2\) than pretrained V2, although its MAE remained higher.
+
+The earlier Trial~18 model nevertheless achieved a higher Spearman correlation of \(0.8656\) under the same checkpoint-matched evaluation. It also produced lower MAE and RMSE and a higher \(R^2\) than V6 Trial~11. The expanded search therefore produced a competitive informed model but did not improve upon the earlier Trial~18 result.
+
+\begin{table}[htbp]
+\centering
+\caption{Mean performance across five repeated EPIT splits at the last common evaluated checkpoint, step \(5{,}500\).}
+\label{tab:expanded-v6-results}
+\begin{tabular}{lrrrr}
+\hline
+Model & Spearman & MAE (mV) & RMSE (mV) & \(R^2\) \\
+\hline
+Earlier informed Trial~18
+    & \textbf{0.8656} & 131.8 & \textbf{196.9} & \textbf{0.7845} \\
+Expanded V6 Trial~11
+    & 0.8579 & 134.7 & 200.2 & 0.7766 \\
+Pretrained TabICL V2
+    & 0.8528 & \textbf{125.6} & 207.7 & 0.7592 \\
+Generic retrained baseline
+    & 0.8399 & 141.5 & 210.4 & 0.7532 \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:expanded-v6-spearman} shows the checkpoint trajectory. V6 Trial~11 exceeded pretrained TabICL V2 from approximately step \(2{,}000\), but its later performance fluctuated and remained below the earlier informed model at the final common checkpoints. Increasing the complexity of the prior search therefore did not produce a better final informed model.
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[
+        width=0.88\linewidth,
+        inkscapelatex=false
+    ]{images/expanded_pitting_v6_spearman_checkpoints.svg}
+    \caption{Mean test Spearman correlation across five repeated EPIT splits during training of expanded V6 Trial~11. The model is compared with the earlier informed Trial~18, the generic retrained baseline, and pretrained TabICL V2.}
+    \label{fig:expanded-v6-spearman}
+\end{figure}
+
+\subsection{Direct Prior Alignment and EPIT-Drive Refinement}
+\label{sec:results-direct-prior}
+
+The direct-prior analysis was used as a mechanism-development tool before transformer training. Each prior configuration was represented by \(1{,}024\) sampled synthetic mechanisms. Their Ridge predictions and fixed-rule replay predictions were averaged uniformly, and Spearman correlation with the complete observed EPIT target was used as the main alignment measure.
+
+\subsubsection{Revision of the EPIT Drive}
+
+The initial fixed EPIT rule showed only weak and inconsistent direct alignment. The best Phase~2 V7 configuration obtained a Ridge-ensemble Spearman correlation of \(0.3447\). However, replaying its sampled target rules directly on the real feature table produced a negative Spearman correlation of \(-0.1115\). The synthetic Ridge relationships therefore showed some transfer, but the target formula itself was not aligned with the observed EPIT ordering.
+
+This result motivated a revision of the EPIT drive. The revised V8 rule introduced a PREN-inspired material projection dominated by chromium, molybdenum, and tungsten, with a weaker nickel contribution. It also introduced a chloride-dominant environment term, a susceptibility--chloride interaction, and categorical offsets for the reported test method.
+
+Under the same uniform \(1{,}024\)-mechanism evaluation, the best Phase~2 Ridge-ensemble Spearman correlation increased from \(0.3447\) for V7 to \(0.5646\) for V8. The corresponding fixed-rule replay correlation changed from \(-0.1115\) to \(0.4929\). Direct-prior analysis therefore successfully identified a defect in the initial EPIT drive and supported the development of a substantially better-aligned formula.
+
+\subsubsection{Selection of the V8 Configuration}
+
+The selected Phase~2 V8 configuration used the physical sparse-Dirichlet regime. Its physical-profile and Dirichlet probabilities were both \(1.0\), with Dirichlet concentration \(0.25\) and feature-activation probability \(0.35\). Its material, environment, and interaction coefficients were \(0.627\), \(0.457\), and \(0.645\), respectively. The feature-block strength was \(0.033\), and the overall informed-target strength was \(0.863\).
+
+The selected configuration achieved a Ridge-ensemble Spearman correlation of \(0.5646\) and a corresponding fixed-rule replay correlation of \(0.4929\). In comparison, the scientifically anonymous generic TabICL prior obtained a Ridge-ensemble correlation of \(-0.3314\) when evaluated using the same number of accepted 21-feature mechanisms. The informed V8 prior was therefore substantially better aligned with the observed EPIT task under both direct diagnostics.
+
+\begin{table}[htbp]
+\centering
+\caption{Direct-prior alignment under uniform averaging of \(1{,}024\) sampled mechanisms. The fixed-rule replay is not applicable to the generic prior because it contains no EPIT-specific target rule.}
+\label{tab:direct-prior-results}
+\begin{tabular}{lrr}
+\hline
+Configuration & Ridge Spearman & Fixed-rule Spearman \\
+\hline
+Generic-prior control & \(-0.3314\) & -- \\
+Initial EPIT rule, V7 Phase~2 & \(0.3447\) & \(-0.1115\) \\
+Revised EPIT rule, V8 Phase~2 & \(\mathbf{0.5646}\) & \(\mathbf{0.4929}\) \\
+\hline
+\end{tabular}
+\end{table}
+
+Because the complete observed EPIT target was used to evaluate and select these configurations, these results describe supervised prior calibration rather than an independent estimate of generalization.
+
+
+\subsection{Downstream Transfer and Diagnostic Experiments}
+\label{sec:results-direct-prior-transfer}
+
+The selected V8 configuration was transferred to Stage~1 transformer training using the strict schema required by the direct-prior analysis: 17 material features, three environment features, one process feature, exactly 21 input features, and no feature permutation.
+
+Despite its strong direct-prior alignment, the resulting transformer performed substantially worse than pretrained TabICL V2, V6 Trial~11, and the generic retrained baseline. At the common step-\(5{,}000\) checkpoint, the strict fixed-schema V8 model obtained a mean Spearman correlation of \(0.7984\), compared with \(0.8514\) for pretrained V2, \(0.8592\) for V6 Trial~11, and \(0.8337\) for the generic baseline. Strong Ridge alignment therefore did not predict effective PFN pretraining.
+
+Several controlled variants were evaluated to identify the source of this mismatch. Reducing the informed-prior ratio from \(1.0\) to \(0.75\) improved Spearman from \(0.7984\) to \(0.8194\), but did not recover baseline performance. Restoring variable feature counts improved it further to \(0.8319\), approximately matching the generic baseline but remaining below pretrained V2 and V6 Trial~11.
+
+Reproducing the V6 Trial~11 configuration using the newer implementation achieved Spearman \(0.8596\), almost identical to the original result of \(0.8592\). The later implementation changes were therefore not responsible for the degradation. In contrast, using the flexible V6 generator with the direct-prior-selected V8 parameters reduced Spearman to \(0.8383\). This shows that the selected V8 configuration itself remained detrimental even when the strict fixed-schema task restriction was removed.
+
+\begin{table}[htbp]
+\centering
+\caption{Mean downstream performance across five repeated EPIT splits at the common step-\(5{,}000\) checkpoint.}
+\label{tab:direct-prior-training-results}
+\begin{tabular}{lrrrr}
+\hline
+Model & Spearman & MAE (mV) & RMSE (mV) & \(R^2\) \\
+\hline
+V6 Trial~11 reproduction
+    & \textbf{0.8596} & 134.6 & 201.7 & 0.7737 \\
+Original V6 Trial~11
+    & 0.8592 & 133.5 & \textbf{200.4} & \textbf{0.7772} \\
+Pretrained TabICL V2
+    & 0.8514 & \textbf{126.5} & 208.8 & 0.7568 \\
+V8 parameters with flexible V6 generator
+    & 0.8383 & 155.2 & 231.2 & 0.7061 \\
+Generic retrained baseline
+    & 0.8337 & 168.1 & 228.6 & 0.7105 \\
+V8 with variable feature counts
+    & 0.8319 & 161.4 & 229.8 & 0.7070 \\
+V8 with informed-prior ratio \(0.75\)
+    & 0.8194 & 167.5 & 245.9 & 0.6672 \\
+V8 strict fixed schema
+    & 0.7984 & 182.6 & 267.5 & 0.6057 \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:direct-prior-fixed-schema-spearman} shows the corresponding checkpoint trajectories. The V6 reproduction remained close to the original V6 model, whereas every direct-prior-selected V8 variant remained lower.
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[
+        width=0.92\linewidth,
+        inkscapelatex=false
+    ]{images/direct_prior_fixed_schema_spearman_checkpoints.svg}
+    \caption{Mean test Spearman correlation across five repeated EPIT splits for the direct-prior-selected models and diagnostic controls. All models were evaluated without feature-order shuffling.}
+    \label{fig:direct-prior-fixed-schema-spearman}
+\end{figure}
+
+The ablations indicate that restricting feature counts and removing generic task diversity contributed to the degradation. However, performance remained below V6 even when the V8 parameters were used with the flexible V6 generator. The direct-prior-selected configuration was therefore the dominant remaining cause of the weaker downstream result.
+
+These experiments establish a mismatch between the direct Ridge objective and the task distribution from which the transformer learned. Direct-prior analysis was useful for developing and validating the EPIT formula, but the configuration maximizing the direct surrogate objective was not the configuration producing the strongest pretrained transformer.
+
+\end{document}
