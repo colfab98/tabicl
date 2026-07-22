@@ -7,8 +7,9 @@ LOCAL_OUTPUT_ROOT="${LOCAL_OUTPUT_ROOT:-${TABICL_ROOT}/corrosion_datasets/analys
 STUDY_RUN_DIR="${STUDY_RUN_DIR:-${LOCAL_TRIAL_RESULTS}}"
 N_SYNTH="${N_SYNTH:-256}"
 N_WORKERS="${N_WORKERS:-32}"
+MODEL="${MODEL:-extra_trees}"
 SYNTHETIC_SEED="${SYNTHETIC_SEED:-200000}"
-OUTPUT_DIR="${OUTPUT_DIR:-${LOCAL_OUTPUT_ROOT}/direct_scores_n${N_SYNTH}}"
+OUTPUT_DIR="${OUTPUT_DIR:-${LOCAL_OUTPUT_ROOT}/direct_scores_${MODEL}_n${N_SYNTH}}"
 
 cd "$TABICL_ROOT"
 
@@ -25,5 +26,6 @@ python scripts/eval_pitting_fixed_pren_trial_direct_prior.py \
   --output-dir "$OUTPUT_DIR" \
   --n-synth "$N_SYNTH" \
   --n-workers "$N_WORKERS" \
+  --model "$MODEL" \
   --synthetic-seed "$SYNTHETIC_SEED" \
-  --write-theta-scores
+  "$@"

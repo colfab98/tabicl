@@ -1638,105 +1638,565 @@ These experiments establish a mismatch between the direct Ridge objective and th
 \textbf{Conclusion:}
 Feature-shuffle setting has negligible effect. Fixed 21-feature order does not rescue the checkpoint. Underperformance is not explained by evaluation-time feature shuffling.
 
-\subsection{Fixed-PREN Optuna trial direct-prior check}
-\label{sec:fixed-pren-optuna-direct-check}
 
-\textbf{Question.}
-Two direct-prior diagnostics were under consideration:
-\begin{itemize}
-    \item Ridge score: train a Ridge model on synthetic data, then test it on the real EPIT table.
-    \item PREN target score: apply the fixed PREN rule directly to the real EPIT table.
-\end{itemize}
+\subsection{Surrogate trial-ranking check}
+\label{sec:surrogate-trial-ranking-check}
 
-In the fixed-PREN Optuna study, only the Ridge score is a meaningful trial-ranking test. The PREN target score uses almost the same fixed rule for all informed samples. It mostly checks whether the rule points in the right direction. It should not be expected to separate good and bad Optuna trials.
+This check tests whether a simple model can identify which synthetic prior
+configuration will train the best transformer. The Optuna study contains $32$
+trials, and each trial defines one prior configuration $\eta$. For every $\eta$,
+$256$ mechanisms $\theta$ were sampled from that prior.
 
-\textbf{Controlled setup.}
-\begin{itemize}
-    \item New fixed-PREN Optuna study.
-    \item Fixed EPIT schema: \(17\) material, three environment, one process feature.
-    \item No feature-order shuffling.
-    \item Fixed PREN-inspired EPIT target rule.
-    \item Hybrid generator retained; each trial keeps its own informed-prior ratio.
-    \item Post-hoc direct-prior evaluation: \(256\) synthetic mechanisms per completed trial.
-    \item Comparison target: actual Optuna trial score, i.e. mean test Spearman across repeated EPIT splits.
-\end{itemize}
+The score for one configuration was calculated as follows. A surrogate was
+trained separately on the synthetic dataset from each $\theta$ and then applied
+to the real EPIT table. Spearman correlation between its predictions and the
+observed EPIT values gave one score for that mechanism. The median of the $256$
+mechanism scores was used as the surrogate score for $\eta$:
 
-\textbf{Score definitions.}
-\begin{description}
-    \item[\texttt{all\_score\_spearman}] Train Ridge models on all sampled synthetic datasets for the trial: informed plus generic. Report Spearman on the real EPIT table.
-    \item[\texttt{informed\_score\_spearman}] Same Ridge test, but using only informed synthetic datasets.
-    \item[\texttt{generic\_score\_spearman}] Same Ridge test, but using only generic synthetic datasets.
-    \item[\texttt{pren\_score\_spearman}] Apply the sampled PREN/EPIT rule directly to the real EPIT table; no Ridge model. In this fixed-rule study, mostly a sanity check.
-    \item[\texttt{fake\_pren\_score\_spearman}] Control for generic samples. Apply a fake PREN-like rule using column positions.
-\end{description}
+\begin{equation}
+m_{\eta,M}
+=
+\operatorname{median}_{s=1,\ldots,256}
+\operatorname{Spearman}
+\left(
+y_{\mathrm{real}},
+\widehat f_{\eta,s,M}(X_{\mathrm{real}})
+\right),
+\end{equation}
 
-Here, each score is compared with the trained transformer's Optuna trial score. The trial count \(n\) is the number of completed trials used in that comparison.
+where $M$ denotes Ridge, Extra Trees, or histogram gradient boosting. The
+synthetic datasets were not pooled, and their predictions were not averaged.
+This procedure produced one surrogate score for each of the $32$ configurations.
+The reported value in Table~\ref{tab:surrogate-trial-ranking} is the Spearman
+correlation between these $32$ surrogate scores and the corresponding $32$
+transformer trial scores.
 
 \begin{table}[htbp]
 \centering
-\caption{How well each direct-prior score matches the actual transformer trial scores.}
-\label{tab:fixed-pren-direct-trial-correlations}
-\begin{tabular}{lrrr}
+\caption{Ability of each surrogate to rank the $32$ prior configurations in the
+same order as the trained transformer.}
+\label{tab:surrogate-trial-ranking}
+\begin{tabular}{lrr}
 \hline
-Direct score & Trials & Spearman vs trial score & Kendall \(\tau\) \\
+Surrogate & Spearman vs transformer trials & Top-five overlap \\
 \hline
-\texttt{all\_score\_spearman}
-    & 32 & \(0.232\) & \(0.137\) \\
-\texttt{informed\_score\_spearman}
-    & 32 & \(0.267\) & \(0.153\) \\
-\texttt{generic\_score\_spearman}
-    & 15 & \(-0.432\) & \(-0.295\) \\
-\texttt{pren\_score\_spearman}
-    & 32 & \(-0.085\) & \(-0.052\) \\
-\texttt{fake\_pren\_score\_spearman}
-    & 15 & \(-0.025\) & \(-0.029\) \\
+Ridge & $0.0473$ & $0/5$ \\
+Extra Trees & \textbf{$0.1103$} & $0/5$ \\
+Histogram gradient boosting & $0.0682$ & $0/5$ \\
 \hline
 \end{tabular}
 \end{table}
 
-\textbf{Main Ridge result.}
+Extra Trees gave the highest correlation, but all three values were close to
+zero and none of the surrogates recovered any of the five best transformer
+trials. The weak result for both linear and nonlinear models shows that this
+direct surrogate test cannot reliably select $\eta$. Actual transformer
+evaluation remains necessary for choosing the prior configuration.
+
+\subsection{Fixed-PREN Trial 28 Training}
+\label{sec:results-fixed-pren-trial28}
+
+The best configuration from the fixed-PREN Optuna study, Trial~28, was trained
+for \(8{,}000\) Stage~1 steps. It learned the EPIT task faster than the earlier
+informed Trial~18 model. At step \(1{,}000\), their mean Spearman correlations
+were \(0.8408\) and \(0.7975\), respectively. The difference had largely
+disappeared by step \(2{,}000\), when the models reached \(0.8549\) and
+\(0.8562\).
+
+The fixed-PREN model did not improve the final result. Its highest mean Spearman
+was \(0.8665\) at step \(4{,}500\), compared with \(0.8691\) for Trial~18 at
+step \(7{,}500\). Table~\ref{tab:fixed-pren-trial28-results} compares all four
+models at the common step-\(8{,}000\) checkpoint.
+
+\begin{table}[htbp]
+\centering
+\caption{Mean performance across five repeated EPIT splits at the common
+step-\(8{,}000\) checkpoint. All models were evaluated without feature-order
+shuffling.}
+\label{tab:fixed-pren-trial28-results}
+\begin{tabular}{lrrrr}
+\hline
+Model & Spearman & MAE (mV) & RMSE (mV) & \(R^2\) \\
+\hline
+Earlier informed Trial~18
+    & \textbf{0.8666} & 132.2 & \textbf{196.6} & \textbf{0.7853} \\
+Fixed-PREN Trial~28
+    & 0.8649 & 134.4 & 196.8 & 0.7848 \\
+Pretrained TabICL V2
+    & 0.8522 & \textbf{125.9} & 209.4 & 0.7549 \\
+Generic retrained baseline
+    & 0.8382 & 151.1 & 211.7 & 0.7507 \\
+\hline
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:fixed-pren-trial28-spearman} shows the checkpoint trajectory.
+Fixed-PREN Trial~28 improves more quickly during the first \(1{,}500\) steps,
+but Trial~18 reaches a slightly higher final result.
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[
+        width=0.92\linewidth,
+        inkscapelatex=false
+    ]{images/fixed_pren_trial28_spearman_checkpoints.svg}
+    \caption{Mean test Spearman correlation across five repeated EPIT splits
+    during training of fixed-PREN Trial~28. The model is compared with the
+    earlier informed Trial~18, the generic retrained baseline, and pretrained
+    TabICL V2. All models were evaluated without feature-order shuffling.}
+    \label{fig:fixed-pren-trial28-spearman}
+\end{figure}
+
+The comparison evaluates the complete training configurations rather than the
+fixed-PREN rule alone. Trial~28 was pretrained using exactly \(21\) features in
+fixed positions, whereas Trial~18 used more varied synthetic feature counts and
+arrangements. The narrower fixed schema may make the EPIT structure easier to
+learn early while reducing the task diversity available for later improvement.
+A variable-feature ablation would be required to separate the effect of the
+selected prior from the effect of the fixed schema.
+
+\section{Project Update: Convex EPIT Targets and Empirical Alloy Generation}
+\label{sec:project-update-empirical-composition}
+
+This section documents two changes introduced after the experiments described in
+the preceding sections. First, the additive informed-target update is replaced by
+a convex mixture controlled by a parameter \(\lambda\). Second, the fixed-schema
+material block is no longer generated as \(17\) anonymous SCM features or as a
+new Dirichlet composition. Instead, a small number of SCM material latents is
+mapped to chemistry observed in the evaluated EPIT dataset.
+
+These changes define the configuration for subsequent experiments. Earlier
+results remain valid descriptions of the earlier implementations and should be
+treated as historical baselines.
+
+\subsection{Convex EPIT Target Mixture}
+
+The earlier implementation used the additive target update
+
+\[
+y_1
+=
+y_0
++
+\beta\,
+\operatorname{standardize}
+\left(
+g_{\mathrm{EPIT}}(X)
+\right),
+\]
+
+where the generic target \(y_0\) was retained in its original scale before final
+preprocessing. The parameter \(\beta\), previously exposed through
+\texttt{informed\_interaction\_strength}, therefore did not have a direct
+interpretation as the fraction of the target controlled by the EPIT rule.
+
+For subsequent experiments, both target components are standardized before they
+are combined:
+
+\begin{equation}
+\begin{aligned}
+z_0
+&=
+\operatorname{standardize}(y_0),\\
+z_{\mathrm{EPIT}}
+&=
+\operatorname{standardize}
+\left(
+g_{\mathrm{EPIT}}(X)
+\right),\\
+y_1
+&=
+(1-\lambda)z_0
++
+\lambda z_{\mathrm{EPIT}},
+\qquad
+0\leq\lambda\leq1.
+\end{aligned}
+\label{eq:updated-epit-target-mixture}
+\end{equation}
+
+The parameter is implemented as
+
+\[
+\lambda
+=
+\texttt{informed\_target\_mix\_weight}.
+\]
+
+Its interpretation is now explicit:
+
 \begin{itemize}
-    \item Main test: does the Ridge score rank trials like the trained transformer does?
-    \item \texttt{all\_score\_spearman}: weak correlation, Spearman \(0.232\).
-    \item \texttt{informed\_score\_spearman}: best Ridge signal, but still weak, Spearman \(0.267\).
-    \item \texttt{generic\_score\_spearman}: negative over hybrid trials; not a useful selection signal here.
-    \item Conclusion: even with matched schema and no shuffling, the Ridge score does not reliably rank \(\eta\) by PFN performance.
+    \item \(\lambda=0\) retains only the standardized generic target;
+    \item \(\lambda=1\) retains only the standardized EPIT drive;
+    \item \(\lambda=0.5\) assigns equal coefficients to both components.
 \end{itemize}
 
-\textbf{PREN target-score result.}
+The relative material, environment, interaction, and process contributions
+inside \(g_{\mathrm{EPIT}}\) remain controlled by
+\texttt{epit\_material\_coef},
+\texttt{epit\_environment\_coef},
+\texttt{epit\_interaction\_coef}, and the sampled process coefficient.
+In particular, \texttt{epit\_interaction\_coef} continues to control the
+susceptibility--chloride term inside the EPIT drive; it is distinct from the
+new target-mixture parameter \(\lambda\).
+
+Both the flexible and fixed EPIT mechanisms provide a drive
+\(g_{\mathrm{EPIT}}\) to Equation~\eqref{eq:updated-epit-target-mixture}.
+The current fixed-schema experiments use
+\(g_{\mathrm{EPIT}}^{\mathrm{fixed}}\). Optional history and intervention effects
+used by broader flexible tasks are disabled in the fixed EPIT configuration.
+
+If the sampled EPIT drive is non-finite or has effectively zero variance, it
+cannot define a usable standardized target component. The implementation then
+falls back to
+
+\[
+y_1=z_0,
+\]
+
+including when \(\lambda=1\). This prevents an unusable constant EPIT drive from
+producing a constant synthetic target.
+
+Numerical values from the earlier additive formulation are not directly
+transferable to the new formulation. If both components in the old formulation
+are assumed to be standardized, their approximate relative weighting is
+
+\[
+\lambda
+\approx
+\frac{\beta}{1+\beta}.
+\]
+
+The new Optuna study therefore searches \(\lambda\) directly rather than reusing
+the earlier values of \(\beta\).
+
+\subsection{Motivation for Revising Material Generation}
+
+In the earlier fixed-schema implementation, the SCM generated all \(21\)
+features directly:
+
+\[
+17 \text{ material}
++
+3 \text{ environment}
++
+1 \text{ process}.
+\]
+
+The \(17\) material columns were subsequently transformed using one of several
+synthetic material styles, including the masked Dirichlet mechanism. Although
+this enforced non-negativity, sparsity, and approximate mass balance, it did not
+ensure that the resulting combinations represented alloys occurring in the real
+EPIT task. It could therefore introduce chemically implausible combinations and
+direct the model toward material relationships unsupported by the available
+dataset.
+
+The revised method is intentionally specific to the evaluated EPIT task. Its
+goal is not to generate universally valid alloy chemistry or transfer unchanged
+to unrelated corrosion datasets. Instead, it constrains synthetic material
+features to compositions represented in the current EPIT dataset.
+
+\subsection{Static Empirical Composition Profile}
+
+The usable EPIT data contain \(403\) distinct reported composition vectors. These
+vectors are stored once in the versioned profile
+
+\[
+\texttt{epit\_dataset\_v1}.
+\]
+
+The runtime generator loads this static profile and does not reopen or reprocess
+the source Excel workbook during training.
+
+Each template contains the complete available \(24\)-element source
+representation. The \(17\) elements observed by the evaluated model are those
+listed in Section~\ref{sec:epit-dataset}. The remaining source elements are
+retained during composition generation and removed only after the complete
+composition has been normalized.
+
+The distinct templates are assigned to five dataset-derived alloy families:
+
+\begin{center}
+\small
+\begin{tabular}{lrr}
+\hline
+\textbf{Family} & \textbf{Templates} & \textbf{Default probability} \\
+\hline
+Fe alloy & \(298\) & \(298/403 \approx 0.7395\) \\
+Al alloy & \(56\) & \(56/403 \approx 0.1390\) \\
+High-entropy alloy & \(19\) & \(19/403 \approx 0.0471\) \\
+Ni--Cr--Mo alloy & \(17\) & \(17/403 \approx 0.0422\) \\
+Other & \(13\) & \(13/403 \approx 0.0323\) \\
+\hline
+\end{tabular}
+\end{center}
+
+These probabilities describe the frequency of families among the \(403\)
+distinct templates, not their frequency among all \(760\) EPIT rows. They are
+fixed at these dataset-derived values in the first empirical-composition Optuna
+study. They remain configurable for later ablations but are not initially
+optimized.
+
+The family definitions and frequencies are empirical project settings rather
+than literature-derived universal alloy priors. The template bank uses feature
+information from the evaluated dataset but does not use its EPIT target values.
+The resulting prior is therefore task-specific and this use of evaluation-dataset
+features must be considered when interpreting downstream results.
+
+\subsection{Latent SCM and Composition Expansion}
+
+In empirical composition mode, the fixed-schema base SCM generates
+
+\[
+K_{\mathrm{mat}}
++
+3
++
+1
+\]
+
+features, where \(K_{\mathrm{mat}}\) is the number of material latents. The
+initial experiments fix
+
+\[
+K_{\mathrm{mat}}
+=
+\texttt{pitting\_material\_latent\_count}
+=
+2.
+\]
+
+The SCM therefore generates six features:
+
+\[
+2 \text{ material latents}
++
+3 \text{ environment features}
++
+1 \text{ process feature}.
+\]
+
+Because the material latents are generated jointly with the environment and
+process features, they can retain relationships created by the underlying MLP
+or tree SCM. Only the material portion is subsequently expanded; the three
+environment features and the process feature continue through the existing
+physical-profile and target-generation path.
+
+The first material latent is converted to within-dataset ranks and selects the
+alloy family according to the fixed family probabilities. The second latent
+selects a real composition template within the chosen family. With more than two
+configured latents, the remaining latent ranks are combined for template
+selection. With one latent, its position inside the selected family interval
+determines both the family and the template.
+
+This mapping replaces the \(K_{\mathrm{mat}}\) material latents with the \(17\)
+observed material columns:
+
+\[
+\underbrace{
+K_{\mathrm{mat}}+3+1
+}_{\text{SCM output}}
+\longrightarrow
+\underbrace{
+17+3+1
+}_{\text{TabICL input}}.
+\]
+
+For the default \(K_{\mathrm{mat}}=2\), this is
+
+\[
+6
+\longrightarrow
+21.
+\]
+
+The model still receives anonymous numeric columns rather than textual element
+names. Chemical meaning is introduced through the fixed positional order and
+the empirical joint composition patterns.
+
+\subsection{Template Perturbation and Closure}
+
+A selected composition can receive a small multiplicative perturbation. For a
+positive template entry \(c_{ij}>0\),
+
+\begin{equation}
+\widetilde c_{ij}
+=
+c_{ij}\exp(\epsilon_{ij}),
+\qquad
+\epsilon_{ij}
+\sim
+\mathcal{N}(0,\tau^2),
+\label{eq:empirical-composition-perturbation}
+\end{equation}
+
+where
+
+\[
+\tau
+=
+\texttt{pitting\_composition\_perturb\_strength}.
+\]
+
+Entries that are zero or unreported in the selected template remain zero. The
+perturbation therefore changes the amounts of reported alloying elements without
+introducing elements absent from that template.
+
+The complete \(24\)-element vector is then closed to \(100\) weight percent:
+
+\begin{equation}
+c_{ij}^{\mathrm{closed}}
+=
+100
+\frac{\widetilde c_{ij}}
+{\sum_{k=1}^{24}\widetilde c_{ik}}.
+\label{eq:empirical-composition-closure}
+\end{equation}
+
+Only after this closure are the \(17\) evaluated material columns selected. Their
+visible sum can therefore be below \(100\%\), because the remaining mass can
+belong to source elements omitted from the evaluated schema.
+
+The first empirical Optuna study searches
+
+\[
+\tau\in[0,0.15].
+\]
+
+This range includes exact template replay at \(\tau=0\), the project default near
+\(\tau=0.05\), and moderate deviations from the observed templates. Larger
+perturbations are excluded initially because they could weaken the chemical
+structure that motivated the empirical template approach.
+
+\subsection{Removal of Material Block Coupling}
+
+The earlier within-block transformation was
+
+\[
+X_B
+\leftarrow
+(1-\alpha)X_B+\alpha z_B,
+\]
+
+with
+
+\[
+\alpha
+=
+\texttt{informed\_feature\_block\_strength}.
+\]
+
+This coupling is no longer needed to make the material columns coherent. Their
+joint structure is now supplied by real composition templates and full-vector
+closure. Applying the shared component to the two material latents would also
+artificially couple two distinct decisions: selection of an alloy family and
+selection of a composition within that family.
+
+For the empirical-composition configuration, the project therefore fixes
+
+\[
+\texttt{informed\_feature\_block\_strength}
+=
+0.
+\]
+
+It is removed from the empirical Optuna search. Because the current parameter is
+shared across all multi-column blocks, fixing it to zero also disables forced
+environment-block coupling. Dependencies produced naturally by the underlying
+SCM remain present. If explicit environment coupling is required later, it
+should be introduced through a separate environment-specific parameter rather
+than by reusing the material coupling control.
+
+\subsection{Relationship to the Dirichlet Mechanism}
+
+The masked Dirichlet mechanism remains available in
+
+\[
+\texttt{pitting\_composition\_mode}
+=
+\texttt{legacy}.
+\]
+
+It is not applied on top of empirical templates. Consequently,
+\texttt{pitting\_material\_dirichlet\_prob},
+\texttt{pitting\_material\_dirichlet\_concentration}, and
+\texttt{pitting\_material\_dirichlet\_active\_prob} have no effect in empirical
+mode and are not included in its Optuna search.
+
+Keeping the legacy mode allows earlier experiments to be reproduced and permits
+a direct comparison between unconstrained synthetic compositions and the new
+dataset-specific empirical template generator.
+
+\subsection{Updated Empirical Optuna Configuration}
+
+The empirical fixed-EPIT study keeps the following settings fixed:
+
+\begin{center}
+\small
+\begin{tabular}{p{0.57\linewidth}p{0.27\linewidth}}
+\hline
+\textbf{Parameter} & \textbf{Fixed value} \\
+\hline
+\texttt{pitting\_composition\_mode} & \texttt{empirical} \\
+\texttt{pitting\_composition\_profile} & \texttt{epit\_dataset\_v1} \\
+\texttt{pitting\_composition\_family\_probs} & dataset frequencies above \\
+\texttt{pitting\_material\_latent\_count} & \(2\) \\
+\texttt{informed\_feature\_block\_strength} & \(0\) \\
+\texttt{informed\_normal\_block\_allocation} & \(17,3,1\) \\
+\texttt{pitting\_fixed\_epit\_schema} & \texttt{True} \\
+\texttt{permute\_features} & \texttt{False} \\
+\hline
+\end{tabular}
+\end{center}
+
+The study continues to optimize the meaningful routing and EPIT-target
+parameters:
+
 \begin{itemize}
-    \item \texttt{pren\_score\_spearman}: essentially no trial-ranking signal, Spearman \(-0.085\).
-    \item Values nearly flat, around \(0.49\)--\(0.50\).
-    \item Expected here: the fixed PREN rule is almost the same across informed samples.
-    \item Interpretation: useful to check that the PREN rule points in the right direction, not to choose \(\eta\).
-    \item \texttt{fake\_pren\_score\_spearman}: no signal, as expected for the positional control.
+    \item \texttt{informed\_prior\_ratio};
+    \item the MLP/tree mixture probability;
+    \item \texttt{informed\_target\_mix\_weight}, corresponding to \(\lambda\);
+    \item \texttt{informed\_physical\_marginal\_prob};
+    \item \texttt{pitting\_composition\_perturb\_strength}, corresponding to
+    \(\tau\);
+    \item \texttt{epit\_material\_coef};
+    \item \texttt{epit\_environment\_coef};
+    \item \texttt{epit\_interaction\_coef}.
 \end{itemize}
 
-\textbf{Top-trial ranking check.}
-\begin{itemize}
-    \item Actual top five transformer trials: 28, 25, 29, 27, 24.
-    \item Top five by \texttt{all\_score\_spearman}: overlap \(0/5\).
-    \item Top five by \texttt{informed\_score\_spearman}: overlap \(3/5\).
-    \item Top five by \texttt{pren\_score\_spearman}: overlap \(0/5\). This is not the main failure, because this score is not expected to rank fixed-rule trials.
-\end{itemize}
+The empirical study uses the separate default study name
 
-\textbf{Ridge-score counterexample.}
-Trial~25:
-\begin{itemize}
-    \item actual transformer rank: 2 of 32;
-    \item actual mean test Spearman: \(0.8315\);
-    \item \texttt{all\_score\_spearman}: \(-0.2121\);
-    \item \texttt{informed\_score\_spearman}: \(-0.2121\);
-    \item Ridge ranking: bottom of the study.
-\end{itemize}
+\[
+\texttt{pitting\_fixed\_pren\_empirical\_composition\_search},
+\]
 
-\textbf{Interpretation.}
-\begin{itemize}
-    \item Main failure: Ridge score only weakly matches the actual Optuna trial score.
-    \item PREN target score is not the main issue here; it is mostly constant by construction.
-    \item Matched schema and no feature shuffling do not fix the Ridge-versus-PFN mismatch.
-    \item Direct-prior analysis remains useful for rule development and sanity checks.
-    \item Actual Optuna transformer score remains the better way to choose \(\eta\).
-    \item MAE/RMSE direct scores are de-emphasized because some Ridge fits had unstable prediction scales.
-\end{itemize}
+so that its trials cannot be mixed accidentally with results from the earlier
+legacy Dirichlet search.
+
+\subsection{Interpretation and Limitations}
+
+The revised generator improves chemical coherence within the scope of the
+current EPIT task, but it is not a general alloy-design model. It does not infer
+phase stability, heat-treatment response, microstructure, passivation behavior,
+or thermodynamic feasibility beyond the patterns present in the template bank.
+
+The family frequencies and available compositions are determined by the current
+dataset. Rare alloy families remain rare, and uncommon element columns can be
+constant in short synthetic draws. The existing fixed-schema acceptance check
+can reject and resample such draws when all \(21\) active positions are required.
+
+The principal methodological change is therefore a narrowing of the synthetic
+prior:
+
+\[
+\text{arbitrary composition-like material features}
+\quad\longrightarrow\quad
+\text{perturbed compositions represented in the EPIT dataset}.
+\]
+
+This narrowing is intentional. The immediate objective is improved prediction
+on the current EPIT task rather than zero-shot transfer to unrelated corrosion
+datasets. Comparisons with earlier models must nevertheless recognize that both
+the target mixture and the material feature distribution have changed.
+
 \end{document}

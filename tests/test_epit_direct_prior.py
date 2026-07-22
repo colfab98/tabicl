@@ -94,7 +94,7 @@ def test_build_phase1_candidates_matches_planned_grid():
     assert candidates[0].eta_params["informed_physical_marginal_prob"] == 0.0
     assert candidates[0].eta_params["informed_mlp_prob"] == 0.0
     assert candidates[-1].eta_params["pitting_material_dirichlet_concentration"] == 0.25
-    assert candidates[-1].eta_params["informed_interaction_strength"] == 0.85
+    assert candidates[-1].eta_params["informed_target_mix_weight"] == 0.85
     assert candidates[-1].eta_params["informed_mlp_prob"] == 1.0
 
 
@@ -661,7 +661,7 @@ def test_build_phase2_candidates_uses_top_phase1_regimes(tmp_path):
         assert 0.35 <= candidate.eta_params["epit_environment_coef"] <= 0.65
         assert 0.60 <= candidate.eta_params["epit_interaction_coef"] <= 0.95
         assert 0.00 <= candidate.eta_params["informed_feature_block_strength"] <= 0.95
-        assert 0.00 <= candidate.eta_params["informed_interaction_strength"] <= 1.00
+        assert 0.00 <= candidate.eta_params["informed_target_mix_weight"] <= 1.00
     assert all(0.50 <= candidate.eta_params["informed_mlp_prob"] <= 1.00 for candidate in candidates[:3])
     assert all(0.00 <= candidate.eta_params["informed_mlp_prob"] <= 0.50 for candidate in candidates[3:])
 

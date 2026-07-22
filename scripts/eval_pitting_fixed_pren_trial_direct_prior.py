@@ -35,14 +35,13 @@ from eval_epit_direct_prior import (  # noqa: E402
     DIRECT_EPIT_BLOCK_ALLOCATION,
     EXPECTED_EPIT_FEATURE_COUNT,
     SCHEMA_RETRY_SEED_STRIDE,
+    SURROGATE_MODEL_NAMES,
     SyntheticEpitSample,
     build_fixed_hp_for_eta,
     fit_and_score_theta,
     load_epit_task,
     preprocess_real_epit,
     score_target_rule_theta,
-    summarize_eta,
-    summarize_target_rule_eta,
 )
 from tabicl.prior.dataset import PriorDataset, SCMPrior  # noqa: E402
 from tabicl.prior.prior_config import DEFAULT_SAMPLED_HP  # noqa: E402
@@ -84,18 +83,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--synthetic-seed", type=int, default=DEFAULT_SYNTHETIC_SEED)
     parser.add_argument("--synthetic-seq-len", type=int, default=0)
     parser.add_argument("--random-state", type=int, default=42)
+    parser.add_argument("--model", choices=SURROGATE_MODEL_NAMES, default="ridge")
     parser.add_argument("--n-workers", type=int, default=1)
     parser.add_argument("--max-trials", type=int, default=0)
     parser.add_argument("--trial-number", type=int, nargs="*", default=None)
     parser.add_argument("--max-schema-attempts", type=int, default=DEFAULT_SCHEMA_ATTEMPTS)
     parser.add_argument("--no-resume", action="store_true")
-    parser.add_argument("--write-theta-scores", action="store_true")
+    parser.add_argument("--write-theta-scores", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--progress-interval", type=float, default=DEFAULT_CHUNK_LOG_INTERVAL)
     return parser.parse_args()
 
 
-def default_output_dir(study_run_dir: Path) -> Path:
-    return DEFAULT_OUTPUT_ROOT / study_run_dir.name
+def default_output_dir(study_run_dir: Path, model_name: str, n_synth: int) -> Path:
+    return DEFAULT_OUTPUT_ROOT / f"{study_run_dir.name}_{model_name}_n{n_synth}"
 
 
 def load_trial_specs(study_run_dir: Path, trial_numbers: set[int] | None = None) -> list[TrialSpec]:
@@ -283,28 +283,6 @@ def fake_pren_rule_for_generic_sample(sample: SyntheticEpitSample, params: dict[
     }
 
 
-def nan_metric_dict(prefix: str) -> dict[str, Any]:
-    return {
-        f"{prefix}_n": 0,
-        f"{prefix}_spearman": math.nan,
-        f"{prefix}_mae": math.nan,
-        f"{prefix}_rmse": math.nan,
-        f"{prefix}_median_theta_spearman": math.nan,
-        f"{prefix}_max_theta_spearman": math.nan,
-    }
-
-
-def summary_metric_dict(prefix: str, summary: Any) -> dict[str, Any]:
-    return {
-        f"{prefix}_n": int(summary.n_synth),
-        f"{prefix}_spearman": float(summary.ensemble_spearman),
-        f"{prefix}_mae": float(summary.standardized_mae),
-        f"{prefix}_rmse": float(summary.standardized_rmse),
-        f"{prefix}_median_theta_spearman": float(summary.median_theta_spearman),
-        f"{prefix}_max_theta_spearman": float(summary.max_theta_spearman),
-    }
-
-
 def score_trial(spec: TrialSpec, args_dict: dict[str, Any]) -> dict[str, Any]:
     try:
         torch.set_num_threads(1)
@@ -316,13 +294,9 @@ def score_trial(spec: TrialSpec, args_dict: dict[str, Any]) -> dict[str, Any]:
     n_synth = int(args_dict["n_synth"])
     synthetic_seed_start = int(args_dict["synthetic_seed"]) + spec.trial_number * 1_000_000
 
-    samples: list[SyntheticEpitSample] = []
-    all_scores = []
-    informed_scores = []
-    generic_scores = []
-    pren_scores = []
-    fake_pren_scores = []
-    theta_rows = []
+    n_informed = 0
+    n_generic = 0
+    score_rows = []
     start = time.time()
 
     for offset in range(n_synth):
@@ -333,15 +307,20 @@ def score_trial(spec: TrialSpec, args_dict: dict[str, Any]) -> dict[str, Any]:
             params=spec.params,
             max_schema_attempts=int(args_dict["max_schema_attempts"]),
         )
-        samples.append(sample)
-        ridge_score = fit_and_score_theta(processed, sample)
+        surrogate_score = fit_and_score_theta(
+            processed,
+            sample,
+            model_name=str(args_dict["model"]),
+            random_state=sample.sampling_seed,
+        )
         informed = is_informed_sample(sample)
-        all_scores.append(ridge_score)
+        pren_score = None
+        fake_pren_score = None
         if informed:
-            informed_scores.append(ridge_score)
-            pren_scores.append(score_target_rule_theta(processed, sample))
+            n_informed += 1
+            pren_score = score_target_rule_theta(processed, sample)
         else:
-            generic_scores.append(ridge_score)
+            n_generic += 1
             fake_sample = SyntheticEpitSample(
                 X=sample.X,
                 y=sample.y,
@@ -355,22 +334,30 @@ def score_trial(spec: TrialSpec, args_dict: dict[str, Any]) -> dict[str, Any]:
                 process_unique_values=sample.process_unique_values,
                 target_rule=fake_pren_rule_for_generic_sample(sample, spec.params),
             )
-            fake_pren_scores.append(score_target_rule_theta(processed, fake_sample))
+            fake_pren_score = score_target_rule_theta(processed, fake_sample)
 
-        if bool(args_dict["write_theta_scores"]):
-            theta_rows.append(
-                {
-                    "trial_number": spec.trial_number,
-                    "trial_id": spec.trial_id,
-                    "synthetic_seed": sample.synthetic_seed,
-                    "sampling_seed": sample.sampling_seed,
-                    "schema_attempts": sample.schema_attempts,
-                    "sample_type": "informed" if informed else "generic",
-                    "ridge_spearman": ridge_score.spearman,
-                    "ridge_mae": ridge_score.standardized_mae,
-                    "ridge_rmse": ridge_score.standardized_rmse,
-                }
-            )
+        score_rows.append(
+            {
+                "trial_number": spec.trial_number,
+                "trial_id": spec.trial_id,
+                "draw_index": offset,
+                "model": str(args_dict["model"]),
+                "mean_test_spearman": float(spec.result.get("mean_test_spearman", math.nan)),
+                "synthetic_seed": sample.synthetic_seed,
+                "sampling_seed": sample.sampling_seed,
+                "schema_attempts": sample.schema_attempts,
+                "sample_type": "informed" if informed else "generic",
+                "surrogate_spearman": surrogate_score.spearman,
+                "surrogate_mae": surrogate_score.standardized_mae,
+                "surrogate_rmse": surrogate_score.standardized_rmse,
+                "pren_spearman": pren_score.spearman if pren_score is not None else math.nan,
+                "pren_mae": pren_score.standardized_mae if pren_score is not None else math.nan,
+                "pren_rmse": pren_score.standardized_rmse if pren_score is not None else math.nan,
+                "fake_pren_spearman": fake_pren_score.spearman if fake_pren_score is not None else math.nan,
+                "fake_pren_mae": fake_pren_score.standardized_mae if fake_pren_score is not None else math.nan,
+                "fake_pren_rmse": fake_pren_score.standardized_rmse if fake_pren_score is not None else math.nan,
+            }
+        )
 
     row: dict[str, Any] = {
         "trial_number": spec.trial_number,
@@ -382,75 +369,52 @@ def score_trial(spec: TrialSpec, args_dict: dict[str, Any]) -> dict[str, Any]:
         "mean_test_mae": float(spec.result.get("mean_test_mae", math.nan)),
         "mean_test_rmse": float(spec.result.get("mean_test_rmse", math.nan)),
         "mean_test_r2": float(spec.result.get("mean_test_r2", math.nan)),
+        "model": str(args_dict["model"]),
         "n_synth_requested": n_synth,
-        "n_informed_sampled": len(informed_scores),
-        "n_generic_sampled": len(generic_scores),
-        "informed_sample_fraction": len(informed_scores) / float(n_synth),
+        "n_informed_sampled": n_informed,
+        "n_generic_sampled": n_generic,
+        "informed_sample_fraction": n_informed / float(n_synth),
         "elapsed_seconds": time.time() - start,
         **spec.params,
     }
 
-    row.update(summary_metric_dict("all_score", summarize_eta(processed, all_scores, eta_id=spec.trial_id)))
-    row.update(
-        summary_metric_dict("informed_score", summarize_eta(processed, informed_scores, eta_id=spec.trial_id))
-        if informed_scores
-        else nan_metric_dict("informed_score")
-    )
-    row.update(
-        summary_metric_dict("generic_score", summarize_eta(processed, generic_scores, eta_id=spec.trial_id))
-        if generic_scores
-        else nan_metric_dict("generic_score")
-    )
-    row.update(
-        summary_metric_dict("pren_score", summarize_target_rule_eta(processed, pren_scores, eta_id=spec.trial_id))
-        if pren_scores
-        else nan_metric_dict("pren_score")
-    )
-    row.update(
-        summary_metric_dict(
-            "fake_pren_score",
-            summarize_target_rule_eta(processed, fake_pren_scores, eta_id=spec.trial_id),
-        )
-        if fake_pren_scores
-        else nan_metric_dict("fake_pren_score")
-    )
-
     trial_output_dir = Path(args_dict["output_dir"]) / "trials" / spec.trial_id
     trial_output_dir.mkdir(parents=True, exist_ok=True)
     (trial_output_dir / "summary.json").write_text(json.dumps(row, indent=2, sort_keys=True) + "\n")
-    if bool(args_dict["write_theta_scores"]):
-        pd.DataFrame(theta_rows).to_csv(trial_output_dir / "theta_scores.csv", index=False)
+    pd.DataFrame(score_rows).to_csv(trial_output_dir / "scores.csv", index=False)
     return row
 
 
-def correlation_rows(summary: pd.DataFrame) -> list[dict[str, Any]]:
-    target = summary["mean_test_spearman"].to_numpy(dtype=float)
-    columns = [
-        "all_score_spearman",
-        "informed_score_spearman",
-        "generic_score_spearman",
-        "pren_score_spearman",
-        "fake_pren_score_spearman",
-        "all_score_mae",
-        "all_score_rmse",
+def correlation_rows(scores: pd.DataFrame) -> list[dict[str, Any]]:
+    """Compare trial rankings separately for every synthetic draw."""
+    score_specs = [
+        ("all", "surrogate_spearman"),
+        ("all", "surrogate_mae"),
+        ("all", "surrogate_rmse"),
+        ("informed", "surrogate_spearman"),
+        ("generic", "surrogate_spearman"),
+        ("informed", "pren_spearman"),
+        ("generic", "fake_pren_spearman"),
     ]
     rows = []
-    for column in columns:
-        if column not in summary.columns:
-            continue
-        values = summary[column].to_numpy(dtype=float)
-        mask = np.isfinite(target) & np.isfinite(values)
-        if int(mask.sum()) < 3:
-            rows.append({"metric": column, "n": int(mask.sum()), "spearman": math.nan, "kendall_tau": math.nan})
-            continue
-        rows.append(
-            {
+    for draw_index, draw in scores.groupby("draw_index", sort=True):
+        for scope, column in score_specs:
+            scoped = draw if scope == "all" else draw[draw["sample_type"] == scope]
+            target = scoped["mean_test_spearman"].to_numpy(dtype=float)
+            values = scoped[column].to_numpy(dtype=float)
+            mask = np.isfinite(target) & np.isfinite(values)
+            row = {
+                "draw_index": int(draw_index),
+                "sample_scope": scope,
                 "metric": column,
-                "n": int(mask.sum()),
-                "spearman": float(spearmanr(target[mask], values[mask]).correlation),
-                "kendall_tau": float(kendalltau(target[mask], values[mask]).correlation),
+                "n_trials": int(mask.sum()),
+                "spearman": math.nan,
+                "kendall_tau": math.nan,
             }
-        )
+            if int(mask.sum()) >= 3:
+                row["spearman"] = float(spearmanr(target[mask], values[mask]).correlation)
+                row["kendall_tau"] = float(kendalltau(target[mask], values[mask]).correlation)
+            rows.append(row)
     return rows
 
 
@@ -461,7 +425,9 @@ def main() -> None:
     if args.max_schema_attempts <= 0:
         raise ValueError("--max-schema-attempts must be positive.")
 
-    output_dir = (args.output_dir or default_output_dir(args.study_run_dir)).expanduser().resolve()
+    output_dir = (
+        args.output_dir or default_output_dir(args.study_run_dir, args.model, args.n_synth)
+    ).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     selected = set(args.trial_number) if args.trial_number else None
@@ -477,8 +443,8 @@ def main() -> None:
         "synthetic_seed": int(args.synthetic_seed),
         "synthetic_seq_len": int(args.synthetic_seq_len),
         "random_state": int(args.random_state),
+        "model": str(args.model),
         "max_schema_attempts": int(args.max_schema_attempts),
-        "write_theta_scores": bool(args.write_theta_scores),
     }
     metadata = {
         "study_run_dir": str(args.study_run_dir.expanduser().resolve()),
@@ -493,14 +459,19 @@ def main() -> None:
     resume = not bool(args.no_resume)
     for spec in specs:
         summary_path = output_dir / "trials" / spec.trial_id / "summary.json"
-        if resume and summary_path.is_file():
-            rows.append(json.loads(summary_path.read_text()))
+        scores_path = output_dir / "trials" / spec.trial_id / "scores.csv"
+        if resume and summary_path.is_file() and scores_path.is_file():
+            resumed_row = json.loads(summary_path.read_text())
+            if resumed_row.get("model") == args.model:
+                rows.append(resumed_row)
+            else:
+                pending.append(spec)
         else:
             pending.append(spec)
 
     print(
         f"Scoring fixed-PREN trial direct priors: total={len(specs)}, "
-        f"pending={len(pending)}, output={output_dir}"
+        f"pending={len(pending)}, model={args.model}, output={output_dir}"
     )
     last_progress = time.time()
     if pending:
@@ -510,7 +481,7 @@ def main() -> None:
                 rows.append(row)
                 print(
                     f"{idx}/{len(pending)} {spec.trial_id}: "
-                    f"test={row['mean_test_spearman']:.4f}, all={row['all_score_spearman']:.4f}, "
+                    f"test={row['mean_test_spearman']:.4f}, model={row['model']}, "
                     f"informed_n={row['n_informed_sampled']}, generic_n={row['n_generic_sampled']}"
                 )
         else:
@@ -526,18 +497,25 @@ def main() -> None:
                     if now - last_progress >= float(args.progress_interval) or completed == len(pending):
                         print(
                             f"Progress {completed}/{len(pending)} latest={spec.trial_id}: "
-                            f"test={row['mean_test_spearman']:.4f}, all={row['all_score_spearman']:.4f}"
+                            f"test={row['mean_test_spearman']:.4f}, model={row['model']}"
                         )
                         last_progress = now
 
     summary = pd.DataFrame(rows).sort_values("trial_number").reset_index(drop=True)
     summary.to_csv(output_dir / "summary.csv", index=False)
-    corr = pd.DataFrame(correlation_rows(summary))
+    score_tables = [
+        pd.read_csv(output_dir / "trials" / spec.trial_id / "scores.csv")
+        for spec in specs
+    ]
+    scores = pd.concat(score_tables, ignore_index=True).sort_values(
+        ["trial_number", "draw_index"]
+    ).reset_index(drop=True)
+    scores.to_csv(output_dir / "scores.csv", index=False)
+    corr = pd.DataFrame(correlation_rows(scores))
     corr.to_csv(output_dir / "correlations.csv", index=False)
     print(f"Wrote {output_dir / 'summary.csv'}")
+    print(f"Wrote {output_dir / 'scores.csv'} ({len(scores)} independent mechanism rows)")
     print(f"Wrote {output_dir / 'correlations.csv'}")
-    if not corr.empty:
-        print(corr.to_string(index=False))
 
 
 if __name__ == "__main__":

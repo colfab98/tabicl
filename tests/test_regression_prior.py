@@ -306,6 +306,91 @@ def test_pitting_target_family_uses_fixed_epit_coefficients_across_random_seeds(
     assert torch.allclose(y_first, y_second)
 
 
+def test_flexible_epit_target_uses_convex_standardized_mixture():
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["informed_target_family"] = "pitting_potential"
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.randn(64, 2)
+    y = torch.linspace(-2.0, 3.0, steps=64).square()
+    blocks = {"material": slice(0, 1), "environment": slice(1, 2)}
+
+    def run(weight: float) -> torch.Tensor:
+        torch.manual_seed(123)
+        _, mixed = prior._apply_informed_corrosion_mechanism(
+            X.clone(),
+            y.clone(),
+            blocks,
+            "normal_corrosion",
+            interaction_strength=0.35,
+            intervention_strength=0.0,
+            target_mix_weight=weight,
+        )
+        return mixed
+
+    generic = prior._standardize_signal(y)
+    informed = run(1.0)
+    assert torch.allclose(run(0.0), generic)
+    assert torch.allclose(run(0.5), 0.5 * generic + 0.5 * informed)
+
+
+def test_fixed_epit_target_uses_convex_standardized_mixture():
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["informed_target_family"] = "pitting_potential"
+    fixed_hp["pitting_fixed_epit_schema"] = True
+    fixed_hp["pitting_process_category_count"] = 3
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.randn(64, 5)
+    X[:, 4] = torch.arange(64) % 3
+    y = torch.linspace(-2.0, 3.0, steps=64).square()
+    blocks = {
+        "material": slice(0, 1),
+        "environment": slice(1, 4),
+        "process_history": slice(4, 5),
+    }
+
+    def run(weight: float) -> torch.Tensor:
+        torch.manual_seed(456)
+        np.random.seed(456)
+        _, mixed = prior._apply_informed_corrosion_mechanism(
+            X.clone(),
+            y.clone(),
+            blocks,
+            "normal_corrosion",
+            interaction_strength=0.35,
+            intervention_strength=0.0,
+            target_mix_weight=weight,
+        )
+        return mixed
+
+    generic = prior._standardize_signal(y)
+    informed = run(1.0)
+    assert torch.allclose(run(0.0), generic)
+    assert torch.allclose(run(0.5), 0.5 * generic + 0.5 * informed)
+
+
+def test_epit_target_mixture_falls_back_to_generic_for_constant_drive():
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["informed_target_family"] = "pitting_potential"
+    fixed_hp["epit_material_coef"] = 0.0
+    fixed_hp["epit_environment_coef"] = 0.0
+    fixed_hp["epit_interaction_coef"] = 0.0
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.randn(64, 2)
+    y = torch.linspace(-2.0, 3.0, steps=64).square()
+
+    _, mixed = prior._apply_informed_corrosion_mechanism(
+        X,
+        y,
+        {"material": slice(0, 1), "environment": slice(1, 2)},
+        "normal_corrosion",
+        interaction_strength=0.35,
+        intervention_strength=0.0,
+        target_mix_weight=1.0,
+    )
+
+    assert torch.allclose(mixed, prior._standardize_signal(y))
+
+
 def _pitting_fixed_hp() -> dict:
     fixed_hp = dict(DEFAULT_FIXED_HP)
     fixed_hp["informed_target_family"] = "pitting_potential"

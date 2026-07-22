@@ -1,4 +1,10 @@
 from .activations import get_activations
+from .epit_composition_profile import (
+    EPIT_COMPOSITION_DEFAULT_LATENT_COUNT,
+    EPIT_COMPOSITION_DEFAULT_PERTURB_STRENGTH,
+    EPIT_COMPOSITION_FAMILY_PROBS,
+    EPIT_COMPOSITION_PROFILE,
+)
 
 
 DEFAULT_FIXED_HP = {
@@ -14,6 +20,7 @@ DEFAULT_FIXED_HP = {
     "informed_inhibitor_block_allocation_min_counts": None,
     "informed_feature_block_strength": 0.30,
     "informed_interaction_strength": 0.35,
+    "informed_target_mix_weight": 0.35,
     "informed_history_strength": 0.70,
     "informed_intervention_strength": 0.20,
     "informed_target_family": "generic_corrosion",
@@ -25,6 +32,11 @@ DEFAULT_FIXED_HP = {
     "pitting_material_dirichlet_prob": 0.0,
     "pitting_material_dirichlet_concentration": 1.0,
     "pitting_material_dirichlet_active_prob": 0.45,
+    "pitting_composition_mode": "legacy",
+    "pitting_composition_profile": EPIT_COMPOSITION_PROFILE,
+    "pitting_composition_family_probs": EPIT_COMPOSITION_FAMILY_PROBS,
+    "pitting_composition_perturb_strength": EPIT_COMPOSITION_DEFAULT_PERTURB_STRENGTH,
+    "pitting_material_latent_count": EPIT_COMPOSITION_DEFAULT_LATENT_COUNT,
     "pitting_process_role": None,
     "pitting_process_category_count": None,
     "pitting_fixed_epit_schema": False,

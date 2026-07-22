@@ -1,0 +1,1284 @@
+{
+  "created_at": "2026-07-16T09:28:46",
+  "local_checkpoint": null,
+  "local_models": [],
+  "checkpoint_eval_specs": [
+    {
+      "checkpoint_name": "step-500",
+      "checkpoint_step": 500,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-1000",
+      "checkpoint_step": 1000,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-1000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-1000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-1000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-1500",
+      "checkpoint_step": 1500,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-1500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-1500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-1500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-2000",
+      "checkpoint_step": 2000,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-2000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-2000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-2000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-2500",
+      "checkpoint_step": 2500,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-2500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-2500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-2500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-3000",
+      "checkpoint_step": 3000,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-3000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-3000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-3000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-3500",
+      "checkpoint_step": 3500,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-3500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-3500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-3500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-4000",
+      "checkpoint_step": 4000,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-4000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-4000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-4000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-4500",
+      "checkpoint_step": 4500,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-4500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-4500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-4500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-5000",
+      "checkpoint_step": 5000,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-5000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-5000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-5000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-5500",
+      "checkpoint_step": 5500,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-5500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-5500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-5500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-6000",
+      "checkpoint_step": 6000,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-6000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-6000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-6000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-6500",
+      "checkpoint_step": 6500,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-6500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-6500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-6500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-7000",
+      "checkpoint_step": 7000,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-7000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-7000.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-7000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-7500",
+      "checkpoint_step": 7500,
+      "local_models": [
+        {
+          "model": "tabicl_s1_regression_fixed_pren_trial28",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_fixed_pren_trial28/step-7500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_baseline",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-7500.ckpt"
+        },
+        {
+          "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_pitting_optuna_best_trial18/step-7500.ckpt"
+        }
+      ]
+    }
+  ],
+  "runs": [
+    "tabicl_s1_regression_fixed_pren_trial28",
+    "tabicl_s1_regression_baseline",
+    "tabicl_s1_regression_pitting_optuna_best_trial18"
+  ],
+  "checkpoint": "all",
+  "min_checkpoint_step": 500,
+  "checkpoint_step_interval": 500,
+  "include_latest_common_checkpoint": true,
+  "target_mode": "primary",
+  "target_binning": "continuous",
+  "target_bins": 2,
+  "regression_output": "median",
+  "regression_uncertainty": false,
+  "regression_quantile_alphas": [
+    0.05,
+    0.1,
+    0.2,
+    0.25,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.75,
+    0.8,
+    0.9,
+    0.95
+  ],
+  "pretrained_checkpoint_version": "tabicl-regressor-v2-20260212.ckpt",
+  "model_cache": true,
+  "primary_metric": "test_spearman",
+  "metric_sort_specs": [
+    [
+      "test_spearman",
+      false
+    ],
+    [
+      "test_nmae_iqr",
+      true
+    ],
+    [
+      "test_npinball_iqr",
+      true
+    ],
+    [
+      "test_interval_80_coverage_error",
+      true
+    ],
+    [
+      "test_mae",
+      true
+    ],
+    [
+      "test_rmse",
+      true
+    ]
+  ],
+  "test_size": 0.25,
+  "random_state": 1001,
+  "datacortech_protocol": "author_simple",
+  "max_samples_per_task": 2000,
+  "min_numeric_finite_ratio": 0.8,
+  "min_categorical_nonmissing_ratio": 0.8,
+  "default_excluded_datasets": [
+    "316l_pitting_passivity"
+  ],
+  "default_excluded_tasks": [
+    "nace_nist_corr_data__corr_data_database__rate_mm_yr_or_rating_numeric_rate_only",
+    "nace_nist_corr_data__corr_data_database__rate_mils_yr_or_rating_numeric_rate_only"
+  ],
+  "default_summary_excluded_datasets": [
+    "mooring_steel_seawater",
+    "am_mpea_corrosion",
+    "mg_az91_inhibitors",
+    "mg_ze41_inhibitors"
+  ],
+  "excluded_quality_flags": [],
+  "n_estimators": 8,
+  "tabicl_feat_shuffle_method": "latin",
+  "feature_groups_default": [
+    "material",
+    "environment",
+    "process_history",
+    "exposure_duration",
+    "temporal_history",
+    "direct_intervention",
+    "molecular_descriptor"
+  ],
+  "electrochem_feature_groups": [
+    "electrochem_control",
+    "electrochem_downstream"
+  ],
+  "include_electrochem_features": false,
+  "rows": [],
+  "errors": [
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-500",
+      "checkpoint_step": 500
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-500",
+      "checkpoint_step": 500
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-500",
+      "checkpoint_step": 500
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-500",
+      "checkpoint_step": 500
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-1000",
+      "checkpoint_step": 1000
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-1000",
+      "checkpoint_step": 1000
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-1000",
+      "checkpoint_step": 1000
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-1000",
+      "checkpoint_step": 1000
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-1500",
+      "checkpoint_step": 1500
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-1500",
+      "checkpoint_step": 1500
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-1500",
+      "checkpoint_step": 1500
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-1500",
+      "checkpoint_step": 1500
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-2000",
+      "checkpoint_step": 2000
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-2000",
+      "checkpoint_step": 2000
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-2000",
+      "checkpoint_step": 2000
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-2000",
+      "checkpoint_step": 2000
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-2500",
+      "checkpoint_step": 2500
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-2500",
+      "checkpoint_step": 2500
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-2500",
+      "checkpoint_step": 2500
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-2500",
+      "checkpoint_step": 2500
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-3000",
+      "checkpoint_step": 3000
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-3000",
+      "checkpoint_step": 3000
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-3000",
+      "checkpoint_step": 3000
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-3000",
+      "checkpoint_step": 3000
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-3500",
+      "checkpoint_step": 3500
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-3500",
+      "checkpoint_step": 3500
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-3500",
+      "checkpoint_step": 3500
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-3500",
+      "checkpoint_step": 3500
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-4000",
+      "checkpoint_step": 4000
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-4000",
+      "checkpoint_step": 4000
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-4000",
+      "checkpoint_step": 4000
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-4000",
+      "checkpoint_step": 4000
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-4500",
+      "checkpoint_step": 4500
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-4500",
+      "checkpoint_step": 4500
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-4500",
+      "checkpoint_step": 4500
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-4500",
+      "checkpoint_step": 4500
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-5000",
+      "checkpoint_step": 5000
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-5000",
+      "checkpoint_step": 5000
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-5000",
+      "checkpoint_step": 5000
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-5000",
+      "checkpoint_step": 5000
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-5500",
+      "checkpoint_step": 5500
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-5500",
+      "checkpoint_step": 5500
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-5500",
+      "checkpoint_step": 5500
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-5500",
+      "checkpoint_step": 5500
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-6000",
+      "checkpoint_step": 6000
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-6000",
+      "checkpoint_step": 6000
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-6000",
+      "checkpoint_step": 6000
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-6000",
+      "checkpoint_step": 6000
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-6500",
+      "checkpoint_step": 6500
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-6500",
+      "checkpoint_step": 6500
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-6500",
+      "checkpoint_step": 6500
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-6500",
+      "checkpoint_step": 6500
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-7000",
+      "checkpoint_step": 7000
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-7000",
+      "checkpoint_step": 7000
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-7000",
+      "checkpoint_step": 7000
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-7000",
+      "checkpoint_step": 7000
+    },
+    {
+      "model": "tabicl_s1_regression_fixed_pren_trial28",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-7500",
+      "checkpoint_step": 7500
+    },
+    {
+      "model": "tabicl_s1_regression_baseline",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-7500",
+      "checkpoint_step": 7500
+    },
+    {
+      "model": "tabicl_s1_regression_pitting_optuna_best_trial18",
+      "model_kind": "local_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-7500",
+      "checkpoint_step": 7500
+    },
+    {
+      "model": "pretrained_tabicl_v2",
+      "model_kind": "pretrained_tabicl_regressor",
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "random_stratified",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "RuntimeError('No CUDA GPUs are available')",
+      "checkpoint_name": "step-7500",
+      "checkpoint_step": 7500
+    }
+  ],
+  "output_files": {
+    "artifact_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/corrosion_eval_repeated_splits_20260716_092747/seed_1001",
+    "json": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/corrosion_eval_repeated_splits_20260716_092747/seed_1001/results.json",
+    "csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/corrosion_eval_repeated_splits_20260716_092747/seed_1001/rows.csv",
+    "wide_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/corrosion_eval_repeated_splits_20260716_092747/seed_1001/wide.csv",
+    "summary_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/corrosion_eval_repeated_splits_20260716_092747/seed_1001/summary.csv",
+    "plot_dir": null,
+    "plots": [],
+    "task_tables": []
+  }
+}

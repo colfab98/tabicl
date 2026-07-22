@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 import torch
 from scipy.stats import spearmanr
+from sklearn.ensemble import ExtraTreesRegressor, HistGradientBoostingRegressor
 from sklearn.linear_model import Ridge
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -408,42 +409,42 @@ def core_anchors() -> dict[str, dict[str, float]]:
             "epit_environment_coef": 0.40,
             "epit_interaction_coef": 0.65,
             "informed_feature_block_strength": 0.35,
-            "informed_interaction_strength": 0.50,
+            "informed_target_mix_weight": 0.50,
         },
         "environment_dominant": {
             "epit_material_coef": 0.50,
             "epit_environment_coef": 0.65,
             "epit_interaction_coef": 0.65,
             "informed_feature_block_strength": 0.35,
-            "informed_interaction_strength": 0.50,
+            "informed_target_mix_weight": 0.50,
         },
         "interaction_dominant": {
             "epit_material_coef": 0.55,
             "epit_environment_coef": 0.45,
             "epit_interaction_coef": 0.95,
             "informed_feature_block_strength": 0.35,
-            "informed_interaction_strength": 0.75,
+            "informed_target_mix_weight": 0.75,
         },
         "balanced": {
             "epit_material_coef": 0.575,
             "epit_environment_coef": 0.50,
             "epit_interaction_coef": 0.775,
             "informed_feature_block_strength": 0.30,
-            "informed_interaction_strength": 0.35,
+            "informed_target_mix_weight": 0.35,
         },
         "weak_prior": {
             "epit_material_coef": 0.50,
             "epit_environment_coef": 0.40,
             "epit_interaction_coef": 0.65,
             "informed_feature_block_strength": 0.15,
-            "informed_interaction_strength": 0.20,
+            "informed_target_mix_weight": 0.20,
         },
         "strong_prior": {
             "epit_material_coef": 0.65,
             "epit_environment_coef": 0.60,
             "epit_interaction_coef": 0.90,
             "informed_feature_block_strength": 0.60,
-            "informed_interaction_strength": 0.85,
+            "informed_target_mix_weight": 0.85,
         },
     }
 
@@ -481,7 +482,7 @@ def core_search_ranges() -> dict[str, tuple[float, float]]:
         "epit_environment_coef": (0.35, 0.65),
         "epit_interaction_coef": (0.60, 0.95),
         "informed_feature_block_strength": (0.00, 0.95),
-        "informed_interaction_strength": (0.00, 1.00),
+        "informed_target_mix_weight": (0.00, 1.00),
     }
 
 
@@ -653,7 +654,7 @@ def build_fixed_hp_for_eta(category_count: int, eta_params: dict[str, Any] | Non
             "epit_environment_coef": 0.50,
             "epit_interaction_coef": 0.775,
             "informed_feature_block_strength": 0.30,
-            "informed_interaction_strength": 0.35,
+            "informed_target_mix_weight": 0.35,
             "pitting_material_dirichlet_prob": 0.0,
             "pitting_material_dirichlet_concentration": 1.0,
             "pitting_material_dirichlet_active_prob": 0.45,
@@ -862,19 +863,64 @@ def spearman_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return rho if np.isfinite(rho) else 0.0
 
 
-def fit_and_score_theta(processed: ProcessedEpitData, synthetic: SyntheticEpitSample) -> ThetaSurrogateScore:
+SURROGATE_MODEL_NAMES = ("ridge", "extra_trees", "hist_gradient_boosting")
+
+
+def build_surrogate_model(model_name: str = "ridge", *, random_state: int = 42) -> Any:
+    """Build a deterministic single-synthetic-task transfer surrogate.
+
+    Scaling is kept in every pipeline so real inputs are transformed with the
+    synthetic task's fitted statistics, matching the historical Ridge test.
+    Tree estimators use one thread because trial-level multiprocessing provides
+    the outer parallelism in the CPU scoring workflow.
+    """
+    model_name = str(model_name).strip().lower()
+    if model_name == "ridge":
+        estimator = Ridge(alpha=1.0)
+    elif model_name == "extra_trees":
+        estimator = ExtraTreesRegressor(
+            n_estimators=100,
+            max_depth=12,
+            min_samples_leaf=3,
+            max_features=1.0,
+            n_jobs=1,
+            random_state=int(random_state),
+        )
+    elif model_name == "hist_gradient_boosting":
+        estimator = HistGradientBoostingRegressor(
+            learning_rate=0.05,
+            max_iter=150,
+            max_leaf_nodes=31,
+            min_samples_leaf=10,
+            l2_regularization=1.0,
+            early_stopping=False,
+            random_state=int(random_state),
+        )
+    else:
+        choices = ", ".join(SURROGATE_MODEL_NAMES)
+        raise ValueError(f"Unknown surrogate model {model_name!r}; choose one of: {choices}.")
+    return make_pipeline(StandardScaler(), estimator)
+
+
+def fit_and_score_theta(
+    processed: ProcessedEpitData,
+    synthetic: SyntheticEpitSample,
+    *,
+    model_name: str = "ridge",
+    random_state: int = 42,
+) -> ThetaSurrogateScore:
     if synthetic.X.shape[1] != processed.n_features:
         raise RuntimeError(
             f"Synthetic/real feature width mismatch: {synthetic.X.shape[1]} vs {processed.n_features}."
         )
 
-    model = make_pipeline(StandardScaler(), Ridge(alpha=1.0))
+    model = build_surrogate_model(model_name, random_state=random_state)
     model.fit(synthetic.X, synthetic.y)
     predictions = np.asarray(model.predict(processed.X), dtype=float).reshape(-1)
     if predictions.shape != processed.y_z.shape:
         raise RuntimeError(f"Expected predictions shape {processed.y_z.shape}, got {predictions.shape}.")
     if not np.isfinite(predictions).all():
-        raise RuntimeError("Ridge surrogate produced non-finite predictions.")
+        raise RuntimeError(f"{model_name} surrogate produced non-finite predictions.")
 
     residuals = predictions - processed.y_z
     return ThetaSurrogateScore(
@@ -1458,7 +1504,7 @@ def write_theta_artifact(
             target_rule_environment_coef=np.asarray(float(synthetic.target_rule["environment_coef"]), dtype=np.float64),
             target_rule_interaction_coef=np.asarray(float(synthetic.target_rule["interaction_coef"]), dtype=np.float64),
             target_rule_process_coef=np.asarray(float(synthetic.target_rule["process_coef"]), dtype=np.float64),
-            target_rule_interaction_strength=np.asarray(float(synthetic.target_rule["interaction_strength"]), dtype=np.float64),
+            target_rule_target_mix_weight=np.asarray(float(synthetic.target_rule["target_mix_weight"]), dtype=np.float64),
             n_rows=np.asarray(int(synthetic.X.shape[0]), dtype=np.int64),
             n_features=np.asarray(int(synthetic.X.shape[1]), dtype=np.int64),
             d=np.asarray(int(synthetic.d), dtype=np.int64),

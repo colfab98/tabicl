@@ -304,6 +304,12 @@ def build_parser():
         help="Optional override for informed material-environment interaction strength.",
     )
     parser.add_argument(
+        "--informed_target_mix_weight",
+        type=false_or_float,
+        default=None,
+        help="EPIT target mixture weight between standardized generic and informed targets.",
+    )
+    parser.add_argument(
         "--informed_history_strength",
         type=false_or_float,
         default=None,
@@ -358,6 +364,39 @@ def build_parser():
         type=float,
         default=None,
         help="Optional per-column active probability for masked Dirichlet alloy-composition sampling in the pitting profile.",
+    )
+    parser.add_argument(
+        "--pitting_composition_mode",
+        type=str,
+        choices=("legacy", "empirical"),
+        default=None,
+        help="Material generation mode: unchanged legacy profile or latent SCM expanded through empirical EPIT compositions.",
+    )
+    parser.add_argument(
+        "--pitting_composition_profile",
+        type=str,
+        default=None,
+        help="Versioned empirical composition profile used by the latent EPIT material generator.",
+    )
+    parser.add_argument(
+        "--pitting_composition_family_probs",
+        type=float,
+        nargs=5,
+        default=None,
+        metavar=("FE", "AL", "HEA", "NICRMO", "OTHER"),
+        help="Family probabilities for the empirical EPIT composition profile.",
+    )
+    parser.add_argument(
+        "--pitting_composition_perturb_strength",
+        type=float,
+        default=None,
+        help="Multiplicative log-space perturbation strength for empirical composition templates.",
+    )
+    parser.add_argument(
+        "--pitting_material_latent_count",
+        type=int,
+        default=None,
+        help="Number of SCM-connected material latents reserved for the empirical composition generator.",
     )
     parser.add_argument(
         "--pitting_process_role",

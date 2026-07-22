@@ -5,7 +5,8 @@ Each trial trains one TabICL regression checkpoint with the same fixed 21-featur
 EPIT schema used by direct PREN prior diagnostics, evaluates repeated
 pitting-potential splits, and scores mean Spearman. This study is meant as a
 controlled diagnostic: compare Optuna trial scores against later direct-prior
-scores for the same eta family.
+scores for the same eta family. Empirical composition mode is the default; use
+`--pitting-composition-mode legacy` to reproduce the earlier Dirichlet search.
 """
 
 from __future__ import annotations
@@ -32,6 +33,13 @@ FIXED_EPIT_FEATURE_COUNT = 21
 FIXED_PREN_BLOCK_ALLOCATION = (17, 3, 1, 0, 0, 0, 0, 0, 0)
 FIXED_PREN_PROCESS_CATEGORY_COUNT = 52
 DEFAULT_INHIBITOR_ALLOCATION = (0.05, 0.08, 0.02, 0.02, 0.0, 0.05, 0.78, 0.0, 0.0)
+EPIT_COMPOSITION_PROFILE = "epit_dataset_v1"
+EPIT_COMPOSITION_FAMILY_COUNTS = (298, 56, 19, 17, 13)
+EPIT_COMPOSITION_FAMILY_PROBS = tuple(
+    count / sum(EPIT_COMPOSITION_FAMILY_COUNTS) for count in EPIT_COMPOSITION_FAMILY_COUNTS
+)
+EPIT_MATERIAL_LATENT_COUNT = 2
+EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE = (0.0, 0.15)
 EPIT_MATERIAL_COEF_RANGE = (0.45, 0.70)
 EPIT_ENVIRONMENT_COEF_RANGE = (0.35, 0.65)
 EPIT_INTERACTION_COEF_RANGE = (0.60, 0.95)
@@ -43,11 +51,12 @@ class TrialParams:
     informed_prior_ratio: float
     mlp_prob: float
     informed_feature_block_strength: float
-    informed_interaction_strength: float
+    informed_target_mix_weight: float
     informed_physical_marginal_prob: float
-    pitting_material_dirichlet_prob: float
-    pitting_material_dirichlet_concentration: float
-    pitting_material_dirichlet_active_prob: float
+    pitting_material_dirichlet_prob: float | None
+    pitting_material_dirichlet_concentration: float | None
+    pitting_material_dirichlet_active_prob: float | None
+    pitting_composition_perturb_strength: float | None
     epit_material_coef: float
     epit_environment_coef: float
     epit_interaction_coef: float
@@ -75,12 +84,33 @@ class RandomTrial:
         return value
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(
+    argv: list[str] | None = None,
+    *,
+    default_n_trials: int = 4,
+    default_scheduler_total_steps: int | None = None,
+) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=("optuna", "random"), default="optuna")
-    parser.add_argument("--study-name", type=str, default="pitting_fixed_pren_prior_search")
-    parser.add_argument("--storage", type=str, default=None, help="Optional Optuna storage URL, e.g. sqlite:///study.db.")
-    parser.add_argument("--n-trials", type=int, default=4)
+    parser.add_argument(
+        "--study-name",
+        type=str,
+        default=None,
+        help="Study name. Defaults to a mode-specific name so empirical and legacy trials cannot mix accidentally.",
+    )
+    parser.add_argument(
+        "--pitting-composition-mode",
+        choices=("empirical", "legacy"),
+        default="empirical",
+        help="Empirical template expansion for new studies, or the previous legacy Dirichlet material search.",
+    )
+    parser.add_argument(
+        "--storage",
+        type=str,
+        default=None,
+        help="Optional Optuna storage URL, e.g. sqlite:///study.db or journal:///shared/study.log.",
+    )
+    parser.add_argument("--n-trials", type=int, default=default_n_trials)
     parser.add_argument("--random-seed", type=int, default=42)
     parser.add_argument("--base-run-name", type=str, default=None)
     parser.add_argument("--checkpoint-root", type=Path, default=REPO_ROOT / "checkpoints")
@@ -101,7 +131,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--scheduler-total-steps",
         type=int,
-        default=None,
+        default=default_scheduler_total_steps,
         help="LR scheduler horizon passed as --scheduler_total_steps to training. Defaults to --max-steps.",
     )
     parser.add_argument("--np-seed", type=int, default=42)
@@ -118,7 +148,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--skip-existing", action="store_true", help="Reuse existing checkpoints/evals.")
     parser.add_argument("--dry-run", action="store_true", help="Write commands/metadata without running training or eval.")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def slugify(text: str) -> str:
@@ -129,6 +159,14 @@ def slugify(text: str) -> str:
 def default_base_run_name(study_name: str) -> str:
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     return f"tabicl_pitting_fixed_pren_prior_{slugify(study_name)}_{stamp}"
+
+
+def default_study_name(pitting_composition_mode: str) -> str:
+    if pitting_composition_mode == "empirical":
+        return "pitting_fixed_pren_empirical_composition_search"
+    if pitting_composition_mode == "legacy":
+        return "pitting_fixed_pren_prior_search"
+    raise ValueError("pitting_composition_mode must be 'empirical' or 'legacy'.")
 
 
 def study_output_root(root: Path, study_name: str) -> Path:
@@ -146,27 +184,48 @@ def build_optuna_storage(storage: str | None) -> Any:
     return JournalStorage(JournalFileBackend(str(journal_path), lock_obj=lock))
 
 
-def sample_params(trial: SuggestTrial) -> TrialParams:
+def sample_params(
+    trial: SuggestTrial,
+    *,
+    pitting_composition_mode: str = "empirical",
+) -> TrialParams:
     informed_prior_ratio = trial.suggest_categorical("informed_prior_ratio", [0.25, 0.50, 0.75, 1.00])
     mlp_prob = trial.suggest_categorical("mlp_prob", list(MLP_PROB_GRID))
-    informed_feature_block_strength = trial.suggest_float("informed_feature_block_strength", 0.00, 0.95)
-    informed_interaction_strength = trial.suggest_float("informed_interaction_strength", 0.00, 1.00)
+    informed_target_mix_weight = trial.suggest_float("informed_target_mix_weight", 0.00, 1.00)
     informed_physical_marginal_prob = trial.suggest_categorical(
         "informed_physical_marginal_prob",
         [0.00, 0.25, 0.50, 0.75, 1.00],
     )
-    pitting_material_dirichlet_prob = trial.suggest_categorical(
-        "pitting_material_dirichlet_prob",
-        [0.00, 0.50, 1.00],
-    )
-    pitting_material_dirichlet_concentration = trial.suggest_categorical(
-        "pitting_material_dirichlet_concentration",
-        [0.10, 0.25, 0.50, 1.00, 2.00, 5.00],
-    )
-    pitting_material_dirichlet_active_prob = trial.suggest_categorical(
-        "pitting_material_dirichlet_active_prob",
-        [0.20, 0.35, 0.50, 0.70, 0.90],
-    )
+    if pitting_composition_mode == "empirical":
+        informed_feature_block_strength = 0.0
+        pitting_material_dirichlet_prob = None
+        pitting_material_dirichlet_concentration = None
+        pitting_material_dirichlet_active_prob = None
+        pitting_composition_perturb_strength = trial.suggest_float(
+            "pitting_composition_perturb_strength",
+            *EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE,
+        )
+    elif pitting_composition_mode == "legacy":
+        informed_feature_block_strength = trial.suggest_float(
+            "informed_feature_block_strength",
+            0.00,
+            0.95,
+        )
+        pitting_material_dirichlet_prob = trial.suggest_categorical(
+            "pitting_material_dirichlet_prob",
+            [0.00, 0.50, 1.00],
+        )
+        pitting_material_dirichlet_concentration = trial.suggest_categorical(
+            "pitting_material_dirichlet_concentration",
+            [0.10, 0.25, 0.50, 1.00, 2.00, 5.00],
+        )
+        pitting_material_dirichlet_active_prob = trial.suggest_categorical(
+            "pitting_material_dirichlet_active_prob",
+            [0.20, 0.35, 0.50, 0.70, 0.90],
+        )
+        pitting_composition_perturb_strength = None
+    else:
+        raise ValueError("pitting_composition_mode must be 'empirical' or 'legacy'.")
 
     epit_material_coef = trial.suggest_float("epit_material_coef", *EPIT_MATERIAL_COEF_RANGE)
     epit_environment_coef = trial.suggest_float("epit_environment_coef", *EPIT_ENVIRONMENT_COEF_RANGE)
@@ -176,11 +235,26 @@ def sample_params(trial: SuggestTrial) -> TrialParams:
         informed_prior_ratio=float(informed_prior_ratio),
         mlp_prob=float(mlp_prob),
         informed_feature_block_strength=float(informed_feature_block_strength),
-        informed_interaction_strength=float(informed_interaction_strength),
+        informed_target_mix_weight=float(informed_target_mix_weight),
         informed_physical_marginal_prob=float(informed_physical_marginal_prob),
-        pitting_material_dirichlet_prob=float(pitting_material_dirichlet_prob),
-        pitting_material_dirichlet_concentration=float(pitting_material_dirichlet_concentration),
-        pitting_material_dirichlet_active_prob=float(pitting_material_dirichlet_active_prob),
+        pitting_material_dirichlet_prob=(
+            None if pitting_material_dirichlet_prob is None else float(pitting_material_dirichlet_prob)
+        ),
+        pitting_material_dirichlet_concentration=(
+            None
+            if pitting_material_dirichlet_concentration is None
+            else float(pitting_material_dirichlet_concentration)
+        ),
+        pitting_material_dirichlet_active_prob=(
+            None
+            if pitting_material_dirichlet_active_prob is None
+            else float(pitting_material_dirichlet_active_prob)
+        ),
+        pitting_composition_perturb_strength=(
+            None
+            if pitting_composition_perturb_strength is None
+            else float(pitting_composition_perturb_strength)
+        ),
         epit_material_coef=float(epit_material_coef),
         epit_environment_coef=float(epit_environment_coef),
         epit_interaction_coef=float(epit_interaction_coef),
@@ -200,6 +274,40 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
     if not 0.0 <= mlp_prob <= 1.0:
         raise ValueError("mlp_prob must be in [0, 1].")
     mix_probs = (format_float(mlp_prob), format_float(1.0 - mlp_prob))
+    if args.pitting_composition_mode == "empirical":
+        if params.pitting_composition_perturb_strength is None:
+            raise ValueError("Empirical composition trials require pitting_composition_perturb_strength.")
+        material_generation_args = [
+            "--pitting_composition_mode",
+            "empirical",
+            "--pitting_composition_profile",
+            EPIT_COMPOSITION_PROFILE,
+            "--pitting_composition_family_probs",
+            *(format_float(value) for value in EPIT_COMPOSITION_FAMILY_PROBS),
+            "--pitting_composition_perturb_strength",
+            format_float(params.pitting_composition_perturb_strength),
+            "--pitting_material_latent_count",
+            str(EPIT_MATERIAL_LATENT_COUNT),
+        ]
+    elif args.pitting_composition_mode == "legacy":
+        dirichlet_values = (
+            params.pitting_material_dirichlet_prob,
+            params.pitting_material_dirichlet_concentration,
+            params.pitting_material_dirichlet_active_prob,
+        )
+        if any(value is None for value in dirichlet_values):
+            raise ValueError("Legacy composition trials require all Dirichlet parameters.")
+        material_generation_args = [
+            "--pitting_material_dirichlet_prob",
+            format_float(params.pitting_material_dirichlet_prob),
+            "--pitting_material_dirichlet_concentration",
+            format_float(params.pitting_material_dirichlet_concentration),
+            "--pitting_material_dirichlet_active_prob",
+            format_float(params.pitting_material_dirichlet_active_prob),
+        ]
+    else:
+        raise ValueError("pitting_composition_mode must be 'empirical' or 'legacy'.")
+
     command = [
         "torchrun",
         "--standalone",
@@ -256,8 +364,8 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         *(format_float(value) for value in DEFAULT_INHIBITOR_ALLOCATION),
         "--informed_feature_block_strength",
         format_float(params.informed_feature_block_strength),
-        "--informed_interaction_strength",
-        format_float(params.informed_interaction_strength),
+        "--informed_target_mix_weight",
+        format_float(params.informed_target_mix_weight),
         "--informed_history_strength",
         "0.0",
         "--informed_intervention_strength",
@@ -268,12 +376,7 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         format_float(params.informed_physical_marginal_prob),
         "--informed_physical_marginal_profile",
         args.physical_profile,
-        "--pitting_material_dirichlet_prob",
-        format_float(params.pitting_material_dirichlet_prob),
-        "--pitting_material_dirichlet_concentration",
-        format_float(params.pitting_material_dirichlet_concentration),
-        "--pitting_material_dirichlet_active_prob",
-        format_float(params.pitting_material_dirichlet_active_prob),
+        *material_generation_args,
         "--pitting_process_role",
         "test_method_category",
         "--pitting_process_category_count",
@@ -423,6 +526,21 @@ def run_trial(args: argparse.Namespace, trial_number: int, params: TrialParams) 
         "pitting_process_role": "test_method_category",
         "pitting_process_category_count": FIXED_PREN_PROCESS_CATEGORY_COUNT,
         "pitting_fixed_epit_schema": True,
+        "pitting_composition_mode": args.pitting_composition_mode,
+        "pitting_composition_profile": (
+            EPIT_COMPOSITION_PROFILE if args.pitting_composition_mode == "empirical" else None
+        ),
+        "pitting_composition_family_probs": (
+            EPIT_COMPOSITION_FAMILY_PROBS if args.pitting_composition_mode == "empirical" else None
+        ),
+        "pitting_material_latent_count": (
+            EPIT_MATERIAL_LATENT_COUNT if args.pitting_composition_mode == "empirical" else None
+        ),
+        "pitting_composition_perturb_strength_range": (
+            EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE
+            if args.pitting_composition_mode == "empirical"
+            else None
+        ),
         "cat_prob": 0.0,
         "permute_features": False,
         "checkpoint_dir": str(checkpoint_dir),
@@ -493,7 +611,7 @@ def run_optuna(args: argparse.Namespace) -> None:
     )
 
     def objective(trial: Any) -> float:
-        params = sample_params(trial)
+        params = sample_params(trial, pitting_composition_mode=args.pitting_composition_mode)
         result = run_trial(args, int(trial.number), params)
         for key in [
             "mean_test_mae",
@@ -525,7 +643,7 @@ def run_random(args: argparse.Namespace) -> None:
 
     for trial_number in range(args.n_trials):
         random_trial = RandomTrial(rng)
-        params = sample_params(random_trial)
+        params = sample_params(random_trial, pitting_composition_mode=args.pitting_composition_mode)
         result = run_trial(args, trial_number, params)
         flat = {
             "trial_number": trial_number,
@@ -547,8 +665,9 @@ def run_random(args: argparse.Namespace) -> None:
     print(f"Wrote random-search results to {results_csv}")
 
 
-def main() -> None:
-    args = parse_args()
+def run_search(args: argparse.Namespace) -> None:
+    if args.study_name is None:
+        args.study_name = default_study_name(args.pitting_composition_mode)
     if args.n_trials <= 0:
         raise ValueError("--n-trials must be positive.")
     if args.max_steps <= 0:
@@ -562,6 +681,10 @@ def main() -> None:
         run_optuna(args)
     else:
         run_random(args)
+
+
+def main() -> None:
+    run_search(parse_args())
 
 
 if __name__ == "__main__":

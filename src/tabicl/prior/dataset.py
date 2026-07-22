@@ -38,6 +38,11 @@ from .tree_scm import TreeSCM
 from .hp_sampling import HpSamplerList
 from .reg2cls import Reg2Cls
 from .prior_config import DEFAULT_FIXED_HP, DEFAULT_SAMPLED_HP
+from .epit_composition_profile import (
+    EpitCompositionBatch,
+    load_epit_composition_profile,
+    map_epit_latents_to_compositions,
+)
 
 
 warnings.filterwarnings(
@@ -66,6 +71,16 @@ class PittingProfileInfo:
         self.role_columns.setdefault(role, []).append(col)
         if categorical:
             self.categorical_columns.append(col)
+
+
+@dataclass(frozen=True)
+class EpitLatentSCMContext:
+    """Internal feature layouts for latent-SCM composition expansion."""
+
+    family: str
+    output_blocks: Dict[str, slice]
+    latent_blocks: Dict[str, slice]
+    scm_num_features: int
 
 
 @dataclass
@@ -603,6 +618,7 @@ class SCMPrior(Prior):
         self.last_pitting_target_rule: Optional[Dict[str, Any]] = None
         self.last_pitting_target_component: Optional[Tensor] = None
         self.last_pitting_target_drive: Optional[Tensor] = None
+        self.last_pitting_composition_batch: Optional[EpitCompositionBatch] = None
 
     def hp_sampling(self) -> Dict[str, Any]:
         """Sample hyperparameters for dataset generation.
@@ -771,6 +787,23 @@ class SCMPrior(Prior):
     def _fixed_epit_schema_enabled(self) -> bool:
         return bool(self.fixed_hp.get("pitting_fixed_epit_schema", False))
 
+    def _pitting_composition_mode(self) -> str:
+        mode = str(self.fixed_hp.get("pitting_composition_mode", "legacy")).strip().lower().replace("-", "_")
+        aliases = {
+            "off": "legacy",
+            "disabled": "legacy",
+            "dataset": "empirical",
+            "profile": "empirical",
+            "empirical_profile": "empirical",
+        }
+        mode = aliases.get(mode, mode)
+        if mode not in {"legacy", "empirical"}:
+            raise ValueError("pitting_composition_mode must be 'legacy' or 'empirical'.")
+        return mode
+
+    def _empirical_pitting_composition_enabled(self) -> bool:
+        return self._pitting_composition_mode() == "empirical"
+
     @staticmethod
     def _standardize_array(values: np.ndarray) -> np.ndarray:
         values = np.nan_to_num(np.asarray(values, dtype=float).reshape(-1), nan=0.0, posinf=0.0, neginf=0.0)
@@ -835,7 +868,7 @@ class SCMPrior(Prior):
         self,
         X: Tensor,
         blocks: Dict[str, slice],
-        interaction_strength: float,
+        target_mix_weight: float,
         profile_info: Optional[PittingProfileInfo],
     ) -> Dict[str, Any]:
         material_slice = blocks.get("material")
@@ -899,7 +932,7 @@ class SCMPrior(Prior):
             "process_coef": float(np.random.uniform(0.03, 0.10)),
             "history_coef": float(np.random.uniform(0.08, 0.20)),
             "descriptor_coef": float(np.random.uniform(0.03, 0.10)),
-            "interaction_strength": float(interaction_strength),
+            "target_mix_weight": float(target_mix_weight),
             "synthetic_environment_mode": "raw" if physical_profile_applied else "rank_semantic",
         }
 
@@ -964,7 +997,8 @@ class SCMPrior(Prior):
         epit_drive = epit_drive + float(rule["process_coef"]) * process_offset
 
         if torch.std(epit_drive.float(), unbiased=False) > 1e-6:
-            target_component = float(rule["interaction_strength"]) * self._standardize_signal(epit_drive)
+            mix_weight = float(rule.get("target_mix_weight", rule.get("interaction_strength", 0.0)))
+            target_component = mix_weight * self._standardize_signal(epit_drive)
         else:
             target_component = torch.zeros_like(epit_drive)
         return target_component, epit_drive
@@ -1021,7 +1055,8 @@ class SCMPrior(Prior):
         epit_drive -= float(rule["interaction_coef"]) * material_susceptibility * chloride_drive
         epit_drive += float(rule["process_coef"]) * process_offset
         standardized_drive = cls._standardize_array(epit_drive)
-        return float(rule["interaction_strength"]) * standardized_drive
+        mix_weight = float(rule.get("target_mix_weight", rule.get("interaction_strength", 0.0)))
+        return mix_weight * standardized_drive
 
     def _pitting_profile_block_signal(
         self,
@@ -1112,6 +1147,30 @@ class SCMPrior(Prior):
         start, stop = material_slice.start, material_slice.stop
         width = stop - start
         if width <= 0:
+            return
+
+        if self._empirical_pitting_composition_enabled():
+            profile_name = str(self.fixed_hp.get("pitting_composition_profile", "epit_dataset_v1"))
+            profile = load_epit_composition_profile(profile_name)
+            if width != len(profile.observed_elements):
+                raise ValueError(
+                    "Empirical EPIT composition requires one output column per observed element "
+                    f"({len(profile.observed_elements)}), got {width}."
+                )
+            cols = list(range(start, stop))
+            info.material_style = "empirical_template_composition"
+            for col in cols:
+                info.add_role("material_empirical_composition", col)
+            passivity = self._pitting_profile_block_signal(X, cols, log_positive=True)
+            if passivity is None:
+                return
+            susceptibility_noise = self._pitting_profile_block_signal(X, cols, log_positive=True)
+            if susceptibility_noise is None:
+                susceptibility_noise = -passivity
+            info.material_passivity = passivity
+            info.material_susceptibility = self._standardize_signal(
+                -0.75 * passivity + 0.25 * susceptibility_noise
+            )
             return
 
         styles = [
@@ -1810,6 +1869,99 @@ class SCMPrior(Prior):
         _, blocks = self._split_informed_blocks_with_family(num_features)
         return blocks
 
+    def _prepare_epit_latent_scm_context(self, num_features: int) -> EpitLatentSCMContext:
+        if not self._empirical_pitting_composition_enabled():
+            raise ValueError("Latent EPIT SCM context is only available in empirical composition mode.")
+        if not self._fixed_epit_schema_enabled():
+            raise ValueError("Empirical EPIT composition currently requires pitting_fixed_epit_schema=True.")
+        if not self._is_pitting_profile_name(self._informed_physical_marginal_profile()):
+            raise ValueError("Empirical EPIT composition requires the pitting_potential_v1 marginal profile.")
+        if self._informed_target_family() != "pitting_potential":
+            raise ValueError("Empirical EPIT composition requires informed_target_family='pitting_potential'.")
+
+        family, output_blocks = self._split_informed_blocks_with_family(int(num_features))
+        if family != "normal_corrosion":
+            raise ValueError("Empirical EPIT composition requires the normal_corrosion task family.")
+        material_slice = output_blocks.get("material")
+        if material_slice is None or material_slice.stop <= material_slice.start:
+            raise ValueError("Empirical EPIT composition requires a material block.")
+
+        profile_name = str(self.fixed_hp.get("pitting_composition_profile", "epit_dataset_v1"))
+        profile = load_epit_composition_profile(profile_name)
+        output_material_width = material_slice.stop - material_slice.start
+        if output_material_width != len(profile.observed_elements):
+            raise ValueError(
+                "Empirical EPIT composition requires a fixed material width of "
+                f"{len(profile.observed_elements)}, got {output_material_width}."
+            )
+
+        latent_count_value = float(self.fixed_hp.get("pitting_material_latent_count", 2))
+        if (
+            not np.isfinite(latent_count_value)
+            or latent_count_value < 1
+            or not latent_count_value.is_integer()
+        ):
+            raise ValueError("pitting_material_latent_count must be a positive integer.")
+        latent_count = int(latent_count_value)
+        if latent_count > output_material_width:
+            raise ValueError(
+                "pitting_material_latent_count cannot exceed the number of observed material columns."
+            )
+
+        reduction = output_material_width - latent_count
+        latent_blocks: Dict[str, slice] = {}
+        for name, feature_slice in output_blocks.items():
+            if name == "material":
+                latent_blocks[name] = slice(feature_slice.start, feature_slice.start + latent_count)
+            elif feature_slice.stop <= material_slice.start:
+                latent_blocks[name] = feature_slice
+            elif feature_slice.start >= material_slice.stop:
+                latent_blocks[name] = slice(feature_slice.start - reduction, feature_slice.stop - reduction)
+            else:
+                raise ValueError(f"Feature block {name!r} overlaps the fixed EPIT material block.")
+
+        scm_num_features = int(num_features) - reduction
+        if scm_num_features <= 1:
+            raise ValueError("Empirical EPIT latent SCM must contain at least two features.")
+        return EpitLatentSCMContext(
+            family=family,
+            output_blocks=output_blocks,
+            latent_blocks=latent_blocks,
+            scm_num_features=scm_num_features,
+        )
+
+    def _expand_epit_material_latents(
+        self,
+        X: Tensor,
+        context: EpitLatentSCMContext,
+    ) -> Tensor:
+        latent_slice = context.latent_blocks["material"]
+        output_slice = context.output_blocks["material"]
+        if latent_slice.start != output_slice.start:
+            raise ValueError("Latent and output EPIT material blocks must start at the same column.")
+        if X.shape[-1] != context.scm_num_features:
+            raise ValueError(
+                f"Expected {context.scm_num_features} latent SCM features, got {X.shape[-1]}."
+            )
+
+        profile_name = str(self.fixed_hp.get("pitting_composition_profile", "epit_dataset_v1"))
+        profile = load_epit_composition_profile(profile_name)
+        latents = X[:, latent_slice].detach().cpu().numpy()
+        random_seed = int(np.random.randint(0, np.iinfo(np.int32).max))
+        batch = map_epit_latents_to_compositions(
+            latents,
+            profile=profile,
+            family_probabilities=self.fixed_hp.get("pitting_composition_family_probs"),
+            perturb_strength=float(self.fixed_hp.get("pitting_composition_perturb_strength", 0.05)),
+            random_state=random_seed,
+        )
+        observed = torch.as_tensor(batch.observed_compositions.copy(), device=X.device, dtype=X.dtype)
+        X = torch.cat((X[:, : latent_slice.start], observed, X[:, latent_slice.stop :]), dim=-1)
+        if X.shape[-1] != max(feature_slice.stop for feature_slice in context.output_blocks.values()):
+            raise ValueError("Expanded empirical EPIT features do not match the requested output schema.")
+        self.last_pitting_composition_batch = batch
+        return X
+
     @staticmethod
     def _standardize_signal(values: Tensor) -> Tensor:
         values = torch.nan_to_num(values, nan=0.0, posinf=0.0, neginf=0.0)
@@ -2003,19 +2155,26 @@ class SCMPrior(Prior):
         blocks: Dict[str, slice],
         family: str,
         interaction_strength: float,
+        target_mix_weight: float,
         intervention_strength: float,
         profile_info: Optional[PittingProfileInfo] = None,
     ) -> Tuple[Tensor, Tensor]:
         """Add an Epit-like target where higher y means stronger pitting resistance."""
         reference = y.to(dtype=X.dtype)
+        generic_target = self._standardize_signal(y)
+        if not np.isfinite(target_mix_weight) or not 0.0 <= target_mix_weight <= 1.0:
+            raise ValueError("Informed target mix weight must be finite and between 0 and 1.")
         profile_applied = profile_info is not None and profile_info.applied
         if self._fixed_epit_schema_enabled():
-            rule = self._sample_fixed_epit_target_rule(X, blocks, interaction_strength, profile_info)
+            rule = self._sample_fixed_epit_target_rule(X, blocks, target_mix_weight, profile_info)
             target_component, epit_drive = self._evaluate_fixed_epit_target_rule_tensor(X, rule)
             self.last_pitting_target_rule = rule
             self.last_pitting_target_component = target_component.detach().cpu()
             self.last_pitting_target_drive = epit_drive.detach().cpu()
-            y = y + target_component.to(dtype=y.dtype)
+            if torch.std(epit_drive.float(), unbiased=False) > 1e-6:
+                y = (1.0 - target_mix_weight) * generic_target + target_component.to(dtype=y.dtype)
+            else:
+                y = generic_target
             return X, y
 
         material = (
@@ -2096,7 +2255,10 @@ class SCMPrior(Prior):
             epit_drive = epit_drive + descriptor_coef * torch.tanh(descriptor)
 
         if torch.std(epit_drive.float(), unbiased=False) > 1e-6:
-            y = y + interaction_strength * self._standardize_signal(epit_drive).to(dtype=y.dtype)
+            informed_target = self._standardize_signal(epit_drive).to(dtype=y.dtype)
+            y = (1.0 - target_mix_weight) * generic_target + target_mix_weight * informed_target
+        else:
+            y = generic_target
 
         electro_signal = torch.tanh(self._standardize_signal(epit_drive)).unsqueeze(-1)
         for electro_name in ("electrochem_control", "electrochem_downstream"):
@@ -2127,18 +2289,22 @@ class SCMPrior(Prior):
         family: str,
         interaction_strength: float,
         intervention_strength: float,
+        target_mix_weight: Optional[float] = None,
         profile_info: Optional[Union[PittingProfileInfo, InhibitorEfficiencyProfileInfo]] = None,
     ) -> Tuple[Tensor, Tensor]:
         """Add a broad corrosion-domain target mechanism over semantic blocks."""
         target_family = self._informed_target_family()
         if target_family == "pitting_potential":
             pitting_info = profile_info if isinstance(profile_info, PittingProfileInfo) else None
+            if target_mix_weight is None:
+                target_mix_weight = float(self.fixed_hp.get("informed_target_mix_weight", 0.35))
             return self._apply_informed_pitting_potential_mechanism(
                 X,
                 y,
                 blocks,
                 family,
                 interaction_strength=interaction_strength,
+                target_mix_weight=target_mix_weight,
                 intervention_strength=intervention_strength,
                 profile_info=pitting_info,
             )
@@ -2212,13 +2378,26 @@ class SCMPrior(Prior):
 
         return X, y
 
-    def apply_informed_structure(self, X: Tensor, y: Tensor, params: Dict[str, Any]) -> Tuple[Tensor, Tensor]:
+    def apply_informed_structure(
+        self,
+        X: Tensor,
+        y: Tensor,
+        params: Dict[str, Any],
+        *,
+        epit_latent_context: Optional[EpitLatentSCMContext] = None,
+    ) -> Tuple[Tensor, Tensor]:
         """Inject block-wise and interaction structure for informed synthetic priors."""
         num_features = int(params["num_features"])
         if num_features <= 1:
             return X, y
 
-        family, blocks = self._split_informed_blocks_with_family(num_features)
+        if epit_latent_context is None:
+            family, blocks = self._split_informed_blocks_with_family(num_features)
+            structure_blocks = blocks
+        else:
+            family = epit_latent_context.family
+            blocks = epit_latent_context.output_blocks
+            structure_blocks = epit_latent_context.latent_blocks
         if not blocks:
             return X, y
 
@@ -2227,29 +2406,34 @@ class SCMPrior(Prior):
         self.last_pitting_target_rule = None
         self.last_pitting_target_component = None
         self.last_pitting_target_drive = None
+        self.last_pitting_composition_batch = None
 
         block_strength = float(self.fixed_hp.get("informed_feature_block_strength", 0.30))
         block_strength = float(np.clip(block_strength, 0.0, 0.95))
         interaction_strength = float(self.fixed_hp.get("informed_interaction_strength", 0.35))
+        target_mix_weight = float(self.fixed_hp.get("informed_target_mix_weight", 0.35))
         history_strength = float(self.fixed_hp.get("informed_history_strength", 0.70))
         history_strength = float(np.clip(history_strength, 0.0, 0.99))
         intervention_strength = float(self.fixed_hp.get("informed_intervention_strength", 0.20))
 
         # Features in the same block share a latent component.
-        for feature_slice in blocks.values():
+        for feature_slice in structure_blocks.values():
             if feature_slice.stop - feature_slice.start <= 1:
                 continue
             shared = torch.randn(X.shape[0], 1, device=X.device, dtype=X.dtype)
             X[:, feature_slice] = (1.0 - block_strength) * X[:, feature_slice] + block_strength * shared
 
         # Path dependence is limited to true temporal-history features.
-        history_slice = blocks.get("temporal_history")
+        history_slice = structure_blocks.get("temporal_history")
         if history_slice is not None and history_slice.stop > history_slice.start and X.shape[0] > 2:
             hist = X[:, history_slice].clone()
             for t in range(1, hist.shape[0]):
                 hist[t] = history_strength * hist[t - 1] + (1.0 - history_strength) * hist[t]
             X[:, history_slice] = hist
             y = y + 0.2 * hist.mean(dim=-1)
+
+        if epit_latent_context is not None:
+            X = self._expand_epit_material_latents(X, epit_latent_context)
 
         profile = self._informed_physical_marginal_profile()
         if self._is_pitting_profile_name(profile):
@@ -2261,6 +2445,7 @@ class SCMPrior(Prior):
                 family,
                 interaction_strength=interaction_strength,
                 intervention_strength=intervention_strength,
+                target_mix_weight=target_mix_weight,
                 profile_info=profile_info,
             )
         elif self._is_inhibitor_efficiency_profile_name(profile):
@@ -2272,6 +2457,7 @@ class SCMPrior(Prior):
                 family,
                 interaction_strength=interaction_strength,
                 intervention_strength=intervention_strength,
+                target_mix_weight=target_mix_weight,
                 profile_info=profile_info,
             )
         else:
@@ -2282,6 +2468,7 @@ class SCMPrior(Prior):
                 family,
                 interaction_strength=interaction_strength,
                 intervention_strength=intervention_strength,
+                target_mix_weight=target_mix_weight,
             )
             X = self.apply_informed_physical_marginals(X, blocks)
 
@@ -2317,10 +2504,21 @@ class SCMPrior(Prior):
             raise ValueError(f"Unknown prior type {params['prior_type']}")
 
         while True:
-            X, y = prior_cls(**params)()
+            epit_latent_context = None
+            scm_params = params
+            if params.get("informed_mode", False) and self._empirical_pitting_composition_enabled():
+                epit_latent_context = self._prepare_epit_latent_scm_context(int(params["num_features"]))
+                scm_params = {**params, "num_features": epit_latent_context.scm_num_features}
+
+            X, y = prior_cls(**scm_params)()
             reg2cls_params = params
             if params.get("informed_mode", False):
-                X, y = self.apply_informed_structure(X, y, params)
+                X, y = self.apply_informed_structure(
+                    X,
+                    y,
+                    params,
+                    epit_latent_context=epit_latent_context,
+                )
                 profile = self._informed_physical_marginal_profile()
                 if self._is_pitting_profile_name(profile) or self._is_inhibitor_efficiency_profile_name(profile):
                     reg2cls_params = {**params, "cat_prob": 0.0}

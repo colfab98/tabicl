@@ -275,6 +275,8 @@ class Trainer:
                 scm_fixed_hp["informed_feature_block_strength"] = self.config.informed_feature_block_strength
             if self.config.informed_interaction_strength is not None:
                 scm_fixed_hp["informed_interaction_strength"] = self.config.informed_interaction_strength
+            if self.config.informed_target_mix_weight is not None:
+                scm_fixed_hp["informed_target_mix_weight"] = self.config.informed_target_mix_weight
             if self.config.informed_history_strength is not None:
                 scm_fixed_hp["informed_history_strength"] = self.config.informed_history_strength
             if self.config.informed_intervention_strength is not None:
@@ -293,6 +295,20 @@ class Trainer:
                 )
             if self.config.pitting_material_dirichlet_active_prob is not None:
                 scm_fixed_hp["pitting_material_dirichlet_active_prob"] = self.config.pitting_material_dirichlet_active_prob
+            if self.config.pitting_composition_mode is not None:
+                scm_fixed_hp["pitting_composition_mode"] = self.config.pitting_composition_mode
+            if self.config.pitting_composition_profile is not None:
+                scm_fixed_hp["pitting_composition_profile"] = self.config.pitting_composition_profile
+            if self.config.pitting_composition_family_probs is not None:
+                scm_fixed_hp["pitting_composition_family_probs"] = tuple(
+                    self.config.pitting_composition_family_probs
+                )
+            if self.config.pitting_composition_perturb_strength is not None:
+                scm_fixed_hp["pitting_composition_perturb_strength"] = (
+                    self.config.pitting_composition_perturb_strength
+                )
+            if self.config.pitting_material_latent_count is not None:
+                scm_fixed_hp["pitting_material_latent_count"] = self.config.pitting_material_latent_count
             pitting_process_role = getattr(self.config, "pitting_process_role", None)
             if pitting_process_role is not None:
                 scm_fixed_hp["pitting_process_role"] = pitting_process_role

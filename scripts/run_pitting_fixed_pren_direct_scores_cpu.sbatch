@@ -14,6 +14,7 @@ LOCAL_OUTPUT_ROOT="${LOCAL_OUTPUT_ROOT:-${REPO_ROOT}/corrosion_datasets/analysis
 STUDY_RUN_DIR="${STUDY_RUN_DIR:-${LOCAL_TRIAL_RESULTS}}"
 N_SYNTH="${N_SYNTH:-256}"
 N_WORKERS="${N_WORKERS:-${SLURM_CPUS_PER_TASK:-32}}"
+MODEL="${MODEL:-extra_trees}"
 SYNTHETIC_SEED="${SYNTHETIC_SEED:-200000}"
 SYNTHETIC_SEQ_LEN="${SYNTHETIC_SEQ_LEN:-0}"
 RANDOM_STATE="${RANDOM_STATE:-42}"
@@ -22,8 +23,7 @@ TRIAL_NUMBERS="${TRIAL_NUMBERS:-}"
 MAX_SCHEMA_ATTEMPTS="${MAX_SCHEMA_ATTEMPTS:-100}"
 PROGRESS_INTERVAL="${PROGRESS_INTERVAL:-30}"
 RESUME="${RESUME:-1}"
-WRITE_THETA_SCORES="${WRITE_THETA_SCORES:-1}"
-OUTPUT_DIR="${OUTPUT_DIR:-${LOCAL_OUTPUT_ROOT}/direct_scores_n${N_SYNTH}}"
+OUTPUT_DIR="${OUTPUT_DIR:-${LOCAL_OUTPUT_ROOT}/direct_scores_${MODEL}_n${N_SYNTH}}"
 PYTHON_BIN="${PYTHON_BIN:-}"
 
 cd "$REPO_ROOT"
@@ -88,14 +88,15 @@ echo "Host: $(hostname)"
 echo "Python: $("$PYTHON_BIN" -c 'import sys; print(sys.executable)')"
 echo "Study run dir: $STUDY_RUN_DIR"
 echo "Output dir: $OUTPUT_DIR"
-echo "N_SYNTH=$N_SYNTH N_WORKERS=$N_WORKERS SYNTHETIC_SEED=$SYNTHETIC_SEED"
-echo "Analysis: completed fixed-PREN Optuna trials; hybrid_scm with each trial's informed_prior_ratio; scores all/informed/generic/PREN/fake-PREN."
+echo "MODEL=$MODEL N_SYNTH=$N_SYNTH N_WORKERS=$N_WORKERS SYNTHETIC_SEED=$SYNTHETIC_SEED"
+echo "Analysis: one independent score row per trial and synthetic mechanism; no mechanism averaging."
 
 ARGS=(
   --study-run-dir "$STUDY_RUN_DIR"
   --output-dir "$OUTPUT_DIR"
   --n-synth "$N_SYNTH"
   --n-workers "$N_WORKERS"
+  --model "$MODEL"
   --synthetic-seed "$SYNTHETIC_SEED"
   --synthetic-seq-len "$SYNTHETIC_SEQ_LEN"
   --random-state "$RANDOM_STATE"
@@ -114,10 +115,6 @@ fi
 
 if [[ "$RESUME" == "0" || "$RESUME" == "false" || "$RESUME" == "False" ]]; then
   ARGS+=(--no-resume)
-fi
-
-if [[ "$WRITE_THETA_SCORES" == "1" || "$WRITE_THETA_SCORES" == "true" || "$WRITE_THETA_SCORES" == "True" ]]; then
-  ARGS+=(--write-theta-scores)
 fi
 
 "$PYTHON_BIN" scripts/eval_pitting_fixed_pren_trial_direct_prior.py "${ARGS[@]}"

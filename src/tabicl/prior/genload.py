@@ -522,6 +522,8 @@ class SavePriorDataset:
             scm_fixed_hp["informed_feature_block_strength"] = self.args.informed_feature_block_strength
         if self.args.informed_interaction_strength is not None:
             scm_fixed_hp["informed_interaction_strength"] = self.args.informed_interaction_strength
+        if self.args.informed_target_mix_weight is not None:
+            scm_fixed_hp["informed_target_mix_weight"] = self.args.informed_target_mix_weight
         if self.args.informed_history_strength is not None:
             scm_fixed_hp["informed_history_strength"] = self.args.informed_history_strength
         if self.args.informed_intervention_strength is not None:
@@ -538,6 +540,16 @@ class SavePriorDataset:
             scm_fixed_hp["pitting_material_dirichlet_concentration"] = self.args.pitting_material_dirichlet_concentration
         if self.args.pitting_material_dirichlet_active_prob is not None:
             scm_fixed_hp["pitting_material_dirichlet_active_prob"] = self.args.pitting_material_dirichlet_active_prob
+        if self.args.pitting_composition_mode is not None:
+            scm_fixed_hp["pitting_composition_mode"] = self.args.pitting_composition_mode
+        if self.args.pitting_composition_profile is not None:
+            scm_fixed_hp["pitting_composition_profile"] = self.args.pitting_composition_profile
+        if self.args.pitting_composition_family_probs is not None:
+            scm_fixed_hp["pitting_composition_family_probs"] = tuple(self.args.pitting_composition_family_probs)
+        if self.args.pitting_composition_perturb_strength is not None:
+            scm_fixed_hp["pitting_composition_perturb_strength"] = self.args.pitting_composition_perturb_strength
+        if self.args.pitting_material_latent_count is not None:
+            scm_fixed_hp["pitting_material_latent_count"] = self.args.pitting_material_latent_count
         pitting_process_role = getattr(self.args, "pitting_process_role", None)
         if pitting_process_role is not None:
             scm_fixed_hp["pitting_process_role"] = pitting_process_role
@@ -650,6 +662,7 @@ class SavePriorDataset:
             "informed_inhibitor_block_allocation_min_counts": self.args.informed_inhibitor_block_allocation_min_counts,
             "informed_feature_block_strength": self.args.informed_feature_block_strength,
             "informed_interaction_strength": self.args.informed_interaction_strength,
+            "informed_target_mix_weight": self.args.informed_target_mix_weight,
             "informed_history_strength": self.args.informed_history_strength,
             "informed_intervention_strength": self.args.informed_intervention_strength,
             "informed_target_family": self.args.informed_target_family,
@@ -658,6 +671,11 @@ class SavePriorDataset:
             "pitting_material_dirichlet_prob": self.args.pitting_material_dirichlet_prob,
             "pitting_material_dirichlet_concentration": self.args.pitting_material_dirichlet_concentration,
             "pitting_material_dirichlet_active_prob": self.args.pitting_material_dirichlet_active_prob,
+            "pitting_composition_mode": self.args.pitting_composition_mode,
+            "pitting_composition_profile": self.args.pitting_composition_profile,
+            "pitting_composition_family_probs": self.args.pitting_composition_family_probs,
+            "pitting_composition_perturb_strength": self.args.pitting_composition_perturb_strength,
+            "pitting_material_latent_count": self.args.pitting_material_latent_count,
             "pitting_process_role": getattr(self.args, "pitting_process_role", None),
             "pitting_process_category_count": getattr(self.args, "pitting_process_category_count", None),
             "pitting_fixed_epit_schema": getattr(self.args, "pitting_fixed_epit_schema", None),
@@ -832,6 +850,7 @@ if __name__ == "__main__":
     parser.add_argument("--informed_inhibitor_block_allocation_min_counts", type=int, nargs=9, default=None)
     parser.add_argument("--informed_feature_block_strength", type=false_or_float, default=None)
     parser.add_argument("--informed_interaction_strength", type=false_or_float, default=None)
+    parser.add_argument("--informed_target_mix_weight", type=false_or_float, default=None)
     parser.add_argument("--informed_history_strength", type=false_or_float, default=None)
     parser.add_argument("--informed_intervention_strength", type=false_or_float, default=None)
     parser.add_argument(
@@ -845,6 +864,11 @@ if __name__ == "__main__":
     parser.add_argument("--pitting_material_dirichlet_prob", type=false_or_float, default=None)
     parser.add_argument("--pitting_material_dirichlet_concentration", type=float, default=None)
     parser.add_argument("--pitting_material_dirichlet_active_prob", type=float, default=None)
+    parser.add_argument("--pitting_composition_mode", choices=("legacy", "empirical"), default=None)
+    parser.add_argument("--pitting_composition_profile", type=str, default=None)
+    parser.add_argument("--pitting_composition_family_probs", type=float, nargs=5, default=None)
+    parser.add_argument("--pitting_composition_perturb_strength", type=float, default=None)
+    parser.add_argument("--pitting_material_latent_count", type=int, default=None)
     parser.add_argument(
         "--pitting_process_role",
         type=str,

@@ -1,0 +1,7 @@
+M main2.tex
+ M scripts/eval_epit_direct_prior.py
+ M scripts/eval_pitting_fixed_pren_trial_direct_prior.py
+ M scripts/run_pitting_fixed_pren_direct_scores_cpu.sbatch
+ M scripts/run_pitting_fixed_pren_direct_scores_cpu.sh
+?? corrosion_datasets/analysis/pitting_fixed_pren_direct_prior_scores/direct_scores_extra_trees_n256/
+?? corrosion_datasets/analysis/pitting_fixed_pren_direct_prior_scores/direct_scores_hist_gradient_boosting_n256/

@@ -47,7 +47,7 @@ EPIT_INTERACTION_COEF_RANGE = (0.60, 0.95)
 class TrialParams:
     informed_prior_ratio: float
     informed_feature_block_strength: float
-    informed_interaction_strength: float
+    informed_target_mix_weight: float
     informed_physical_marginal_prob: float
     pitting_material_dirichlet_prob: float
     pitting_material_dirichlet_concentration: float
@@ -153,7 +153,7 @@ def build_optuna_storage(storage: str | None) -> Any:
 def sample_params(trial: SuggestTrial) -> TrialParams:
     informed_prior_ratio = trial.suggest_categorical("informed_prior_ratio", [0.25, 0.50, 0.75, 1.00])
     informed_feature_block_strength = trial.suggest_float("informed_feature_block_strength", 0.00, 0.95)
-    informed_interaction_strength = trial.suggest_float("informed_interaction_strength", 0.00, 1.00)
+    informed_target_mix_weight = trial.suggest_float("informed_target_mix_weight", 0.00, 1.00)
     informed_physical_marginal_prob = trial.suggest_categorical(
         "informed_physical_marginal_prob",
         [0.00, 0.25, 0.50, 0.75, 1.00],
@@ -178,7 +178,7 @@ def sample_params(trial: SuggestTrial) -> TrialParams:
     return TrialParams(
         informed_prior_ratio=float(informed_prior_ratio),
         informed_feature_block_strength=float(informed_feature_block_strength),
-        informed_interaction_strength=float(informed_interaction_strength),
+        informed_target_mix_weight=float(informed_target_mix_weight),
         informed_physical_marginal_prob=float(informed_physical_marginal_prob),
         pitting_material_dirichlet_prob=float(pitting_material_dirichlet_prob),
         pitting_material_dirichlet_concentration=float(pitting_material_dirichlet_concentration),
@@ -254,8 +254,8 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         *(format_float(value) for value in DEFAULT_INHIBITOR_ALLOCATION),
         "--informed_feature_block_strength",
         format_float(params.informed_feature_block_strength),
-        "--informed_interaction_strength",
-        format_float(params.informed_interaction_strength),
+        "--informed_target_mix_weight",
+        format_float(params.informed_target_mix_weight),
         "--informed_history_strength",
         "0.0",
         "--informed_intervention_strength",
