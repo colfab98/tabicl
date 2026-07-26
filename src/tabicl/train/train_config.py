@@ -366,6 +366,18 @@ def build_parser():
         help="Optional per-column active probability for masked Dirichlet alloy-composition sampling in the pitting profile.",
     )
     parser.add_argument(
+        "--pitting_material_style_probs",
+        type=float,
+        nargs=5,
+        default=None,
+        metavar=("COMPOSITION", "SPARSE", "PARTIAL", "DESCRIPTOR", "MIXED"),
+        help=(
+            "Optional legacy material-style weights in the order composition-like, sparse-alloying, "
+            "partial-composition, descriptor-like, and mixed-metadata. "
+            "If omitted, the original 0.30/0.22/0.20/0.18/0.10 mixture is unchanged."
+        ),
+    )
+    parser.add_argument(
         "--pitting_composition_mode",
         type=str,
         choices=("legacy", "empirical"),

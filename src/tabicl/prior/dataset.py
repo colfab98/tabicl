@@ -1180,10 +1180,23 @@ class SCMPrior(Prior):
             "descriptor_like",
             "mixed_metadata",
         ]
-        probs = np.asarray([0.30, 0.22, 0.20, 0.18, 0.10], dtype=float)
+        configured_probs = self.fixed_hp.get("pitting_material_style_probs")
+        probs = np.asarray(
+            [0.30, 0.22, 0.20, 0.18, 0.10] if configured_probs is None else configured_probs,
+            dtype=float,
+        ).reshape(-1)
+        if probs.size != len(styles):
+            raise ValueError(
+                "pitting_material_style_probs must contain five values in this order: "
+                "composition-like, sparse-alloying, partial-composition, descriptor-like, mixed-metadata."
+            )
+        if not np.all(np.isfinite(probs)) or np.any(probs < 0.0):
+            raise ValueError("pitting_material_style_probs must be finite and non-negative.")
         if width == 1:
             styles = ["bounded_partial_composition", "descriptor_like"]
-            probs = np.asarray([0.55, 0.45], dtype=float)
+            probs = probs[[2, 3]]
+        if float(probs.sum()) <= 0.0:
+            raise ValueError("pitting_material_style_probs must enable at least one available material style.")
         probs = probs / probs.sum()
         style = str(np.random.choice(styles, p=probs))
         info.material_style = style

@@ -419,6 +419,36 @@ def test_masked_dirichlet_material_composition_is_sparse_and_sums_to_100():
     assert (material == 0).float().mean() > 0.40
 
 
+def test_pitting_material_style_probabilities_can_force_softmax_composition():
+    torch.manual_seed(12)
+    np.random.seed(12)
+    fixed_hp = _pitting_fixed_hp()
+    fixed_hp["pitting_material_style_probs"] = (1.0, 0.0, 0.0, 0.0, 0.0)
+    fixed_hp["pitting_material_dirichlet_prob"] = 0.0
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+    X = torch.randn(96, 17)
+    blocks = {"material": slice(0, 17)}
+
+    X_profile, info = prior._apply_pitting_potential_profile(X, blocks, "normal_corrosion")
+
+    material = X_profile[:, :17]
+    assert info.material_style == "composition_like"
+    assert torch.isfinite(material).all()
+    assert (material >= 0.0).all()
+    assert torch.all((material.sum(dim=-1) >= 92.0) & (material.sum(dim=-1) <= 108.0))
+
+
+def test_pitting_material_style_probabilities_validate_input():
+    fixed_hp = _pitting_fixed_hp()
+    fixed_hp["pitting_material_style_probs"] = (1.0, 0.0)
+    prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
+
+    with np.testing.assert_raises_regex(ValueError, "must contain five values"):
+        prior._apply_pitting_potential_profile(
+            torch.randn(16, 4), {"material": slice(0, 4)}, "normal_corrosion"
+        )
+
+
 def test_pitting_potential_v1_profile_records_roles_and_drives_target():
     torch.manual_seed(2)
     fixed_hp = _pitting_fixed_hp()

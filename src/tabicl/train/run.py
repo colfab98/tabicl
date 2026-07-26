@@ -295,6 +295,8 @@ class Trainer:
                 )
             if self.config.pitting_material_dirichlet_active_prob is not None:
                 scm_fixed_hp["pitting_material_dirichlet_active_prob"] = self.config.pitting_material_dirichlet_active_prob
+            if self.config.pitting_material_style_probs is not None:
+                scm_fixed_hp["pitting_material_style_probs"] = tuple(self.config.pitting_material_style_probs)
             if self.config.pitting_composition_mode is not None:
                 scm_fixed_hp["pitting_composition_mode"] = self.config.pitting_composition_mode
             if self.config.pitting_composition_profile is not None:
