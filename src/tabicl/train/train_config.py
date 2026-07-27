@@ -436,6 +436,15 @@ def build_parser():
         help="If set, force the fixed EPIT feature schema used by the direct-prior diagnostic.",
     )
     parser.add_argument(
+        "--pitting_magpie_features",
+        default=None,
+        type=str2bool,
+        help=(
+            "Append the fixed ten Magpie-style descriptors to the 21-feature EPIT schema. "
+            "Disabled by default; requires 31 final features when enabled."
+        ),
+    )
+    parser.add_argument(
         "--cat_prob",
         type=float,
         default=None,

@@ -8,15 +8,17 @@ source .venv/bin/activate
 DEVICE="${DEVICE:-cpu}"
 MIN_CHECKPOINT_STEP="${MIN_CHECKPOINT_STEP:-500}"
 CHECKPOINT_STEP_INTERVAL="${CHECKPOINT_STEP_INTERVAL:-500}"
-OUTPUT_ROOT="${OUTPUT_ROOT:-/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/pitting_t21_material_ablation_common}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/eval_results/pitting_v8_material_family_ablation_common}"
 
 python scripts/eval_corrosion_datasets.py \
-  --run tabicl_s1_regression_pitting_t21_e1_6k \
-  --run tabicl_s1_regression_pitting_t21_e2_6k \
-  --run tabicl_s1_regression_pitting_t21_l_6k \
-  --local-model-label t21_e1 \
-  --local-model-label t21_e2 \
-  --local-model-label t21_l \
+  --run tabicl_s1_regression_pitting_direct_prior_v8_8k \
+  --run tabicl_s1_regression_pitting_v8_comp_softmax_8k \
+  --run tabicl_s1_regression_pitting_v8_comp_dirichlet_8k \
+  --run tabicl_s1_regression_pitting_v8_sparse_alloying_8k \
+  --local-model-label v8_original_mixture \
+  --local-model-label v8_comp_softmax \
+  --local-model-label v8_comp_dirichlet \
+  --local-model-label v8_sparse_alloying \
   --checkpoint all \
   --checkpoint-root /home/fcolanto/projects/tabicl/checkpoints \
   --run-prefix "./" \

@@ -2199,5 +2199,84 @@ on the current EPIT task rather than zero-shot transfer to unrelated corrosion
 datasets. Comparisons with earlier models must nevertheless recognize that both
 the target mixture and the material feature distribution have changed.
 
+\subsection{Preliminary Results and Material-Latent Ablations}
+\label{sec:empirical-composition-preliminary-results}
+
+A relevant limitation of the empirical expansion was identified after its
+implementation. The generic SCM target is generated from the original material
+latents before those latents are replaced by the \(17\) composition columns.
+Consequently, the expanded composition must retain enough information about the
+original latents for their relationship with the generic target to remain
+learnable.
+
+With the current two-latent mapping, the first latent selects the alloy family,
+but its finer position inside that family interval is discarded. The second
+latent is reranked separately among the samples assigned to each family and then
+selects a template within that family. Thus, the expanded composition retains
+the broad family information from the first latent and the within-family ordering
+from the second, but it does not retain the complete continuous information in
+the two original SCM features.
+
+This matters because the Optuna results favor a relatively small informed-target
+mixture weight. The best empirical-composition configuration, Trial~21, achieved
+a mean Spearman correlation of \(0.8179\) after \(1{,}000\) training steps and
+used
+
+\[
+\lambda = 0.2407.
+\]
+
+Several other strong trials selected similar values, approximately
+\(\lambda=0.17\)--\(0.24\). The resulting synthetic targets are therefore
+dominated by the generic SCM component rather than the explicit EPIT drive.
+This indicates that generic task diversity remains important. It also makes
+loss of the original material-latent information more consequential: the target
+can depend strongly on the original latents even though the transformer sees
+only their expanded composition.
+
+The result does not demonstrate that the two-latent implementation is incorrect.
+Trial~21 and several nearby configurations perform reasonably well, although
+Trial~21 remains below the earlier fixed-PREN Optuna best of approximately
+\(0.8317\) at the same \(1{,}000\)-step horizon. The results instead motivate a
+controlled test of whether the empirical expansion, and particularly its
+two-latent selection rule, limits performance.
+
+Three matched configurations are therefore being trained from scratch for
+\(6{,}000\) steps with a \(10{,}000\)-step learning-rate scheduler:
+
+\begin{itemize}
+    \item \textbf{T21-E2-6k} uses the current two-latent empirical expansion and
+    establishes its longer-training performance.
+
+    \item \textbf{T21-E1-6k} uses one material latent. In this case, the same
+    latent rank selects both the alloy family and the position within that
+    family. This provides a more direct ordered mapping from the original SCM
+    feature to the final composition and tests whether it preserves the generic
+    target relationship better than the two-latent rule.
+
+    \item \textbf{T21-L-6k} uses the legacy \(17\)-feature material generator
+    while retaining the shared Trial~21 routing and target parameters. Material
+    block coupling and the optional Dirichlet redraw are disabled. This tests
+    whether empirical composition expansion itself is beneficial relative to
+    the earlier unconstrained material representation.
+\end{itemize}
+
+If T21-E1-6k outperforms T21-E2-6k, the result would support the hypothesis that
+the present two-latent mapping loses useful SCM signal. If T21-L-6k outperforms
+both empirical variants, the broader empirical expansion may be the limiting
+factor. Similar strong performance from all three would indicate that material
+generation is not the main bottleneck. If all three perform poorly after longer
+training, the next control will reproduce the original fixed-PREN Trial~28
+configuration to distinguish a material-generation problem from a weakness in
+the shared Trial~21 configuration or in the \(1{,}000\)-step Optuna proxy.
+
 A controlled material-generation ablation compared three models trained for \(6{,}000\) Stage~1 steps with otherwise identical Trial~21 settings: E1 used one material latent for both alloy-family and within-family template selection, E2 used separate latents for these decisions, and L retained the legacy generator with \(17\) directly generated material features. Across five repeated EPIT splits, their best mean Spearman correlations were \(0.8414\) at step \(2{,}000\), \(0.8494\) at step \(3{,}500\), and \(0.8563\) at step \(5{,}000\), respectively. Averaged over steps \(3{,}500\)--\(6{,}000\), the corresponding correlations were \(0.8294\), \(0.8444\), and \(0.8522\). E2 consistently outperformed E1 and reduced mean MAE from \(144.9\) to \(137.4\)~mV, indicating that using one latent for both selection decisions restricts useful material variation. The legacy model obtained the strongest rank correlation, whereas E2 produced similar and slightly lower absolute errors. However, the late-checkpoint Spearman difference between L and E2 was only \(0.0078\), with a paired \(95\%\) confidence interval of \([-0.0099,0.0256]\), and each model was trained with only one random seed. The results therefore reject E1 but do not conclusively distinguish E2 from L. They also provide no evidence that the empirical expansion improves rank prediction over legacy material generation. Because all models peaked before step \(6{,}000\), additional training to \(10{,}000\) steps is less informative than retraining E2 and L with additional training seeds under the same configuration.
+
+\section{Material-Family Ablation}
+
+The original V8 prior was used as the baseline because it sampled all five legacy material styles: composition-like, sparse-alloying, partial-composition, descriptor-like, and mixed-metadata. We compared this mixture with isolated composition-like generators using either softmax or masked Dirichlet sampling, and with the isolated sparse-alloying generator.
+
+At the common training checkpoint of 3,600 steps, evaluated across five fixed data splits, the softmax composition model performed clearly best. It achieved a mean Spearman correlation of \(0.858\) and a mean absolute error of \(132.4\), compared with \(0.786\) and \(182.6\) for the original V8 mixture. Sparse alloying ranked second, with a Spearman correlation of \(0.825\) and an absolute error of \(151.9\). The Dirichlet composition model performed worse than the softmax model.
+
+These results support replacing the uncertain V8 material-style mixture with consistent softmax-generated compositions in subsequent experiments. Because the objective was to select the most promising material generator, rather than estimate the isolated contribution of every legacy family, separate descriptor-like and mixed-metadata runs were not required for this decision. Their individual effects, however, cannot be determined from the present comparison.
 \end{document}

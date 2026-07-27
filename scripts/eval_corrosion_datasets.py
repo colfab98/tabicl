@@ -38,9 +38,16 @@ from sklearn.metrics import (
     roc_auc_score,
     r2_score,
 )
+from sklearn.impute import SimpleImputer
 from sklearn.model_selection import GroupShuffleSplit, train_test_split
 
 from tabicl import TabICLClassifier, TabICLRegressor
+from tabicl.prior.magpie_features import (
+    EPIT_MAGPIE_DESCRIPTOR_NAMES,
+    EPIT_MAGPIE_MATERIAL_COLUMNS,
+    EPIT_MAGPIE_VERSION,
+    magpie_descriptors_numpy,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -439,6 +446,14 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Include electrochemical control/setpoint and downstream-response feature groups. "
             "By default these are excluded to keep evaluation leakage-safe."
+        ),
+    )
+    parser.add_argument(
+        "--pitting-magpie-features",
+        action="store_true",
+        help=(
+            "For the fixed EPIT pitting task only, mean-impute the 17 composition columns "
+            "from the training split and append the fixed ten Magpie-style descriptors."
         ),
     )
     parser.add_argument("--compare-pretrained-tabicl", dest="compare_pretrained_tabicl", action="store_true", default=True)
@@ -1755,6 +1770,47 @@ def split_metadata(task: EvalTask, train_index: np.ndarray, test_index: np.ndarr
     return metadata
 
 
+def augment_pitting_magpie_split(
+    X_train: pd.DataFrame,
+    X_test: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Append descriptors using the same train-fitted mean imputation as TabICL."""
+
+    material_columns = list(EPIT_MAGPIE_MATERIAL_COLUMNS)
+    missing_columns = [column for column in material_columns if column not in X_train.columns]
+    if missing_columns:
+        raise ValueError(f"EPIT Magpie composition columns are missing: {missing_columns}")
+    if list(X_train.columns[: len(material_columns)]) != material_columns:
+        raise ValueError("EPIT Magpie material columns must be the first 17 model inputs in fixed order.")
+    if list(X_test.columns) != list(X_train.columns):
+        raise ValueError("Training and test feature columns do not match for EPIT Magpie augmentation.")
+
+    imputer = SimpleImputer(strategy="mean")
+    train_material = imputer.fit_transform(X_train.loc[:, material_columns])
+    test_material = imputer.transform(X_test.loc[:, material_columns])
+    if train_material.shape[1] != len(material_columns):
+        raise ValueError("A material column is entirely missing in the training split.")
+
+    X_train_augmented = X_train.copy()
+    X_test_augmented = X_test.copy()
+    X_train_augmented.loc[:, material_columns] = train_material
+    X_test_augmented.loc[:, material_columns] = test_material
+    train_descriptors = pd.DataFrame(
+        magpie_descriptors_numpy(train_material),
+        columns=EPIT_MAGPIE_DESCRIPTOR_NAMES,
+        index=X_train_augmented.index,
+    )
+    test_descriptors = pd.DataFrame(
+        magpie_descriptors_numpy(test_material),
+        columns=EPIT_MAGPIE_DESCRIPTOR_NAMES,
+        index=X_test_augmented.index,
+    )
+    return (
+        pd.concat((X_train_augmented, train_descriptors), axis=1),
+        pd.concat((X_test_augmented, test_descriptors), axis=1),
+    )
+
+
 def evaluate_estimator(
     *,
     model_label: str,
@@ -1767,7 +1823,16 @@ def evaluate_estimator(
     regression_output: str = "median",
     regression_quantile_alphas: list[float] | None = None,
     regression_uncertainty: bool = True,
+    pitting_magpie_features: bool = False,
 ) -> dict[str, Any]:
+    if pitting_magpie_features and task.task_id != "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg":
+        raise ValueError("pitting_magpie_features is only valid for the fixed EPIT pitting task.")
+    feature_groups_used = list(task.feature_groups_used)
+    feature_group_counts = dict(task.feature_group_counts)
+    if pitting_magpie_features:
+        feature_groups_used.append("material_descriptor")
+        feature_group_counts["material_descriptor"] = len(EPIT_MAGPIE_DESCRIPTOR_NAMES)
+
     if task.target_binning == "continuous":
         regression_quantile_alphas = list(regression_quantile_alphas or DEFAULT_REGRESSION_QUANTILE_ALPHAS)
         y_values = task.y.astype(float)
@@ -1777,6 +1842,8 @@ def evaluate_estimator(
         split_strategy = split.split_strategy
         X_train = task.X.iloc[train_index].reset_index(drop=True)
         X_test = task.X.iloc[test_index].reset_index(drop=True)
+        if pitting_magpie_features:
+            X_train, X_test = augment_pitting_magpie_split(X_train, X_test)
         y_train = y_values.iloc[train_index].reset_index(drop=True)
         y_test = y_values.iloc[test_index].reset_index(drop=True)
         estimator = estimator_factory()
@@ -1845,7 +1912,8 @@ def evaluate_estimator(
             "n_samples": int(len(task.X)),
             "n_train": int(len(X_train)),
             "n_test": int(len(X_test)),
-            "n_features": int(task.X.shape[1]),
+            "n_features": int(X_train.shape[1]),
+            "pitting_magpie_features": bool(pitting_magpie_features),
             "n_classes": 0,
             "class_labels": "",
             "class_counts": "",
@@ -1861,8 +1929,8 @@ def evaluate_estimator(
             "test_pearson": pearson_safe(y_true, y_pred),
             "test_nmae_iqr": nmae_iqr,
             "test_nrmse_iqr": nrmse_iqr,
-            "feature_groups": ",".join(task.feature_groups_used),
-            "feature_group_counts": json.dumps(task.feature_group_counts, sort_keys=True),
+            "feature_groups": ",".join(sorted(feature_groups_used)),
+            "feature_group_counts": json.dumps(feature_group_counts, sort_keys=True),
             "dropped_feature_columns": ";".join(task.dropped_feature_columns),
         }
         row.update(uncertainty_metrics)
@@ -1874,6 +1942,8 @@ def evaluate_estimator(
     split_strategy = split.split_strategy
     X_train = task.X.iloc[train_index].reset_index(drop=True)
     X_test = task.X.iloc[test_index].reset_index(drop=True)
+    if pitting_magpie_features:
+        X_train, X_test = augment_pitting_magpie_split(X_train, X_test)
     y_train = task.y.iloc[train_index].reset_index(drop=True)
     y_test = task.y.iloc[test_index].reset_index(drop=True)
     y_test_ordinal = task.y_ordinal.iloc[test_index].reset_index(drop=True)
@@ -1928,7 +1998,8 @@ def evaluate_estimator(
         "n_samples": int(len(task.X)),
         "n_train": int(len(X_train)),
         "n_test": int(len(X_test)),
-        "n_features": int(task.X.shape[1]),
+        "n_features": int(X_train.shape[1]),
+        "pitting_magpie_features": bool(pitting_magpie_features),
         "n_classes": int(len(task.class_labels)),
         "class_labels": ",".join(task.class_labels),
         "class_counts": ",".join(f"{label}:{task.class_counts.get(label, 0)}" for label in task.class_labels),
@@ -1943,8 +2014,8 @@ def evaluate_estimator(
         "test_mcc": float(matthews_corrcoef(y_test, y_pred)),
         "test_auroc": auroc,
         "test_roc_auc_ovr_macro": roc_auc_ovr_macro,
-        "feature_groups": ",".join(task.feature_groups_used),
-        "feature_group_counts": json.dumps(task.feature_group_counts, sort_keys=True),
+        "feature_groups": ",".join(sorted(feature_groups_used)),
+        "feature_group_counts": json.dumps(feature_group_counts, sort_keys=True),
         "dropped_feature_columns": ";".join(task.dropped_feature_columns),
     }
     row.update(ord_metrics)
@@ -3039,6 +3110,7 @@ def main() -> None:
                         regression_output=args.regression_output,
                         regression_quantile_alphas=args.regression_quantile_alphas,
                         regression_uncertainty=args.regression_uncertainty,
+                        pitting_magpie_features=args.pitting_magpie_features,
                     )
                     if job.get("reuse_static_baseline"):
                         pretrained_tabicl_row_templates_by_task.setdefault(task.task_id, []).append(dict(row))
@@ -3194,6 +3266,8 @@ def main() -> None:
         "n_estimators": args.n_estimators,
         "tabicl_feat_shuffle_method": args.tabicl_feat_shuffle_method,
         "feature_groups_default": list(DEFAULT_FEATURE_GROUPS),
+        "pitting_magpie_features": bool(args.pitting_magpie_features),
+        "pitting_magpie_version": EPIT_MAGPIE_VERSION if args.pitting_magpie_features else None,
         "electrochem_feature_groups": list(ELECTROCHEM_FEATURE_GROUPS),
         "include_electrochem_features": args.include_electrochem_features,
         "rows": rows,

@@ -87,6 +87,11 @@ def parse_args() -> argparse.Namespace:
         default=False,
         help="Also evaluate the pretrained TabICL regressor for each split.",
     )
+    parser.add_argument(
+        "--pitting-magpie-features",
+        action="store_true",
+        help="Append the fixed ten Magpie-style features for a Magpie-trained checkpoint.",
+    )
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--keep-seed-outputs", action="store_true", help="Keep per-seed evaluator outputs.")
     parser.add_argument(
@@ -188,6 +193,8 @@ def run_seed_eval(args: argparse.Namespace, seed: int, seed_dir: Path) -> pd.Dat
         command.append("--compare-pretrained-tabicl")
     else:
         command.append("--no-compare-pretrained-tabicl")
+    if args.pitting_magpie_features:
+        command.append("--pitting-magpie-features")
 
     if args.print_subcommands:
         print(" ".join(command), flush=True)
@@ -291,6 +298,7 @@ def main() -> None:
                 "regression_output": args.regression_output,
                 "regression_uncertainty": bool(args.regression_uncertainty),
                 "compare_pretrained_tabicl": bool(args.compare_pretrained_tabicl),
+                "pitting_magpie_features": bool(args.pitting_magpie_features),
             },
             "rows_csv": str(rows_path),
             "summary_csv": str(summary_path),

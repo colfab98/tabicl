@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=tabicl_s1_regression_pitting_v8_comp_dirichlet_8k
+#SBATCH --job-name=tabicl_s1_regression_pitting_v8_mixed_metadata_6k
 #SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
@@ -9,10 +9,10 @@
 set -euo pipefail
 
 RUN_NAME="${RUN_NAME:-${SLURM_JOB_NAME}}"
-MAX_STEPS="${MAX_STEPS:-8000}"
+MAX_STEPS="${MAX_STEPS:-6000}"
 SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-8000}"
 SAVE_TEMP_EVERY="${SAVE_TEMP_EVERY:-100}"
-SAVE_PERM_EVERY="${SAVE_PERM_EVERY:-100}"
+SAVE_PERM_EVERY="${SAVE_PERM_EVERY:-500}"
 PRIOR_N_JOBS="${PRIOR_N_JOBS:-8}"
 DATALOADER_NUM_WORKERS="${DATALOADER_NUM_WORKERS:-4}"
 DATALOADER_PREFETCH_FACTOR="${DATALOADER_PREFETCH_FACTOR:-4}"
@@ -22,7 +22,7 @@ source .venv/bin/activate
 
 CHECKPOINT_DIR="/home/fcolanto/projects/tabicl/checkpoints/${RUN_NAME}"
 
-echo "Training strict V8 with composition-like material only and Dirichlet enabled"
+echo "Training strict V8 with mixed-metadata material only"
 echo "RUN_NAME=$RUN_NAME"
 echo "MAX_STEPS=$MAX_STEPS"
 echo "SCHEDULER_TOTAL_STEPS=$SCHEDULER_TOTAL_STEPS"
@@ -35,7 +35,7 @@ TRAIN_CMD=(
   /home/fcolanto/projects/tabicl/src/tabicl/train/run.py
   --wandb_log False
   --wandb_project TabICL
-  --wandb_name PittingV8CompositionDirichlet
+  --wandb_name PittingV8MixedMetadata
   --wandb_dir /home/fcolanto/wandb
   --wandb_mode disabled
   --device cuda
@@ -65,8 +65,8 @@ TRAIN_CMD=(
   --informed_physical_marginal_prob 1.0
   --informed_physical_marginal_profile pitting_potential_v1
   --pitting_composition_mode legacy
-  --pitting_material_style_probs 1.0 0.0 0.0 0.0 0.0
-  --pitting_material_dirichlet_prob 1.0
+  --pitting_material_style_probs 0.0 0.0 0.0 0.0 1.0
+  --pitting_material_dirichlet_prob 0.0
   --pitting_material_dirichlet_concentration 0.25
   --pitting_material_dirichlet_active_prob 0.35
   --pitting_process_role test_method_category
@@ -111,7 +111,7 @@ python scripts/write_train_params.py \
   --run-name "${RUN_NAME}" \
   --checkpoint-dir "${CHECKPOINT_DIR}" \
   --script-path "$0" \
-  --label pitting_v8_comp_dirichlet_8k \
+  --label pitting_v8_mixed_metadata_6k \
   -- "${TRAIN_CMD[@]}"
 
 "${TRAIN_CMD[@]}"

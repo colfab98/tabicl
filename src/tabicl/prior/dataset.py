@@ -43,6 +43,11 @@ from .epit_composition_profile import (
     load_epit_composition_profile,
     map_epit_latents_to_compositions,
 )
+from .magpie_features import (
+    EPIT_BASE_FEATURE_COUNT,
+    EPIT_MAGPIE_TOTAL_FEATURE_COUNT,
+    append_magpie_descriptors_torch,
+)
 
 
 warnings.filterwarnings(
@@ -786,6 +791,41 @@ class SCMPrior(Prior):
 
     def _fixed_epit_schema_enabled(self) -> bool:
         return bool(self.fixed_hp.get("pitting_fixed_epit_schema", False))
+
+    def _pitting_magpie_features_enabled(self) -> bool:
+        return bool(self.fixed_hp.get("pitting_magpie_features", False))
+
+    def _pitting_magpie_base_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Return the unchanged 21-feature generation schema for Magpie trials."""
+
+        if not self._pitting_magpie_features_enabled():
+            return params
+        if not params.get("informed_mode", False):
+            raise ValueError("pitting_magpie_features requires an informed synthetic prior.")
+        if not self._fixed_epit_schema_enabled():
+            raise ValueError("pitting_magpie_features requires pitting_fixed_epit_schema=True.")
+        if not self._is_pitting_profile_name(self._informed_physical_marginal_profile()):
+            raise ValueError("pitting_magpie_features requires the pitting_potential_v1 profile.")
+        if self._informed_target_family() != "pitting_potential":
+            raise ValueError("pitting_magpie_features requires informed_target_family='pitting_potential'.")
+        if float(self.fixed_hp.get("informed_physical_marginal_prob", 0.0)) != 1.0:
+            raise ValueError("pitting_magpie_features requires informed_physical_marginal_prob=1.")
+
+        style_probs = np.asarray(self.fixed_hp.get("pitting_material_style_probs"), dtype=float)
+        if style_probs.shape != (5,) or not np.allclose(style_probs, (1.0, 0.0, 0.0, 0.0, 0.0)):
+            raise ValueError("pitting_magpie_features requires composition-like material style only.")
+
+        if int(params["num_features"]) != EPIT_MAGPIE_TOTAL_FEATURE_COUNT:
+            raise ValueError(
+                "pitting_magpie_features requires "
+                f"num_features={EPIT_MAGPIE_TOTAL_FEATURE_COUNT}, got {params['num_features']}."
+            )
+        if int(params["max_features"]) < EPIT_MAGPIE_TOTAL_FEATURE_COUNT:
+            raise ValueError(
+                "pitting_magpie_features requires "
+                f"max_features>={EPIT_MAGPIE_TOTAL_FEATURE_COUNT}."
+            )
+        return {**params, "num_features": EPIT_BASE_FEATURE_COUNT}
 
     def _pitting_composition_mode(self) -> str:
         mode = str(self.fixed_hp.get("pitting_composition_mode", "legacy")).strip().lower().replace("-", "_")
@@ -2517,24 +2557,32 @@ class SCMPrior(Prior):
             raise ValueError(f"Unknown prior type {params['prior_type']}")
 
         while True:
+            generation_params = self._pitting_magpie_base_params(params)
             epit_latent_context = None
-            scm_params = params
-            if params.get("informed_mode", False) and self._empirical_pitting_composition_enabled():
-                epit_latent_context = self._prepare_epit_latent_scm_context(int(params["num_features"]))
-                scm_params = {**params, "num_features": epit_latent_context.scm_num_features}
+            scm_params = generation_params
+            if generation_params.get("informed_mode", False) and self._empirical_pitting_composition_enabled():
+                epit_latent_context = self._prepare_epit_latent_scm_context(
+                    int(generation_params["num_features"])
+                )
+                scm_params = {
+                    **generation_params,
+                    "num_features": epit_latent_context.scm_num_features,
+                }
 
             X, y = prior_cls(**scm_params)()
             reg2cls_params = params
-            if params.get("informed_mode", False):
+            if generation_params.get("informed_mode", False):
                 X, y = self.apply_informed_structure(
                     X,
                     y,
-                    params,
+                    generation_params,
                     epit_latent_context=epit_latent_context,
                 )
                 profile = self._informed_physical_marginal_profile()
                 if self._is_pitting_profile_name(profile) or self._is_inhibitor_efficiency_profile_name(profile):
                     reg2cls_params = {**params, "cat_prob": 0.0}
+            if self._pitting_magpie_features_enabled():
+                X = append_magpie_descriptors_torch(X)
             X, y = Reg2Cls(reg2cls_params)(X, y)
 
             # Add batch dim for single dataset to be compatible with delete_unique_features and sanity_check

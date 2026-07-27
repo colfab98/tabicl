@@ -320,6 +320,9 @@ class Trainer:
             pitting_fixed_epit_schema = getattr(self.config, "pitting_fixed_epit_schema", None)
             if pitting_fixed_epit_schema is not None:
                 scm_fixed_hp["pitting_fixed_epit_schema"] = pitting_fixed_epit_schema
+            pitting_magpie_features = getattr(self.config, "pitting_magpie_features", None)
+            if pitting_magpie_features is not None:
+                scm_fixed_hp["pitting_magpie_features"] = pitting_magpie_features
             cat_prob = getattr(self.config, "cat_prob", None)
             if cat_prob is not None:
                 scm_fixed_hp["cat_prob"] = cat_prob

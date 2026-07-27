@@ -40,6 +40,7 @@ DEFAULT_FIXED_HP = {
     "pitting_process_role": None,
     "pitting_process_category_count": None,
     "pitting_fixed_epit_schema": False,
+    "pitting_magpie_features": False,
     "inhibitor_descriptor_coef": 0.65,
     "inhibitor_context_coef": 0.14,
     "inhibitor_environment_interaction_coef": 0.365,
