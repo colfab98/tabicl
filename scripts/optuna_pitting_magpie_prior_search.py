@@ -1,10 +1,11 @@
 #!/usr/bin/env python
-"""Conditional Optuna study for composition-only EPIT priors with optional Magpie features.
+"""Full Optuna study for composition-only EPIT priors with optional Magpie features.
 
-The study keeps the successful fixed 17/3/1 legacy schema and changes only the
-explicit search dimensions below.  Dirichlet concentration and active
-probability are suggested only when the Dirichlet branch is enabled; inactive
-parameters therefore cannot influence Optuna's search model.
+The study keeps the successful fixed 17/3/1 legacy schema while searching the
+complete agreed prior configuration. Every informed pitting task uses the
+physical profile and PREN/EPIT target; generic hybrid tasks use neither.
+Dirichlet parameters are conditional so inactive values cannot influence
+Optuna's search model.
 """
 
 from __future__ import annotations
@@ -35,26 +36,20 @@ from tabicl.prior.magpie_features import (
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_DEV_SPLIT_SEEDS = (2001, 2002, 2003)
-RESERVED_FINAL_SPLIT_SEEDS = (3001, 3002, 3003, 3004, 3005)
+DEFAULT_SPLIT_SEEDS = (1001, 1002, 1003, 1004, 1005)
 FIXED_BLOCK_ALLOCATION = (17, 3, 1, 0, 0, 0, 0, 0, 0)
 DEFAULT_INHIBITOR_ALLOCATION = (0.05, 0.08, 0.02, 0.02, 0.0, 0.05, 0.78, 0.0, 0.0)
-MLP_PROB_GRID = (0.0, 0.25, 0.50, 0.75, 1.0)
-DIRICHLET_PROB_GRID = (0.25, 0.50, 0.75, 1.00)
+INFORMED_PRIOR_RATIO_GRID = (0.25, 0.50, 0.75, 1.00)
+MLP_PROB_GRID = (0.0, 0.25, 0.50, 0.70, 0.75, 1.0)
+DIRICHLET_PROB_GRID = (0.0, 0.50, 1.00)
 DIRICHLET_CONCENTRATION_GRID = (0.10, 0.25, 0.50, 1.00, 2.00, 5.00)
-DIRICHLET_ACTIVE_PROB_GRID = (0.20, 0.25, 0.35, 0.50, 0.70)
-CONTROL_BRANCHES = (
-    {"use_magpie": False, "use_dirichlet": False},
-    {"use_magpie": False, "use_dirichlet": True},
-    {"use_magpie": True, "use_dirichlet": False},
-    {"use_magpie": True, "use_dirichlet": True},
-)
+DIRICHLET_ACTIVE_PROB_GRID = (0.20, 0.35, 0.50, 0.70, 0.90)
 
 
 @dataclass(frozen=True)
 class TrialParams:
     use_magpie: bool
-    use_dirichlet: bool
+    informed_prior_ratio: float
     mlp_prob: float
     informed_feature_block_strength: float
     informed_target_mix_weight: float
@@ -91,9 +86,10 @@ class RandomTrial:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=("optuna", "random"), default="optuna")
-    parser.add_argument("--study-name", default="pitting_magpie_conditional_v1")
+    parser.add_argument("--study-name", default="pitting_magpie_full_v1")
     parser.add_argument("--storage", default=None)
-    parser.add_argument("--n-trials", type=int, default=60)
+    parser.add_argument("--n-trials", type=int, default=50)
+    parser.add_argument("--n-startup-trials", type=int, default=10)
     parser.add_argument("--random-seed", type=int, default=42)
     parser.add_argument("--base-run-name", default=None)
     parser.add_argument("--checkpoint-root", type=Path, default=REPO_ROOT / "checkpoints")
@@ -113,23 +109,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         dest="split_seeds",
         nargs="+",
         type=int,
-        default=list(DEFAULT_DEV_SPLIT_SEEDS),
+        default=list(DEFAULT_SPLIT_SEEDS),
     )
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--nproc-per-node", type=int, default=2)
-    parser.add_argument("--max-steps", type=int, default=4000)
-    parser.add_argument("--scheduler-total-steps", type=int, default=8000)
+    parser.add_argument("--max-steps", type=int, default=1000)
+    parser.add_argument("--scheduler-total-steps", type=int, default=10000)
     parser.add_argument("--np-seed", type=int, default=42)
     parser.add_argument("--torch-seed", type=int, default=42)
     parser.add_argument("--prior-n-jobs", type=int, default=8)
     parser.add_argument("--dataloader-num-workers", type=int, default=4)
     parser.add_argument("--dataloader-prefetch-factor", type=int, default=4)
     parser.add_argument("--eval-n-estimators", type=int, default=8)
-    parser.add_argument(
-        "--enqueue-controls",
-        action="store_true",
-        help="Ensure one initial queued trial for every Magpie/Dirichlet on/off branch.",
-    )
     parser.add_argument("--skip-existing", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args(argv)
@@ -146,15 +137,17 @@ def default_base_run_name(study_name: str) -> str:
 
 def sample_params(trial: SuggestTrial) -> TrialParams:
     use_magpie = bool(trial.suggest_categorical("use_magpie", [False, True]))
-    use_dirichlet = bool(trial.suggest_categorical("use_dirichlet", [False, True]))
+    informed_prior_ratio = float(
+        trial.suggest_categorical("informed_prior_ratio", list(INFORMED_PRIOR_RATIO_GRID))
+    )
     mlp_prob = float(trial.suggest_categorical("mlp_prob", list(MLP_PROB_GRID)))
     block_strength = float(trial.suggest_float("informed_feature_block_strength", 0.0, 0.95))
     target_mix = float(trial.suggest_float("informed_target_mix_weight", 0.0, 1.0))
 
-    if use_dirichlet:
-        dirichlet_prob = float(
-            trial.suggest_categorical("pitting_material_dirichlet_prob", list(DIRICHLET_PROB_GRID))
-        )
+    dirichlet_prob = float(
+        trial.suggest_categorical("pitting_material_dirichlet_prob", list(DIRICHLET_PROB_GRID))
+    )
+    if dirichlet_prob > 0.0:
         concentration = float(
             trial.suggest_categorical(
                 "pitting_material_dirichlet_concentration",
@@ -174,7 +167,7 @@ def sample_params(trial: SuggestTrial) -> TrialParams:
 
     return TrialParams(
         use_magpie=use_magpie,
-        use_dirichlet=use_dirichlet,
+        informed_prior_ratio=informed_prior_ratio,
         mlp_prob=mlp_prob,
         informed_feature_block_strength=block_strength,
         informed_target_mix_weight=target_mix,
@@ -200,7 +193,7 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         "--pitting_material_dirichlet_prob",
         format_float(params.pitting_material_dirichlet_prob),
     ]
-    if params.use_dirichlet:
+    if params.pitting_material_dirichlet_prob > 0.0:
         if (
             params.pitting_material_dirichlet_concentration is None
             or params.pitting_material_dirichlet_active_prob is None
@@ -222,7 +215,7 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         str(REPO_ROOT / "src" / "tabicl" / "train" / "run.py"),
         "--wandb_log", "False",
         "--wandb_project", "TabICL",
-        "--wandb_name", "PittingMagpieConditionalSearch",
+        "--wandb_name", "PittingMagpieFullSearch",
         "--wandb_dir", "/home/fcolanto/wandb",
         "--wandb_mode", "disabled",
         "--device", args.device,
@@ -237,8 +230,8 @@ def training_command(args: argparse.Namespace, params: TrialParams, checkpoint_d
         "--scheduler_total_steps", str(args.scheduler_total_steps),
         "--warmup_proportion", "0.02",
         "--gradient_clipping", "1.0",
-        "--prior_type", "informed_scm",
-        "--informed_prior_ratio", "1.0",
+        "--prior_type", "hybrid_scm",
+        "--informed_prior_ratio", format_float(params.informed_prior_ratio),
         "--mix_probs", format_float(mlp_prob), format_float(1.0 - mlp_prob),
         "--informed_mix_probs", format_float(mlp_prob), format_float(1.0 - mlp_prob),
         "--informed_task_family_probs", "1.0", "0.0",
@@ -347,14 +340,13 @@ def run_trial(args: argparse.Namespace, trial_number: int, params: TrialParams) 
         "fixed_material_style": "composition_like",
         "fixed_composition_mode": "legacy",
         "fixed_physical_marginal_prob": 1.0,
-        "fixed_prior_type": "informed_scm",
+        "fixed_prior_type": "hybrid_scm",
         "magpie_version": EPIT_MAGPIE_VERSION if params.use_magpie else None,
         "magpie_descriptor_names": list(EPIT_MAGPIE_DESCRIPTOR_NAMES) if params.use_magpie else [],
         "magpie_range_min_atomic_fraction": (
             EPIT_MAGPIE_RANGE_MIN_ATOMIC_FRACTION if params.use_magpie else None
         ),
-        "development_split_seeds": list(args.split_seeds),
-        "reserved_final_split_seeds": list(RESERVED_FINAL_SPLIT_SEEDS),
+        "evaluation_split_seeds": list(args.split_seeds),
         "checkpoint_path": str(checkpoint_path),
         "eval_dir": str(eval_dir),
         "train_command": train_cmd,
@@ -405,18 +397,6 @@ def run_trial(args: argparse.Namespace, trial_number: int, params: TrialParams) 
     return result
 
 
-def enqueue_missing_controls(study: Any) -> None:
-    existing = {
-        (trial.params.get("use_magpie"), trial.params.get("use_dirichlet"))
-        for trial in study.trials
-        if "use_magpie" in trial.params and "use_dirichlet" in trial.params
-    }
-    for branch in CONTROL_BRANCHES:
-        key = (branch["use_magpie"], branch["use_dirichlet"])
-        if key not in existing:
-            study.enqueue_trial(branch)
-
-
 def run_optuna(args: argparse.Namespace) -> None:
     import optuna
 
@@ -426,10 +406,11 @@ def run_optuna(args: argparse.Namespace) -> None:
         storage=search_utils.build_optuna_storage(args.storage),
         direction="maximize",
         load_if_exists=True,
-        sampler=optuna.samplers.TPESampler(seed=args.random_seed),
+        sampler=optuna.samplers.TPESampler(
+            seed=args.random_seed,
+            n_startup_trials=args.n_startup_trials,
+        ),
     )
-    if args.enqueue_controls:
-        enqueue_missing_controls(study)
 
     def objective(trial: Any) -> float:
         params = sample_params(trial)
@@ -486,14 +467,14 @@ def run_random(args: argparse.Namespace) -> None:
 def run_search(args: argparse.Namespace) -> None:
     if args.n_trials <= 0:
         raise ValueError("--n-trials must be positive.")
+    if args.n_startup_trials < 0:
+        raise ValueError("--n-startup-trials must be non-negative.")
     if args.max_steps <= 0:
         raise ValueError("--max-steps must be positive.")
     if args.scheduler_total_steps < args.max_steps:
         raise ValueError("--scheduler-total-steps must be >= --max-steps.")
     if not args.split_seeds:
         raise ValueError("--split-seeds must contain at least one development seed.")
-    if set(args.split_seeds).intersection(RESERVED_FINAL_SPLIT_SEEDS):
-        raise ValueError("Development split seeds must not use the reserved final split seeds.")
     if args.backend == "optuna":
         run_optuna(args)
     else:

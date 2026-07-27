@@ -41,7 +41,13 @@ def _magpie_fixed_hp() -> dict:
     return fixed_hp
 
 
-def _make_prior(fixed_hp: dict, feature_count: int) -> SCMPrior:
+def _make_prior(
+    fixed_hp: dict,
+    feature_count: int,
+    *,
+    prior_type: str = "informed_scm",
+    informed_prior_ratio: float = 0.5,
+) -> SCMPrior:
     return SCMPrior(
         batch_size=1,
         batch_size_per_gp=1,
@@ -51,7 +57,8 @@ def _make_prior(fixed_hp: dict, feature_count: int) -> SCMPrior:
         max_seq_len=64,
         min_train_size=0.4,
         max_train_size=0.8,
-        prior_type="informed_scm",
+        prior_type=prior_type,
+        informed_prior_ratio=informed_prior_ratio,
         fixed_hp=fixed_hp,
         sampled_hp={},
         n_jobs=1,
@@ -145,6 +152,51 @@ def test_enabled_magpie_prior_generates_31_features_from_21_feature_schema(monke
     assert X.shape == (1, 64, 31)
     assert y.shape == (1, 64)
     assert d.tolist() == [31]
+    assert torch.isfinite(X).all()
+
+
+def test_magpie_enabled_hybrid_generic_task_has_21_active_features_and_no_descriptors(monkeypatch):
+    import tabicl.prior.dataset as prior_dataset
+
+    seen_widths: list[int] = []
+    original_mlp = prior_dataset.MLPSCM
+
+    class RecordingMLP(original_mlp):
+        def __init__(self, *args, **kwargs):
+            seen_widths.append(int(kwargs["num_features"]))
+            super().__init__(*args, **kwargs)
+
+    def reject_pitting_branch(*args, **kwargs):
+        raise AssertionError("Generic hybrid tasks must not enter the pitting/PREN branch.")
+
+    monkeypatch.setattr(prior_dataset, "MLPSCM", RecordingMLP)
+    monkeypatch.setattr(
+        prior_dataset.SCMPrior,
+        "_apply_pitting_potential_profile",
+        reject_pitting_branch,
+    )
+    monkeypatch.setattr(
+        prior_dataset.SCMPrior,
+        "_apply_informed_pitting_potential_mechanism",
+        reject_pitting_branch,
+    )
+    fixed_hp = {**_magpie_fixed_hp(), "pitting_magpie_features": True}
+    random.seed(93)
+    np.random.seed(93)
+    torch.manual_seed(93)
+
+    X, y, d, _, _ = _make_prior(
+        fixed_hp,
+        EPIT_MAGPIE_TOTAL_FEATURE_COUNT,
+        prior_type="hybrid_scm",
+        informed_prior_ratio=0.0,
+    ).get_batch()
+
+    assert seen_widths == [21]
+    assert X.shape == (1, 64, 31)
+    assert y.shape == (1, 64)
+    assert d.tolist() == [21]
+    assert torch.count_nonzero(X[..., 21:]) == 0
     assert torch.isfinite(X).all()
 
 

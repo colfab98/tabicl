@@ -11,12 +11,13 @@ set -euo pipefail
 cd /home/fcolanto/projects/tabicl
 source .venv/bin/activate
 
-STUDY_NAME="${STUDY_NAME:-pitting_magpie_conditional_v1}"
-N_TRIALS="${N_TRIALS:-60}"
-MAX_STEPS="${MAX_STEPS:-4000}"
-SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-8000}"
+STUDY_NAME="${STUDY_NAME:-pitting_magpie_full_v1}"
+N_TRIALS="${N_TRIALS:-50}"
+N_STARTUP_TRIALS="${N_STARTUP_TRIALS:-10}"
+MAX_STEPS="${MAX_STEPS:-1000}"
+SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-10000}"
 NPROC_PER_NODE="${NPROC_PER_NODE:-2}"
-RANDOM_SEED="${RANDOM_SEED:-42}"
+RANDOM_SEED="${RANDOM_SEED:-$((42 + SLURM_JOB_ID))}"
 OPTUNA_STORAGE_ROOT="${OPTUNA_STORAGE_ROOT:-/home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna}"
 STUDY_DIR="${OPTUNA_STORAGE_ROOT}/${STUDY_NAME}"
 STORAGE="${STORAGE:-journal://${STUDY_DIR}/study_journal_v1.log}"
@@ -29,11 +30,11 @@ python scripts/optuna_pitting_magpie_prior_search.py \
   --study-name "$STUDY_NAME" \
   --storage "$STORAGE" \
   --n-trials "$N_TRIALS" \
+  --n-startup-trials "$N_STARTUP_TRIALS" \
   --random-seed "$RANDOM_SEED" \
   --base-run-name "$BASE_RUN_NAME" \
-  --split-seeds 2001 2002 2003 \
+  --split-seeds 1001 1002 1003 1004 1005 \
   --device cuda \
   --nproc-per-node "$NPROC_PER_NODE" \
   --max-steps "$MAX_STEPS" \
-  --scheduler-total-steps "$SCHEDULER_TOTAL_STEPS" \
-  --enqueue-controls
+  --scheduler-total-steps "$SCHEDULER_TOTAL_STEPS"

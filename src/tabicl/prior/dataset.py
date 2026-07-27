@@ -796,12 +796,23 @@ class SCMPrior(Prior):
         return bool(self.fixed_hp.get("pitting_magpie_features", False))
 
     def _pitting_magpie_base_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Return the unchanged 21-feature generation schema for Magpie trials."""
+        """Use 21 generated features before optional informed-task descriptors."""
 
         if not self._pitting_magpie_features_enabled():
             return params
+        if int(params["num_features"]) != EPIT_MAGPIE_TOTAL_FEATURE_COUNT:
+            raise ValueError(
+                "pitting_magpie_features requires "
+                f"num_features={EPIT_MAGPIE_TOTAL_FEATURE_COUNT}, got {params['num_features']}."
+            )
+        if int(params["max_features"]) < EPIT_MAGPIE_TOTAL_FEATURE_COUNT:
+            raise ValueError(
+                "pitting_magpie_features requires "
+                f"max_features>={EPIT_MAGPIE_TOTAL_FEATURE_COUNT}."
+            )
+        base_params = {**params, "num_features": EPIT_BASE_FEATURE_COUNT}
         if not params.get("informed_mode", False):
-            raise ValueError("pitting_magpie_features requires an informed synthetic prior.")
+            return base_params
         if not self._fixed_epit_schema_enabled():
             raise ValueError("pitting_magpie_features requires pitting_fixed_epit_schema=True.")
         if not self._is_pitting_profile_name(self._informed_physical_marginal_profile()):
@@ -814,18 +825,7 @@ class SCMPrior(Prior):
         style_probs = np.asarray(self.fixed_hp.get("pitting_material_style_probs"), dtype=float)
         if style_probs.shape != (5,) or not np.allclose(style_probs, (1.0, 0.0, 0.0, 0.0, 0.0)):
             raise ValueError("pitting_magpie_features requires composition-like material style only.")
-
-        if int(params["num_features"]) != EPIT_MAGPIE_TOTAL_FEATURE_COUNT:
-            raise ValueError(
-                "pitting_magpie_features requires "
-                f"num_features={EPIT_MAGPIE_TOTAL_FEATURE_COUNT}, got {params['num_features']}."
-            )
-        if int(params["max_features"]) < EPIT_MAGPIE_TOTAL_FEATURE_COUNT:
-            raise ValueError(
-                "pitting_magpie_features requires "
-                f"max_features>={EPIT_MAGPIE_TOTAL_FEATURE_COUNT}."
-            )
-        return {**params, "num_features": EPIT_BASE_FEATURE_COUNT}
+        return base_params
 
     def _pitting_composition_mode(self) -> str:
         mode = str(self.fixed_hp.get("pitting_composition_mode", "legacy")).strip().lower().replace("-", "_")
@@ -2581,13 +2581,14 @@ class SCMPrior(Prior):
                 profile = self._informed_physical_marginal_profile()
                 if self._is_pitting_profile_name(profile) or self._is_inhibitor_efficiency_profile_name(profile):
                     reg2cls_params = {**params, "cat_prob": 0.0}
-            if self._pitting_magpie_features_enabled():
+            if self._pitting_magpie_features_enabled() and generation_params.get("informed_mode", False):
                 X = append_magpie_descriptors_torch(X)
+            active_feature_count = int(X.shape[-1])
             X, y = Reg2Cls(reg2cls_params)(X, y)
 
             # Add batch dim for single dataset to be compatible with delete_unique_features and sanity_check
             X, y = X.unsqueeze(0), y.unsqueeze(0)
-            d = torch.tensor([params["num_features"]], device=self.device, dtype=torch.long)
+            d = torch.tensor([active_feature_count], device=self.device, dtype=torch.long)
 
             # Only keep valid datasets with sufficient features and usable targets.
             X, d = self.delete_unique_features(X, d)
