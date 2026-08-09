@@ -3,7 +3,7 @@ import pytest
 import torch
 
 import tabicl.prior.dataset as prior_dataset
-from tabicl.prior.dataset import SCMPrior
+from tabicl.prior.dataset import EPIT_TARGET_RULE_COEFFICIENTS, SCMPrior
 from tabicl.prior.epit_composition_profile import (
     EPIT_COMPOSITION_FAMILY_COUNTS,
     EPIT_COMPOSITION_FAMILY_PROBS,
@@ -200,6 +200,120 @@ def test_epit_composition_profile_defaults_are_exposed_in_prior_config():
     assert DEFAULT_FIXED_HP["pitting_composition_family_probs"] == EPIT_COMPOSITION_FAMILY_PROBS
     assert DEFAULT_FIXED_HP["pitting_composition_perturb_strength"] == 0.05
     assert DEFAULT_FIXED_HP["pitting_material_latent_count"] == 2
+    assert DEFAULT_FIXED_HP["pitting_target_rule_scores"] is None
+
+
+def test_epit_target_rule_scores_are_normalized_directly():
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp["pitting_target_rule_scores"] = (
+        "pren_linear=0.6",
+        "method_aware=0.8",
+        "improved_environment=0.6",
+    )
+    prior = SCMPrior(
+        batch_size=1,
+        fixed_hp=fixed_hp,
+        sampled_hp={},
+        n_jobs=1,
+        device="cpu",
+    )
+
+    names, scores, probabilities = prior._fixed_epit_target_rule_distribution()
+
+    assert names == ["pren_linear", "method_aware", "improved_environment"]
+    assert scores == {
+        "pren_linear": 0.6,
+        "method_aware": 0.8,
+        "improved_environment": 0.6,
+    }
+    assert probabilities == {
+        "pren_linear": 0.3,
+        "method_aware": 0.4,
+        "improved_environment": 0.3,
+    }
+
+
+@pytest.mark.parametrize("family", tuple(EPIT_TARGET_RULE_COEFFICIENTS))
+def test_weighted_epit_rule_tensor_and_numpy_formulas_match(family):
+    rng = np.random.default_rng(17)
+    X = np.zeros((160, 21), dtype=np.float32)
+    X[:, 0] = rng.uniform(25.0, 75.0, len(X))
+    X[:, 1] = rng.uniform(8.0, 32.0, len(X))
+    X[:, 2] = rng.uniform(2.0, 60.0, len(X))
+    X[:, 3] = rng.uniform(0.0, 12.0, len(X))
+    X[:, 4] = rng.uniform(0.0, 4.0, len(X))
+    X[:, 5:17] = rng.uniform(0.0, 2.0, (len(X), 12))
+    X[:, 17] = rng.uniform(-5.0, 120.0, len(X))
+    X[:, 18] = 10.0 ** rng.uniform(-4.0, 0.7, len(X))
+    X[:, 19] = rng.uniform(1.5, 12.0, len(X))
+    X[:, 20] = np.arange(len(X)) % 4
+
+    fixed_hp = dict(DEFAULT_FIXED_HP)
+    fixed_hp.update(
+        {
+            "pitting_fixed_epit_schema": True,
+            "pitting_process_category_count": 4,
+            "pitting_target_rule_scores": {family: 1.0},
+        }
+    )
+    prior = SCMPrior(
+        batch_size=1,
+        fixed_hp=fixed_hp,
+        sampled_hp={},
+        n_jobs=1,
+        device="cpu",
+    )
+    blocks = {
+        "material": slice(0, 17),
+        "environment": slice(17, 20),
+        "process_history": slice(20, 21),
+    }
+    np.random.seed(19)
+    torch.manual_seed(19)
+    X_tensor = torch.as_tensor(X)
+    rule = prior._sample_fixed_epit_target_rule(
+        X_tensor,
+        blocks,
+        target_mix_weight=1.0,
+        profile_info=None,
+    )
+    mode = str(rule["synthetic_environment_mode"])
+    tensor_component, tensor_drive = prior._evaluate_fixed_epit_target_rule_tensor(
+        X_tensor,
+        rule,
+        environment_mode=mode,
+    )
+    numpy_component = SCMPrior.evaluate_fixed_epit_target_rule_numpy(
+        X,
+        rule,
+        environment_mode=mode,
+    )
+
+    assert rule["rule_type"] == "fixed_epit_target_rule_v3_weighted_family"
+    assert rule["target_rule_family"] == family
+    assert rule["target_rule_probability"] == 1.0
+    assert np.isclose(sum(rule["target_rule_coefficients"].values()), 1.0)
+    assert torch.isfinite(tensor_component).all()
+    assert torch.isfinite(tensor_drive).all()
+    assert float(torch.std(tensor_drive, unbiased=False)) > 0.0
+    assert np.allclose(tensor_component.numpy(), numpy_component, atol=2e-5)
+
+
+def test_epit_target_rule_score_cli_accepts_name_score_pairs():
+    args = build_parser().parse_args(
+        [
+            "--pitting_target_rule_scores",
+            "pren_linear=0.6",
+            "method_aware=0.8",
+            "improved_environment=0.6",
+        ]
+    )
+
+    assert args.pitting_target_rule_scores == [
+        "pren_linear=0.6",
+        "method_aware=0.8",
+        "improved_environment=0.6",
+    ]
 
 
 def test_epit_composition_cli_accepts_profile_overrides():

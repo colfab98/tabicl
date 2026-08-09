@@ -320,6 +320,20 @@ class Trainer:
             pitting_fixed_epit_schema = getattr(self.config, "pitting_fixed_epit_schema", None)
             if pitting_fixed_epit_schema is not None:
                 scm_fixed_hp["pitting_fixed_epit_schema"] = pitting_fixed_epit_schema
+            pitting_target_rule_scores = getattr(
+                self.config, "pitting_target_rule_scores", None
+            )
+            if pitting_target_rule_scores is not None:
+                scm_fixed_hp["pitting_target_rule_scores"] = tuple(
+                    pitting_target_rule_scores
+                )
+            pitting_target_rule_coefficients = getattr(
+                self.config, "pitting_target_rule_coefficients", None
+            )
+            if pitting_target_rule_coefficients is not None:
+                scm_fixed_hp["pitting_target_rule_coefficients"] = tuple(
+                    pitting_target_rule_coefficients
+                )
             pitting_magpie_features = getattr(self.config, "pitting_magpie_features", None)
             if pitting_magpie_features is not None:
                 scm_fixed_hp["pitting_magpie_features"] = pitting_magpie_features

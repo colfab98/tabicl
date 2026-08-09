@@ -69,11 +69,17 @@ pretrain = [
     "xgboost",  # used in the TabICLv1 prior
     "wandb",  # logging in pre-training
 ]
+corrosion-eval = [
+    "catboost>=1.2",
+    "matplotlib",
+    "openpyxl",
+    "pandas",
+]
 test = [
     "pandas",
 ]
 all = [
-    "tabicl[doc,forecast,shap,pretrain,test]",
+    "tabicl[corrosion-eval,doc,forecast,shap,pretrain,test]",
 ]
 
 [build-system]

@@ -55,6 +55,53 @@ warnings.filterwarnings(
 )
 
 
+EPIT_TARGET_RULE_COEFFICIENTS: Dict[str, Dict[str, float]] = {
+    "pren_linear": {
+        "material_passivity": 0.5653310250383062,
+        "environment_aggressiveness": 0.43466897496169377,
+        "material_chloride_interaction": 0.0,
+    },
+    "cr_mow_synergy": {
+        "material_passivity": 0.45956446149953445,
+        "environment_aggressiveness": 0.11151119774870306,
+        "material_chloride_interaction": 0.13912063464595828,
+        "temperature_chloride_interaction": 0.2898037061058043,
+    },
+    "threshold_saturation": {
+        "material_passivity": 0.45702896469586524,
+        "environment_aggressiveness": 0.16001595621269665,
+        "material_chloride_interaction": 0.11142174308575617,
+        "temperature_chloride_interaction": 0.27153333600568197,
+    },
+    "improved_environment": {
+        "material_passivity": 0.530255964316155,
+        "log_chloride_aggressiveness": 0.23456636817918805,
+        "high_temperature_aggressiveness": 0.07250485977655058,
+        "temperature_chloride_interaction": 0.16267280772810647,
+        "acidic_ph_aggressiveness": 0.0,
+    },
+    "coupled_breakdown": {
+        "material_passivity": 0.400022445097356,
+        "coupled_environment_breakdown": 0.502545401041832,
+        "acidic_ph_aggressiveness": 0.09743215386081203,
+    },
+    "fe_ni_cr_threshold": {
+        "material_passivity": 0.5110080270672297,
+        "log_chloride_aggressiveness": 0.2653108305738243,
+        "high_temperature_aggressiveness": 0.10548016669329978,
+        "temperature_chloride_interaction": 0.11820097566564641,
+        "acidic_ph_aggressiveness": 0.0,
+    },
+    "method_aware": {
+        "material_passivity": 0.31521453539344163,
+        "environment_aggressiveness": 0.02012990784404018,
+        "material_chloride_interaction": 0.2683200863035855,
+        "temperature_chloride_interaction": 0.22199285038776748,
+        "test_method_correction": 0.17434262007116513,
+    },
+}
+
+
 @dataclass
 class PittingProfileInfo:
     """Role metadata for pitting-potential synthetic feature profiles."""
@@ -904,6 +951,117 @@ class SCMPrior(Prior):
         weights = weights / torch.linalg.vector_norm(weights).clamp_min(1e-6)
         return weights, anchor_np
 
+    def _fixed_epit_target_rule_distribution(
+        self,
+    ) -> Optional[Tuple[list[str], Dict[str, float], Dict[str, float]]]:
+        raw_scores = self.fixed_hp.get("pitting_target_rule_scores")
+        if raw_scores is None:
+            return None
+        if isinstance(raw_scores, dict):
+            score_items = list(raw_scores.items())
+        else:
+            entries = [raw_scores] if isinstance(raw_scores, str) else list(raw_scores)
+            score_items = []
+            for entry in entries:
+                name, separator, value = str(entry).partition("=")
+                if not separator:
+                    raise ValueError(
+                        "Each pitting target-rule score must use name=score."
+                    )
+                score_items.append((name.strip(), value.strip()))
+
+        scores: Dict[str, float] = {}
+        for raw_name, raw_value in score_items:
+            name = str(raw_name).strip()
+            if name not in EPIT_TARGET_RULE_COEFFICIENTS:
+                choices = ", ".join(EPIT_TARGET_RULE_COEFFICIENTS)
+                raise ValueError(
+                    f"Unknown pitting target rule {name!r}. Available: {choices}."
+                )
+            if name in scores:
+                raise ValueError(f"Duplicate pitting target-rule score for {name!r}.")
+            value = float(raw_value)
+            if not np.isfinite(value) or value < 0.0:
+                raise ValueError("Pitting target-rule scores must be finite and non-negative.")
+            scores[name] = value
+        if not scores or sum(scores.values()) <= 0.0:
+            raise ValueError("At least one pitting target-rule score must be positive.")
+
+        names = list(scores)
+        values = np.asarray([scores[name] for name in names], dtype=float)
+        probabilities = values / values.sum()
+        return names, scores, {
+            name: float(probability)
+            for name, probability in zip(names, probabilities, strict=True)
+        }
+
+    def _sample_fixed_epit_target_rule_family(
+        self,
+    ) -> Optional[Tuple[str, Dict[str, float], Dict[str, float]]]:
+        distribution = self._fixed_epit_target_rule_distribution()
+        if distribution is None:
+            return None
+        names, scores, probabilities = distribution
+        family = str(
+            np.random.choice(
+                names,
+                p=np.asarray([probabilities[name] for name in names], dtype=float),
+            )
+        )
+        return family, scores, probabilities
+
+    def _fixed_epit_target_rule_coefficient_overrides(
+        self,
+    ) -> Dict[str, Dict[str, float]]:
+        raw_coefficients = self.fixed_hp.get("pitting_target_rule_coefficients")
+        if raw_coefficients is None:
+            return {}
+        entries = (
+            [raw_coefficients]
+            if isinstance(raw_coefficients, str)
+            else list(raw_coefficients)
+        )
+        overrides: Dict[str, Dict[str, float]] = {}
+        for entry in entries:
+            key, separator, raw_value = str(entry).partition("=")
+            family, term_separator, term = key.strip().partition(".")
+            if not separator or not term_separator or not family or not term:
+                raise ValueError(
+                    "Each pitting target-rule coefficient must use "
+                    "FAMILY.TERM=VALUE."
+                )
+            if family not in EPIT_TARGET_RULE_COEFFICIENTS:
+                raise ValueError(f"Unknown pitting target rule {family!r}.")
+            if term not in EPIT_TARGET_RULE_COEFFICIENTS[family]:
+                raise ValueError(
+                    f"Unknown coefficient {term!r} for pitting target rule "
+                    f"{family!r}."
+                )
+            family_values = overrides.setdefault(family, {})
+            if term in family_values:
+                raise ValueError(f"Duplicate coefficient {family}.{term}.")
+            value = float(raw_value)
+            if not np.isfinite(value) or value < 0.0:
+                raise ValueError(
+                    "Pitting target-rule coefficients must be finite and "
+                    "non-negative."
+                )
+            family_values[term] = value
+
+        for family, values in overrides.items():
+            expected_terms = set(EPIT_TARGET_RULE_COEFFICIENTS[family])
+            if set(values) != expected_terms:
+                missing = sorted(expected_terms - set(values))
+                raise ValueError(
+                    f"Coefficient override for {family!r} is incomplete; "
+                    f"missing {missing}."
+                )
+            if not np.isclose(sum(values.values()), 1.0):
+                raise ValueError(
+                    f"Calibrated coefficients for {family!r} must sum to one."
+                )
+        return overrides
+
     def _sample_fixed_epit_target_rule(
         self,
         X: Tensor,
@@ -950,7 +1108,7 @@ class SCMPrior(Prior):
         if not np.all(np.isfinite(coefficients)) or np.any(coefficients < 0.0):
             raise ValueError("Epit coefficients must be finite and non-negative.")
 
-        return {
+        rule = {
             "rule_type": "fixed_epit_target_rule_v2_pren_anchor",
             "material_anchor_type": "pren_like_cr_mo_w_weak_ni_v1",
             "environment_rule_type": "chloride_dominant_weak_temp_ph_v1",
@@ -975,10 +1133,48 @@ class SCMPrior(Prior):
             "target_mix_weight": float(target_mix_weight),
             "synthetic_environment_mode": "raw" if physical_profile_applied else "rank_semantic",
         }
+        selection = self._sample_fixed_epit_target_rule_family()
+        if selection is None:
+            return rule
+        if material_width < 5:
+            raise ValueError(
+                "Weighted EPIT target rules require Fe, Cr, Ni, Mo, and W columns."
+            )
+        family, scores, probabilities = selection
+        coefficient_overrides = (
+            self._fixed_epit_target_rule_coefficient_overrides()
+        )
+        coefficients = dict(
+            coefficient_overrides.get(
+                family,
+                EPIT_TARGET_RULE_COEFFICIENTS[family],
+            )
+        )
+        coefficient_values = np.asarray(list(coefficients.values()), dtype=float)
+        if not np.isclose(coefficient_values.sum(), 1.0):
+            raise ValueError(f"Calibrated coefficients for {family!r} must sum to one.")
+        rule.update(
+            {
+                "rule_type": "fixed_epit_target_rule_v3_weighted_family",
+                "target_rule_family": family,
+                "target_rule_scores": scores,
+                "target_rule_probabilities": probabilities,
+                "target_rule_score": float(scores[family]),
+                "target_rule_probability": float(probabilities[family]),
+                "target_rule_coefficients": coefficients,
+                "coefficient_source": "all-development Fe/Ni calibration",
+                "environment_weights": np.asarray([0.075, 0.925, 0.115]),
+                "ph_neutral": 7.25,
+                "process_coef": float(
+                    coefficients.get("test_method_correction", 0.0)
+                ),
+            }
+        )
+        return rule
 
-    def _fixed_epit_environment_terms_tensor(
+    def _fixed_epit_environment_values_tensor(
         self, X: Tensor, rule: Dict[str, Any], environment_mode: str
-    ) -> Tuple[Tensor, Tensor]:
+    ) -> Tuple[Tensor, Tensor, Tensor]:
         temperature_col = int(rule["temperature_col"])
         chloride_col = int(rule["chloride_col"])
         ph_col = int(rule["ph_col"])
@@ -994,6 +1190,15 @@ class SCMPrior(Prior):
             temperature_values = torch.nan_to_num(X[:, temperature_col], nan=0.0, posinf=0.0, neginf=0.0)
             chloride_values = torch.nan_to_num(X[:, chloride_col], nan=0.0, posinf=0.0, neginf=0.0)
             ph_values = torch.nan_to_num(X[:, ph_col], nan=neutral, posinf=neutral, neginf=neutral)
+        return temperature_values, chloride_values, ph_values
+
+    def _fixed_epit_environment_terms_tensor(
+        self, X: Tensor, rule: Dict[str, Any], environment_mode: str
+    ) -> Tuple[Tensor, Tensor]:
+        temperature_values, chloride_values, ph_values = (
+            self._fixed_epit_environment_values_tensor(X, rule, environment_mode)
+        )
+        neutral = float(rule["ph_neutral"])
 
         temperature_term = self._standardize_signal(temperature_values)
         chloride_term = self._standardize_signal(torch.log10(chloride_values.clamp_min(1e-12)))
@@ -1008,9 +1213,154 @@ class SCMPrior(Prior):
         environment_signal, _ = self._fixed_epit_environment_terms_tensor(X, rule, environment_mode)
         return environment_signal
 
+    def _evaluate_weighted_fixed_epit_target_rule_tensor(
+        self,
+        X: Tensor,
+        rule: Dict[str, Any],
+        environment_mode: str,
+    ) -> Tuple[Tensor, Tensor]:
+        family = str(rule["target_rule_family"])
+        coefficients = {
+            str(name): float(value)
+            for name, value in rule["target_rule_coefficients"].items()
+        }
+        material_cols = [int(col) for col in rule["material_cols"]]
+        if len(material_cols) < 5:
+            raise ValueError("Weighted EPIT rules require Fe, Cr, Ni, Mo, and W.")
+        material = torch.nan_to_num(
+            X[:, material_cols], nan=0.0, posinf=0.0, neginf=0.0
+        )
+        iron = material[:, 0].clamp_min(0.0)
+        chromium = material[:, 1].clamp_min(0.0)
+        nickel = material[:, 2].clamp_min(0.0)
+        molybdenum = material[:, 3].clamp_min(0.0)
+        tungsten = material[:, 4].clamp_min(0.0)
+        mow = molybdenum + 0.55 * tungsten
+        linear_material = chromium + 3.25 * mow
+        synergy_material = linear_material + torch.sqrt(chromium * mow)
+        threshold_material = torch.sigmoid((chromium - 12.0) / 2.0) + torch.log1p(mow)
+        class_threshold = torch.where(
+            nickel > iron,
+            torch.full_like(chromium, 15.0),
+            torch.full_like(chromium, 12.0),
+        )
+        fe_ni_threshold_material = (
+            torch.sigmoid((chromium - class_threshold) / 2.0) + torch.log1p(mow)
+        )
+
+        temperature, chloride, ph = self._fixed_epit_environment_values_tensor(
+            X, rule, environment_mode
+        )
+        temperature_z = self._standardize_signal(temperature)
+        chloride_z = self._standardize_signal(
+            torch.log10(chloride.clamp_min(1e-12))
+        )
+        ph_distance_z = self._standardize_signal(torch.abs(ph - 7.25))
+        environment = torch.sigmoid(
+            self._standardize_signal(
+                0.075 * temperature_z
+                + 0.925 * chloride_z
+                + 0.115 * ph_distance_z
+            )
+        )
+        chloride_drive = torch.sigmoid(chloride_z)
+        high_temperature = torch.sigmoid((temperature - 50.0) / 10.0)
+        acidic_ph = torch.sigmoid((6.5 - ph) / 1.0)
+        temperature_chloride = high_temperature * chloride_drive
+
+        def standardized(values: Tensor) -> Tensor:
+            return self._standardize_signal(values)
+
+        if family in {"pren_linear", "improved_environment", "coupled_breakdown"}:
+            material_score = linear_material
+        elif family in {"cr_mow_synergy", "method_aware"}:
+            material_score = synergy_material
+        elif family == "threshold_saturation":
+            material_score = threshold_material
+        elif family == "fe_ni_cr_threshold":
+            material_score = fe_ni_threshold_material
+        else:
+            raise ValueError(f"Unsupported weighted EPIT target rule {family!r}.")
+
+        material_z = standardized(material_score)
+        material_passivity = torch.tanh(material_z)
+        material_term = standardized(material_passivity)
+        material_chloride = torch.sigmoid(-material_z) * chloride_drive
+        classic_temperature_chloride = (
+            torch.sigmoid(temperature_z) * chloride_drive
+        )
+        epit_drive = coefficients["material_passivity"] * material_term
+
+        if family in {
+            "pren_linear",
+            "cr_mow_synergy",
+            "threshold_saturation",
+            "method_aware",
+        }:
+            epit_drive = epit_drive - coefficients["environment_aggressiveness"] * standardized(environment)
+            epit_drive = epit_drive - coefficients["material_chloride_interaction"] * standardized(
+                material_chloride
+            )
+            if "temperature_chloride_interaction" in coefficients:
+                epit_drive = epit_drive - coefficients["temperature_chloride_interaction"] * standardized(
+                    classic_temperature_chloride
+                )
+        elif family in {"improved_environment", "fe_ni_cr_threshold"}:
+            epit_drive = epit_drive - coefficients["log_chloride_aggressiveness"] * standardized(
+                chloride_drive
+            )
+            epit_drive = epit_drive - coefficients["high_temperature_aggressiveness"] * standardized(
+                high_temperature
+            )
+            epit_drive = epit_drive - coefficients["temperature_chloride_interaction"] * standardized(
+                temperature_chloride
+            )
+            epit_drive = epit_drive - coefficients["acidic_ph_aggressiveness"] * standardized(
+                acidic_ph
+            )
+        else:
+            aggressiveness = (
+                0.65 * chloride_z
+                + 0.25 * standardized(high_temperature)
+                + 0.10 * standardized(temperature_chloride)
+            )
+            breakdown = torch.sigmoid(aggressiveness - 0.75 * material_z)
+            epit_drive = epit_drive - coefficients["coupled_environment_breakdown"] * standardized(
+                breakdown
+            )
+            epit_drive = epit_drive - coefficients["acidic_ph_aggressiveness"] * standardized(
+                acidic_ph
+            )
+
+        if family == "method_aware":
+            process_col = int(rule["process_col"])
+            offsets = torch.as_tensor(
+                rule["process_offsets"], device=X.device, dtype=X.dtype
+            )
+            labels = torch.nan_to_num(
+                X[:, process_col], nan=0.0, posinf=0.0, neginf=0.0
+            ).round().long()
+            labels = labels.clamp(min=0, max=max(0, offsets.numel() - 1))
+            method_offset = torch.tanh(standardized(offsets[labels]))
+            epit_drive = epit_drive + coefficients["test_method_correction"] * standardized(
+                method_offset
+            )
+
+        if torch.std(epit_drive.float(), unbiased=False) > 1e-6:
+            mix_weight = float(rule.get("target_mix_weight", 0.0))
+            target_component = mix_weight * standardized(epit_drive)
+        else:
+            target_component = torch.zeros_like(epit_drive)
+        return target_component, epit_drive
+
     def _evaluate_fixed_epit_target_rule_tensor(
         self, X: Tensor, rule: Dict[str, Any], *, environment_mode: Optional[str] = None
     ) -> Tuple[Tensor, Tensor]:
+        mode = str(environment_mode or rule.get("synthetic_environment_mode", "raw"))
+        if rule.get("rule_type") == "fixed_epit_target_rule_v3_weighted_family":
+            return self._evaluate_weighted_fixed_epit_target_rule_tensor(
+                X, rule, mode
+            )
         material_cols = [int(col) for col in rule["material_cols"]]
         material = X[:, material_cols]
         material_weights = torch.as_tensor(rule["material_weights"], device=X.device, dtype=X.dtype)
@@ -1018,7 +1368,6 @@ class SCMPrior(Prior):
         material_passivity = torch.tanh(material_signal)
         material_susceptibility = torch.sigmoid(-material_signal)
 
-        mode = str(environment_mode or rule.get("synthetic_environment_mode", "raw"))
         environment_signal, chloride_signal = self._fixed_epit_environment_terms_tensor(X, rule, mode)
         environment_drive = torch.sigmoid(environment_signal)
         chloride_drive = torch.sigmoid(chloride_signal)
@@ -1044,12 +1393,170 @@ class SCMPrior(Prior):
         return target_component, epit_drive
 
     @classmethod
+    def _evaluate_weighted_fixed_epit_target_rule_numpy(
+        cls,
+        X: np.ndarray,
+        rule: Dict[str, Any],
+        environment_mode: str,
+    ) -> np.ndarray:
+        family = str(rule["target_rule_family"])
+        coefficients = {
+            str(name): float(value)
+            for name, value in rule["target_rule_coefficients"].items()
+        }
+        material_cols = [int(col) for col in rule["material_cols"]]
+        if len(material_cols) < 5:
+            raise ValueError("Weighted EPIT rules require Fe, Cr, Ni, Mo, and W.")
+        material = np.nan_to_num(
+            X[:, material_cols], nan=0.0, posinf=0.0, neginf=0.0
+        )
+        iron = np.clip(material[:, 0], 0.0, None)
+        chromium = np.clip(material[:, 1], 0.0, None)
+        nickel = np.clip(material[:, 2], 0.0, None)
+        molybdenum = np.clip(material[:, 3], 0.0, None)
+        tungsten = np.clip(material[:, 4], 0.0, None)
+        mow = molybdenum + 0.55 * tungsten
+        linear_material = chromium + 3.25 * mow
+        synergy_material = linear_material + np.sqrt(chromium * mow)
+        threshold_material = 1.0 / (1.0 + np.exp(-(chromium - 12.0) / 2.0)) + np.log1p(mow)
+        class_threshold = np.where(nickel > iron, 15.0, 12.0)
+        fe_ni_threshold_material = (
+            1.0 / (1.0 + np.exp(-(chromium - class_threshold) / 2.0))
+            + np.log1p(mow)
+        )
+
+        temperature_col = int(rule["temperature_col"])
+        chloride_col = int(rule["chloride_col"])
+        ph_col = int(rule["ph_col"])
+        if environment_mode == "rank_semantic":
+            temp_u = np.clip(
+                cls._rank_uniform_array(X[:, temperature_col]), 1e-6, 1.0 - 1e-6
+            )
+            chloride_u = np.clip(
+                cls._rank_uniform_array(X[:, chloride_col]), 1e-6, 1.0 - 1e-6
+            )
+            ph_u = np.clip(
+                cls._rank_uniform_array(X[:, ph_col]), 1e-6, 1.0 - 1e-6
+            )
+            temperature = -10.0 + 130.0 * temp_u
+            chloride = cls._log_uniform_from_rank_array(chloride_u, 1e-4, 1e3)
+            ph = cls._piecewise_ph_from_rank_array(ph_u)
+        else:
+            temperature = np.nan_to_num(
+                X[:, temperature_col], nan=0.0, posinf=0.0, neginf=0.0
+            )
+            chloride = np.nan_to_num(
+                X[:, chloride_col], nan=0.0, posinf=0.0, neginf=0.0
+            )
+            ph = np.nan_to_num(
+                X[:, ph_col], nan=7.25, posinf=7.25, neginf=7.25
+            )
+
+        standardized = cls._standardize_array
+        temperature_z = standardized(temperature)
+        chloride_z = standardized(np.log10(np.clip(chloride, 1e-12, None)))
+        ph_distance_z = standardized(np.abs(ph - 7.25))
+        environment_signal = standardized(
+            0.075 * temperature_z
+            + 0.925 * chloride_z
+            + 0.115 * ph_distance_z
+        )
+        environment = 1.0 / (1.0 + np.exp(-environment_signal))
+        chloride_drive = 1.0 / (1.0 + np.exp(-chloride_z))
+        high_temperature = 1.0 / (1.0 + np.exp(-(temperature - 50.0) / 10.0))
+        acidic_ph = 1.0 / (1.0 + np.exp(-(6.5 - ph)))
+        temperature_chloride = high_temperature * chloride_drive
+
+        if family in {"pren_linear", "improved_environment", "coupled_breakdown"}:
+            material_score = linear_material
+        elif family in {"cr_mow_synergy", "method_aware"}:
+            material_score = synergy_material
+        elif family == "threshold_saturation":
+            material_score = threshold_material
+        elif family == "fe_ni_cr_threshold":
+            material_score = fe_ni_threshold_material
+        else:
+            raise ValueError(f"Unsupported weighted EPIT target rule {family!r}.")
+
+        material_z = standardized(material_score)
+        material_term = standardized(np.tanh(material_z))
+        material_chloride = 1.0 / (1.0 + np.exp(material_z)) * chloride_drive
+        classic_temperature_chloride = (
+            1.0 / (1.0 + np.exp(-temperature_z)) * chloride_drive
+        )
+        epit_drive = coefficients["material_passivity"] * material_term
+
+        if family in {
+            "pren_linear",
+            "cr_mow_synergy",
+            "threshold_saturation",
+            "method_aware",
+        }:
+            epit_drive -= coefficients["environment_aggressiveness"] * standardized(environment)
+            epit_drive -= coefficients["material_chloride_interaction"] * standardized(
+                material_chloride
+            )
+            if "temperature_chloride_interaction" in coefficients:
+                epit_drive -= coefficients["temperature_chloride_interaction"] * standardized(
+                    classic_temperature_chloride
+                )
+        elif family in {"improved_environment", "fe_ni_cr_threshold"}:
+            epit_drive -= coefficients["log_chloride_aggressiveness"] * standardized(
+                chloride_drive
+            )
+            epit_drive -= coefficients["high_temperature_aggressiveness"] * standardized(
+                high_temperature
+            )
+            epit_drive -= coefficients["temperature_chloride_interaction"] * standardized(
+                temperature_chloride
+            )
+            epit_drive -= coefficients["acidic_ph_aggressiveness"] * standardized(
+                acidic_ph
+            )
+        else:
+            aggressiveness = (
+                0.65 * chloride_z
+                + 0.25 * standardized(high_temperature)
+                + 0.10 * standardized(temperature_chloride)
+            )
+            breakdown = 1.0 / (1.0 + np.exp(-(aggressiveness - 0.75 * material_z)))
+            epit_drive -= coefficients["coupled_environment_breakdown"] * standardized(
+                breakdown
+            )
+            epit_drive -= coefficients["acidic_ph_aggressiveness"] * standardized(
+                acidic_ph
+            )
+
+        if family == "method_aware":
+            offsets = np.asarray(rule["process_offsets"], dtype=float).reshape(-1)
+            labels = np.rint(
+                np.nan_to_num(
+                    X[:, int(rule["process_col"])],
+                    nan=0.0,
+                    posinf=0.0,
+                    neginf=0.0,
+                )
+            ).astype(int)
+            labels = np.clip(labels, 0, max(0, offsets.size - 1))
+            method_offset = np.tanh(standardized(offsets[labels]))
+            epit_drive += coefficients["test_method_correction"] * standardized(
+                method_offset
+            )
+
+        mix_weight = float(rule.get("target_mix_weight", 0.0))
+        return mix_weight * standardized(epit_drive)
+
+    @classmethod
     def evaluate_fixed_epit_target_rule_numpy(
         cls, X: np.ndarray, rule: Dict[str, Any], *, environment_mode: str = "raw"
     ) -> np.ndarray:
         X = np.asarray(X, dtype=float)
         if X.ndim != 2:
             raise ValueError(f"Expected a 2D feature table, got shape {X.shape}.")
+        if rule.get("rule_type") == "fixed_epit_target_rule_v3_weighted_family":
+            return cls._evaluate_weighted_fixed_epit_target_rule_numpy(
+                X, rule, environment_mode
+            )
         material_cols = [int(col) for col in rule["material_cols"]]
         material_weights = np.asarray(rule["material_weights"], dtype=float).reshape(-1)
         material_signal = cls._standardize_array(X[:, material_cols] @ material_weights)

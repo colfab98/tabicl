@@ -436,6 +436,22 @@ def build_parser():
         help="If set, force the fixed EPIT feature schema used by the direct-prior diagnostic.",
     )
     parser.add_argument(
+        "--pitting_target_rule_scores",
+        type=str,
+        nargs="+",
+        default=None,
+        metavar="NAME=SCORE",
+        help="Target-rule development scores; sampled with score/sum(scores).",
+    )
+    parser.add_argument(
+        "--pitting_target_rule_coefficients",
+        type=str,
+        nargs="+",
+        default=None,
+        metavar="FAMILY.TERM=VALUE",
+        help="Calibrated target-rule coefficients loaded by the EPIT pipeline.",
+    )
+    parser.add_argument(
         "--pitting_magpie_features",
         default=None,
         type=str2bool,

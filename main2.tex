@@ -2278,5 +2278,409 @@ The original V8 prior was used as the baseline because it sampled all five legac
 
 At the common training checkpoint of 3,600 steps, evaluated across five fixed data splits, the softmax composition model performed clearly best. It achieved a mean Spearman correlation of \(0.858\) and a mean absolute error of \(132.4\), compared with \(0.786\) and \(182.6\) for the original V8 mixture. Sparse alloying ranked second, with a Spearman correlation of \(0.825\) and an absolute error of \(151.9\). The Dirichlet composition model performed worse than the softmax model.
 
-These results support replacing the uncertain V8 material-style mixture with consistent softmax-generated compositions in subsequent experiments. Because the objective was to select the most promising material generator, rather than estimate the isolated contribution of every legacy family, separate descriptor-like and mixed-metadata runs were not required for this decision. Their individual effects, however, cannot be determined from the present comparison.
+These results support replacing the uncertain V8 material-style mixture with consistent softmax-generated compositions in subsequent experiments. Because the objective was to select the most promising material generator, rather than estimate the isolated contribution of every legacy family, separate descriptor-like and mixed-metadata runs were not required for this decision. Their individual effects, however, cannot be determined from the present comparison..
+
+
+\section{Composition-Only EPIT Prior with Magpie-Style Descriptors}
+\label{sec:composition-magpie-study}
+
+Following the material-family ablation, subsequent EPIT experiments restrict
+the informed material block to the composition-like family. The empirical
+template expansion is not used in this study. Instead, the fixed
+\(17+3+1\) schema is retained, and the \(17\) material positions are transformed
+into compositions using either the existing softmax mechanism or the masked
+Dirichlet mechanism. The purpose of the new study is to determine whether
+deterministic chemistry descriptors calculated from these compositions provide
+useful additional inputs for transformer pretraining.
+
+\subsection{Magpie-Style Descriptor Set}
+
+The additional features are deterministic composition descriptors rather than
+learned material embeddings. They contain no directly trained corrosion
+knowledge and do not replace the original element concentrations. The original
+\(17\) material features remain model inputs in their existing fixed order.
+
+Let \(c_{ij}\) be the weight-percentage value of element \(j\) in synthetic or
+real alloy \(i\), and let \(M_j\) be its atomic weight. A copy of the material
+vector is converted to atomic fractions according to
+
+\begin{equation}
+a_{ij}
+=
+\frac{c_{ij}/M_j}
+{\sum_k c_{ik}/M_k}.
+\label{eq:magpie-atomic-fractions}
+\end{equation}
+
+This conversion is used only for descriptor calculation. It does not modify the
+weight-percentage features supplied in the original material columns.
+
+For an elemental property \(q_j\), its composition-weighted mean and average
+absolute deviation are
+
+\begin{equation}
+\begin{aligned}
+\mu_q^{(i)}
+&=
+\sum_j a_{ij}q_j,\\
+\delta_q^{(i)}
+&=
+\sum_j a_{ij}
+\left|
+q_j-\mu_q^{(i)}
+\right|.
+\end{aligned}
+\label{eq:magpie-mean-deviation}
+\end{equation}
+
+Property ranges are calculated as
+
+\begin{equation}
+R_q^{(i)}
+=
+\max_{j:\,a_{ij}\geq0.01}q_j
+-
+\min_{j:\,a_{ij}\geq0.01}q_j.
+\label{eq:magpie-range}
+\end{equation}
+
+The \(1\%\) atomic-fraction threshold is used only for range descriptors.
+Without it, dense softmax compositions would assign every element a small
+positive value, causing the ranges to become constant across the synthetic
+dataset. Weighted means and deviations continue to use all elements, and the
+threshold does not alter the generated compositions.
+
+The implemented descriptor bundle contains ten features:
+
+\begin{center}
+\small
+\begin{tabular}{lp{0.55\linewidth}}
+\hline
+\textbf{Elemental property} & \textbf{Calculated statistics} \\
+\hline
+Electronegativity
+& mean, range, and average absolute deviation \\
+Covalent radius
+& mean and average absolute deviation \\
+Melting temperature
+& mean and range \\
+\(d\)-valence electrons
+& mean \\
+Total valence electrons
+& mean \\
+Unfilled valence states
+& mean \\
+\hline
+\end{tabular}
+\end{center}
+
+The elemental property and atomic-weight values were extracted once from
+Matminer~0.10.0 and stored in a fixed, versioned lookup table identified as
+
+\[
+\texttt{epit\_magpie\_v1\_matminer\_0\_10\_0}.
+\]
+
+Matminer is therefore used as the reference source for the elemental values but
+is not a runtime dependency during synthetic training. The descriptors are
+calculated using vectorized Torch operations during synthetic generation and
+the corresponding NumPy implementation during real-data evaluation.
+
+\subsection{Position in the Generation Pipeline}
+
+The informed synthetic task is first generated using the existing \(21\)-column
+EPIT path. Composition, environment, and process features are constructed, and
+the target is formed using the convex mixture in
+Equation~\eqref{eq:updated-epit-target-mixture}. The descriptors are calculated
+from the final \(17\)-element composition only after this target has been
+constructed.
+
+Consequently, the Magpie-style features do not enter the PREN-inspired material
+projection or otherwise modify the synthetic target. They also receive no
+independent SCM generation, within-block coupling, random marginal
+transformation, categorical conversion, or independent noise. Their dependence
+on the target arises only through their deterministic relationship with the
+same composition used by the existing EPIT mechanism.
+
+The resulting feature counts are
+
+\begin{equation}
+\begin{aligned}
+\text{without descriptors:}\quad
+&17+3+1=21,\\
+\text{with descriptors:}\quad
+&17+3+1+10=31.
+\end{aligned}
+\label{eq:magpie-feature-counts}
+\end{equation}
+
+The original \(21\) columns retain their previous values and order, and the ten
+descriptor columns are appended afterward.
+
+\subsection{Restructured Hybrid Generation}
+
+The hybrid generator was restructured to enforce a coherent distinction between
+generic and informed synthetic tasks. Let
+
+\[
+r
+=
+\texttt{informed\_prior\_ratio}.
+\]
+
+A subgroup is assigned to the informed pitting branch with probability \(r\)
+and to the generic branch with probability \(1-r\).
+
+Every informed pitting task now receives the complete pitting physical profile,
+including composition-like material features, physical environment roles, and
+the categorical test-method feature. It also receives the PREN/EPIT target
+mechanism and, when enabled for the trial, the ten Magpie-style descriptors.
+The physical-marginal probability is fixed to one for this branch and is no
+longer an Optuna parameter.
+
+Generic tasks retain the ordinary generic SCM features and target. They receive
+no physical EPIT profile, PREN/EPIT target contribution, or Magpie descriptors.
+This removes the earlier possibility of treating a task as pitting-informed
+while allowing its material and environment columns to remain arbitrary
+synthetic values.
+
+In a descriptor-enabled trial, informed tasks contain \(31\) active features,
+whereas generic tasks retain \(21\) active features. For batching, the generic
+feature tensors are zero-padded to the common width of \(31\), but their active
+feature count remains \(21\). The padded positions are therefore not interpreted
+as synthetic Magpie values.
+
+\subsection{Optuna Search}
+
+The new study is identified as
+
+\[
+\texttt{pitting\_magpie\_full\_v1}.
+\]
+
+It uses the hybrid prior, fixed informed schema, composition-like material
+family, pitting-potential target, and existing convex target mixture. The
+physical profile is active for every informed task. Feature permutation and
+generic numerical-to-categorical conversion are disabled, and the process
+feature uses \(52\) test-method categories.
+
+The searched parameters are
+
+\begin{center}
+\small
+\begin{tabular}{p{0.52\linewidth}p{0.34\linewidth}}
+\hline
+\textbf{Parameter} & \textbf{Search space} \\
+\hline
+Magpie descriptors
+& disabled or enabled \\
+Informed-prior ratio
+& \(\{0.25,0.50,0.75,1.00\}\) \\
+MLP probability
+& \(\{0,0.25,0.50,0.70,0.75,1.00\}\) \\
+Feature-block strength
+& \([0,0.95]\) \\
+Target-mixture weight \(\lambda\)
+& \([0,1]\) \\
+Dirichlet probability
+& \(\{0,0.50,1.00\}\) \\
+Dirichlet concentration
+& \(\{0.10,0.25,0.50,1.00,2.00,5.00\}\) \\
+Active-element probability
+& \(\{0.20,0.35,0.50,0.70,0.90\}\) \\
+Material coefficient
+& \([0.45,0.70]\) \\
+Environment coefficient
+& \([0.35,0.65]\) \\
+Interaction coefficient
+& \([0.60,0.95]\) \\
+\hline
+\end{tabular}
+\end{center}
+
+The concentration and active-element probability are suggested only when the
+Dirichlet probability is nonzero. When the probability is zero, the composition
+is always generated by the softmax mechanism and the two inactive Dirichlet
+parameters do not exist in that Optuna trial. A probability of \(0.5\) produces
+a mixture in which approximately half of the informed datasets use masked
+Dirichlet generation and the remainder use softmax generation.
+
+The study uses the tree-structured Parzen estimator sampler with ten startup
+trials and no manually enqueued configurations. Each proxy trial is trained to
+step \(1{,}000\), while the learning-rate scheduler retains the established
+\(10{,}000\)-step horizon. The step-\(1{,}000\) checkpoint is evaluated on split
+seeds \(1001\) to \(1005\), using eight TabICL estimators and no feature-order
+shuffling. Mean test Spearman correlation is the optimization objective. MAE,
+RMSE, \(R^2\), median Spearman, and the standard deviation across splits are
+stored as secondary results.
+
+Multiple sequential workers can join the same study through a shared journal
+file. The configured number of trials applies to each submitted worker rather
+than acting as a global study limit.
+
+\subsection{Real-Data Evaluation}
+
+Descriptor-enabled checkpoints require the same augmentation of the real EPIT
+table. For every evaluation split, missing values in the \(17\) material columns
+are imputed using means fitted on the training portion of that split. The same
+training-fitted means are then applied to the corresponding test portion.
+
+The imputed weight-percentage values are converted to atomic fractions using
+Equation~\eqref{eq:magpie-atomic-fractions}, and the same ten descriptors are
+calculated in the same order. The original \(21\) columns remain first, and the
+descriptors are appended to produce the \(31\)-feature evaluation table.
+Descriptor augmentation is enabled only for the fixed EPIT task and only for
+checkpoints trained with the corresponding synthetic features.
+
+\subsection{Implementation Checks}
+
+The implementation was checked against Matminer reference values for a
+multielement alloy, with agreement to numerical precision. The Torch and NumPy
+implementations also produce matching descriptor values.
+
+Additional tests verify that
+
+\begin{itemize}
+    \item the original \(21\) feature values are unchanged when descriptors are
+    appended;
+    \item an absent descriptor option and an explicit disabled option reproduce
+    the same legacy synthetic batch;
+    \item informed descriptor tasks contain \(31\) finite active features;
+    \item generic hybrid tasks remain at \(21\) active features and never enter
+    the physical, PREN/EPIT, or descriptor branches;
+    \item negative composition values are rejected rather than silently
+    repaired;
+    \item real training and test tables use the same fixed column order and
+    training-fitted missing-value treatment; and
+    \item the Optuna training and evaluation commands switch to the same
+    \(21\)- or \(31\)-feature schema.
+\end{itemize}
+
+\subsection{Final Search Outcome and Trial 15 Evaluation}
+\label{sec:magpie-trial15-results}
+
+The completed study contained \(48\) successful trials. Trial~15 obtained the
+highest proxy score, with a mean Spearman correlation of \(0.8227\) after
+\(1{,}000\) Stage~1 training steps. Its selected configuration is summarized in
+Table~\ref{tab:magpie-trial15-configuration}.
+
+\begin{table}[htbp]
+\centering
+\caption{Selected configuration of composition-only Optuna Trial~15.}
+\label{tab:magpie-trial15-configuration}
+\begin{tabular}{lr}
+\hline
+Parameter & Selected value \\
+\hline
+Magpie-style descriptors & enabled \\
+Informed-prior ratio & \(1.0000\) \\
+MLP probability & \(1.0000\) \\
+Feature-block strength & \(0.3612\) \\
+Target-mixture weight \(\lambda\) & \(0.1836\) \\
+Masked-Dirichlet probability & \(0.5000\) \\
+Dirichlet concentration & \(5.0000\) \\
+Active-element probability & \(0.3500\) \\
+Material coefficient & \(0.5445\) \\
+Environment coefficient & \(0.5805\) \\
+Interaction coefficient & \(0.9476\) \\
+\hline
+\end{tabular}
+\end{table}
+
+Trial~15 was subsequently retrained from scratch for \(8{,}000\) Stage~1
+steps using the established \(10{,}000\)-step learning-rate schedule. A
+controlled ablation used the same selected prior parameters without the ten
+Magpie-style descriptors. The two models therefore differed in descriptor
+usage while retaining the same selected prior configuration.
+
+Both variants were evaluated every \(500\) steps on the five established EPIT
+splits. The comparison also included the generic retrained baseline, pretrained
+TabICL V2, and CatBoost with and without the same descriptors.
+
+The descriptor-augmented model reached its highest mean Spearman correlation
+of \(0.8697\) at step \(6{,}000\). At this checkpoint, it obtained a mean MAE
+of \(133.0\)~mV, a mean RMSE of \(195.4\)~mV, and \(R^2=0.7884\).
+
+The matched model without descriptors reached its highest mean Spearman
+correlation of \(0.8646\) at step \(2{,}000\), with a mean MAE of
+\(131.0\)~mV, a mean RMSE of \(196.0\)~mV, and \(R^2=0.7868\). The two
+variants therefore produced similar absolute errors at their respective
+best-Spearman checkpoints. The descriptor model achieved the stronger rank
+correlation, whereas the no-descriptor model reached its best result earlier.
+
+From approximately step \(3{,}500\) onward, the descriptor model generally
+obtained the higher Spearman correlation, although the checkpoint trajectories
+fluctuated and briefly overlapped.
+
+Table~\ref{tab:magpie-trial15-step8000} reports the common final-checkpoint
+comparison.
+
+\begin{table}[htbp]
+\centering
+\caption{Mean performance across five repeated EPIT splits at the common
+step-\(8{,}000\) checkpoint. CatBoost and pretrained TabICL V2 are
+checkpoint-independent references.}
+\label{tab:magpie-trial15-step8000}
+\begin{tabular}{lrrrr}
+\hline
+Model & Spearman & MAE (mV) & RMSE (mV) & \(R^2\) \\
+\hline
+Trial~15 with descriptors
+    & \textbf{0.8627} & 143.8 & \textbf{198.3} & \textbf{0.7822} \\
+Trial~15 without descriptors
+    & 0.8516 & 148.0 & 204.6 & 0.7683 \\
+Pretrained TabICL V2
+    & 0.8514 & \textbf{126.5} & 208.8 & 0.7568 \\
+Generic retrained baseline
+    & 0.8405 & 150.0 & 213.9 & 0.7448 \\
+CatBoost with descriptors
+    & 0.8321 & 141.7 & 216.0 & 0.7408 \\
+CatBoost without descriptors
+    & 0.8300 & 144.7 & 216.6 & 0.7395 \\
+\hline
+\end{tabular}
+\end{table}
+
+At step \(8{,}000\), adding the descriptors increased the Trial~15 Spearman
+correlation by \(0.0111\), reduced MAE by \(4.2\)~mV, reduced RMSE by
+\(6.4\)~mV, and increased \(R^2\) by \(0.0139\).
+
+The descriptor-augmented model also exceeded pretrained TabICL V2 in Spearman
+correlation, RMSE, and \(R^2\), although its MAE remained \(17.3\)~mV higher.
+Both Trial~15 variants outperformed the generic retrained baseline across all
+four reported metrics.
+
+Adding the same descriptors to CatBoost produced only a small change: Spearman
+correlation increased from \(0.8300\) to \(0.8321\), while MAE decreased from
+\(144.7\) to \(141.7\)~mV. The larger improvement for Trial~15 therefore
+appears to depend on how the pretrained transformer uses the augmented
+synthetic and real feature representation, rather than being a universal
+consequence of adding ten columns.
+
+The matched comparison supports retaining the Magpie-style descriptors. Their
+clearest benefit is improved late-training rank correlation, accompanied by
+lower RMSE and higher \(R^2\) at the final checkpoint. They do not, however,
+resolve the higher MAE relative to pretrained TabICL V2.
+
+The peak Spearman correlation of \(0.8697\) is numerically comparable to the
+strongest earlier informed-model results. The difference is too small to
+establish that Trial~15 is conclusively better, particularly because Trial~15
+was selected using the same five splits and the step-\(6{,}000\) peak was
+identified after examining the checkpoint trajectory. Repeated training seeds
+would be required to determine whether the descriptor improvement is
+statistically reliable.
+
+\begin{figure}[htbp]
+    \centering
+    \includesvg[
+        width=0.92\linewidth,
+        inkscapelatex=false
+    ]{images/magpie_trial15_spearman_checkpoints.svg}
+    \caption{Mean test Spearman correlation across five repeated EPIT splits
+    during training of composition-only Trial~15 with and without the ten
+    Magpie-style descriptors. The generic retrained baseline, pretrained
+    TabICL V2, and CatBoost controls are shown for reference.}
+    \label{fig:magpie-trial15-spearman}
+\end{figure}
+
 \end{document}

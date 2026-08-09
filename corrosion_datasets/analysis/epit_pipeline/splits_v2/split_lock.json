@@ -1,0 +1,17 @@
+{
+  "assignments": {
+    "file": "split_assignments.csv",
+    "sha256": "8ce48224eeb608b94d7468af93e81efee4ad91df753b2b231054ac47b1797852"
+  },
+  "frozen_utc": "2026-08-08T17:09:53.565837+00:00",
+  "manifest": {
+    "file": "split_manifest.json",
+    "sha256": "b151505356908814729ae6027660b89739c11dc463ed3b1f10630b001d1b837c"
+  },
+  "report": {
+    "file": "split_report.html",
+    "sha256": "b67fb863ba373d77534b404a9b80c8d34787c81a4310a4592a2127d97d482cd1"
+  },
+  "schema_version": "epit_split_lock_v1",
+  "source_sha256": "d0ce5e9c4b42e0b5a20dbd5c4896791703c5f433ae19bc032674d5848d9d1438"
+}

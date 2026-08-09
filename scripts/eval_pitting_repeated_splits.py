@@ -88,6 +88,17 @@ def parse_args() -> argparse.Namespace:
         help="Also evaluate the pretrained TabICL regressor for each split.",
     )
     parser.add_argument(
+        "--compare-catboost",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Also train and evaluate CatBoost on each identical corrosion split.",
+    )
+    parser.add_argument("--catboost-iterations", type=int, default=1000)
+    parser.add_argument("--catboost-depth", type=int, default=6)
+    parser.add_argument("--catboost-learning-rate", type=float, default=0.03)
+    parser.add_argument("--catboost-l2-leaf-reg", type=float, default=3.0)
+    parser.add_argument("--catboost-thread-count", type=int, default=-1)
+    parser.add_argument(
         "--pitting-magpie-features",
         action="store_true",
         help="Append the fixed ten Magpie-style features for a Magpie-trained checkpoint.",
@@ -111,6 +122,17 @@ def validate_args(args: argparse.Namespace) -> None:
         args.compare_pretrained_tabicl = True
     if len(args.split_seeds) == 0:
         raise ValueError("--split-seeds must contain at least one seed.")
+    if args.compare_catboost:
+        if args.catboost_iterations <= 0:
+            raise ValueError("--catboost-iterations must be > 0.")
+        if args.catboost_depth <= 0:
+            raise ValueError("--catboost-depth must be > 0.")
+        if args.catboost_learning_rate <= 0:
+            raise ValueError("--catboost-learning-rate must be > 0.")
+        if args.catboost_l2_leaf_reg < 0:
+            raise ValueError("--catboost-l2-leaf-reg must be >= 0.")
+        if args.catboost_thread_count == 0:
+            raise ValueError("--catboost-thread-count must not be 0.")
 
 
 def slugify(text: str) -> str:
@@ -193,6 +215,22 @@ def run_seed_eval(args: argparse.Namespace, seed: int, seed_dir: Path) -> pd.Dat
         command.append("--compare-pretrained-tabicl")
     else:
         command.append("--no-compare-pretrained-tabicl")
+    if args.compare_catboost:
+        command.extend(
+            [
+                "--compare-catboost",
+                "--catboost-iterations",
+                str(args.catboost_iterations),
+                "--catboost-depth",
+                str(args.catboost_depth),
+                "--catboost-learning-rate",
+                str(args.catboost_learning_rate),
+                "--catboost-l2-leaf-reg",
+                str(args.catboost_l2_leaf_reg),
+                "--catboost-thread-count",
+                str(args.catboost_thread_count),
+            ]
+        )
     if args.pitting_magpie_features:
         command.append("--pitting-magpie-features")
 
@@ -298,6 +336,14 @@ def main() -> None:
                 "regression_output": args.regression_output,
                 "regression_uncertainty": bool(args.regression_uncertainty),
                 "compare_pretrained_tabicl": bool(args.compare_pretrained_tabicl),
+                "compare_catboost": bool(args.compare_catboost),
+                "catboost_settings": {
+                    "iterations": args.catboost_iterations,
+                    "depth": args.catboost_depth,
+                    "learning_rate": args.catboost_learning_rate,
+                    "l2_leaf_reg": args.catboost_l2_leaf_reg,
+                    "thread_count": args.catboost_thread_count,
+                } if args.compare_catboost else None,
                 "pitting_magpie_features": bool(args.pitting_magpie_features),
             },
             "rows_csv": str(rows_path),

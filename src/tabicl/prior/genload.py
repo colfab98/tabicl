@@ -559,6 +559,20 @@ class SavePriorDataset:
         pitting_fixed_epit_schema = getattr(self.args, "pitting_fixed_epit_schema", None)
         if pitting_fixed_epit_schema is not None:
             scm_fixed_hp["pitting_fixed_epit_schema"] = pitting_fixed_epit_schema
+        pitting_target_rule_scores = getattr(
+            self.args, "pitting_target_rule_scores", None
+        )
+        if pitting_target_rule_scores is not None:
+            scm_fixed_hp["pitting_target_rule_scores"] = tuple(
+                pitting_target_rule_scores
+            )
+        pitting_target_rule_coefficients = getattr(
+            self.args, "pitting_target_rule_coefficients", None
+        )
+        if pitting_target_rule_coefficients is not None:
+            scm_fixed_hp["pitting_target_rule_coefficients"] = tuple(
+                pitting_target_rule_coefficients
+            )
         cat_prob = getattr(self.args, "cat_prob", None)
         if cat_prob is not None:
             scm_fixed_hp["cat_prob"] = cat_prob
@@ -679,6 +693,12 @@ class SavePriorDataset:
             "pitting_process_role": getattr(self.args, "pitting_process_role", None),
             "pitting_process_category_count": getattr(self.args, "pitting_process_category_count", None),
             "pitting_fixed_epit_schema": getattr(self.args, "pitting_fixed_epit_schema", None),
+            "pitting_target_rule_scores": getattr(
+                self.args, "pitting_target_rule_scores", None
+            ),
+            "pitting_target_rule_coefficients": getattr(
+                self.args, "pitting_target_rule_coefficients", None
+            ),
             "cat_prob": getattr(self.args, "cat_prob", None),
             "permute_features": getattr(self.args, "permute_features", None),
             "epit_material_coef": self.args.epit_material_coef,
@@ -883,6 +903,20 @@ if __name__ == "__main__":
     )
     parser.add_argument("--pitting_process_category_count", type=int, default=None)
     parser.add_argument("--pitting_fixed_epit_schema", default=None, type=str2bool)
+    parser.add_argument(
+        "--pitting_target_rule_scores",
+        type=str,
+        nargs="+",
+        default=None,
+        metavar="NAME=SCORE",
+    )
+    parser.add_argument(
+        "--pitting_target_rule_coefficients",
+        type=str,
+        nargs="+",
+        default=None,
+        metavar="FAMILY.TERM=VALUE",
+    )
     parser.add_argument("--cat_prob", type=float, default=None)
     parser.add_argument("--permute_features", default=None, type=str2bool)
     parser.add_argument("--epit_material_coef", type=float, default=None)

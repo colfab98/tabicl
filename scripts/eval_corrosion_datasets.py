@@ -13,6 +13,7 @@ informed-prior values that were derived from the same external datasets.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import math
@@ -59,6 +60,7 @@ from analyze_structure import Table, clean_name, load_all_tables  # noqa: E402
 
 
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "corrosion_datasets" / "analysis" / "eval_results"
+EPIT_PIPELINE_TASK_ID = "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg"
 DEFAULT_FEATURE_GROUPS = (
     "material",
     "environment",
@@ -82,6 +84,7 @@ DEFAULT_SUMMARY_EXCLUDED_DATASETS = (
 )
 EVAL_NA_STRINGS = {"", "na", "n/a", "nan", "none", "null", "-", "--"}
 EVAL_RATING_TO_SEVERITY = {"a": 0.0, "b": 1.0, "c": 2.0, "d": 3.0}
+CATBOOST_MISSING_CATEGORY = "__CATBOOST_MISSING__"
 EXACT_NUMERIC_TEXT_RE = re.compile(r"^\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?\s*$")
 EVAL_UNIT_SUFFIX_RE = (
     r"^[\s,;/()°%+\-.]*"
@@ -358,6 +361,19 @@ def parse_args() -> argparse.Namespace:
             "This reruns this evaluator once per seed and writes combined rows, summary, and plots."
         ),
     )
+    parser.add_argument(
+        "--epit-split-manifest",
+        type=Path,
+        default=None,
+        help="Fixed EPIT pipeline split manifest. Requires --epit-validation-fold.",
+    )
+    parser.add_argument(
+        "--epit-validation-fold",
+        type=int,
+        choices=range(1, 6),
+        default=None,
+        help="Saved development fold used as validation; all other development rows are context.",
+    )
     parser.add_argument("--target-mode", choices=("primary", "all"), default="primary")
     parser.add_argument(
         "--target-binning",
@@ -456,6 +472,15 @@ def parse_args() -> argparse.Namespace:
             "from the training split and append the fixed ten Magpie-style descriptors."
         ),
     )
+    parser.add_argument(
+        "--pitting-magpie-model",
+        action="append",
+        default=[],
+        help=(
+            "Apply the EPIT Magpie augmentation only to this model label. Can be passed "
+            "multiple times to mix native 21- and 31-feature models in one evaluation."
+        ),
+    )
     parser.add_argument("--compare-pretrained-tabicl", dest="compare_pretrained_tabicl", action="store_true", default=True)
     parser.add_argument("--no-compare-pretrained-tabicl", dest="compare_pretrained_tabicl", action="store_false")
     parser.add_argument(
@@ -470,6 +495,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--baseline-auto-download", action="store_true", default=True)
     parser.add_argument("--no-baseline-auto-download", dest="baseline_auto_download", action="store_false")
     parser.add_argument("--compare-tabpfn", action="store_true", help="Try to evaluate TabPFNClassifier if tabpfn is installed.")
+    parser.add_argument(
+        "--compare-catboost",
+        action="store_true",
+        help=(
+            "Evaluate a conventional CatBoost regressor on the same continuous-target "
+            "task table and train/test split as TabICL."
+        ),
+    )
+    parser.add_argument(
+        "--compare-catboost-magpie",
+        action="store_true",
+        help="Also evaluate CatBoost after appending the ten EPIT Magpie descriptors.",
+    )
+    parser.add_argument("--catboost-iterations", type=int, default=1000)
+    parser.add_argument("--catboost-depth", type=int, default=6)
+    parser.add_argument("--catboost-learning-rate", type=float, default=0.03)
+    parser.add_argument("--catboost-l2-leaf-reg", type=float, default=3.0)
+    parser.add_argument("--catboost-thread-count", type=int, default=-1)
     parser.add_argument("--output-json", type=Path, default=None)
     parser.add_argument("--output-csv", type=Path, default=None, help="Row-wise CSV with one row per task/model result.")
     parser.add_argument("--output-wide-csv", type=Path, default=None, help="Wide comparison CSV with one row per task.")
@@ -512,6 +555,14 @@ def parse_args() -> argparse.Namespace:
 
 
 def validate_args(args: argparse.Namespace) -> None:
+    if (args.epit_split_manifest is None) != (args.epit_validation_fold is None):
+        raise ValueError(
+            "--epit-split-manifest and --epit-validation-fold must be used together."
+        )
+    if args.epit_split_manifest is not None and args.split_seeds is not None:
+        raise ValueError(
+            "A fixed EPIT fold cannot be combined with random --split-seeds."
+        )
     if args.checkpoint_step_interval < 0:
         raise ValueError("--checkpoint-step-interval must be >= 0.")
     alphas = list(args.regression_quantile_alphas or [])
@@ -520,6 +571,19 @@ def validate_args(args: argparse.Namespace) -> None:
     if any(alpha <= 0.0 or alpha >= 1.0 for alpha in alphas):
         raise ValueError("--regression-quantile-alphas values must be between 0 and 1.")
     args.regression_quantile_alphas = sorted(alphas)
+    if args.compare_catboost or args.compare_catboost_magpie:
+        if args.target_binning != "continuous":
+            raise ValueError("CatBoost comparison currently supports only --target-binning continuous.")
+        if args.catboost_iterations <= 0:
+            raise ValueError("--catboost-iterations must be > 0.")
+        if args.catboost_depth <= 0:
+            raise ValueError("--catboost-depth must be > 0.")
+        if args.catboost_learning_rate <= 0:
+            raise ValueError("--catboost-learning-rate must be > 0.")
+        if args.catboost_l2_leaf_reg < 0:
+            raise ValueError("--catboost-l2-leaf-reg must be >= 0.")
+        if args.catboost_thread_count == 0:
+            raise ValueError("--catboost-thread-count must not be 0.")
     if args.target_binning == "continuous":
         return
     if args.target_binning == "median_binary" and args.target_bins != 2:
@@ -624,7 +688,12 @@ def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEv
     if args.checkpoint != "all":
         runs = expand_runs(args)
         local_ckpt_paths = list(args.local_ckpt_path or [])
-        if not runs and not local_ckpt_paths and (args.compare_pretrained_tabicl or args.compare_tabpfn):
+        if not runs and not local_ckpt_paths and (
+            args.compare_pretrained_tabicl
+            or args.compare_tabpfn
+            or args.compare_catboost
+            or args.compare_catboost_magpie
+        ):
             return [
                 CheckpointEvalSpec(
                     checkpoint_name="pretrained_baselines",
@@ -1376,6 +1445,130 @@ def build_task(
         fixed_split=fixed_split,
     )
 
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def apply_epit_pipeline_fold(
+    tasks: list[EvalTask],
+    *,
+    manifest_path: Path,
+    validation_fold: int,
+) -> None:
+    """Restrict the EPIT task to development rows and apply one saved fold."""
+    manifest_path = manifest_path.expanduser().resolve()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest_schema = manifest.get("schema_version")
+    if manifest_schema == "epit_split_manifest_v2":
+        # Keep the general corrosion evaluator unchanged unless the frozen v2
+        # EPIT path is explicitly requested. Module execution and direct
+        # script execution expose the sibling package under different names.
+        if __package__:
+            from scripts.epit_pipeline.artifact_hashes import load_frozen_split
+        else:
+            from epit_pipeline.artifact_hashes import load_frozen_split
+
+        manifest = load_frozen_split(manifest_path).manifest
+    elif manifest_schema != "epit_split_manifest_v1":
+        raise RuntimeError("Unsupported EPIT split manifest schema.")
+    dataset_meta = manifest.get("dataset", {})
+    if dataset_meta.get("task_id") != EPIT_PIPELINE_TASK_ID:
+        raise RuntimeError("EPIT split manifest task does not match the evaluator.")
+    source_path = REPO_ROOT / str(dataset_meta.get("source_file", ""))
+    if not source_path.is_file():
+        raise FileNotFoundError(f"EPIT source file not found: {source_path}")
+    if _sha256_file(source_path) != str(dataset_meta.get("source_sha256", "")):
+        raise RuntimeError("EPIT source file changed after the split was created.")
+
+    matching = [task for task in tasks if task.task_id == EPIT_PIPELINE_TASK_ID]
+    if len(matching) != 1:
+        raise RuntimeError(
+            f"Expected exactly one EPIT task, found {len(matching)}."
+        )
+    task = matching[0]
+    expected_rows = int(dataset_meta.get("usable_rows", -1))
+    if len(task.X) != expected_rows:
+        raise RuntimeError(
+            "EPIT evaluator row count does not match the split manifest."
+        )
+    if task.target != str(dataset_meta.get("target_column", "")):
+        raise RuntimeError("EPIT evaluator target does not match the split manifest.")
+
+    records = manifest.get("rows", [])
+    if len(records) != expected_rows:
+        raise RuntimeError("EPIT split manifest does not cover every task row.")
+    by_index = {int(record["task_row_index"]): record for record in records}
+    if sorted(by_index) != list(range(expected_rows)):
+        raise RuntimeError("EPIT split manifest row indices are incomplete.")
+
+    development_global = np.asarray(
+        sorted(
+            index
+            for index, record in by_index.items()
+            if record["outer_split"] == "development"
+        ),
+        dtype=int,
+    )
+    final_global = np.asarray(
+        sorted(
+            index
+            for index, record in by_index.items()
+            if record["outer_split"] == "final_test"
+        ),
+        dtype=int,
+    )
+    validation_global = np.asarray(
+        [
+            index
+            for index in development_global
+            if int(by_index[int(index)]["optuna_validation_fold"])
+            == int(validation_fold)
+        ],
+        dtype=int,
+    )
+    context_global = np.setdiff1d(
+        development_global,
+        validation_global,
+        assume_unique=True,
+    )
+    split_design = manifest.get("split_design", {})
+    if len(development_global) != int(split_design.get("development_rows", -1)):
+        raise RuntimeError("EPIT development row count is inconsistent.")
+    if len(final_global) != int(split_design.get("final_test_rows", -1)):
+        raise RuntimeError("EPIT final-test row count is inconsistent.")
+    if len(validation_global) == 0 or len(context_global) == 0:
+        raise RuntimeError("EPIT saved validation fold is empty.")
+    if np.intersect1d(development_global, final_global).size:
+        raise RuntimeError("EPIT development and final-test rows overlap.")
+
+    local_index = {
+        int(global_index): local
+        for local, global_index in enumerate(development_global)
+    }
+    context_local = np.asarray(
+        [local_index[int(index)] for index in context_global],
+        dtype=int,
+    )
+    validation_local = np.asarray(
+        [local_index[int(index)] for index in validation_global],
+        dtype=int,
+    )
+    task.X = task.X.iloc[development_global].reset_index(drop=True)
+    task.y = task.y.iloc[development_global].reset_index(drop=True)
+    task.y_ordinal = task.y_ordinal.iloc[development_global].reset_index(drop=True)
+    if task.split_groups is not None:
+        task.split_groups = task.split_groups.iloc[development_global].reset_index(drop=True)
+    task.fixed_split = EvalSplit(
+        train_index=context_local,
+        test_index=validation_local,
+        split_strategy=f"epit_pipeline_development_fold_{validation_fold}",
+    )
+    task.split_strategy = task.fixed_split.split_strategy
+
 
 def slugify(text: str) -> str:
     cleaned = "".join(ch.lower() if ch.isalnum() else "_" for ch in str(text))
@@ -1512,6 +1705,120 @@ def make_tabpfn_regressor(device: str, random_state: int) -> Any:
             return TabPFNRegressor(device=device)
         except TypeError:
             return TabPFNRegressor()
+
+
+class CatBoostRegressorAdapter:
+    """Sklearn-like CatBoost wrapper with explicit categorical handling.
+
+    The shared evaluator passes the same raw task dataframe to every model.
+    CatBoost can consume missing numeric values directly, while categorical
+    values must be strings or integers and cannot contain pandas missing
+    markers. This adapter changes only that representation and learns no
+    preprocessing state from the outer test split.
+    """
+
+    def __init__(
+        self,
+        *,
+        regressor_class: Any,
+        version: str,
+        iterations: int,
+        depth: int,
+        learning_rate: float,
+        l2_leaf_reg: float,
+        random_state: int,
+        thread_count: int,
+    ) -> None:
+        self._regressor_class = regressor_class
+        self._model_kwargs = {
+            "allow_writing_files": False,
+            "depth": depth,
+            "eval_metric": "RMSE",
+            "iterations": iterations,
+            "l2_leaf_reg": l2_leaf_reg,
+            "learning_rate": learning_rate,
+            "loss_function": "RMSE",
+            "random_seed": random_state,
+            "task_type": "CPU",
+            "thread_count": thread_count,
+            "verbose": False,
+        }
+        self.model_source_ = (
+            f"catboost=={version};iterations={iterations};depth={depth};"
+            f"learning_rate={learning_rate:g};l2_leaf_reg={l2_leaf_reg:g};"
+            f"thread_count={thread_count}"
+        )
+
+    @staticmethod
+    def _categorical_columns(frame: pd.DataFrame) -> list[str]:
+        return [
+            column
+            for column in frame.columns
+            if not pd.api.types.is_numeric_dtype(frame[column].dtype)
+        ]
+
+    @staticmethod
+    def _prepare_frame(frame: pd.DataFrame, categorical_columns: list[str]) -> pd.DataFrame:
+        if not isinstance(frame, pd.DataFrame):
+            raise TypeError("CatBoost corrosion evaluation expects a pandas DataFrame.")
+        prepared = frame.copy()
+        for column in categorical_columns:
+            prepared[column] = (
+                prepared[column]
+                .astype("string")
+                .fillna(CATBOOST_MISSING_CATEGORY)
+                .astype(str)
+            )
+        return prepared
+
+    def fit(self, X: pd.DataFrame, y: pd.Series | np.ndarray) -> CatBoostRegressorAdapter:
+        self.feature_columns_ = list(X.columns)
+        self.categorical_columns_ = self._categorical_columns(X)
+        prepared = self._prepare_frame(X, self.categorical_columns_)
+        self.model_ = self._regressor_class(**self._model_kwargs)
+        self.model_.fit(
+            prepared,
+            y,
+            cat_features=self.categorical_columns_,
+            verbose=False,
+        )
+        return self
+
+    def predict(self, X: pd.DataFrame) -> np.ndarray:
+        if not hasattr(self, "model_"):
+            raise RuntimeError("CatBoostRegressorAdapter must be fitted before prediction.")
+        if list(X.columns) != self.feature_columns_:
+            raise ValueError("CatBoost train and test feature columns do not match.")
+        prepared = self._prepare_frame(X, self.categorical_columns_)
+        return np.asarray(self.model_.predict(prepared), dtype=float)
+
+
+def make_catboost_regressor(
+    *,
+    iterations: int,
+    depth: int,
+    learning_rate: float,
+    l2_leaf_reg: float,
+    random_state: int,
+    thread_count: int,
+) -> CatBoostRegressorAdapter:
+    try:
+        import catboost
+    except ImportError as exc:
+        raise RuntimeError(
+            "catboost is required for --compare-catboost; install the corrosion-eval extra."
+        ) from exc
+
+    return CatBoostRegressorAdapter(
+        regressor_class=catboost.CatBoostRegressor,
+        version=str(getattr(catboost, "__version__", "unknown")),
+        iterations=iterations,
+        depth=depth,
+        learning_rate=learning_rate,
+        l2_leaf_reg=l2_leaf_reg,
+        random_state=random_state,
+        thread_count=thread_count,
+    )
 
 
 def make_cached_tabicl_factory(
@@ -1889,7 +2196,11 @@ def evaluate_estimator(
             else empty_regression_uncertainty_metrics()
         )
 
-        model_source = getattr(estimator, "model_path_", "")
+        model_source = getattr(
+            estimator,
+            "model_source_",
+            getattr(estimator, "model_path_", ""),
+        )
         row = {
             "model": model_label,
             "model_kind": model_kind,
@@ -1982,7 +2293,11 @@ def evaluate_estimator(
         n_classes=len(task.class_labels),
     )
 
-    model_source = getattr(estimator, "model_path_", "")
+    model_source = getattr(
+        estimator,
+        "model_source_",
+        getattr(estimator, "model_path_", ""),
+    )
     row = {
         "model": model_label,
         "model_kind": model_kind,
@@ -2353,6 +2668,22 @@ def ensure_unique_job_labels(jobs: list[dict[str, Any]]) -> None:
     duplicates = sorted({label for label in labels if labels.count(label) > 1})
     if duplicates:
         raise ValueError(f"Model labels must be unique across all jobs; duplicate labels: {', '.join(duplicates)}")
+
+
+def model_uses_pitting_magpie(args: argparse.Namespace, model_label: str, *, force: bool = False) -> bool:
+    requested_labels = {slugify(label) for label in (args.pitting_magpie_model or [])}
+    return bool(force or args.pitting_magpie_features or slugify(model_label) in requested_labels)
+
+
+def validate_pitting_magpie_model_labels(args: argparse.Namespace, available_labels: set[str]) -> None:
+    requested_labels = {slugify(label) for label in (args.pitting_magpie_model or [])}
+    unknown_labels = sorted(requested_labels.difference(available_labels))
+    if unknown_labels:
+        raise ValueError(
+            "--pitting-magpie-model contains labels that are not part of this evaluation: "
+            + ", ".join(unknown_labels)
+        )
+
 
 
 def print_result_row(row: dict[str, Any]) -> None:
@@ -2857,6 +3188,17 @@ def run_repeated_split_eval(args: argparse.Namespace) -> None:
         "test_size": args.test_size,
         "n_estimators": args.n_estimators,
         "tabicl_feat_shuffle_method": args.tabicl_feat_shuffle_method,
+        "compare_catboost": bool(args.compare_catboost),
+        "compare_catboost_magpie": bool(args.compare_catboost_magpie),
+        "pitting_magpie_features": bool(args.pitting_magpie_features),
+        "pitting_magpie_models": sorted({slugify(label) for label in args.pitting_magpie_model}),
+        "catboost_settings": {
+            "iterations": args.catboost_iterations,
+            "depth": args.catboost_depth,
+            "learning_rate": args.catboost_learning_rate,
+            "l2_leaf_reg": args.catboost_l2_leaf_reg,
+            "thread_count": args.catboost_thread_count,
+        } if args.compare_catboost or args.compare_catboost_magpie else None,
         "rows": all_rows,
         "errors": all_errors,
         "output_files": {
@@ -2908,6 +3250,12 @@ def main() -> None:
         else "tabicl-classifier-v2-20260212.ckpt"
     )
     tasks = make_tasks(args)
+    if args.epit_split_manifest is not None:
+        apply_epit_pipeline_fold(
+            tasks,
+            manifest_path=args.epit_split_manifest,
+            validation_fold=int(args.epit_validation_fold),
+        )
     if args.list_tasks:
         print_task_list(tasks)
         return
@@ -2929,6 +3277,17 @@ def main() -> None:
 
     checkpoint_specs = resolve_checkpoint_eval_specs(args)
     first_local_specs = checkpoint_specs[0].local_specs
+    available_model_labels = {spec.label for spec in first_local_specs}
+    if args.compare_pretrained_tabicl:
+        available_model_labels.add("pretrained_tabicl_v2")
+    if args.compare_tabpfn:
+        available_model_labels.add("pretrained_tabpfn")
+    if args.compare_catboost:
+        available_model_labels.add("catboost")
+    if args.compare_catboost_magpie:
+        available_model_labels.add("catboost_magpie")
+    validate_pitting_magpie_model_labels(args, available_model_labels)
+
     include_checkpoint_columns = args.checkpoint == "all"
     if args.checkpoint == "all":
         steps = [spec.checkpoint_step for spec in checkpoint_specs if spec.checkpoint_step is not None]
@@ -2939,7 +3298,11 @@ def main() -> None:
 
     rows: list[dict[str, Any]] = []
     errors: list[dict[str, Any]] = []
-    reuse_pretrained_tabicl = args.checkpoint == "all" and args.compare_pretrained_tabicl
+    reuse_static_baselines = args.checkpoint == "all" and (
+        args.compare_pretrained_tabicl
+        or args.compare_catboost
+        or args.compare_catboost_magpie
+    )
     pretrained_tabicl_reuse_ready = False
     pretrained_tabicl_row_templates_by_task: dict[str, list[dict[str, Any]]] = {}
     pretrained_tabicl_error_templates_by_task: dict[str, list[dict[str, Any]]] = {}
@@ -2964,6 +3327,7 @@ def main() -> None:
                         "model_label": spec.label,
                         "model_kind": "local_tabicl_regressor",
                         "factory": factory,
+                        "pitting_magpie_features": model_uses_pitting_magpie(args, spec.label),
                         "cache_key": (
                             "local_tabicl_regressor",
                             model_path,
@@ -2988,6 +3352,7 @@ def main() -> None:
                         "model_label": spec.label,
                         "model_kind": "local_tabicl_classifier",
                         "factory": factory,
+                        "pitting_magpie_features": model_uses_pitting_magpie(args, spec.label),
                         "cache_key": (
                             "local_tabicl_classifier",
                             model_path,
@@ -3014,6 +3379,7 @@ def main() -> None:
                         "model_label": "pretrained_tabicl_v2",
                         "model_kind": "pretrained_tabicl_regressor",
                         "factory": factory,
+                        "pitting_magpie_features": model_uses_pitting_magpie(args, "pretrained_tabicl_v2"),
                         "cache_key": (
                             "pretrained_tabicl_regressor",
                             pretrained_checkpoint_version,
@@ -3021,7 +3387,7 @@ def main() -> None:
                             args.n_estimators,
                             args.tabicl_feat_shuffle_method,
                         ),
-                        "reuse_static_baseline": reuse_pretrained_tabicl,
+                        "reuse_static_baseline": reuse_static_baselines,
                     }
                 )
             else:
@@ -3039,6 +3405,7 @@ def main() -> None:
                         "model_label": "pretrained_tabicl_v2",
                         "model_kind": "pretrained_tabicl_classifier",
                         "factory": factory,
+                        "pitting_magpie_features": model_uses_pitting_magpie(args, "pretrained_tabicl_v2"),
                         "cache_key": (
                             "pretrained_tabicl_classifier",
                             pretrained_checkpoint_version,
@@ -3046,7 +3413,7 @@ def main() -> None:
                             args.n_estimators,
                             args.tabicl_feat_shuffle_method,
                         ),
-                        "reuse_static_baseline": reuse_pretrained_tabicl,
+                        "reuse_static_baseline": reuse_static_baselines,
                     }
                 )
 
@@ -3061,9 +3428,49 @@ def main() -> None:
                     "model_label": "pretrained_tabpfn",
                     "model_kind": "pretrained_tabpfn_regressor" if is_regression_eval else "pretrained_tabpfn_classifier",
                     "factory": tabpfn_factory,
+                    "pitting_magpie_features": model_uses_pitting_magpie(args, "pretrained_tabpfn"),
                     "cache_key": None,
                 }
             )
+        if args.compare_catboost and not pretrained_tabicl_reuse_ready:
+            catboost_factory = lambda: make_catboost_regressor(
+                iterations=args.catboost_iterations,
+                depth=args.catboost_depth,
+                learning_rate=args.catboost_learning_rate,
+                l2_leaf_reg=args.catboost_l2_leaf_reg,
+                random_state=args.random_state,
+                thread_count=args.catboost_thread_count,
+            )
+            jobs.append(
+                {
+                    "model_label": "catboost",
+                    "reuse_static_baseline": reuse_static_baselines,
+                    "model_kind": "catboost_regressor",
+                    "factory": catboost_factory,
+                    "pitting_magpie_features": model_uses_pitting_magpie(args, "catboost"),
+                    "cache_key": None,
+                }
+            )
+        if args.compare_catboost_magpie and not pretrained_tabicl_reuse_ready:
+            catboost_magpie_factory = lambda: make_catboost_regressor(
+                iterations=args.catboost_iterations,
+                depth=args.catboost_depth,
+                learning_rate=args.catboost_learning_rate,
+                l2_leaf_reg=args.catboost_l2_leaf_reg,
+                random_state=args.random_state,
+                thread_count=args.catboost_thread_count,
+            )
+            jobs.append(
+                {
+                    "reuse_static_baseline": reuse_static_baselines,
+                    "model_label": "catboost_magpie",
+                    "model_kind": "catboost_regressor",
+                    "factory": catboost_magpie_factory,
+                    "pitting_magpie_features": True,
+                    "cache_key": None,
+                }
+            )
+
         ensure_unique_job_labels(jobs)
         if args.model_cache:
             for job in jobs:
@@ -3110,7 +3517,7 @@ def main() -> None:
                         regression_output=args.regression_output,
                         regression_quantile_alphas=args.regression_quantile_alphas,
                         regression_uncertainty=args.regression_uncertainty,
-                        pitting_magpie_features=args.pitting_magpie_features,
+                        pitting_magpie_features=bool(job["pitting_magpie_features"]),
                     )
                     if job.get("reuse_static_baseline"):
                         pretrained_tabicl_row_templates_by_task.setdefault(task.task_id, []).append(dict(row))
@@ -3127,6 +3534,7 @@ def main() -> None:
                     error = {
                         "model": job["model_label"],
                         "model_kind": job["model_kind"],
+                        "pitting_magpie_features": bool(job["pitting_magpie_features"]),
                         "task_id": task.task_id,
                         "dataset": task.dataset,
                         "table": task.table,
@@ -3169,7 +3577,7 @@ def main() -> None:
                     if args.print_json_lines:
                         print(json.dumps(error, sort_keys=True))
 
-        if reuse_pretrained_tabicl and not pretrained_tabicl_reuse_ready:
+        if reuse_static_baselines and not pretrained_tabicl_reuse_ready:
             pretrained_tabicl_reuse_ready = True
 
     output_json, output_csv, output_wide_csv, output_summary_csv = default_output_paths(
@@ -3263,11 +3671,25 @@ def main() -> None:
         "default_excluded_tasks": list(DEFAULT_EXCLUDED_TASKS),
         "default_summary_excluded_datasets": list(DEFAULT_SUMMARY_EXCLUDED_DATASETS),
         "excluded_quality_flags": list(args.exclude_quality_flag or []),
+        "compare_catboost_magpie": bool(args.compare_catboost_magpie),
+        "pitting_magpie_models": sorted({slugify(label) for label in args.pitting_magpie_model}),
         "n_estimators": args.n_estimators,
         "tabicl_feat_shuffle_method": args.tabicl_feat_shuffle_method,
+        "compare_catboost": bool(args.compare_catboost),
+        "catboost_settings": {
+            "iterations": args.catboost_iterations,
+            "depth": args.catboost_depth,
+            "learning_rate": args.catboost_learning_rate,
+            "l2_leaf_reg": args.catboost_l2_leaf_reg,
+            "thread_count": args.catboost_thread_count,
+        } if args.compare_catboost or args.compare_catboost_magpie else None,
         "feature_groups_default": list(DEFAULT_FEATURE_GROUPS),
         "pitting_magpie_features": bool(args.pitting_magpie_features),
-        "pitting_magpie_version": EPIT_MAGPIE_VERSION if args.pitting_magpie_features else None,
+        "pitting_magpie_version": (
+            EPIT_MAGPIE_VERSION
+            if args.pitting_magpie_features or args.pitting_magpie_model or args.compare_catboost_magpie
+            else None
+        ),
         "electrochem_feature_groups": list(ELECTROCHEM_FEATURE_GROUPS),
         "include_electrochem_features": args.include_electrochem_features,
         "rows": rows,
