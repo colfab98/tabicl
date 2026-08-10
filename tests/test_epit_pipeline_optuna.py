@@ -11,6 +11,7 @@ import pytest
 import torch
 
 from scripts import eval_corrosion_datasets as corrosion_eval
+from scripts.epit_pipeline import evaluate_baseline_folds
 from scripts.epit_pipeline import evaluate_final
 from scripts.epit_pipeline import evaluate_optuna_folds
 from scripts.epit_pipeline import run_optuna as search
@@ -400,6 +401,45 @@ def test_fold_evaluator_command_passes_fixed_manifest(tmp_path: Path) -> None:
     )
     assert "--no-compare-pretrained-tabicl" in command
     assert _value_after(command, "--tabicl-norm-methods") == "none"
+
+
+def test_baseline_fold_command_uses_only_development_references(
+    tmp_path: Path,
+) -> None:
+    args = evaluate_baseline_folds.parse_args(
+        ["--device", "cpu", "--output-dir", str(tmp_path / "baselines")]
+    )
+    command = evaluate_baseline_folds.fold_command(
+        args,
+        fold=3,
+        fold_dir=tmp_path / "fold_3",
+    )
+
+    assert "--local-ckpt-path" not in command
+    assert "--epit-final-test" not in command
+    assert _value_after(command, "--epit-validation-fold") == "3"
+    assert _value_after(command, "--epit-split-manifest") == str(
+        search.DEFAULT_SPLIT_MANIFEST.resolve()
+    )
+    assert "--compare-pretrained-tabicl" in command
+    assert "--compare-catboost" in command
+    assert "--compare-catboost-magpie" not in command
+    assert _value_after(command, "--tabicl-feat-shuffle-method") == "none"
+    assert _value_after(command, "--tabicl-norm-methods") == "none"
+    assert _value_after(command, "--max-samples-per-task") == "0"
+
+
+def test_baseline_launcher_uses_frozen_development_folds() -> None:
+    launcher = (
+        search.REPO_ROOT
+        / "scripts"
+        / "epit_pipeline"
+        / "evaluate_baseline_folds.sbatch"
+    ).read_text(encoding="utf-8")
+
+    assert "splits_v2/split_manifest.json" in launcher
+    assert "baseline_folds_v1" in launcher
+    assert "evaluate_baseline_folds" in launcher
 
 
 def test_explicit_none_normalization_reaches_tabicl_estimator(tmp_path: Path) -> None:
