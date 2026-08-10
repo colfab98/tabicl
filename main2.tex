@@ -2683,4 +2683,529 @@ statistically reliable.
     \label{fig:magpie-trial15-spearman}
 \end{figure}
 
+\section{Leakage-Controlled Redesign of the EPIT Pipeline}
+\label{sec:epit-pipeline-redesign}
+
+After the experiments reported above, the EPIT workflow was reorganized to
+separate model development from final evaluation. The previous workflow used
+the same repeated EPIT splits for prior design, Optuna selection, checkpoint
+inspection, and performance reporting. Those results remain useful as
+exploratory development results, but they are not an independent estimate of
+performance on unseen alloy compositions.
+
+The revised workflow separates the project into five stages:
+
+\begin{enumerate}
+    \item composition-aware split construction;
+    \item target-rule calibration and direct evaluation;
+    \item Optuna trial training and development-fold evaluation;
+    \item final long training of the selected configuration; and
+    \item one final evaluation on an untouched test set.
+\end{enumerate}
+
+All five stages have been implemented. The Stage~4 and Stage~5 scripts are
+complete, but their final GPU runs and resulting performance values remain to
+be produced after the Optuna study is complete and the fixed split has been
+manually approved.
+
+\subsection{Dataset Partitions and Terminology}
+\label{sec:epit-pipeline-partitions}
+
+The complete EPIT task contains \(760\) usable rows. A single fixed outer split
+divides these rows into
+
+\[
+\mathcal{D}_{\mathrm{dev}},
+\qquad
+|\mathcal{D}_{\mathrm{dev}}|=608,
+\]
+
+and
+
+\[
+\mathcal{D}_{\mathrm{final}},
+\qquad
+|\mathcal{D}_{\mathrm{final}}|=152.
+\]
+
+The \(608\) development rows are used for target-rule calibration, Optuna trial
+selection, and eventual final model training. The \(152\) final-test rows are
+excluded from these stages.
+
+The development set is divided into five fixed folds. For each fold,
+approximately \(486\)--\(487\) rows are used as context or training rows and
+\(121\)--\(122\) rows are used as validation rows. Every development row serves
+as validation data once.
+
+Three different evaluations must therefore be distinguished:
+
+\begin{itemize}
+    \item \textbf{Direct target-rule evaluation} measures how well a corrosion
+    formula orders real EPIT values on held-out development rows.
+    \item \textbf{Optuna trial evaluation} measures how well a synthetically
+    pretrained TabICL checkpoint predicts the five development validation
+    folds.
+    \item \textbf{Final best-model evaluation} will use all \(608\) development
+    rows as context and the \(152\) untouched rows as the final test set.
+\end{itemize}
+
+The direct target-rule score is not a TabICL score. Conversely, the Optuna
+score evaluates the trained TabICL model rather than applying the corrosion
+formula directly to the validation targets.
+
+\subsection{Composition-Aware Split Construction}
+\label{sec:epit-composition-split}
+
+The split is designed primarily to evaluate prediction for unseen alloy
+compositions. Measurements of sufficiently similar compositions are therefore
+kept together.
+
+Grouping uses the \(17\) composition columns visible to TabICL. The
+compositions are not renormalized to \(100\%\), because seven composition
+columns from the source data are absent from the fixed model schema.
+For grouping only, missing values are treated as zero and each visible
+composition value is rounded to \(0.01\)~wt.\%.
+
+For two rounded composition vectors \(x_i\) and \(x_j\), their distance is
+
+\[
+d(i,j)
+=
+\sum_{e=1}^{17}
+\left|x_{i,e}-x_{j,e}\right|.
+\]
+
+Every pair satisfying
+
+\[
+d(i,j)\leq 1.0\ \text{wt.\%}
+\]
+
+is connected. The final groups are the connected components of this
+threshold graph. Consequently, every directly similar pair remains in the
+same component and cannot cross either the development/final-test boundary or
+an Optuna-fold boundary.
+
+This connected-component definition is intentionally transitive. For example,
+if alloy \(A\) is within \(1\)~wt.\% of \(B\), and \(B\) is within
+\(1\)~wt.\% of \(C\), all three are grouped together even when \(A\) and \(C\)
+are farther apart. The resulting v2 split contains \(301\) composition
+components. The largest component contains \(45\) rows, and the largest
+within-component span is \(5.0\)~wt.\%. This wider span is the cost of
+guaranteeing that no directly close pair crosses a split boundary.
+
+Complete composition components were assigned to obtain exactly \(608\)
+development rows and \(152\) final-test rows. The outer split and the five
+development folds were balanced using material class, EPIT range,
+temperature, chloride concentration, pH, test method, source reference, and
+row count.
+
+EPIT values were therefore used once to construct a balanced fixed split. This
+does not make the final split target-blind. The generated split artifacts are
+protected by a hash-based lock, while final manual approval of the split
+remains pending. The \(152\) final-test targets are excluded from rule
+calibration, Optuna selection, and checkpoint development.
+
+The composition grouping tests prediction for unseen alloys drawn from the
+same overall dataset distribution. It does not establish generalization to
+unseen publications or laboratories, because reference overlap is balanced
+but not completely prohibited.
+
+\subsection{Frozen Split Artifacts}
+\label{sec:epit-split-artifacts}
+
+The split stage produces four main artifacts:
+
+\begin{itemize}
+    \item \texttt{split\_manifest.json}, containing all row assignments,
+    composition groups, and fold identifiers;
+    \item \texttt{split\_lock.json}, containing hashes that freeze the manifest
+    and related artifacts;
+    \item \texttt{split\_assignments.csv}, providing row-level assignments for
+    manual inspection while redacting final-test EPIT values; and
+    \item \texttt{split\_report.html}, providing visual comparisons of the
+    development set, final-test set, and Optuna folds.
+\end{itemize}
+
+The source-data hash, manifest hash, lock hash, assignment-file hash, and
+report hash are verified before later stages use the split. This prevents a
+newly generated split from being silently combined with coefficients
+calibrated on an older split.
+
+\subsection{Target-Rule Families}
+\label{sec:epit-target-rule-families}
+
+A common target-rule interface was implemented for the following rule
+families:
+
+\begin{itemize}
+    \item \texttt{current\_pren}: the historical all-alloy PREN-like rule;
+    \item \texttt{current\_pren\_fe\_ni}: the same historical rule restricted
+    to the Fe and Ni-Cr-Mo evaluation scope;
+    \item \texttt{pren\_linear}: a linear Cr--Mo--W resistance rule;
+    \item \texttt{cr\_mow\_synergy}: a rule containing an additional
+    Cr--Mo/W synergy term and temperature--chloride interaction;
+    \item \texttt{threshold\_saturation}: a chromium threshold with a
+    saturating Mo/W contribution;
+    \item \texttt{improved\_environment}: separate logarithmic chloride,
+    high-temperature, temperature--chloride, and acidic-pH penalties;
+    \item \texttt{coupled\_breakdown}: a combined term in which environmental
+    aggressiveness is opposed by material resistance;
+    \item \texttt{fe\_ni\_cr\_threshold}: separate chromium thresholds for
+    Fe-dominant and Ni-dominant synthetic alloys; and
+    \item \texttt{method\_aware}: the Cr--Mo/W synergy rule with a
+    test-method-family correction.
+\end{itemize}
+
+The Al-specific and high-entropy-alloy-specific rules considered during
+development were discarded because their eligible development subsets were
+too small or produced unreliable direct results.
+
+Scan rate was also removed from the method-aware rule because scan rate is not
+part of the fixed \(21\)-feature model schema. The method-aware rule instead
+uses four broad method families: potentiodynamic, potentiostatic, scratch, and
+other. The real-data calibration learns shrunken method offsets from context
+targets only. Synthetic training samples centered method effects rather than
+copying the directions of the real-data offsets directly.
+
+The two current-PREN rules are comparison baselines. The other seven rules are
+candidate rules used by the synthetic target sampler. The candidate rules are
+evaluated on the same \(452\) eligible Fe and Ni-Cr-Mo development rows.
+
+\subsection{Fold-Local Rule Calibration}
+\label{sec:epit-rule-calibration}
+
+Target-rule calibration has two separate purposes: estimating rule quality and
+determining the coefficient values used during synthetic training.
+
+First, each candidate rule is evaluated using the five fixed development
+folds. For fold \(k\), its coefficients and preprocessing state are fitted
+using only the eligible context rows. The fitted rule is then applied to the
+eligible validation rows, which were not used to fit those coefficients.
+
+The calibration target is the standardized rank of the observed EPIT value.
+The fitted rule coefficients are constrained to be nonnegative and to sum to
+one. Regularization toward a predefined coefficient anchor is used to reduce
+unstable solutions.
+
+For rule \(r\), the direct validation score is
+
+\[
+\rho_{r,k}
+=
+\rho_{\mathrm{S}}
+\left(
+s_{r,k}(X_{\mathrm{val},k}),
+y_{\mathrm{val},k}
+\right),
+\]
+
+where \(s_{r,k}\) is the rule fitted on the context portion of fold \(k\).
+The rule-quality score is
+
+\[
+\overline{\rho}_r
+=
+\frac{1}{5}
+\sum_{k=1}^{5}
+\rho_{r,k}.
+\]
+
+This fold procedure is necessary because fitting and scoring a rule on the
+same rows would exaggerate its apparent quality.
+
+After direct evaluation, each rule is fitted once more using all eligible
+development rows. For the seven candidate rules, ``all development'' means
+all \(452\) eligible Fe and Ni-Cr-Mo development rows, not the complete set of
+\(608\) rows. These final-development coefficients are frozen and reused
+during both Optuna pretraining and eventual final long training.
+
+Thus, the two outputs have different meanings:
+
+\begin{itemize}
+    \item the five-fold mean Spearman score determines how often a rule is
+    sampled; and
+    \item the final-development fit supplies the actual coefficient values used
+    to generate synthetic targets.
+\end{itemize}
+
+\subsection{Direct Rule Results and Sampling Probabilities}
+\label{sec:epit-rule-probabilities}
+
+Table~\ref{tab:epit-rule-probabilities} reports the v2 development-fold scores.
+Only the seven candidate rules enter the synthetic sampler.
+
+\begin{table}[htbp]
+\centering
+\caption{Mean direct development-fold Spearman scores and normalized synthetic
+sampling probabilities for the seven candidate target rules.}
+\label{tab:epit-rule-probabilities}
+\begin{tabular}{lrr}
+\hline
+Rule & Mean Spearman & Sampling probability \\
+\hline
+Linear PREN
+    & \(0.5174\) & \(0.1342\) \\
+Cr--Mo/W synergy
+    & \(0.5583\) & \(0.1448\) \\
+Threshold and saturation
+    & \(0.5181\) & \(0.1343\) \\
+Improved environment
+    & \(0.5850\) & \(0.1517\) \\
+Coupled breakdown
+    & \(0.5525\) & \(0.1433\) \\
+Fe/Ni chromium threshold
+    & \(0.5252\) & \(0.1362\) \\
+Method-aware
+    & \(\mathbf{0.5999}\) & \(\mathbf{0.1556}\) \\
+\hline
+\end{tabular}
+\end{table}
+
+The historical all-alloy PREN baseline obtained a mean fold Spearman
+correlation of \(0.4598\). On the matched \(452\)-row Fe/Ni scope, the
+historical PREN baseline obtained \(0.5123\).
+
+For candidate rule \(r\), its sampling probability is
+
+\[
+p_r
+=
+\frac{\overline{\rho}_r}
+{\sum_{j=1}^{7}\overline{\rho}_j}.
+\]
+
+This deliberately simple normalization was selected instead of a softmax or
+winner-takes-all rule. Better-performing rules are sampled more often, but all
+seven physically plausible candidates remain present.
+
+\subsection{Integration with Synthetic Pretraining}
+\label{sec:epit-rule-synthetic-training}
+
+One rule family is sampled for each synthetic task:
+
+\[
+r
+\sim
+\operatorname{Categorical}(p_1,\ldots,p_7).
+\]
+
+All rows in that synthetic task use the same rule family. The task uses the
+frozen final-development coefficient set associated with the sampled rule.
+The resulting informed target is then combined with the generic synthetic
+target using the trial's target-mixture weight.
+
+The rule probabilities and coefficients are passed to training dynamically
+through the new target-rule configuration. They are not manually copied into
+the Optuna script. Recalibrating the v2 artifacts therefore updates the new
+pipeline automatically, provided all artifact hashes remain valid.
+
+The seven target formulas were implemented in both Torch and NumPy. The Torch
+implementation is used during synthetic training, whereas the NumPy
+implementation supports diagnostics and parity tests. Tests verify that both
+implementations produce numerically equivalent results.
+
+The historical single-PREN generator remains the default when the new
+target-rule scores and coefficient arguments are absent. This preserves the
+behavior required to reproduce older experiments.
+
+For the synthetic Fe/Ni chromium-threshold rule, the synthetic alloy class is
+currently approximated using whether Ni exceeds Fe. This is a practical
+synthetic-data routing rule rather than a complete metallurgical
+classification.
+
+\subsection{Optuna Trial Evaluation}
+\label{sec:epit-new-optuna}
+
+The new Optuna runner reuses the previous
+\texttt{pitting\_magpie\_full\_v1} workflow rather than replacing the
+underlying training implementation. The following settings were retained:
+
+\begin{itemize}
+    \item TPE sampling with \(10\) startup trials;
+    \item \(50\) total trials by default;
+    \item \(1{,}000\) proxy-training steps per trial;
+    \item a \(10{,}000\)-step learning-rate schedule;
+    \item optional Magpie descriptor augmentation;
+    \item the informed-prior ratio, MLP probability, feature-block strength,
+    target-mixture weight, and material-generator parameters;
+    \item eight-estimator trial evaluation; and
+    \item mean development-fold Spearman correlation as the Optuna objective.
+\end{itemize}
+
+The old material, environment, and material--chloride coefficients were
+removed from the Optuna search space. These coefficients are now determined
+during Stage~2 calibration instead of being independently selected by every
+Optuna trial.
+
+For one Optuna trial, TabICL is pretrained once on synthetic tasks generated
+from the fixed rule distribution. The resulting checkpoint is then evaluated
+on each of the five saved development folds. In each fold, the model receives
+the context-row features and EPIT targets and predicts the validation rows.
+The five validation Spearman correlations are averaged to obtain the trial
+objective.
+
+The target rules are not refitted during these Optuna fold evaluations. Every
+trial receives the same seven sampling probabilities and the same
+final-development coefficient sets. Optuna therefore compares the remaining
+training hyperparameters under a fixed informed-target distribution.
+
+The \(152\) outer final-test rows are removed before Optuna fold evaluation.
+The common corrosion evaluator was extended to load and verify the locked v2
+manifest while retaining compatibility with historical v1 manifests.
+The fold evaluator and Slurm launcher now default to the v2 split and v2
+target-rule artifacts.
+
+A single-GPU Slurm launcher was added. Each submitted worker uses one GPU and
+one training process. Workers submitted on different GPU nodes can contribute
+to the same Optuna study because they use the same journal file on shared
+storage. The study records trial identifiers, commands, parameters, metrics,
+rule probabilities, coefficients, and artifact hashes. This makes interrupted
+studies recoverable and records the complete provenance of every trial.
+
+Feature shuffling is disabled in the new Optuna evaluation command because the
+EPIT feature order is fixed. Power-normalized inference is also explicitly
+disabled throughout the new EPIT workflow: the fold evaluator, checkpoint
+selection, and final evaluation all require
+\texttt{tabicl\_norm\_methods=[``none'']}. The generic corrosion evaluator
+retains its previous default behavior when this EPIT-specific option is not
+provided, so historical non-EPIT evaluation behavior is unchanged.
+
+\subsection{Artifact and Leakage Safeguards}
+\label{sec:epit-pipeline-safeguards}
+
+The implemented safeguards verify that
+
+\begin{itemize}
+    \item the source dataset hash matches the dataset used to create the split;
+    \item the split manifest and lock have not changed;
+    \item no directly similar composition pair crosses an outer or inner
+    boundary;
+    \item development and final-test row assignments do not overlap;
+    \item the five development folds have the expected sizes;
+    \item final-test targets are redacted from inspection files;
+    \item every calibration summary and rule artifact refers to the exact same
+    split manifest and lock;
+    \item every individual rule artifact matches its saved hash;
+    \item only candidate rules enter the synthetic sampler;
+    \item rule probabilities are finite, nonnegative, and normalized;
+    \item all required calibrated coefficients are present and sum to one;
+    \item the Torch and NumPy formulas agree;
+    \item the Optuna evaluator loads only the \(608\) development rows;
+    \item every EPIT model evaluation explicitly records
+    \texttt{tabicl\_norm\_methods=[``none'']} and rejects incompatible saved
+    provenance;
+    \item final training cannot select a trial while the shared Optuna study
+    still contains running or waiting trials;
+    \item final checkpoint selection uses only the five development folds;
+    \item the final-model lock binds the selected checkpoint and its hash to
+    the frozen training and inference configuration; and
+    \item final evaluation verifies the locked model and split, evaluates only
+    the selected model on exactly \(608\) context and \(152\) final-test rows,
+    and refuses to replace an existing successful final-evaluation manifest.
+\end{itemize}
+
+After implementation of all five stages, the full local test suite completed
+with \(227\) passing and \(2\) skipped tests. The real evaluator subprocess
+also successfully loaded the locked v2 manifest as a \(608\)-row development
+task. These checks validate the code paths and data boundaries; they do not
+replace completion of the GPU Optuna study, the final long training run, or
+the one untouched-test evaluation.
+
+\subsection{Interpretation of the Development-Fold Scores}
+\label{sec:epit-pipeline-score-interpretation}
+
+The direct rule evaluation is fold-local: each fold's direct rule prediction
+is produced using coefficients fitted without that fold's validation targets.
+
+The subsequent Optuna evaluation is intentionally not fully fold-pure. The
+sampling probabilities use the direct outcomes from all five development
+folds, and the synthetic coefficients are fitted on all eligible development
+targets before Optuna begins. Those frozen values are then reused while every
+Optuna fold is evaluated.
+
+This design keeps the comparison identical across trials and protects the
+outer \(152\) rows, but it means the Optuna fold scores are model-selection
+scores rather than unbiased estimates of final generalization. They must not
+be reported as final model performance.
+
+The sole independent internal evaluation will be the implemented but not yet
+executed outer evaluation on the \(152\) frozen final-test rows. A stronger
+confirmatory claim would still require a genuinely external dataset or newly
+collected measurements, because the complete \(760\)-row corpus influenced the
+historical development process before this revised split was created.
+
+\subsection{Final Training and Development-Only Checkpoint Selection}
+\label{sec:epit-final-training}
+
+Stage~4 is implemented by \texttt{train\_final.py} and its single-GPU Slurm
+launcher. Before training begins, the script loads the shared Optuna study and
+refuses to select a winner while any trial is running or waiting. It requires
+at least one completed trial with a finite objective and automatically selects
+the best completed trial. The selected trial record must contain a valid
+development-only evaluation on all five frozen folds, use the same split and
+dataset hashes, preserve the fixed feature order, and explicitly disable the
+power-transformed inference view.
+
+The selected configuration is then trained once. The default final run uses
+one GPU, continues to \(10{,}000\) steps, and saves permanent checkpoints every
+\(500\) steps. It uses the same Stage~2 rule-sampling probabilities and frozen
+all-development coefficient sets as the Optuna trials. Each candidate
+checkpoint is evaluated on the same five development folds, using eight
+estimators by default. The checkpoint with the highest mean development-fold
+Spearman correlation is selected; MAE, RMSE, and \(R^2\) are retained as
+secondary diagnostics but do not determine the selection.
+
+Stage~4 writes a final-model manifest containing the selected Optuna trial,
+training command and hyperparameters, target-rule artifacts, split hashes,
+all checkpoint-evaluation records, the selected checkpoint hash, and the exact
+Stage~5 inference configuration. A separate final-model lock binds the
+manifest to the selected checkpoint. Existing final manifests and locks are
+not overwritten. No final-test row or target is used for training or
+checkpoint selection.
+
+\subsection{Locked One-Shot Final Evaluation}
+\label{sec:epit-final-evaluation}
+
+Stage~5 is implemented by \texttt{evaluate\_final.py} and its single-GPU Slurm
+launcher. It loads the frozen final-model manifest and lock, verifies the
+selected checkpoint hash and the frozen split hashes, and rejects changes to
+the evaluation configuration. The fixed inference configuration uses eight
+estimators, no feature shuffling, only the untransformed numerical view,
+median regression output, no regression-uncertainty output, and all available
+rows. It also verifies the expected \(21\)-feature schema, or \(31\) features
+when the selected Optuna configuration enables the ten Magpie-style
+descriptors.
+
+The frozen model receives all \(608\) development rows and their EPIT targets
+as context, then predicts the \(152\) final-test rows. Only this selected model
+is evaluated: no pretrained comparison model, new baseline, hyperparameter
+tuning, or checkpoint selection is introduced at this stage. The recorded
+final metrics are Spearman correlation, MAE, RMSE, \(R^2\), and Pearson
+correlation. A completion manifest records the exact model, split,
+configuration, and result and prevents a completed final evaluation from
+being run again or overwritten.
+
+\subsection{Remaining Execution Steps}
+\label{sec:epit-pipeline-remaining}
+
+The implementation is complete, but the following operational steps and
+results remain:
+
+\begin{enumerate}
+    \item manually inspect and approve the generated split;
+    \item allow all workers in the shared Optuna study to finish;
+    \item submit \texttt{train\_final.sbatch}, which automatically selects the
+    best completed trial, performs the long run, and freezes the best
+    development-selected checkpoint;
+    \item inspect the frozen final-model manifest and lock without changing
+    their contents; and
+    \item submit \texttt{evaluate\_final.sbatch} once to produce the untouched
+    final-test metrics.
+\end{enumerate}
+
+The corrosion formulas are not applied directly during final inference. Their
+role is to shape the synthetic pretraining distribution. During final
+evaluation, the trained TabICL model itself predicts the \(152\) EPIT values.
+
 \end{document}

@@ -343,6 +343,17 @@ def parse_args() -> argparse.Namespace:
         help="Feature shuffle method passed to TabICL estimators. Use none for fixed-schema checkpoints.",
     )
     parser.add_argument(
+        "--tabicl-norm-methods",
+        nargs="+",
+        choices=("none", "power", "quantile", "quantile_rtdl", "robust"),
+        default=None,
+        help=(
+            "Feature normalization methods passed to TabICL estimators. If omitted, "
+            "the estimator's legacy default (none plus power) is preserved. Pass "
+            "'--tabicl-norm-methods none' to explicitly disable power transformation."
+        ),
+    )
+    parser.add_argument(
         "--no-model-cache",
         dest="model_cache",
         action="store_false",
@@ -365,7 +376,10 @@ def parse_args() -> argparse.Namespace:
         "--epit-split-manifest",
         type=Path,
         default=None,
-        help="Fixed EPIT pipeline split manifest. Requires --epit-validation-fold.",
+        help=(
+            "Fixed EPIT pipeline split manifest. Requires exactly one of "
+            "--epit-validation-fold or --epit-final-test."
+        ),
     )
     parser.add_argument(
         "--epit-validation-fold",
@@ -373,6 +387,14 @@ def parse_args() -> argparse.Namespace:
         choices=range(1, 6),
         default=None,
         help="Saved development fold used as validation; all other development rows are context.",
+    )
+    parser.add_argument(
+        "--epit-final-test",
+        action="store_true",
+        help=(
+            "Use all saved EPIT development rows as context and the untouched "
+            "outer final-test rows as test. Requires --epit-split-manifest."
+        ),
     )
     parser.add_argument("--target-mode", choices=("primary", "all"), default="primary")
     parser.add_argument(
@@ -555,9 +577,18 @@ def parse_args() -> argparse.Namespace:
 
 
 def validate_args(args: argparse.Namespace) -> None:
-    if (args.epit_split_manifest is None) != (args.epit_validation_fold is None):
+    epit_mode_count = int(args.epit_validation_fold is not None) + int(
+        args.epit_final_test
+    )
+    if args.epit_split_manifest is None and epit_mode_count:
         raise ValueError(
-            "--epit-split-manifest and --epit-validation-fold must be used together."
+            "--epit-validation-fold and --epit-final-test require "
+            "--epit-split-manifest."
+        )
+    if args.epit_split_manifest is not None and epit_mode_count != 1:
+        raise ValueError(
+            "--epit-split-manifest requires exactly one of "
+            "--epit-validation-fold or --epit-final-test."
         )
     if args.epit_split_manifest is not None and args.split_seeds is not None:
         raise ValueError(
@@ -1453,13 +1484,12 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def apply_epit_pipeline_fold(
+def _load_epit_pipeline_indices(
     tasks: list[EvalTask],
     *,
     manifest_path: Path,
-    validation_fold: int,
-) -> None:
-    """Restrict the EPIT task to development rows and apply one saved fold."""
+) -> tuple[EvalTask, np.ndarray, np.ndarray, dict[str, Any]]:
+    """Validate a frozen EPIT split and return its task and outer indices."""
     manifest_path = manifest_path.expanduser().resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest_schema = manifest.get("schema_version")
@@ -1521,6 +1551,32 @@ def apply_epit_pipeline_fold(
         ),
         dtype=int,
     )
+    split_design = manifest.get("split_design", {})
+    if len(development_global) != int(split_design.get("development_rows", -1)):
+        raise RuntimeError("EPIT development row count is inconsistent.")
+    if len(final_global) != int(split_design.get("final_test_rows", -1)):
+        raise RuntimeError("EPIT final-test row count is inconsistent.")
+    if np.intersect1d(development_global, final_global).size:
+        raise RuntimeError("EPIT development and final-test rows overlap.")
+
+    return task, development_global, final_global, manifest
+
+
+def apply_epit_pipeline_fold(
+    tasks: list[EvalTask],
+    *,
+    manifest_path: Path,
+    validation_fold: int,
+) -> None:
+    """Restrict the EPIT task to development rows and apply one saved fold."""
+    task, development_global, _, manifest = _load_epit_pipeline_indices(
+        tasks,
+        manifest_path=manifest_path,
+    )
+    by_index = {
+        int(record["task_row_index"]): record
+        for record in manifest.get("rows", [])
+    }
     validation_global = np.asarray(
         [
             index
@@ -1535,15 +1591,8 @@ def apply_epit_pipeline_fold(
         validation_global,
         assume_unique=True,
     )
-    split_design = manifest.get("split_design", {})
-    if len(development_global) != int(split_design.get("development_rows", -1)):
-        raise RuntimeError("EPIT development row count is inconsistent.")
-    if len(final_global) != int(split_design.get("final_test_rows", -1)):
-        raise RuntimeError("EPIT final-test row count is inconsistent.")
     if len(validation_global) == 0 or len(context_global) == 0:
         raise RuntimeError("EPIT saved validation fold is empty.")
-    if np.intersect1d(development_global, final_global).size:
-        raise RuntimeError("EPIT development and final-test rows overlap.")
 
     local_index = {
         int(global_index): local
@@ -1566,6 +1615,24 @@ def apply_epit_pipeline_fold(
         train_index=context_local,
         test_index=validation_local,
         split_strategy=f"epit_pipeline_development_fold_{validation_fold}",
+    )
+    task.split_strategy = task.fixed_split.split_strategy
+
+
+def apply_epit_pipeline_final_test(
+    tasks: list[EvalTask],
+    *,
+    manifest_path: Path,
+) -> None:
+    """Use all development rows as context and untouched rows as final test."""
+    task, development_global, final_global, _ = _load_epit_pipeline_indices(
+        tasks,
+        manifest_path=manifest_path,
+    )
+    task.fixed_split = EvalSplit(
+        train_index=development_global,
+        test_index=final_global,
+        split_strategy="epit_pipeline_final_test",
     )
     task.split_strategy = task.fixed_split.split_strategy
 
@@ -1638,11 +1705,13 @@ def make_tabicl_classifier(
     random_state: int,
     allow_auto_download: bool,
     feat_shuffle_method: str = "latin",
+    norm_methods: list[str] | None = None,
 ) -> TabICLClassifier:
     kwargs: dict[str, Any] = {
         "device": device,
         "n_estimators": n_estimators,
         "feat_shuffle_method": feat_shuffle_method,
+        "norm_methods": norm_methods,
         "random_state": random_state,
         "allow_auto_download": allow_auto_download,
     }
@@ -1662,11 +1731,13 @@ def make_tabicl_regressor(
     random_state: int,
     allow_auto_download: bool,
     feat_shuffle_method: str = "latin",
+    norm_methods: list[str] | None = None,
 ) -> TabICLRegressor:
     kwargs: dict[str, Any] = {
         "device": device,
         "n_estimators": n_estimators,
         "feat_shuffle_method": feat_shuffle_method,
+        "norm_methods": norm_methods,
         "random_state": random_state,
         "allow_auto_download": allow_auto_download,
     }
@@ -3251,11 +3322,17 @@ def main() -> None:
     )
     tasks = make_tasks(args)
     if args.epit_split_manifest is not None:
-        apply_epit_pipeline_fold(
-            tasks,
-            manifest_path=args.epit_split_manifest,
-            validation_fold=int(args.epit_validation_fold),
-        )
+        if args.epit_final_test:
+            apply_epit_pipeline_final_test(
+                tasks,
+                manifest_path=args.epit_split_manifest,
+            )
+        else:
+            apply_epit_pipeline_fold(
+                tasks,
+                manifest_path=args.epit_split_manifest,
+                validation_fold=int(args.epit_validation_fold),
+            )
     if args.list_tasks:
         print_task_list(tasks)
         return
@@ -3321,6 +3398,7 @@ def main() -> None:
                     random_state=args.random_state,
                     allow_auto_download=False,
                     feat_shuffle_method=args.tabicl_feat_shuffle_method,
+                    norm_methods=args.tabicl_norm_methods,
                 )
                 jobs.append(
                     {
@@ -3334,6 +3412,7 @@ def main() -> None:
                             args.device,
                             args.n_estimators,
                             args.tabicl_feat_shuffle_method,
+                            tuple(args.tabicl_norm_methods or ()),
                         ),
                     }
                 )
@@ -3346,6 +3425,7 @@ def main() -> None:
                     random_state=args.random_state,
                     allow_auto_download=False,
                     feat_shuffle_method=args.tabicl_feat_shuffle_method,
+                    norm_methods=args.tabicl_norm_methods,
                 )
                 jobs.append(
                     {
@@ -3359,6 +3439,7 @@ def main() -> None:
                             args.device,
                             args.n_estimators,
                             args.tabicl_feat_shuffle_method,
+                            tuple(args.tabicl_norm_methods or ()),
                         ),
                     }
                 )
@@ -3373,6 +3454,7 @@ def main() -> None:
                     random_state=args.random_state,
                     allow_auto_download=args.baseline_auto_download,
                     feat_shuffle_method=args.tabicl_feat_shuffle_method,
+                    norm_methods=args.tabicl_norm_methods,
                 )
                 jobs.append(
                     {
@@ -3386,6 +3468,7 @@ def main() -> None:
                             args.device,
                             args.n_estimators,
                             args.tabicl_feat_shuffle_method,
+                            tuple(args.tabicl_norm_methods or ()),
                         ),
                         "reuse_static_baseline": reuse_static_baselines,
                     }
@@ -3399,6 +3482,7 @@ def main() -> None:
                     random_state=args.random_state,
                     allow_auto_download=args.baseline_auto_download,
                     feat_shuffle_method=args.tabicl_feat_shuffle_method,
+                    norm_methods=args.tabicl_norm_methods,
                 )
                 jobs.append(
                     {
@@ -3412,6 +3496,7 @@ def main() -> None:
                             args.device,
                             args.n_estimators,
                             args.tabicl_feat_shuffle_method,
+                            tuple(args.tabicl_norm_methods or ()),
                         ),
                         "reuse_static_baseline": reuse_static_baselines,
                     }

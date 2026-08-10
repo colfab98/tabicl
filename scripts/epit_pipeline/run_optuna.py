@@ -327,6 +327,52 @@ def sample_params(trial: SuggestTrial) -> TrialParams:
     )
 
 
+def trial_params_from_mapping(values: dict[str, Any]) -> TrialParams:
+    """Reconstruct the conditional search configuration from saved values."""
+    required = {
+        "use_magpie",
+        "informed_prior_ratio",
+        "mlp_prob",
+        "informed_feature_block_strength",
+        "informed_target_mix_weight",
+        "pitting_material_dirichlet_prob",
+    }
+    missing = sorted(required.difference(values))
+    if missing:
+        raise RuntimeError(f"Optuna trial is missing parameters: {missing}")
+    dirichlet_prob = float(values["pitting_material_dirichlet_prob"])
+    if dirichlet_prob > 0.0:
+        for name in (
+            "pitting_material_dirichlet_concentration",
+            "pitting_material_dirichlet_active_prob",
+        ):
+            if name not in values:
+                raise RuntimeError(
+                    f"Enabled Dirichlet Optuna trial is missing {name!r}."
+                )
+        concentration = float(
+            values["pitting_material_dirichlet_concentration"]
+        )
+        active_prob = float(values["pitting_material_dirichlet_active_prob"])
+    else:
+        concentration = None
+        active_prob = None
+    return TrialParams(
+        use_magpie=bool(values["use_magpie"]),
+        informed_prior_ratio=float(values["informed_prior_ratio"]),
+        mlp_prob=float(values["mlp_prob"]),
+        informed_feature_block_strength=float(
+            values["informed_feature_block_strength"]
+        ),
+        informed_target_mix_weight=float(
+            values["informed_target_mix_weight"]
+        ),
+        pitting_material_dirichlet_prob=dirichlet_prob,
+        pitting_material_dirichlet_concentration=concentration,
+        pitting_material_dirichlet_active_prob=active_prob,
+    )
+
+
 def _original_params(params: TrialParams) -> original.TrialParams:
     return original.TrialParams(
         **asdict(params),
@@ -393,6 +439,8 @@ def eval_command(
         str(args.eval_n_estimators),
         "--tabicl-feat-shuffle-method",
         "none",
+        "--tabicl-norm-methods",
+        "none",
         "--output-dir",
         str(output_dir),
     ]
@@ -408,6 +456,19 @@ def study_root(root: Path, study_name: str) -> Path:
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+
+
+def verify_no_power_fold_evaluation(eval_dir: Path) -> dict[str, Any]:
+    summary_path = eval_dir / "summary.json"
+    if not summary_path.is_file():
+        raise FileNotFoundError(f"Fold-evaluation provenance not found: {summary_path}")
+    payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    norm_methods = payload.get("settings", {}).get("tabicl_norm_methods")
+    if norm_methods != ["none"]:
+        raise RuntimeError(
+            "Optuna fold evaluation did not explicitly disable the power transform."
+        )
+    return payload
 
 
 def run_trial(
@@ -474,6 +535,8 @@ def run_trial(
         "split_lock_sha256": rules.split_lock_sha256,
         "development_validation_folds": list(FIXED_VALIDATION_FOLDS),
         "final_test_rows_used": False,
+        "evaluation_norm_methods": ["none"],
+        "evaluation_feature_shuffle_method": "none",
         "target_rule_summary": rules.summary_path,
         "target_rule_summary_sha256": rules.summary_sha256,
         "target_rule_scores": rules.scores,
@@ -529,6 +592,7 @@ def run_trial(
         eval_dir / "summary.csv",
         model_label,
     )
+    verify_no_power_fold_evaluation(eval_dir)
     result = {
         **metadata,
         "status": "completed",
@@ -580,6 +644,7 @@ def run_optuna(args: argparse.Namespace) -> None:
             "rows_csv",
         ):
             trial.set_user_attr(key, result[key])
+        trial.set_user_attr("tabicl_norm_methods", ["none"])
         return float(result["mean_test_spearman"])
 
     study.optimize(objective, n_trials=args.n_trials)

@@ -30,13 +30,15 @@ Existing scripts remain unchanged so old results stay reproducible.
    - Load candidate rule scores and all-development coefficients from Stage 2.
    - Sample rule families with `score / sum(scores)`.
    - Evaluate every trial on the same five saved development folds.
+   - Explicitly use only `norm_methods=["none"]`; the power transform is off.
    - Never use the 152 final-test rows.
    - Save every trial result and the complete winning configuration.
 
 4. `train_final.py`
    - Train the winning configuration once.
-   - Use development data only for checkpoint selection.
-   - Freeze the selected checkpoint and full evaluation configuration.
+   - Refuse to start while the shared Optuna study still has active trials.
+   - Select permanent checkpoints on the same five development folds only.
+   - Freeze the selected checkpoint and Stage 5 evaluation configuration.
 
 5. `evaluate_final.py`
    - Use all 608 development rows as context.
@@ -95,6 +97,18 @@ Run Stage 3 on the GPU node with:
 
 `sbatch scripts/epit_pipeline/run_optuna.sbatch`
 
+After every Stage 3 worker has finished, run Stage 4 with:
+
+`sbatch scripts/epit_pipeline/train_final.sbatch`
+
+The default Stage 4 run trains to 10,000 steps, saves permanent checkpoints
+every 500 steps, evaluates them on the five development folds, and freezes the
+best checkpoint by mean Spearman.
+
+Only after inspecting the frozen Stage 4 manifest, run the one-shot Stage 5:
+
+`sbatch scripts/epit_pipeline/evaluate_final.sbatch`
+
 ## Safeguards
 
 - No composition group crosses an outer or Optuna-fold boundary.
@@ -104,12 +118,8 @@ Run Stage 3 on the GPU node with:
 - Every later stage must load the saved manifest instead of making a new split.
 - Dataset hashes must match before saved indices are used.
 - Final evaluation must require a frozen configuration.
-- Power transformation will not be used.
-
-## Decisions still open
-
-- Final baselines and reported metrics.
-- Final TabICL inference settings.
+- EPIT inference explicitly passes `--tabicl-norm-methods none`; saved Optuna,
+  checkpoint-selection, and final-evaluation provenance is rejected otherwise.
 
 ## Implementation tasks
 
@@ -125,7 +135,8 @@ Run Stage 3 on the GPU node with:
 - [x] Add development-only direct rule evaluation and a visual report.
 - [x] Reuse the latest Optuna workflow without changing the original script.
 - [x] Implement fixed-fold Optuna evaluation and trial records.
-- [x] Add the two-GPU Slurm launcher.
-- [ ] Implement final training and checkpoint selection.
-- [ ] Implement locked final evaluation.
-- [ ] Add later-stage leakage and artifact-consistency tests.
+- [x] Add the shared-study single-GPU Slurm launcher.
+- [x] Explicitly disable power transformation in every EPIT evaluation stage.
+- [x] Implement final training and development-only checkpoint selection.
+- [x] Implement locked one-shot final evaluation.
+- [x] Add later-stage leakage and artifact-consistency tests.

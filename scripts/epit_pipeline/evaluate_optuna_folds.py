@@ -67,6 +67,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="none",
     )
     parser.add_argument(
+        "--tabicl-norm-methods",
+        nargs="+",
+        choices=("none", "power", "quantile", "quantile_rtdl", "robust"),
+        default=["none"],
+        help="Fixed EPIT inference permits only 'none'; power is disabled.",
+    )
+    parser.add_argument(
         "--regression-output",
         choices=("mean", "median"),
         default="median",
@@ -90,6 +97,10 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--validation-folds values must be between 1 and 5.")
     if args.n_estimators <= 0:
         raise ValueError("--n-estimators must be positive.")
+    if list(args.tabicl_norm_methods) != ["none"]:
+        raise ValueError(
+            "EPIT pipeline evaluation requires --tabicl-norm-methods none."
+        )
 
 
 def slugify(text: str) -> str:
@@ -131,6 +142,8 @@ def fold_command(
         str(args.n_estimators),
         "--tabicl-feat-shuffle-method",
         args.tabicl_feat_shuffle_method,
+        "--tabicl-norm-methods",
+        "none",
         "--regression-output",
         args.regression_output,
         "--no-regression-uncertainty",
@@ -269,6 +282,7 @@ def main() -> None:
                     "device": args.device,
                     "n_estimators": args.n_estimators,
                     "tabicl_feat_shuffle_method": args.tabicl_feat_shuffle_method,
+                    "tabicl_norm_methods": list(args.tabicl_norm_methods),
                     "regression_output": args.regression_output,
                     "pitting_magpie_features": bool(
                         args.pitting_magpie_features

@@ -1,14 +1,23 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 import torch
 
 from scripts import eval_corrosion_datasets as corrosion_eval
+from scripts.epit_pipeline import evaluate_final
 from scripts.epit_pipeline import evaluate_optuna_folds
 from scripts.epit_pipeline import run_optuna as search
+from scripts.epit_pipeline import train_final
+from scripts.epit_pipeline.artifact_hashes import (
+    FINAL_MODEL_LOCK_NAME,
+    build_final_model_lock,
+    load_frozen_final_model,
+)
 from tabicl.prior.dataset import SCMPrior
 from tabicl.prior.prior_config import DEFAULT_FIXED_HP
 
@@ -154,6 +163,7 @@ def test_eval_command_uses_saved_folds_not_random_splits(tmp_path: Path) -> None
     ]
     assert "--split-seeds" not in command
     assert "--test-size" not in command
+    assert _value_after(command, "--tabicl-norm-methods") == "none"
 
 
 def test_saved_folds_remove_final_test_rows() -> None:
@@ -213,6 +223,152 @@ def test_fold_evaluator_command_passes_fixed_manifest(tmp_path: Path) -> None:
         search.DEFAULT_SPLIT_MANIFEST
     )
     assert "--no-compare-pretrained-tabicl" in command
+    assert _value_after(command, "--tabicl-norm-methods") == "none"
+
+
+def test_explicit_none_normalization_reaches_tabicl_estimator(tmp_path: Path) -> None:
+    estimator = corrosion_eval.make_tabicl_regressor(
+        model_path=str(tmp_path / "not_loaded_until_fit.ckpt"),
+        checkpoint_version="unused.ckpt",
+        device="cpu",
+        n_estimators=1,
+        random_state=42,
+        allow_auto_download=False,
+        feat_shuffle_method="none",
+        norm_methods=["none"],
+    )
+
+    assert estimator.norm_methods == ["none"]
+
+
+def test_legacy_evaluator_normalization_default_is_unchanged(tmp_path: Path) -> None:
+    estimator = corrosion_eval.make_tabicl_regressor(
+        model_path=str(tmp_path / "not_loaded_until_fit.ckpt"),
+        checkpoint_version="unused.ckpt",
+        device="cpu",
+        n_estimators=1,
+        random_state=42,
+        allow_auto_download=False,
+        feat_shuffle_method="latin",
+    )
+
+    assert estimator.norm_methods is None
+
+
+def test_final_split_uses_608_context_and_152_untouched_rows() -> None:
+    task = _fake_epit_task()
+    corrosion_eval.apply_epit_pipeline_final_test(
+        [task],
+        manifest_path=search.DEFAULT_SPLIT_MANIFEST,
+    )
+
+    split = task.fixed_split
+    assert split is not None
+    assert len(task.X) == 760
+    assert len(split.train_index) == 608
+    assert len(split.test_index) == 152
+    assert not set(split.train_index) & set(split.test_index)
+    assert split.split_strategy == "epit_pipeline_final_test"
+
+
+def test_trial_params_can_be_reconstructed_from_optuna_values() -> None:
+    values = {
+        "use_magpie": True,
+        "informed_prior_ratio": 0.75,
+        "mlp_prob": 0.5,
+        "informed_feature_block_strength": 0.4,
+        "informed_target_mix_weight": 0.6,
+        "pitting_material_dirichlet_prob": 1.0,
+        "pitting_material_dirichlet_concentration": 0.5,
+        "pitting_material_dirichlet_active_prob": 0.7,
+    }
+
+    params = search.trial_params_from_mapping(values)
+
+    assert params.use_magpie is True
+    assert params.pitting_material_dirichlet_concentration == 0.5
+    assert params.pitting_material_dirichlet_active_prob == 0.7
+
+
+def _write_frozen_final_model(tmp_path: Path):
+    rules = search.load_target_rule_config(
+        summary_path=search.DEFAULT_TARGET_RULE_SUMMARY,
+        split_manifest_path=search.DEFAULT_SPLIT_MANIFEST,
+    )
+    checkpoint = tmp_path / "step-10000.ckpt"
+    checkpoint.write_bytes(b"test checkpoint")
+    manifest_path = tmp_path / train_final.FINAL_MODEL_MANIFEST_NAME
+    manifest = {
+        "schema_version": "epit_final_model_manifest_v1",
+        "final_test_rows_used": False,
+        "split": {
+            "manifest": str(search.DEFAULT_SPLIT_MANIFEST.resolve()),
+            "manifest_sha256": rules.split_manifest_sha256,
+            "lock": rules.split_lock_path,
+            "lock_sha256": rules.split_lock_sha256,
+            "source_sha256": rules.source_sha256,
+            "development_rows": 608,
+            "final_test_rows": 152,
+        },
+        "target_rules": {
+            "summary": rules.summary_path,
+            "summary_sha256": rules.summary_sha256,
+            "artifact_sha256s": rules.artifact_sha256s,
+        },
+        "selected_checkpoint": {
+            "path": str(checkpoint),
+            "sha256": train_final.sha256_file(checkpoint),
+            "step": 10000,
+        },
+        "evaluation_configuration": {
+            "task_id": evaluate_final.PITTING_TASK_ID,
+            "device": "cpu",
+            "random_state": 42,
+            "n_estimators": 8,
+            "tabicl_feat_shuffle_method": "none",
+            "tabicl_norm_methods": ["none"],
+            "regression_output": "median",
+            "regression_uncertainty": False,
+            "pitting_magpie_features": True,
+            "expected_n_features": 31,
+            "max_samples_per_task": 0,
+        },
+    }
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    lock = build_final_model_lock(
+        manifest_path=manifest_path,
+        immutable_artifacts={"selected_checkpoint": checkpoint},
+    )
+    (tmp_path / FINAL_MODEL_LOCK_NAME).write_text(
+        json.dumps(lock),
+        encoding="utf-8",
+    )
+    return load_frozen_final_model(manifest_path), checkpoint
+
+
+def test_frozen_final_command_cannot_change_split_or_power(tmp_path: Path) -> None:
+    frozen, _ = _write_frozen_final_model(tmp_path)
+
+    command = evaluate_final.final_evaluation_command(
+        frozen,
+        output_dir=tmp_path / "evaluation",
+    )
+
+    assert "--epit-final-test" in command
+    assert "--epit-validation-fold" not in command
+    assert _value_after(command, "--tabicl-norm-methods") == "none"
+    assert _value_after(command, "--tabicl-feat-shuffle-method") == "none"
+    assert "--no-compare-pretrained-tabicl" in command
+
+
+def test_final_model_lock_detects_checkpoint_changes(tmp_path: Path) -> None:
+    frozen, checkpoint = _write_frozen_final_model(tmp_path)
+    assert frozen.checkpoint_path == checkpoint.resolve()
+
+    checkpoint.write_bytes(b"changed")
+
+    with pytest.raises(RuntimeError, match="artifact changed"):
+        load_frozen_final_model(frozen.manifest_path)
 
 
 def test_prior_uses_pipeline_coefficient_override() -> None:

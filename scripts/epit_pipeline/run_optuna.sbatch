@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=epit_optuna_v1
-#SBATCH --gpus=2
+#SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
 #SBATCH --output=/home/%u/tmp/%x.%j.out
@@ -16,7 +16,7 @@ N_TRIALS="${N_TRIALS:-50}"
 N_STARTUP_TRIALS="${N_STARTUP_TRIALS:-10}"
 MAX_STEPS="${MAX_STEPS:-1000}"
 SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-10000}"
-NPROC_PER_NODE="${NPROC_PER_NODE:-2}"
+NPROC_PER_NODE="${NPROC_PER_NODE:-1}"
 RANDOM_SEED="${RANDOM_SEED:-$((42 + SLURM_JOB_ID))}"
 SPLIT_MANIFEST="${SPLIT_MANIFEST:-corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json}"
 TARGET_RULE_SUMMARY="${TARGET_RULE_SUMMARY:-corrosion_datasets/analysis/epit_pipeline/target_rules_v2/calibration_summary.json}"
