@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import random
@@ -40,6 +41,9 @@ DEFAULT_TARGET_RULE_SUMMARY = (
 )
 DEFAULT_OPTUNA_ROOT = PIPELINE_ROOT / "optuna_v2"
 FIXED_VALIDATION_FOLDS = (1, 2, 3, 4, 5)
+PIPELINE_FINGERPRINT_SCHEMA = "epit_pipeline_stage3_fingerprint_v1"
+STUDY_FINGERPRINT_ATTR = "epit_pipeline_fingerprint"
+STUDY_FINGERPRINT_SHA256_ATTR = "epit_pipeline_fingerprint_sha256"
 
 
 @dataclass(frozen=True)
@@ -102,6 +106,136 @@ class RandomTrial:
         value = float(self.rng.uniform(low, high))
         self.params[name] = value
         return value
+
+
+def canonical_json_sha256(payload: dict[str, Any]) -> str:
+    encoded = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def pipeline_artifact_identity(rules: TargetRuleConfig) -> dict[str, Any]:
+    """Return the frozen data/rule identity shared by Stages 3 and 4."""
+    return {
+        "split_manifest_sha256": rules.split_manifest_sha256,
+        "split_lock_sha256": rules.split_lock_sha256,
+        "source_sha256": rules.source_sha256,
+        "target_rule_summary_sha256": rules.summary_sha256,
+        "target_rule_artifact_sha256s": rules.artifact_sha256s,
+        "target_rule_scores": rules.scores,
+        "target_rule_probabilities": rules.probabilities,
+        "target_rule_coefficients": rules.coefficients,
+    }
+
+
+def build_pipeline_fingerprint(
+    args: argparse.Namespace,
+    rules: TargetRuleConfig,
+) -> dict[str, Any]:
+    """Bind one Optuna study to one immutable EPIT Stage 3 definition."""
+    return {
+        "schema_version": PIPELINE_FINGERPRINT_SCHEMA,
+        "artifacts": pipeline_artifact_identity(rules),
+        "search_space": {
+            "use_magpie": [False, True],
+            "informed_prior_ratio": list(original.INFORMED_PRIOR_RATIO_GRID),
+            "mlp_prob": list(original.MLP_PROB_GRID),
+            "informed_feature_block_strength": [0.0, 0.95],
+            "informed_target_mix_weight": [0.0, 1.0],
+            "pitting_material_dirichlet_prob": list(
+                original.DIRICHLET_PROB_GRID
+            ),
+            "pitting_material_dirichlet_concentration": list(
+                original.DIRICHLET_CONCENTRATION_GRID
+            ),
+            "pitting_material_dirichlet_active_prob": list(
+                original.DIRICHLET_ACTIVE_PROB_GRID
+            ),
+        },
+        "fixed_prior": {
+            "reference_workflow": "pitting_magpie_full_v1",
+            "prior_type": "hybrid_scm",
+            "block_allocation": list(original.FIXED_BLOCK_ALLOCATION),
+            "material_style": "composition_like",
+            "composition_mode": "legacy",
+            "physical_marginal_probability": 1.0,
+            "feature_permutation": False,
+        },
+        "proxy_training": {
+            "device": str(args.device),
+            "max_steps": int(args.max_steps),
+            "scheduler_total_steps": int(args.scheduler_total_steps),
+            "np_seed": int(args.np_seed),
+            "torch_seed": int(args.torch_seed),
+            "nproc_per_node": int(args.nproc_per_node),
+            "prior_n_jobs": int(args.prior_n_jobs),
+            "dataloader_num_workers": int(args.dataloader_num_workers),
+            "dataloader_prefetch_factor": int(
+                args.dataloader_prefetch_factor
+            ),
+        },
+        "evaluation": {
+            "device": str(args.device),
+            "validation_folds": list(FIXED_VALIDATION_FOLDS),
+            "n_estimators": int(args.eval_n_estimators),
+            "feature_shuffle_method": "none",
+            "norm_methods": ["none"],
+            "regression_output": "median",
+        },
+        "optuna_sampler": {
+            "name": "TPESampler",
+            "seed": int(args.random_seed),
+            "n_startup_trials": int(args.n_startup_trials),
+        },
+    }
+
+
+def validate_pipeline_fingerprint(
+    payload: Any,
+    expected_sha256: str,
+) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        raise RuntimeError("Optuna study is missing its EPIT pipeline fingerprint.")
+    if payload.get("schema_version") != PIPELINE_FINGERPRINT_SCHEMA:
+        raise RuntimeError("Optuna study has an unsupported pipeline fingerprint.")
+    observed_sha256 = canonical_json_sha256(payload)
+    if observed_sha256 != expected_sha256:
+        raise RuntimeError(
+            "Optuna study pipeline fingerprint is internally inconsistent."
+        )
+    return payload
+
+
+def bind_study_pipeline_fingerprint(
+    study: Any,
+    fingerprint: dict[str, Any],
+) -> str:
+    """Set a new study fingerprint or reject reuse with another pipeline."""
+    fingerprint_sha256 = canonical_json_sha256(fingerprint)
+    existing_payload = study.user_attrs.get(STUDY_FINGERPRINT_ATTR)
+    existing_sha256 = study.user_attrs.get(STUDY_FINGERPRINT_SHA256_ATTR)
+    if existing_payload is None and existing_sha256 is None:
+        if study.trials:
+            raise RuntimeError(
+                "Existing Optuna study has trials but no EPIT pipeline fingerprint. "
+                "Use a new study name instead of mixing legacy and locked trials."
+            )
+        study.set_user_attr(STUDY_FINGERPRINT_ATTR, fingerprint)
+        study.set_user_attr(STUDY_FINGERPRINT_SHA256_ATTR, fingerprint_sha256)
+        return fingerprint_sha256
+    if existing_payload is None or existing_sha256 is None:
+        raise RuntimeError("Optuna study has an incomplete EPIT pipeline fingerprint.")
+    validate_pipeline_fingerprint(existing_payload, str(existing_sha256))
+    if str(existing_sha256) != fingerprint_sha256 or existing_payload != fingerprint:
+        raise RuntimeError(
+            "Optuna study belongs to a different split, target-rule set, or "
+            "Stage 3 configuration. Use a new study name."
+        )
+    return fingerprint_sha256
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -471,6 +605,36 @@ def verify_no_power_fold_evaluation(eval_dir: Path) -> dict[str, Any]:
     return payload
 
 
+def verify_trial_fold_evaluation(
+    payload: dict[str, Any],
+    *,
+    rules: TargetRuleConfig,
+    checkpoint_path: Path,
+    params: TrialParams,
+) -> None:
+    """Reject stale evaluation output before it can enter Optuna storage."""
+    if payload.get("split_manifest_sha256") != rules.split_manifest_sha256:
+        raise RuntimeError("Trial evaluation used a different split manifest.")
+    if payload.get("split_lock_sha256") != rules.split_lock_sha256:
+        raise RuntimeError("Trial evaluation used a different split lock.")
+    if payload.get("source_sha256") != rules.source_sha256:
+        raise RuntimeError("Trial evaluation used a different source dataset.")
+    source = payload.get("source", {})
+    checkpoint_path = checkpoint_path.expanduser().resolve()
+    if Path(str(source.get("local_ckpt_path", ""))).resolve() != checkpoint_path:
+        raise RuntimeError("Trial evaluation names a different checkpoint.")
+    checkpoint_sha256 = sha256_file(checkpoint_path)
+    if source.get("local_ckpt_sha256") != checkpoint_sha256:
+        raise RuntimeError("Trial evaluation checkpoint hash does not match.")
+    settings = payload.get("settings", {})
+    if "pitting_magpie_features" not in settings or bool(
+        settings["pitting_magpie_features"]
+    ) != bool(params.use_magpie):
+        raise RuntimeError("Trial evaluation changed the Magpie feature setting.")
+    if settings.get("tabicl_feat_shuffle_method") != "none":
+        raise RuntimeError("Trial evaluation changed the fixed feature order.")
+
+
 def run_trial(
     args: argparse.Namespace,
     trial_number: int,
@@ -493,6 +657,10 @@ def run_trial(
         / f"development_folds_{trial_name}"
     )
     model_label = f"trial_{trial_number:04d}"
+    pipeline_fingerprint = getattr(args, "pipeline_fingerprint", None)
+    if pipeline_fingerprint is None:
+        pipeline_fingerprint = build_pipeline_fingerprint(args, rules)
+    pipeline_fingerprint_sha256 = canonical_json_sha256(pipeline_fingerprint)
     train_cmd = training_command(args, params, checkpoint_dir, rules)
     eval_cmd = eval_command(
         args,
@@ -503,6 +671,8 @@ def run_trial(
     )
     metadata = {
         "schema_version": "epit_pipeline_optuna_trial_v2",
+        "pipeline_fingerprint": pipeline_fingerprint,
+        "pipeline_fingerprint_sha256": pipeline_fingerprint_sha256,
         "trial_number": trial_number,
         "trial_name": trial_name,
         "params": asdict(params),
@@ -549,7 +719,16 @@ def run_trial(
         "train_command": train_cmd,
         "eval_command": eval_cmd,
     }
-    write_json(trial_dir / "trial_config.json", metadata)
+    trial_config_path = trial_dir / "trial_config.json"
+    if trial_config_path.is_file():
+        existing = json.loads(trial_config_path.read_text(encoding="utf-8"))
+        if existing != metadata:
+            raise RuntimeError(
+                "Existing trial configuration belongs to another pipeline or "
+                f"parameter set: {trial_config_path}"
+            )
+    else:
+        write_json(trial_config_path, metadata)
     if args.dry_run:
         return {
             **metadata,
@@ -579,6 +758,7 @@ def run_trial(
         raise FileNotFoundError(
             f"Expected checkpoint was not created: {checkpoint_path}"
         )
+    checkpoint_sha256 = sha256_file(checkpoint_path)
 
     if not (args.skip_existing and (eval_dir / "summary.csv").is_file()):
         if eval_dir.exists():
@@ -592,7 +772,17 @@ def run_trial(
         eval_dir / "summary.csv",
         model_label,
     )
-    verify_no_power_fold_evaluation(eval_dir)
+    evaluation_payload = verify_no_power_fold_evaluation(eval_dir)
+    verify_trial_fold_evaluation(
+        evaluation_payload,
+        rules=rules,
+        checkpoint_path=checkpoint_path,
+        params=params,
+    )
+    summary_csv_path = (eval_dir / "summary.csv").resolve()
+    rows_csv_path = (eval_dir / "rows.csv").resolve()
+    summary_json_path = (eval_dir / "summary.json").resolve()
+    trial_result_path = (trial_dir / "trial_result.json").resolve()
     result = {
         **metadata,
         "status": "completed",
@@ -603,10 +793,17 @@ def run_trial(
         "median_test_mae": float(summary["median_test_mae"]),
         "mean_test_rmse": float(summary["mean_test_rmse"]),
         "mean_test_r2": float(summary["mean_test_r2"]),
-        "summary_csv": str(eval_dir / "summary.csv"),
-        "rows_csv": str(eval_dir / "rows.csv"),
+        "checkpoint_sha256": checkpoint_sha256,
+        "summary_csv": str(summary_csv_path),
+        "summary_csv_sha256": sha256_file(summary_csv_path),
+        "summary_json": str(summary_json_path),
+        "summary_json_sha256": sha256_file(summary_json_path),
+        "rows_csv": str(rows_csv_path),
+        "rows_csv_sha256": sha256_file(rows_csv_path),
+        "trial_result_json": str(trial_result_path),
     }
-    write_json(trial_dir / "trial_result.json", result)
+    write_json(trial_result_path, result)
+    result["trial_result_json_sha256"] = sha256_file(trial_result_path)
     return result
 
 
@@ -629,8 +826,13 @@ def run_optuna(args: argparse.Namespace) -> None:
             n_startup_trials=args.n_startup_trials,
         ),
     )
+    fingerprint_sha256 = bind_study_pipeline_fingerprint(
+        study,
+        args.pipeline_fingerprint,
+    )
 
     def objective(trial: Any) -> float:
+        trial.set_user_attr(STUDY_FINGERPRINT_SHA256_ATTR, fingerprint_sha256)
         params = sample_params(trial)
         result = run_trial(args, int(trial.number), params)
         for key in (
@@ -641,9 +843,23 @@ def run_optuna(args: argparse.Namespace) -> None:
             "median_test_spearman",
             "std_test_spearman",
             "summary_csv",
+            "summary_csv_sha256",
+            "summary_json",
+            "summary_json_sha256",
             "rows_csv",
+            "rows_csv_sha256",
+            "checkpoint_path",
+            "checkpoint_sha256",
+            "trial_result_json",
+            "trial_result_json_sha256",
         ):
-            trial.set_user_attr(key, result[key])
+            if key in result:
+                trial.set_user_attr(key, result[key])
+        trial.set_user_attr(
+            "pipeline_artifact_identity",
+            pipeline_artifact_identity(args.target_rules),
+        )
+        trial.set_user_attr("pitting_magpie_features", bool(params.use_magpie))
         trial.set_user_attr("tabicl_norm_methods", ["none"])
         return float(result["mean_test_spearman"])
 
@@ -705,6 +921,10 @@ def run_search(args: argparse.Namespace) -> None:
     args.target_rules = load_target_rule_config(
         summary_path=args.target_rule_summary,
         split_manifest_path=args.split_manifest,
+    )
+    args.pipeline_fingerprint = build_pipeline_fingerprint(
+        args,
+        args.target_rules,
     )
     if args.backend == "optuna":
         run_optuna(args)

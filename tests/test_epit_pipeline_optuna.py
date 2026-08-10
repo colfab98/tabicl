@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict, replace
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
@@ -39,6 +41,15 @@ class RecordingTrial:
     def suggest_float(self, name, low, high):
         self.suggested_names.append(name)
         return (low + high) / 2.0
+
+
+class MutableStudy:
+    def __init__(self, *, trials=()):
+        self.user_attrs = {}
+        self.trials = list(trials)
+
+    def set_user_attr(self, name, value):
+        self.user_attrs[name] = value
 
 
 def _value_after(command: list[str], option: str) -> str:
@@ -85,6 +96,166 @@ def test_optuna_defaults_preserve_latest_reference_workflow() -> None:
     assert args.split_manifest == evaluate_optuna_folds.DEFAULT_SPLIT_MANIFEST
     assert "splits_v2" in args.split_manifest.parts
     assert "target_rules_v2" in args.target_rule_summary.parts
+
+
+def test_optuna_study_fingerprint_rejects_mixed_pipeline() -> None:
+    args = search.parse_args([])
+    rules = search.load_target_rule_config(
+        summary_path=args.target_rule_summary,
+        split_manifest_path=args.split_manifest,
+    )
+    fingerprint = search.build_pipeline_fingerprint(args, rules)
+    study = MutableStudy()
+
+    fingerprint_sha256 = search.bind_study_pipeline_fingerprint(
+        study,
+        fingerprint,
+    )
+
+    assert study.user_attrs[search.STUDY_FINGERPRINT_ATTR] == fingerprint
+    assert (
+        study.user_attrs[search.STUDY_FINGERPRINT_SHA256_ATTR]
+        == fingerprint_sha256
+    )
+    changed = json.loads(json.dumps(fingerprint))
+    changed["proxy_training"]["max_steps"] += 1
+    with pytest.raises(RuntimeError, match="different split.*configuration"):
+        search.bind_study_pipeline_fingerprint(study, changed)
+
+    legacy_study = MutableStudy(trials=[object()])
+    with pytest.raises(RuntimeError, match="no EPIT pipeline fingerprint"):
+        search.bind_study_pipeline_fingerprint(legacy_study, fingerprint)
+
+
+def test_stage4_rejects_study_from_another_artifact_set() -> None:
+    args = search.parse_args([])
+    rules = search.load_target_rule_config(
+        summary_path=args.target_rule_summary,
+        split_manifest_path=args.split_manifest,
+    )
+    changed_rules = replace(rules, source_sha256="0" * 64)
+    changed_fingerprint = search.build_pipeline_fingerprint(args, changed_rules)
+    study = MutableStudy()
+    search.bind_study_pipeline_fingerprint(study, changed_fingerprint)
+
+    with pytest.raises(RuntimeError, match="different split, dataset, or target"):
+        train_final.verify_study_pipeline_identity(study, rules)
+
+
+def test_stage4_verifies_selected_trial_files_and_objective(tmp_path: Path) -> None:
+    args = search.parse_args([])
+    rules = search.load_target_rule_config(
+        summary_path=args.target_rule_summary,
+        split_manifest_path=args.split_manifest,
+    )
+    params = search.TrialParams(
+        use_magpie=False,
+        informed_prior_ratio=0.5,
+        mlp_prob=0.25,
+        informed_feature_block_strength=0.4,
+        informed_target_mix_weight=0.6,
+        pitting_material_dirichlet_prob=0.0,
+        pitting_material_dirichlet_concentration=None,
+        pitting_material_dirichlet_active_prob=None,
+    )
+    fingerprint = search.build_pipeline_fingerprint(args, rules)
+    fingerprint_sha256 = search.canonical_json_sha256(fingerprint)
+    objective = 0.42
+    checkpoint = (tmp_path / "step-1000.ckpt").resolve()
+    summary_csv = (tmp_path / "summary.csv").resolve()
+    summary_json = (tmp_path / "summary.json").resolve()
+    rows_csv = (tmp_path / "rows.csv").resolve()
+    trial_result_path = (tmp_path / "trial_result.json").resolve()
+    checkpoint.write_bytes(b"checkpoint")
+    summary_csv.write_text("mean_test_spearman\n0.42\n", encoding="utf-8")
+    rows_csv.write_text("fold,prediction\n1,0.0\n", encoding="utf-8")
+    evaluation = {
+        "development_rows_only": True,
+        "validation_folds": list(search.FIXED_VALIDATION_FOLDS),
+        "split_manifest": str(args.split_manifest.resolve()),
+        "split_manifest_sha256": rules.split_manifest_sha256,
+        "split_lock_sha256": rules.split_lock_sha256,
+        "source_sha256": rules.source_sha256,
+        "source": {
+            "local_ckpt_path": str(checkpoint),
+            "local_ckpt_sha256": train_final.sha256_file(checkpoint),
+        },
+        "settings": {
+            "tabicl_norm_methods": ["none"],
+            "tabicl_feat_shuffle_method": "none",
+            "pitting_magpie_features": False,
+        },
+        "summary_csv": str(summary_csv),
+        "rows_csv": str(rows_csv),
+        "summary": [{"mean_test_spearman": objective}],
+    }
+    summary_json.write_text(json.dumps(evaluation), encoding="utf-8")
+    trial_result = {
+        "status": "completed",
+        "trial_number": 3,
+        "params": asdict(params),
+        "pipeline_fingerprint_sha256": fingerprint_sha256,
+        "checkpoint_path": str(checkpoint),
+        "checkpoint_sha256": train_final.sha256_file(checkpoint),
+        "summary_csv": str(summary_csv),
+        "summary_csv_sha256": train_final.sha256_file(summary_csv),
+        "summary_json": str(summary_json),
+        "summary_json_sha256": train_final.sha256_file(summary_json),
+        "rows_csv": str(rows_csv),
+        "rows_csv_sha256": train_final.sha256_file(rows_csv),
+        "mean_test_spearman": objective,
+    }
+    trial_result_path.write_text(json.dumps(trial_result), encoding="utf-8")
+    trial = SimpleNamespace(
+        number=3,
+        value=objective,
+        user_attrs={
+            search.STUDY_FINGERPRINT_SHA256_ATTR: fingerprint_sha256,
+            "pipeline_artifact_identity": search.pipeline_artifact_identity(rules),
+            "pitting_magpie_features": False,
+            "checkpoint_path": str(checkpoint),
+            "checkpoint_sha256": train_final.sha256_file(checkpoint),
+            "summary_csv": str(summary_csv),
+            "summary_csv_sha256": train_final.sha256_file(summary_csv),
+            "summary_json": str(summary_json),
+            "summary_json_sha256": train_final.sha256_file(summary_json),
+            "rows_csv": str(rows_csv),
+            "rows_csv_sha256": train_final.sha256_file(rows_csv),
+            "trial_result_json": str(trial_result_path),
+            "trial_result_json_sha256": train_final.sha256_file(
+                trial_result_path
+            ),
+        },
+    )
+
+    assert train_final.verify_selected_trial_evaluation(
+        trial,
+        split_manifest=args.split_manifest.resolve(),
+        rules=rules,
+        params=params,
+        study_fingerprint_sha256=fingerprint_sha256,
+    ) == evaluation
+
+    trial.value = 0.43
+    with pytest.raises(RuntimeError, match="fold Spearman.*does not match"):
+        train_final.verify_selected_trial_evaluation(
+            trial,
+            split_manifest=args.split_manifest.resolve(),
+            rules=rules,
+            params=params,
+            study_fingerprint_sha256=fingerprint_sha256,
+        )
+
+    trial.value = objective
+    checkpoint.write_bytes(b"changed checkpoint")
+    with pytest.raises(RuntimeError, match="artifact hash changed"):
+        train_final.verify_selected_trial_evaluation(
+            trial,
+            split_manifest=args.split_manifest.resolve(),
+            rules=rules,
+            params=params,
+            study_fingerprint_sha256=fingerprint_sha256,
+        )
 
 
 def test_slurm_launcher_uses_v2_pipeline_artifacts() -> None:

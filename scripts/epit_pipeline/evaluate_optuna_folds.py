@@ -16,8 +16,13 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.epit_pipeline.artifact_hashes import load_frozen_split, sha256_file
+
+
 DEFAULT_SPLIT_MANIFEST = (
     REPO_ROOT
     / "corrosion_datasets"
@@ -256,9 +261,9 @@ def main() -> None:
     summary_json_path = output_dir / "summary.json"
     combined.to_csv(rows_path, index=False)
     summary.to_csv(summary_path, index=False)
-    manifest = json.loads(
-        args.split_manifest.expanduser().read_text(encoding="utf-8")
-    )
+    frozen_split = load_frozen_split(args.split_manifest.expanduser())
+    manifest = frozen_split.manifest
+    checkpoint_path = args.local_ckpt_path.expanduser().resolve()
     summary_json_path.write_text(
         json.dumps(
             {
@@ -266,6 +271,9 @@ def main() -> None:
                 "task_id": PITTING_TASK_ID,
                 "split_manifest": str(args.split_manifest.expanduser().resolve()),
                 "split_manifest_schema": manifest.get("schema_version"),
+                "split_manifest_sha256": frozen_split.manifest_sha256,
+                "split_lock": str(frozen_split.lock_path),
+                "split_lock_sha256": frozen_split.lock_sha256,
                 "source_sha256": manifest.get("dataset", {}).get("source_sha256"),
                 "validation_folds": list(args.validation_folds),
                 "development_rows_only": True,
@@ -273,9 +281,8 @@ def main() -> None:
                     manifest.get("split_design", {}).get("final_test_rows", -1)
                 ),
                 "source": {
-                    "local_ckpt_path": str(
-                        args.local_ckpt_path.expanduser().resolve()
-                    ),
+                    "local_ckpt_path": str(checkpoint_path),
+                    "local_ckpt_sha256": sha256_file(checkpoint_path),
                     "model_label": args.model_label,
                 },
                 "settings": {

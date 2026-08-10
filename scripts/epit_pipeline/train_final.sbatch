@@ -11,7 +11,7 @@ set -euo pipefail
 cd /home/fcolanto/projects/tabicl
 source .venv/bin/activate
 
-STUDY_NAME="${STUDY_NAME:-epit_pipeline_optuna_v1}"
+STUDY_NAME="${STUDY_NAME:-epit_pipeline_optuna_v2}"
 OPTUNA_STORAGE_ROOT="${OPTUNA_STORAGE_ROOT:-/home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna}"
 STUDY_DIR="${OPTUNA_STORAGE_ROOT}/${STUDY_NAME}"
 STORAGE="${STORAGE:-journal://${STUDY_DIR}/study_journal_v1.log}"

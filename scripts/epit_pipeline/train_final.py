@@ -36,7 +36,7 @@ PITTING_TASK_ID = "electrochemical_metrics_alloys__pitting_potential__epit_mv_sc
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--study-name", default="epit_pipeline_optuna_v1")
+    parser.add_argument("--study-name", default="epit_pipeline_optuna_v2")
     parser.add_argument(
         "--storage",
         required=True,
@@ -141,16 +141,114 @@ def load_selected_trial(args: argparse.Namespace) -> tuple[Any, Any]:
     return study, study.best_trial
 
 
+def verify_study_pipeline_identity(
+    study: Any,
+    rules: search.TargetRuleConfig,
+) -> tuple[dict[str, Any], str]:
+    """Require Stage 4 to consume the exact artifacts locked by Stage 3."""
+    fingerprint = study.user_attrs.get(search.STUDY_FINGERPRINT_ATTR)
+    fingerprint_sha256 = study.user_attrs.get(
+        search.STUDY_FINGERPRINT_SHA256_ATTR
+    )
+    if fingerprint_sha256 is None:
+        raise RuntimeError("Optuna study has no EPIT pipeline fingerprint hash.")
+    fingerprint_sha256 = str(fingerprint_sha256)
+    fingerprint = search.validate_pipeline_fingerprint(
+        fingerprint,
+        fingerprint_sha256,
+    )
+    current_artifacts = search.pipeline_artifact_identity(rules)
+    if fingerprint.get("artifacts") != current_artifacts:
+        raise RuntimeError(
+            "Optuna study used a different split, dataset, or target-rule set."
+        )
+    return fingerprint, fingerprint_sha256
+
+
+def verify_trial_file(trial: Any, path_attr: str, sha_attr: str) -> Path:
+    path_value = trial.user_attrs.get(path_attr)
+    expected_sha256 = trial.user_attrs.get(sha_attr)
+    if not path_value or not expected_sha256:
+        raise RuntimeError(
+            f"Selected trial is missing immutable artifact fields: "
+            f"{path_attr}, {sha_attr}."
+        )
+    path = Path(str(path_value)).expanduser().resolve()
+    if not path.is_file():
+        raise FileNotFoundError(f"Selected-trial artifact does not exist: {path}")
+    if sha256_file(path) != str(expected_sha256):
+        raise RuntimeError(f"Selected-trial artifact hash changed: {path}")
+    return path
+
+
+def require_same_finite_metric(
+    observed: Any,
+    expected: Any,
+    *,
+    label: str,
+) -> None:
+    try:
+        observed_value = float(observed)
+        expected_value = float(expected)
+    except (TypeError, ValueError) as error:
+        raise RuntimeError(f"{label} is not numeric.") from error
+    if not math.isfinite(observed_value) or not math.isfinite(expected_value):
+        raise RuntimeError(f"{label} is not finite.")
+    if not math.isclose(
+        observed_value,
+        expected_value,
+        rel_tol=1e-12,
+        abs_tol=1e-12,
+    ):
+        raise RuntimeError(f"{label} does not match the Optuna objective.")
+
+
 def verify_selected_trial_evaluation(
     trial: Any,
     *,
     split_manifest: Path,
-    source_sha256: str,
+    rules: search.TargetRuleConfig,
+    params: search.TrialParams,
+    study_fingerprint_sha256: str,
 ) -> dict[str, Any]:
-    summary_csv = trial.user_attrs.get("summary_csv")
-    if not summary_csv:
-        raise RuntimeError("Selected trial has no saved fold-evaluation summary.")
-    eval_dir = Path(str(summary_csv)).expanduser().resolve().parent
+    if (
+        str(trial.user_attrs.get(search.STUDY_FINGERPRINT_SHA256_ATTR, ""))
+        != study_fingerprint_sha256
+    ):
+        raise RuntimeError("Selected trial belongs to another pipeline fingerprint.")
+    if trial.user_attrs.get("pipeline_artifact_identity") != (
+        search.pipeline_artifact_identity(rules)
+    ):
+        raise RuntimeError("Selected trial belongs to another artifact set.")
+    if "pitting_magpie_features" not in trial.user_attrs or bool(
+        trial.user_attrs["pitting_magpie_features"]
+    ) != bool(params.use_magpie):
+        raise RuntimeError("Selected trial has inconsistent Magpie provenance.")
+
+    summary_csv = verify_trial_file(
+        trial,
+        "summary_csv",
+        "summary_csv_sha256",
+    )
+    summary_json = verify_trial_file(
+        trial,
+        "summary_json",
+        "summary_json_sha256",
+    )
+    rows_csv = verify_trial_file(trial, "rows_csv", "rows_csv_sha256")
+    checkpoint = verify_trial_file(
+        trial,
+        "checkpoint_path",
+        "checkpoint_sha256",
+    )
+    trial_result_path = verify_trial_file(
+        trial,
+        "trial_result_json",
+        "trial_result_json_sha256",
+    )
+    if summary_json != summary_csv.parent / "summary.json":
+        raise RuntimeError("Selected trial summary files come from different runs.")
+    eval_dir = summary_csv.parent
     payload = search.verify_no_power_fold_evaluation(eval_dir)
     if not bool(payload.get("development_rows_only", False)):
         raise RuntimeError("Selected trial was not evaluated development-only.")
@@ -158,10 +256,65 @@ def verify_selected_trial_evaluation(
         raise RuntimeError("Selected trial did not use all five frozen folds.")
     if Path(str(payload.get("split_manifest", ""))).resolve() != split_manifest:
         raise RuntimeError("Selected trial used a different split manifest.")
-    if str(payload.get("source_sha256", "")) != source_sha256:
+    if payload.get("split_manifest_sha256") != rules.split_manifest_sha256:
+        raise RuntimeError("Selected trial used a changed split manifest.")
+    if payload.get("split_lock_sha256") != rules.split_lock_sha256:
+        raise RuntimeError("Selected trial used a changed split lock.")
+    if str(payload.get("source_sha256", "")) != rules.source_sha256:
         raise RuntimeError("Selected trial evaluation used a different dataset.")
-    if payload.get("settings", {}).get("tabicl_feat_shuffle_method") != "none":
+    source = payload.get("source", {})
+    if Path(str(source.get("local_ckpt_path", ""))).resolve() != checkpoint:
+        raise RuntimeError("Selected trial evaluation names another checkpoint.")
+    if source.get("local_ckpt_sha256") != sha256_file(checkpoint):
+        raise RuntimeError("Selected trial evaluation checkpoint hash changed.")
+    settings = payload.get("settings", {})
+    if settings.get("tabicl_feat_shuffle_method") != "none":
         raise RuntimeError("Selected trial changed the fixed feature order.")
+    if "pitting_magpie_features" not in settings or bool(
+        settings["pitting_magpie_features"]
+    ) != bool(params.use_magpie):
+        raise RuntimeError("Selected trial evaluation changed Magpie features.")
+    if Path(str(payload.get("summary_csv", ""))).resolve() != summary_csv:
+        raise RuntimeError("Selected trial summary JSON names another summary CSV.")
+    if Path(str(payload.get("rows_csv", ""))).resolve() != rows_csv:
+        raise RuntimeError("Selected trial summary JSON names another rows CSV.")
+
+    summary_records = payload.get("summary")
+    if not isinstance(summary_records, list) or len(summary_records) != 1:
+        raise RuntimeError("Selected trial has an invalid fold summary record.")
+    require_same_finite_metric(
+        summary_records[0].get("mean_test_spearman"),
+        trial.value,
+        label="Selected trial fold Spearman",
+    )
+
+    trial_result = json.loads(trial_result_path.read_text(encoding="utf-8"))
+    if not isinstance(trial_result, dict):
+        raise RuntimeError("Selected trial result is not a JSON object.")
+    expected_result_fields = {
+        "status": "completed",
+        "trial_number": int(trial.number),
+        "params": asdict(params),
+        "pipeline_fingerprint_sha256": study_fingerprint_sha256,
+        "checkpoint_path": str(checkpoint),
+        "checkpoint_sha256": sha256_file(checkpoint),
+        "summary_csv": str(summary_csv),
+        "summary_csv_sha256": sha256_file(summary_csv),
+        "summary_json": str(summary_json),
+        "summary_json_sha256": sha256_file(summary_json),
+        "rows_csv": str(rows_csv),
+        "rows_csv_sha256": sha256_file(rows_csv),
+    }
+    for key, expected in expected_result_fields.items():
+        if trial_result.get(key) != expected:
+            raise RuntimeError(
+                f"Selected trial result has inconsistent field: {key}."
+            )
+    require_same_finite_metric(
+        trial_result.get("mean_test_spearman"),
+        trial.value,
+        label="Selected trial result Spearman",
+    )
     return payload
 
 
@@ -206,6 +359,8 @@ def validate_fold_evaluation_payload(
     *,
     checkpoint: Path,
     split_manifest: Path,
+    rules: search.TargetRuleConfig,
+    use_magpie: bool,
     n_estimators: int,
 ) -> None:
     if payload.get("settings", {}).get("tabicl_norm_methods") != ["none"]:
@@ -216,14 +371,26 @@ def validate_fold_evaluation_payload(
         raise RuntimeError("Checkpoint selection did not use all five folds.")
     if Path(str(payload.get("split_manifest", ""))).resolve() != split_manifest:
         raise RuntimeError("Checkpoint selection used a different split manifest.")
+    if payload.get("split_manifest_sha256") != rules.split_manifest_sha256:
+        raise RuntimeError("Checkpoint selection used a changed split manifest.")
+    if payload.get("split_lock_sha256") != rules.split_lock_sha256:
+        raise RuntimeError("Checkpoint selection used a changed split lock.")
+    if payload.get("source_sha256") != rules.source_sha256:
+        raise RuntimeError("Checkpoint selection used a different source dataset.")
     source = payload.get("source", {})
     if Path(str(source.get("local_ckpt_path", ""))).resolve() != checkpoint:
         raise RuntimeError("Checkpoint evaluation provenance names another model.")
+    if source.get("local_ckpt_sha256") != sha256_file(checkpoint):
+        raise RuntimeError("Checkpoint evaluation model hash changed.")
     settings = payload.get("settings", {})
     if int(settings.get("n_estimators", -1)) != n_estimators:
         raise RuntimeError("Checkpoint evaluation changed n_estimators.")
     if settings.get("tabicl_feat_shuffle_method") != "none":
         raise RuntimeError("Checkpoint evaluation changed the feature order.")
+    if "pitting_magpie_features" not in settings or bool(
+        settings["pitting_magpie_features"]
+    ) != bool(use_magpie):
+        raise RuntimeError("Checkpoint evaluation changed Magpie features.")
 
 
 def evaluation_record(
@@ -233,6 +400,7 @@ def evaluation_record(
     checkpoint: Path,
     output_dir: Path,
     split_manifest: Path,
+    rules: search.TargetRuleConfig,
 ) -> dict[str, Any]:
     step = checkpoint_step(checkpoint)
     model_label = f"final_step_{step:05d}"
@@ -257,6 +425,8 @@ def evaluation_record(
         payload,
         checkpoint=checkpoint,
         split_manifest=split_manifest,
+        rules=rules,
+        use_magpie=params.use_magpie,
         n_estimators=args.eval_n_estimators,
     )
     summary = search.original.search_utils.load_eval_summary(
@@ -299,12 +469,17 @@ def run(args: argparse.Namespace) -> Path:
         split_manifest_path=args.split_manifest,
     )
     study, trial = load_selected_trial(args)
+    study_fingerprint, study_fingerprint_sha256 = (
+        verify_study_pipeline_identity(study, rules)
+    )
+    params = search.trial_params_from_mapping(dict(trial.params))
     trial_eval = verify_selected_trial_evaluation(
         trial,
         split_manifest=args.split_manifest,
-        source_sha256=rules.source_sha256,
+        rules=rules,
+        params=params,
+        study_fingerprint_sha256=study_fingerprint_sha256,
     )
-    params = search.trial_params_from_mapping(dict(trial.params))
     run_name = args.final_run_name or (
         f"final_{search.slugify(args.study_name)}_trial_{trial.number:04d}"
     )
@@ -361,6 +536,7 @@ def run(args: argparse.Namespace) -> Path:
             checkpoint=checkpoint,
             output_dir=evaluation_root / f"step_{checkpoint_step(checkpoint):05d}",
             split_manifest=args.split_manifest,
+            rules=rules,
         )
         for checkpoint in checkpoint_candidates(args, checkpoint_dir)
     ]
@@ -391,6 +567,8 @@ def run(args: argparse.Namespace) -> Path:
             "selected_trial_params": asdict(params),
             "selected_trial_user_attrs": dict(trial.user_attrs),
             "selected_trial_fold_evaluation": trial_eval,
+            "pipeline_fingerprint": study_fingerprint,
+            "pipeline_fingerprint_sha256": study_fingerprint_sha256,
         },
         "split": {
             "manifest": str(frozen_split.manifest_path),
