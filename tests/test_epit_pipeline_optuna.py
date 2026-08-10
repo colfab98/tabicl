@@ -87,6 +87,7 @@ def _fake_epit_task() -> corrosion_eval.EvalTask:
 def test_optuna_defaults_preserve_latest_reference_workflow() -> None:
     args = search.parse_args([])
 
+    assert args.study_name == "epit_pipeline_optuna_v3"
     assert args.n_trials == 50
     assert args.n_startup_trials == 10
     assert args.max_steps == 1000
@@ -105,6 +106,8 @@ def test_optuna_study_fingerprint_rejects_mixed_pipeline() -> None:
         split_manifest_path=args.split_manifest,
     )
     fingerprint = search.build_pipeline_fingerprint(args, rules)
+    other_worker_args = search.parse_args(["--random-seed", "999"])
+    assert search.build_pipeline_fingerprint(other_worker_args, rules) == fingerprint
     study = MutableStudy()
 
     fingerprint_sha256 = search.bind_study_pipeline_fingerprint(
@@ -193,6 +196,7 @@ def test_stage4_verifies_selected_trial_files_and_objective(tmp_path: Path) -> N
     trial_result = {
         "status": "completed",
         "trial_number": 3,
+        "sampler_seed": 123,
         "params": asdict(params),
         "pipeline_fingerprint_sha256": fingerprint_sha256,
         "checkpoint_path": str(checkpoint),
@@ -213,6 +217,7 @@ def test_stage4_verifies_selected_trial_files_and_objective(tmp_path: Path) -> N
             search.STUDY_FINGERPRINT_SHA256_ATTR: fingerprint_sha256,
             "pipeline_artifact_identity": search.pipeline_artifact_identity(rules),
             "pitting_magpie_features": False,
+            "sampler_seed": 123,
             "checkpoint_path": str(checkpoint),
             "checkpoint_sha256": train_final.sha256_file(checkpoint),
             "summary_csv": str(summary_csv),

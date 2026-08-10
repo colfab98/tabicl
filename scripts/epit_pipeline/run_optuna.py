@@ -41,7 +41,7 @@ DEFAULT_TARGET_RULE_SUMMARY = (
 )
 DEFAULT_OPTUNA_ROOT = PIPELINE_ROOT / "optuna_v2"
 FIXED_VALIDATION_FOLDS = (1, 2, 3, 4, 5)
-PIPELINE_FINGERPRINT_SCHEMA = "epit_pipeline_stage3_fingerprint_v1"
+PIPELINE_FINGERPRINT_SCHEMA = "epit_pipeline_stage3_fingerprint_v2"
 STUDY_FINGERPRINT_ATTR = "epit_pipeline_fingerprint"
 STUDY_FINGERPRINT_SHA256_ATTR = "epit_pipeline_fingerprint_sha256"
 
@@ -188,8 +188,8 @@ def build_pipeline_fingerprint(
         },
         "optuna_sampler": {
             "name": "TPESampler",
-            "seed": int(args.random_seed),
             "n_startup_trials": int(args.n_startup_trials),
+            "worker_seed_policy": "per_worker_recorded_per_trial",
         },
     }
 
@@ -241,7 +241,7 @@ def bind_study_pipeline_fingerprint(
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=("optuna", "random"), default="optuna")
-    parser.add_argument("--study-name", default="epit_pipeline_optuna_v2")
+    parser.add_argument("--study-name", default="epit_pipeline_optuna_v3")
     parser.add_argument("--storage", default=None)
     parser.add_argument("--n-trials", type=int, default=50)
     parser.add_argument("--n-startup-trials", type=int, default=10)
@@ -675,6 +675,7 @@ def run_trial(
         "pipeline_fingerprint_sha256": pipeline_fingerprint_sha256,
         "trial_number": trial_number,
         "trial_name": trial_name,
+        "sampler_seed": int(args.random_seed),
         "params": asdict(params),
         "reference_workflow": "pitting_magpie_full_v1",
         "fixed_base_feature_count": EPIT_BASE_FEATURE_COUNT,
@@ -852,6 +853,7 @@ def run_optuna(args: argparse.Namespace) -> None:
             "checkpoint_sha256",
             "trial_result_json",
             "trial_result_json_sha256",
+            "sampler_seed",
         ):
             if key in result:
                 trial.set_user_attr(key, result[key])

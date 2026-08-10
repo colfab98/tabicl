@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=epit_optuna_v1
+#SBATCH --job-name=epit_optuna_v3
 #SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
@@ -11,7 +11,7 @@ set -euo pipefail
 cd /home/fcolanto/projects/tabicl
 source .venv/bin/activate
 
-STUDY_NAME="${STUDY_NAME:-epit_pipeline_optuna_v2}"
+STUDY_NAME="${STUDY_NAME:-epit_pipeline_optuna_v3}"
 N_TRIALS="${N_TRIALS:-50}"
 N_STARTUP_TRIALS="${N_STARTUP_TRIALS:-10}"
 MAX_STEPS="${MAX_STEPS:-1000}"

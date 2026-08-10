@@ -36,7 +36,7 @@ PITTING_TASK_ID = "electrochemical_metrics_alloys__pitting_potential__epit_mv_sc
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--study-name", default="epit_pipeline_optuna_v2")
+    parser.add_argument("--study-name", default="epit_pipeline_optuna_v3")
     parser.add_argument(
         "--storage",
         required=True,
@@ -294,6 +294,7 @@ def verify_selected_trial_evaluation(
     expected_result_fields = {
         "status": "completed",
         "trial_number": int(trial.number),
+        "sampler_seed": trial.user_attrs.get("sampler_seed"),
         "params": asdict(params),
         "pipeline_fingerprint_sha256": study_fingerprint_sha256,
         "checkpoint_path": str(checkpoint),
@@ -305,6 +306,8 @@ def verify_selected_trial_evaluation(
         "rows_csv": str(rows_csv),
         "rows_csv_sha256": sha256_file(rows_csv),
     }
+    if not isinstance(trial.user_attrs.get("sampler_seed"), int):
+        raise RuntimeError("Selected trial has no recorded sampler seed.")
     for key, expected in expected_result_fields.items():
         if trial_result.get(key) != expected:
             raise RuntimeError(
