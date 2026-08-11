@@ -33,10 +33,20 @@ DEFAULT_OUTPUT_DIR = (
     / "corrosion_datasets"
     / "analysis"
     / "epit_pipeline"
-    / "baseline_folds_v1"
+    / "baseline_folds_v2"
+)
+DEFAULT_GENERIC_CHECKPOINT = (
+    REPO_ROOT
+    / "checkpoints"
+    / "tabicl_s1_regression_baseline"
+    / "step-1000.ckpt"
 )
 VALIDATION_FOLDS = (1, 2, 3, 4, 5)
-EXPECTED_MODELS = ("pretrained_tabicl_v2", "catboost")
+EXPECTED_MODELS = (
+    "generic_baseline",
+    "pretrained_tabicl_v2",
+    "catboost",
+)
 PRETRAINED_CHECKPOINT_VERSION = "tabicl-regressor-v2-20260212.ckpt"
 
 
@@ -48,6 +58,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_SPLIT_MANIFEST,
     )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument(
+        "--generic-checkpoint",
+        type=Path,
+        default=DEFAULT_GENERIC_CHECKPOINT,
+    )
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--n-estimators", type=int, default=8)
     parser.add_argument("--random-state", type=int, default=42)
@@ -63,6 +78,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def validate_args(args: argparse.Namespace) -> None:
     if not args.split_manifest.expanduser().is_file():
         raise FileNotFoundError(f"Split manifest not found: {args.split_manifest}")
+    if not args.generic_checkpoint.expanduser().is_file():
+        raise FileNotFoundError(
+            f"Generic baseline checkpoint not found: {args.generic_checkpoint}"
+        )
     positive = {
         "--n-estimators": args.n_estimators,
         "--catboost-iterations": args.catboost_iterations,
@@ -86,6 +105,10 @@ def fold_command(
     return [
         sys.executable,
         str(REPO_ROOT / "scripts" / "eval_corrosion_datasets.py"),
+        "--local-ckpt-path",
+        str(args.generic_checkpoint.expanduser().resolve()),
+        "--local-model-label",
+        "generic_baseline",
         "--task",
         PITTING_TASK_ID,
         "--target-mode",
@@ -178,6 +201,7 @@ def validate_fold_rows(rows: pd.DataFrame, *, fold: int) -> None:
 def run(args: argparse.Namespace) -> Path:
     validate_args(args)
     args.split_manifest = args.split_manifest.expanduser().resolve()
+    args.generic_checkpoint = args.generic_checkpoint.expanduser().resolve()
     output_dir = args.output_dir.expanduser().resolve()
     if output_dir.exists() and any(output_dir.iterdir()):
         raise FileExistsError(
@@ -220,12 +244,18 @@ def run(args: argparse.Namespace) -> Path:
     combined.to_csv(rows_path, index=False)
     summary.to_csv(summary_path, index=False)
     payload: dict[str, Any] = {
-        "schema_version": "epit_development_baselines_v1",
+        "schema_version": "epit_development_baselines_v2",
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "task_id": PITTING_TASK_ID,
         "development_rows_only": True,
         "final_test_rows_used": False,
         "models": list(EXPECTED_MODELS),
+        "generic_checkpoint": {
+            "path": str(args.generic_checkpoint),
+            "sha256": sha256_file(args.generic_checkpoint),
+            "training_prior": "unmodified generic mix_scm",
+            "training_step": 1000,
+        },
         "validation_folds": list(VALIDATION_FOLDS),
         "split_manifest": str(frozen_split.manifest_path),
         "split_manifest_sha256": frozen_split.manifest_sha256,

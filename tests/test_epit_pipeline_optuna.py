@@ -415,7 +415,10 @@ def test_baseline_fold_command_uses_only_development_references(
         fold_dir=tmp_path / "fold_3",
     )
 
-    assert "--local-ckpt-path" not in command
+    assert _value_after(command, "--local-ckpt-path") == str(
+        evaluate_baseline_folds.DEFAULT_GENERIC_CHECKPOINT.resolve()
+    )
+    assert _value_after(command, "--local-model-label") == "generic_baseline"
     assert "--epit-final-test" not in command
     assert _value_after(command, "--epit-validation-fold") == "3"
     assert _value_after(command, "--epit-split-manifest") == str(
@@ -438,7 +441,8 @@ def test_baseline_launcher_uses_frozen_development_folds() -> None:
     ).read_text(encoding="utf-8")
 
     assert "splits_v2/split_manifest.json" in launcher
-    assert "baseline_folds_v1" in launcher
+    assert "baseline_folds_v2" in launcher
+    assert "tabicl_s1_regression_baseline/step-1000.ckpt" in launcher
     assert "evaluate_baseline_folds" in launcher
 
 
