@@ -38,6 +38,31 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--study-name", default="epit_pipeline_optuna_v3")
     parser.add_argument(
+        "--selected-trial-number",
+        type=int,
+        default=None,
+        help=(
+            "Pin a completed trial after verifying that it is still the best "
+            "completed trial. By default Stage 4 selects study.best_trial."
+        ),
+    )
+    parser.add_argument(
+        "--allow-stale-running-trials",
+        action="store_true",
+        help=(
+            "Allow an explicitly pinned best completed trial to be used when "
+            "the journal contains stale RUNNING/WAITING records."
+        ),
+    )
+    parser.add_argument(
+        "--allow-missing-selected-trial-artifacts",
+        action="store_true",
+        help=(
+            "Use the completed Optuna journal record when an explicitly pinned "
+            "trial's immutable proxy artifacts are no longer locally available."
+        ),
+    )
+    parser.add_argument(
         "--storage",
         required=True,
         help="The completed Stage 3 Optuna storage URL (including journal://).",
@@ -106,6 +131,20 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError(
             "--checkpoint-selection-interval must be divisible by --save-perm-every."
         )
+    if args.selected_trial_number is not None and args.selected_trial_number < 0:
+        raise ValueError("--selected-trial-number must be non-negative.")
+    if args.allow_stale_running_trials and args.selected_trial_number is None:
+        raise ValueError(
+            "--allow-stale-running-trials requires --selected-trial-number."
+        )
+    if (
+        args.allow_missing_selected_trial_artifacts
+        and args.selected_trial_number is None
+    ):
+        raise ValueError(
+            "--allow-missing-selected-trial-artifacts requires "
+            "--selected-trial-number."
+        )
 
 
 def load_selected_trial(args: argparse.Namespace) -> tuple[Any, Any]:
@@ -124,7 +163,7 @@ def load_selected_trial(args: argparse.Namespace) -> tuple[Any, Any]:
         for trial in study.trials
         if trial.state in (TrialState.RUNNING, TrialState.WAITING)
     ]
-    if active:
+    if active and not args.allow_stale_running_trials:
         raise RuntimeError(
             "Stage 3 is still active; final training cannot freeze a winner. "
             f"Active trials: {active}"
@@ -138,7 +177,29 @@ def load_selected_trial(args: argparse.Namespace) -> tuple[Any, Any]:
     ]
     if not completed:
         raise RuntimeError("The Optuna study has no completed finite trials.")
-    return study, study.best_trial
+    best_completed = max(completed, key=lambda trial: float(trial.value))
+    if args.selected_trial_number is None:
+        return study, best_completed
+
+    selected = next(
+        (
+            trial
+            for trial in completed
+            if int(trial.number) == int(args.selected_trial_number)
+        ),
+        None,
+    )
+    if selected is None:
+        raise RuntimeError(
+            f"Pinned trial {args.selected_trial_number} is not a completed "
+            "finite trial in the study."
+        )
+    if int(selected.number) != int(best_completed.number):
+        raise RuntimeError(
+            f"Pinned trial {selected.number} is not the best completed trial; "
+            f"current best is trial {best_completed.number}."
+        )
+    return study, selected
 
 
 def verify_study_pipeline_identity(
@@ -321,6 +382,106 @@ def verify_selected_trial_evaluation(
     return payload
 
 
+def verify_selected_trial_journal_record(
+    trial: Any,
+    *,
+    rules: search.TargetRuleConfig,
+    params: search.TrialParams,
+    study_fingerprint: dict[str, Any],
+    study_fingerprint_sha256: str,
+) -> dict[str, Any]:
+    """Validate provenance retained in Optuna when worker-local files are gone."""
+    if (
+        str(trial.user_attrs.get(search.STUDY_FINGERPRINT_SHA256_ATTR, ""))
+        != study_fingerprint_sha256
+    ):
+        raise RuntimeError("Selected trial belongs to another pipeline fingerprint.")
+    if trial.user_attrs.get("pipeline_artifact_identity") != (
+        search.pipeline_artifact_identity(rules)
+    ):
+        raise RuntimeError("Selected trial belongs to another artifact set.")
+    if "pitting_magpie_features" not in trial.user_attrs or bool(
+        trial.user_attrs["pitting_magpie_features"]
+    ) != bool(params.use_magpie):
+        raise RuntimeError("Selected trial has inconsistent Magpie provenance.")
+    if trial.user_attrs.get("tabicl_norm_methods") != ["none"]:
+        raise RuntimeError("Selected trial did not record disabled power normalization.")
+    if not isinstance(trial.user_attrs.get("sampler_seed"), int):
+        raise RuntimeError("Selected trial has no recorded sampler seed.")
+
+    evaluation = study_fingerprint.get("evaluation", {})
+    if evaluation.get("validation_folds") != list(search.FIXED_VALIDATION_FOLDS):
+        raise RuntimeError("Study fingerprint does not contain all development folds.")
+    if evaluation.get("feature_shuffle_method") != "none":
+        raise RuntimeError("Study fingerprint changed the fixed feature order.")
+    if evaluation.get("norm_methods") != ["none"]:
+        raise RuntimeError("Study fingerprint did not disable power normalization.")
+    if evaluation.get("regression_output") != "median":
+        raise RuntimeError("Study fingerprint changed regression output.")
+
+    artifacts: dict[str, dict[str, str]] = {}
+    missing: list[str] = []
+    for path_attr, sha_attr in (
+        ("summary_csv", "summary_csv_sha256"),
+        ("summary_json", "summary_json_sha256"),
+        ("rows_csv", "rows_csv_sha256"),
+        ("checkpoint_path", "checkpoint_sha256"),
+        ("trial_result_json", "trial_result_json_sha256"),
+    ):
+        path_value = trial.user_attrs.get(path_attr)
+        sha_value = str(trial.user_attrs.get(sha_attr, ""))
+        if not path_value or re.fullmatch(r"[0-9a-f]{64}", sha_value) is None:
+            raise RuntimeError(
+                "Selected trial has an incomplete journal artifact record: "
+                f"{path_attr}, {sha_attr}."
+            )
+        path = Path(str(path_value)).expanduser().resolve()
+        artifacts[path_attr] = {"path": str(path), "sha256": sha_value}
+        if not path.is_file():
+            missing.append(str(path))
+
+    metrics = {"mean_test_spearman": float(trial.value)}
+    if not math.isfinite(metrics["mean_test_spearman"]):
+        raise RuntimeError("Selected trial objective is not finite.")
+    for key in (
+        "mean_test_mae",
+        "median_test_mae",
+        "mean_test_rmse",
+        "mean_test_r2",
+        "median_test_spearman",
+        "std_test_spearman",
+    ):
+        try:
+            value = float(trial.user_attrs[key])
+        except (KeyError, TypeError, ValueError) as error:
+            raise RuntimeError(
+                f"Selected trial has no finite journal metric: {key}."
+            ) from error
+        if not math.isfinite(value):
+            raise RuntimeError(f"Selected trial journal metric is not finite: {key}.")
+        metrics[key] = value
+
+    return {
+        "schema_version": "epit_selected_trial_journal_provenance_v1",
+        "verification_mode": "optuna_journal_record",
+        "immutable_files_verified": False,
+        "missing_local_artifacts": missing,
+        "development_rows_only": True,
+        "validation_folds": list(search.FIXED_VALIDATION_FOLDS),
+        "settings": {
+            "n_estimators": int(evaluation["n_estimators"]),
+            "pitting_magpie_features": bool(params.use_magpie),
+            "tabicl_feat_shuffle_method": "none",
+            "tabicl_norm_methods": ["none"],
+            "regression_output": "median",
+        },
+        "pipeline_fingerprint_sha256": study_fingerprint_sha256,
+        "artifact_identity": search.pipeline_artifact_identity(rules),
+        "recorded_artifacts": artifacts,
+        "recorded_metrics": metrics,
+    }
+
+
 def replace_option(command: list[str], option: str, value: Any) -> None:
     index = command.index(option)
     command[index + 1] = str(value)
@@ -472,17 +633,38 @@ def run(args: argparse.Namespace) -> Path:
         split_manifest_path=args.split_manifest,
     )
     study, trial = load_selected_trial(args)
+    unfinished_trials_at_selection = [
+        {"number": int(candidate.number), "state": candidate.state.name}
+        for candidate in study.trials
+        if candidate.state.name in {"RUNNING", "WAITING"}
+    ]
     study_fingerprint, study_fingerprint_sha256 = (
         verify_study_pipeline_identity(study, rules)
     )
     params = search.trial_params_from_mapping(dict(trial.params))
-    trial_eval = verify_selected_trial_evaluation(
-        trial,
-        split_manifest=args.split_manifest,
-        rules=rules,
-        params=params,
-        study_fingerprint_sha256=study_fingerprint_sha256,
-    )
+    try:
+        trial_eval = verify_selected_trial_evaluation(
+            trial,
+            split_manifest=args.split_manifest,
+            rules=rules,
+            params=params,
+            study_fingerprint_sha256=study_fingerprint_sha256,
+        )
+    except FileNotFoundError:
+        if not args.allow_missing_selected_trial_artifacts:
+            raise
+        trial_eval = verify_selected_trial_journal_record(
+            trial,
+            rules=rules,
+            params=params,
+            study_fingerprint=study_fingerprint,
+            study_fingerprint_sha256=study_fingerprint_sha256,
+        )
+        print(
+            "Selected-trial proxy files are unavailable locally; "
+            "validated the completed Optuna journal record instead.",
+            flush=True,
+        )
     run_name = args.final_run_name or (
         f"final_{search.slugify(args.study_name)}_trial_{trial.number:04d}"
     )
@@ -565,6 +747,12 @@ def run(args: argparse.Namespace) -> Path:
             "name": args.study_name,
             "storage": args.storage,
             "total_trials": len(study.trials),
+            "selection_mode": (
+                "explicit_best_completed_trial"
+                if args.selected_trial_number is not None
+                else "automatic_best_completed_trial"
+            ),
+            "unfinished_trials_at_selection": unfinished_trials_at_selection,
             "selected_trial_number": int(trial.number),
             "selected_trial_value": float(trial.value),
             "selected_trial_params": asdict(params),

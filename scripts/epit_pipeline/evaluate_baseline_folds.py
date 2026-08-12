@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Evaluate pretrained TabICL and CatBoost on frozen EPIT development folds."""
+"""Evaluate three baseline models on frozen EPIT development folds."""
 
 from __future__ import annotations
 
@@ -35,6 +35,7 @@ DEFAULT_OUTPUT_DIR = (
     / "epit_pipeline"
     / "baseline_folds_v2"
 )
+LEGACY_OUTPUT_DIR = DEFAULT_OUTPUT_DIR.with_name("baseline_folds_v1")
 DEFAULT_GENERIC_CHECKPOINT = (
     REPO_ROOT
     / "checkpoints"
@@ -58,6 +59,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_SPLIT_MANIFEST,
     )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument(
+        "--auto-output-dir",
+        action="store_true",
+        help="Use a new suffixed directory when the requested output is non-empty.",
+    )
     parser.add_argument(
         "--generic-checkpoint",
         type=Path,
@@ -163,7 +169,8 @@ def validate_fold_rows(rows: pd.DataFrame, *, fold: int) -> None:
     models = list(rows.get("model", pd.Series(dtype=str)).astype(str))
     if len(models) != len(EXPECTED_MODELS) or set(models) != set(EXPECTED_MODELS):
         raise RuntimeError(
-            f"Fold {fold} did not produce exactly the two reference models: {models}"
+            f"Fold {fold} did not produce exactly the expected reference models: "
+            f"{models}"
         )
     expected_strategy = f"epit_pipeline_development_fold_{fold}"
     if set(rows["split_strategy"].astype(str)) != {expected_strategy}:
@@ -198,16 +205,49 @@ def validate_fold_rows(rows: pd.DataFrame, *, fold: int) -> None:
             raise RuntimeError(f"Fold {fold} produced invalid {metric} values.")
 
 
+def prepare_output_dir(requested: Path, *, auto_output_dir: bool) -> Path:
+    output_dir = requested.expanduser().resolve()
+    if output_dir == LEGACY_OUTPUT_DIR.resolve():
+        output_dir = DEFAULT_OUTPUT_DIR.resolve()
+        auto_output_dir = True
+        print(
+            f"Redirecting legacy baseline output to {output_dir}",
+            flush=True,
+        )
+
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True, exist_ok=False)
+        return output_dir
+    if not any(output_dir.iterdir()):
+        return output_dir
+    if not auto_output_dir:
+        raise FileExistsError(
+            f"Baseline output directory is non-empty: {output_dir}"
+        )
+
+    run_number = 2
+    while True:
+        candidate = output_dir.with_name(f"{output_dir.name}_run_{run_number}")
+        try:
+            candidate.mkdir(parents=True, exist_ok=False)
+        except FileExistsError:
+            run_number += 1
+            continue
+        print(
+            f"Baseline output already exists; writing this run to {candidate}",
+            flush=True,
+        )
+        return candidate
+
+
 def run(args: argparse.Namespace) -> Path:
     validate_args(args)
     args.split_manifest = args.split_manifest.expanduser().resolve()
     args.generic_checkpoint = args.generic_checkpoint.expanduser().resolve()
-    output_dir = args.output_dir.expanduser().resolve()
-    if output_dir.exists() and any(output_dir.iterdir()):
-        raise FileExistsError(
-            f"Baseline output directory is non-empty: {output_dir}"
-        )
-    output_dir.mkdir(parents=True, exist_ok=True)
+    output_dir = prepare_output_dir(
+        args.output_dir,
+        auto_output_dir=args.auto_output_dir,
+    )
     frozen_split = load_frozen_split(args.split_manifest)
 
     commands: list[list[str]] = []

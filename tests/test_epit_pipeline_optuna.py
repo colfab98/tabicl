@@ -131,6 +131,174 @@ def test_optuna_study_fingerprint_rejects_mixed_pipeline() -> None:
         search.bind_study_pipeline_fingerprint(legacy_study, fingerprint)
 
 
+def test_stage4_pins_trial36_with_full_stage1_settings(tmp_path: Path) -> None:
+    args = train_final.parse_args(
+        [
+            "--storage",
+            "journal:///unused.log",
+            "--selected-trial-number",
+            "36",
+            "--allow-stale-running-trials",
+            "--allow-missing-selected-trial-artifacts",
+        ]
+    )
+    train_final.validate_args(args)
+    rules = search.load_target_rule_config(
+        summary_path=args.target_rule_summary,
+        split_manifest_path=args.split_manifest,
+    )
+    params = search.TrialParams(
+        use_magpie=True,
+        informed_prior_ratio=0.5,
+        mlp_prob=1.0,
+        informed_feature_block_strength=0.70860372783741,
+        informed_target_mix_weight=0.5877153183423934,
+        pitting_material_dirichlet_prob=0.0,
+        pitting_material_dirichlet_concentration=None,
+        pitting_material_dirichlet_active_prob=None,
+    )
+    command = search.training_command(
+        args,
+        params,
+        tmp_path / "checkpoints",
+        rules,
+    )
+    train_final.replace_option(
+        command,
+        "--save_temp_every",
+        args.save_temp_every,
+    )
+    train_final.replace_option(
+        command,
+        "--save_perm_every",
+        args.save_perm_every,
+    )
+
+    assert args.max_steps == 10000
+    assert args.scheduler_total_steps == 10000
+    assert "--nproc_per_node=1" in command
+    assert _value_after(command, "--max_steps") == "10000"
+    assert _value_after(command, "--scheduler_total_steps") == "10000"
+    assert _value_after(command, "--batch_size") == "512"
+    assert _value_after(command, "--micro_batch_size") == "4"
+    assert _value_after(command, "--lr") == "1e-4"
+    assert _value_after(command, "--scheduler") == "cosine_warmup"
+    assert _value_after(command, "--warmup_proportion") == "0.02"
+    assert _value_after(command, "--gradient_clipping") == "1.0"
+    assert _value_after(command, "--save_temp_every") == "100"
+    assert _value_after(command, "--save_perm_every") == "500"
+    assert _value_after(command, "--informed_prior_ratio") == "0.5"
+    assert _value_after(command, "--informed_target_mix_weight") == "0.5877153183"
+    assert _value_after(command, "--pitting_magpie_features") == "True"
+    assert _value_after(command, "--min_features") == "31"
+    assert _value_after(command, "--max_features") == "31"
+    assert "--pitting_target_rule_scores" in command
+    assert "--pitting_target_rule_coefficients" in command
+    assert "--epit_material_coef" not in command
+    assert "--epit_environment_coef" not in command
+    assert "--epit_interaction_coef" not in command
+
+    launcher = (
+        search.REPO_ROOT / "scripts" / "epit_pipeline" / "train_final.sbatch"
+    ).read_text(encoding="utf-8")
+    assert 'SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-36}"' in launcher
+    assert 'MAX_STEPS="${MAX_STEPS:-10000}"' in launcher
+    assert 'SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-10000}"' in launcher
+    assert "--selected-trial-number" in launcher
+    assert "--allow-stale-running-trials" in launcher
+    assert "--allow-missing-selected-trial-artifacts" in launcher
+
+
+def test_stage4_explicit_selection_requires_best_completed_trial(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import optuna
+    from optuna.trial import TrialState
+
+    lower = SimpleNamespace(number=12, state=TrialState.COMPLETE, value=0.60)
+    best = SimpleNamespace(number=36, state=TrialState.COMPLETE, value=0.69)
+    stale = SimpleNamespace(number=47, state=TrialState.RUNNING, value=None)
+    study = SimpleNamespace(trials=[lower, best, stale])
+    monkeypatch.setattr(optuna, "load_study", lambda **kwargs: study)
+    monkeypatch.setattr(
+        search.original.search_utils,
+        "build_optuna_storage",
+        lambda storage: storage,
+    )
+
+    args = train_final.parse_args(
+        [
+            "--storage",
+            "journal:///unused.log",
+            "--selected-trial-number",
+            "36",
+            "--allow-stale-running-trials",
+        ]
+    )
+    _, selected = train_final.load_selected_trial(args)
+    assert selected is best
+
+    args.selected_trial_number = 12
+    with pytest.raises(RuntimeError, match="not the best completed trial"):
+        train_final.load_selected_trial(args)
+
+
+def test_stage4_validates_missing_worker_files_from_journal(tmp_path: Path) -> None:
+    search_args = search.parse_args([])
+    rules = search.load_target_rule_config(
+        summary_path=search_args.target_rule_summary,
+        split_manifest_path=search_args.split_manifest,
+    )
+    fingerprint = search.build_pipeline_fingerprint(search_args, rules)
+    fingerprint_sha256 = search.canonical_json_sha256(fingerprint)
+    params = search.TrialParams(
+        use_magpie=True,
+        informed_prior_ratio=0.5,
+        mlp_prob=1.0,
+        informed_feature_block_strength=0.70860372783741,
+        informed_target_mix_weight=0.5877153183423934,
+        pitting_material_dirichlet_prob=0.0,
+        pitting_material_dirichlet_concentration=None,
+        pitting_material_dirichlet_active_prob=None,
+    )
+    attrs = {
+        search.STUDY_FINGERPRINT_SHA256_ATTR: fingerprint_sha256,
+        "pipeline_artifact_identity": search.pipeline_artifact_identity(rules),
+        "pitting_magpie_features": True,
+        "tabicl_norm_methods": ["none"],
+        "sampler_seed": 42,
+        "mean_test_mae": 210.36,
+        "median_test_mae": 196.70,
+        "mean_test_rmse": 305.86,
+        "mean_test_r2": 0.363,
+        "median_test_spearman": 0.716,
+        "std_test_spearman": 0.183,
+    }
+    for path_attr, sha_attr in (
+        ("summary_csv", "summary_csv_sha256"),
+        ("summary_json", "summary_json_sha256"),
+        ("rows_csv", "rows_csv_sha256"),
+        ("checkpoint_path", "checkpoint_sha256"),
+        ("trial_result_json", "trial_result_json_sha256"),
+    ):
+        attrs[path_attr] = str(tmp_path / path_attr)
+        attrs[sha_attr] = "0" * 64
+    trial = SimpleNamespace(number=36, value=0.6963, user_attrs=attrs)
+
+    provenance = train_final.verify_selected_trial_journal_record(
+        trial,
+        rules=rules,
+        params=params,
+        study_fingerprint=fingerprint,
+        study_fingerprint_sha256=fingerprint_sha256,
+    )
+
+    assert provenance["verification_mode"] == "optuna_journal_record"
+    assert provenance["immutable_files_verified"] is False
+    assert len(provenance["missing_local_artifacts"]) == 5
+    assert provenance["validation_folds"] == [1, 2, 3, 4, 5]
+
+
 def test_stage4_rejects_study_from_another_artifact_set() -> None:
     args = search.parse_args([])
     rules = search.load_target_rule_config(
@@ -443,7 +611,23 @@ def test_baseline_launcher_uses_frozen_development_folds() -> None:
     assert "splits_v2/split_manifest.json" in launcher
     assert "baseline_folds_v2" in launcher
     assert "tabicl_s1_regression_baseline/step-1000.ckpt" in launcher
+    assert "--auto-output-dir" in launcher
     assert "evaluate_baseline_folds" in launcher
+
+
+def test_baseline_output_dir_gets_fresh_suffix_when_requested(tmp_path: Path) -> None:
+    output_dir = tmp_path / "baselines"
+    output_dir.mkdir()
+    (output_dir / "old-result.csv").write_text("old\n", encoding="utf-8")
+
+    selected = evaluate_baseline_folds.prepare_output_dir(
+        output_dir,
+        auto_output_dir=True,
+    )
+
+    assert selected == tmp_path / "baselines_run_2"
+    assert selected.is_dir()
+    assert (output_dir / "old-result.csv").read_text(encoding="utf-8") == "old\n"
 
 
 def test_explicit_none_normalization_reaches_tabicl_estimator(tmp_path: Path) -> None:

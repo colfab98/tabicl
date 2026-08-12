@@ -22,6 +22,7 @@ python -m scripts.epit_pipeline.evaluate_baseline_folds \
   --split-manifest "$SPLIT_MANIFEST" \
   --generic-checkpoint "$GENERIC_CHECKPOINT" \
   --output-dir "$OUTPUT_DIR" \
+  --auto-output-dir \
   --device cuda \
   --n-estimators "$N_ESTIMATORS" \
   --catboost-thread-count "$CATBOOST_THREAD_COUNT"
