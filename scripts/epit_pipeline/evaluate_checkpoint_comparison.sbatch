@@ -29,7 +29,7 @@ for FOLD in 1 2 3 4 5; do
     --local-model-label trial_0036 \
     --checkpoint all \
     --checkpoint-root "$CHECKPOINT_ROOT" \
-    --run-prefix "" \
+    --run-prefix "/" \
     --min-checkpoint-step 500 \
     --checkpoint-step-interval 500 \
     --include-latest-common-checkpoint \
