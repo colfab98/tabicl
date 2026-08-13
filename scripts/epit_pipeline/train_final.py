@@ -641,7 +641,17 @@ def run(args: argparse.Namespace) -> Path:
     study_fingerprint, study_fingerprint_sha256 = (
         verify_study_pipeline_identity(study, rules)
     )
-    params = search.trial_params_from_mapping(dict(trial.params))
+    fixed_prior = study_fingerprint.get("fixed_prior", {})
+    composition_mode = str(fixed_prior.get("composition_mode", "legacy"))
+    if composition_mode not in search.PITTING_COMPOSITION_MODES:
+        raise RuntimeError(
+            "Selected study has an unsupported pitting composition mode: "
+            f"{composition_mode!r}."
+        )
+    args.pitting_composition_mode = composition_mode
+    params = search.trial_params_from_mapping(
+        dict(trial.params), composition_mode=composition_mode
+    )
     try:
         trial_eval = verify_selected_trial_evaluation(
             trial,

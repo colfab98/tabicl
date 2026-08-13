@@ -884,7 +884,11 @@ if __name__ == "__main__":
     parser.add_argument("--pitting_material_dirichlet_prob", type=false_or_float, default=None)
     parser.add_argument("--pitting_material_dirichlet_concentration", type=float, default=None)
     parser.add_argument("--pitting_material_dirichlet_active_prob", type=float, default=None)
-    parser.add_argument("--pitting_composition_mode", choices=("legacy", "empirical"), default=None)
+    parser.add_argument(
+        "--pitting_composition_mode",
+        choices=("legacy", "empirical", "fe_ni_softmax"),
+        default=None,
+    )
     parser.add_argument("--pitting_composition_profile", type=str, default=None)
     parser.add_argument("--pitting_composition_family_probs", type=float, nargs=5, default=None)
     parser.add_argument("--pitting_composition_perturb_strength", type=float, default=None)

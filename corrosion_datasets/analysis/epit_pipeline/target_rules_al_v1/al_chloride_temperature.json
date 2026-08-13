@@ -1,0 +1,223 @@
+{
+  "anchor_strength": 0.1,
+  "applicability": "Al Alloy",
+  "calibration_target": "standardized EPIT ranks",
+  "coefficient_anchor": {
+    "high_temperature_aggressiveness": 0.2,
+    "log_chloride_aggressiveness": 0.8
+  },
+  "coefficient_constraints": "nonnegative; sum to one",
+  "coefficient_upper_bounds": null,
+  "description": "Al-only log-chloride and above-30-C temperature rule",
+  "direct_evaluation": {
+    "maximum_fold_spearman": 0.7627663211410729,
+    "mean_fold_spearman": 0.18686702626188095,
+    "minimum_fold_spearman": -0.06347381838076792,
+    "minimum_validation_rows": 10,
+    "pooled_out_of_fold_spearman": 0.10829817993862006,
+    "rows": 94,
+    "scope": "out-of-fold eligible development rows only; applicability=Al Alloy",
+    "small_sample_warning": false,
+    "standard_deviation_fold_spearman": 0.29638129968929844
+  },
+  "evaluation_role": "experimental Al-only candidate",
+  "final_development_calibration": {
+    "coefficients": {
+      "high_temperature_aggressiveness": 0.5288062058899002,
+      "log_chloride_aggressiveness": 0.4711937941100998
+    },
+    "feature_state": {
+      "imputation_means": {
+        "Test Temp. oC": 24.606382978723403,
+        "[Cl-] M": 0.3918085106382979
+      },
+      "term_scaling": {
+        "high_temperature_aggressiveness": {
+          "mean": -0.1276595744680851,
+          "std": 1.0440718422455573
+        },
+        "log_chloride_aggressiveness": {
+          "mean": 0.9208714226482492,
+          "std": 1.707277784557994
+        }
+      }
+    },
+    "in_sample_spearman_diagnostic": 0.21324781766583342,
+    "objective": 1.4011859819248313,
+    "purpose": "coefficient center for final training; not final evaluation",
+    "rows": 94
+  },
+  "final_test_targets_used": false,
+  "fold_calibrations": [
+    {
+      "coefficients": {
+        "high_temperature_aggressiveness": 0.5255244033640449,
+        "log_chloride_aggressiveness": 0.47447559663595507
+      },
+      "context_rows": 82,
+      "feature_state": {
+        "imputation_means": {
+          "Test Temp. oC": 24.548780487804876,
+          "[Cl-] M": 0.4345121951219513
+        },
+        "term_scaling": {
+          "high_temperature_aggressiveness": {
+            "mean": -0.14634146341463414,
+            "std": 1.1166364041228876
+          },
+          "log_chloride_aggressiveness": {
+            "mean": 0.9092916308406759,
+            "std": 1.8276495210001424
+          }
+        }
+      },
+      "fold": 1,
+      "objective": 1.4064589862382593,
+      "spearman": 0.0,
+      "standardized_mae": 0.8315017678618121,
+      "standardized_rmse": 1.0,
+      "validation_rows": 12
+    },
+    {
+      "coefficients": {
+        "high_temperature_aggressiveness": 0.5215355692335784,
+        "log_chloride_aggressiveness": 0.4784644307664216
+      },
+      "context_rows": 80,
+      "feature_state": {
+        "imputation_means": {
+          "Test Temp. oC": 24.5375,
+          "[Cl-] M": 0.39912500000000006
+        },
+        "term_scaling": {
+          "high_temperature_aggressiveness": {
+            "mean": -0.15,
+            "std": 1.1302654555457314
+          },
+          "log_chloride_aggressiveness": {
+            "mean": 0.9751121560202616,
+            "std": 1.8381081850164267
+          }
+        }
+      },
+      "fold": 2,
+      "objective": 1.391721008210981,
+      "spearman": 0.7627663211410729,
+      "standardized_mae": 0.6686535356370353,
+      "standardized_rmse": 0.8036738324325868,
+      "validation_rows": 14
+    },
+    {
+      "coefficients": {
+        "high_temperature_aggressiveness": 0.521077346857978,
+        "log_chloride_aggressiveness": 0.47892265314202204
+      },
+      "context_rows": 81,
+      "feature_state": {
+        "imputation_means": {
+          "Test Temp. oC": 24.54320987654321,
+          "[Cl-] M": 0.4077777777777778
+        },
+        "term_scaling": {
+          "high_temperature_aggressiveness": {
+            "mean": -0.14814814814814814,
+            "std": 1.1233889546743037
+          },
+          "log_chloride_aggressiveness": {
+            "mean": 0.956205802232761,
+            "std": 1.8304575918239154
+          }
+        }
+      },
+      "fold": 3,
+      "objective": 1.3775047467276706,
+      "spearman": -0.06347381838076792,
+      "standardized_mae": 1.2227609211533934,
+      "standardized_rmse": 1.4684262473931025,
+      "validation_rows": 13
+    },
+    {
+      "coefficients": {
+        "high_temperature_aggressiveness": 0.5230482852009394,
+        "log_chloride_aggressiveness": 0.4769517147990607
+      },
+      "context_rows": 84,
+      "feature_state": {
+        "imputation_means": {
+          "Test Temp. oC": 24.55952380952381,
+          "[Cl-] M": 0.39678571428571435
+        },
+        "term_scaling": {
+          "high_temperature_aggressiveness": {
+            "mean": -0.14285714285714285,
+            "std": 1.1034885929768063
+          },
+          "log_chloride_aggressiveness": {
+            "mean": 0.9577698807244481,
+            "std": 1.797492045599051
+          }
+        }
+      },
+      "fold": 4,
+      "objective": 1.389420435740991,
+      "spearman": 0.10444659357341869,
+      "standardized_mae": 1.0145620157512079,
+      "standardized_rmse": 1.1997258846338714,
+      "validation_rows": 10
+    },
+    {
+      "coefficients": {
+        "high_temperature_aggressiveness": 0.5848422158302534,
+        "log_chloride_aggressiveness": 0.4151577841697466
+      },
+      "context_rows": 49,
+      "feature_state": {
+        "imputation_means": {
+          "Test Temp. oC": 25.0,
+          "[Cl-] M": 0.27346938775510204
+        },
+        "term_scaling": {
+          "high_temperature_aggressiveness": {
+            "mean": 0.0,
+            "std": 1.0
+          },
+          "log_chloride_aggressiveness": {
+            "mean": 0.7300291580301643,
+            "std": 0.37039693942046914
+          }
+        }
+      },
+      "fold": 5,
+      "objective": 0.9211728062226167,
+      "spearman": 0.13059603497568112,
+      "standardized_mae": 0.9846548867989581,
+      "standardized_rmse": 1.3516068842263032,
+      "validation_rows": 45
+    }
+  ],
+  "formula": {
+    "applicability": "Al Alloy",
+    "environment_formula": "-log10(max(chloride, 1e-12)) - max(temperature_C - 30, 0)",
+    "excluded_terms": [
+      "pH because its effect is regime-dependent for Al",
+      "composition terms until an Al-subfamily hypothesis is validated"
+    ],
+    "fixed_direct_evaluation_parameters": {
+      "chloride_floor_M": 1e-12,
+      "temperature_threshold_C": 30.0
+    },
+    "material_design": "Al enters through the Al-Alloy applicability gate, not as a linear wt-percent term",
+    "synthetic_use": "Stage-2 experiment only until synthetic family routing exists"
+  },
+  "rule_family": "al_chloride_temperature",
+  "schema_version": "epit_target_rule_v2",
+  "source_sha256": "d0ce5e9c4b42e0b5a20dbd5c4896791703c5f433ae19bc032674d5848d9d1438",
+  "split_lock": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/splits_v2/split_lock.json",
+  "split_lock_sha256": "8683f5cb0aa0fca121c66718dbd1d358959b71952e61ada7cd628eda1e9d55b6",
+  "split_manifest": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json",
+  "split_manifest_sha256": "b151505356908814729ae6027660b89739c11dc463ed3b1f10630b001d1b837c",
+  "term_names": [
+    "log_chloride_aggressiveness",
+    "high_temperature_aggressiveness"
+  ]
+}

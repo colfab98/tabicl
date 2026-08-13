@@ -887,6 +887,153 @@ class MethodAwareRule(TargetRuleFamily):
         }
 
 
+class AlChlorideTemperatureRule(TargetRuleFamily):
+    """Al-only chloride and high-temperature breakdown hypothesis."""
+
+    name = "al_chloride_temperature"
+    description = "Al-only log-chloride and above-30-C temperature rule"
+    evaluation_role = "experimental Al-only candidate"
+    applicable_material_classes = ("Al Alloy",)
+    term_names = (
+        "log_chloride_aggressiveness",
+        "high_temperature_aggressiveness",
+    )
+    coefficient_anchor = np.asarray([0.80, 0.20], dtype=float)
+    temperature_threshold = 30.0
+    chloride_floor = 1e-12
+    environment_columns = ("Test Temp. oC", "[Cl-] M")
+
+    def _fit_imputation(
+        self,
+        dataset: EpitDataset,
+        row_indices: np.ndarray,
+    ) -> dict[str, float]:
+        imputation: dict[str, float] = {}
+        for column in self.environment_columns:
+            values = np.asarray(
+                [
+                    _numeric(dataset.table, dataset.rows[int(index)], column)
+                    for index in row_indices
+                ],
+                dtype=float,
+            )
+            finite = values[np.isfinite(values)]
+            if finite.size == 0:
+                raise RuntimeError(
+                    f"{self.name} cannot impute an entirely missing {column!r}."
+                )
+            imputation[column] = float(np.mean(finite))
+        return imputation
+
+    def _raw_inputs(
+        self,
+        dataset: EpitDataset,
+        row_indices: np.ndarray,
+        imputation: dict[str, float],
+    ) -> tuple[np.ndarray, np.ndarray]:
+        values: list[np.ndarray] = []
+        for column in self.environment_columns:
+            column_values = np.asarray(
+                [
+                    _numeric(dataset.table, dataset.rows[int(index)], column)
+                    for index in row_indices
+                ],
+                dtype=float,
+            )
+            values.append(
+                np.where(
+                    np.isfinite(column_values),
+                    column_values,
+                    imputation[column],
+                )
+            )
+        temperature, chloride = values
+        return temperature, chloride
+
+    def _unscaled_signed_terms(
+        self,
+        dataset: EpitDataset,
+        row_indices: np.ndarray,
+        state: dict[str, Any],
+    ) -> np.ndarray:
+        temperature, chloride = self._raw_inputs(
+            dataset,
+            row_indices,
+            state["imputation_means"],
+        )
+        return np.column_stack(
+            [
+                -np.log10(np.clip(chloride, self.chloride_floor, None)),
+                -np.maximum(temperature - self.temperature_threshold, 0.0),
+            ]
+        )
+
+    def fit_terms(
+        self,
+        dataset: EpitDataset,
+        row_indices: np.ndarray,
+    ) -> RuleTermData:
+        row_indices = np.asarray(row_indices, dtype=int)
+        state: dict[str, Any] = {
+            "imputation_means": self._fit_imputation(dataset, row_indices),
+        }
+        raw_terms = self._unscaled_signed_terms(dataset, row_indices, state)
+        state["term_scaling"] = {
+            name: _fit_scale(raw_terms[:, index])
+            for index, name in enumerate(self.term_names)
+        }
+        return RuleTermData(
+            values=self.transform_terms(dataset, row_indices, state),
+            state=state,
+        )
+
+    def transform_terms(
+        self,
+        dataset: EpitDataset,
+        row_indices: np.ndarray,
+        state: dict[str, Any],
+    ) -> np.ndarray:
+        raw_terms = self._unscaled_signed_terms(
+            dataset,
+            np.asarray(row_indices, dtype=int),
+            state,
+        )
+        values = np.column_stack(
+            [
+                _apply_scale(raw_terms[:, index], state["term_scaling"][name])
+                for index, name in enumerate(self.term_names)
+            ]
+        )
+        if not np.isfinite(values).all():
+            raise RuntimeError(f"{self.name} generated non-finite rule terms.")
+        return values
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        return {
+            "environment_formula": (
+                "-log10(max(chloride, 1e-12)) "
+                "- max(temperature_C - 30, 0)"
+            ),
+            "fixed_direct_evaluation_parameters": {
+                "chloride_floor_M": self.chloride_floor,
+                "temperature_threshold_C": self.temperature_threshold,
+            },
+            "material_design": (
+                "Al enters through the Al-Alloy applicability gate, not as a "
+                "linear wt-percent term"
+            ),
+            "excluded_terms": [
+                "pH because its effect is regime-dependent for Al",
+                "composition terms until an Al-subfamily hypothesis is validated",
+            ],
+            "synthetic_use": (
+                "Stage-2 experiment only until synthetic family routing exists"
+            ),
+            "applicability": self.applicability,
+        }
+
+
 class CurrentPrenFeNiBaseline(CurrentPrenRule):
     name = "current_pren_fe_ni"
     description = "Current PREN rule restricted to the Fe/Ni comparison rows"
@@ -904,6 +1051,7 @@ RULE_FAMILIES: dict[str, TargetRuleFamily] = {
     CoupledBreakdownRule.name: CoupledBreakdownRule(),
     FeNiCrThresholdRule.name: FeNiCrThresholdRule(),
     MethodAwareRule.name: MethodAwareRule(),
+    AlChlorideTemperatureRule.name: AlChlorideTemperatureRule(),
 }
 
 

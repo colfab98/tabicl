@@ -70,6 +70,7 @@ def test_all_registered_rule_terms_are_finite_on_eligible_rows() -> None:
         "coupled_breakdown": 452,
         "fe_ni_cr_threshold": 452,
         "method_aware": 452,
+        "al_chloride_temperature": 94,
     }
 
     families = get_rule_families()

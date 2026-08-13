@@ -63,6 +63,10 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+from scripts.eval_corrosion_datasets import (
+    DEFAULT_REGRESSION_PLOT_METRICS,
+    write_checkpoint_trend_plots,
+)
 
 from scripts.epit_pipeline.evaluate_optuna_folds import summarize_rows
 
@@ -87,6 +91,15 @@ summary = pd.concat(summaries, ignore_index=True)
 root.mkdir(parents=True, exist_ok=True)
 combined.to_csv(root / "rows.csv", index=False)
 summary.to_csv(root / "summary.csv", index=False)
+plot_paths = write_checkpoint_trend_plots(
+    summary,
+    root / "plots",
+    list(DEFAULT_REGRESSION_PLOT_METRICS),
+)
 print(summary.to_string(index=False))
 print(f"Combined results: {root}")
+if plot_paths:
+    print(f"Five-fold average checkpoint trend plots: {root / 'plots'}")
+    for path in plot_paths:
+        print(f"  {path}")
 PY

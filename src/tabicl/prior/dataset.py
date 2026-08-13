@@ -45,6 +45,7 @@ from .epit_composition_profile import (
 )
 from .magpie_features import (
     EPIT_BASE_FEATURE_COUNT,
+    EPIT_MATERIAL_FEATURE_COUNT,
     EPIT_MAGPIE_TOTAL_FEATURE_COUNT,
     append_magpie_descriptors_torch,
 )
@@ -102,6 +103,12 @@ EPIT_TARGET_RULE_COEFFICIENTS: Dict[str, Dict[str, float]] = {
 }
 
 
+EPIT_FE_NI_FAMILY_NAMES = ("fe", "ni_cr_mo")
+EPIT_FE_NI_FAMILY_PROBS = (411.0 / 452.0, 41.0 / 452.0)
+EPIT_FE_FAMILY_ID = 0
+EPIT_NI_CR_MO_FAMILY_ID = 1
+
+
 @dataclass
 class PittingProfileInfo:
     """Role metadata for pitting-potential synthetic feature profiles."""
@@ -118,6 +125,7 @@ class PittingProfileInfo:
     exposure_damage: Optional[Tensor] = None
     descriptor_signal: Optional[Tensor] = None
     intervention_signal: Optional[Tensor] = None
+    material_family_ids: Optional[Tensor] = None
 
     def add_role(self, role: str, col: int, *, categorical: bool = False) -> None:
         self.role_columns.setdefault(role, []).append(col)
@@ -671,6 +679,7 @@ class SCMPrior(Prior):
         self.last_pitting_target_component: Optional[Tensor] = None
         self.last_pitting_target_drive: Optional[Tensor] = None
         self.last_pitting_composition_batch: Optional[EpitCompositionBatch] = None
+        self.last_pitting_material_family_ids: Optional[Tensor] = None
 
     def hp_sampling(self) -> Dict[str, Any]:
         """Sample hyperparameters for dataset generation.
@@ -884,12 +893,18 @@ class SCMPrior(Prior):
             "empirical_profile": "empirical",
         }
         mode = aliases.get(mode, mode)
-        if mode not in {"legacy", "empirical"}:
-            raise ValueError("pitting_composition_mode must be 'legacy' or 'empirical'.")
+        if mode not in {"legacy", "empirical", "fe_ni_softmax"}:
+            raise ValueError(
+                "pitting_composition_mode must be 'legacy', 'empirical', or "
+                "'fe_ni_softmax'."
+            )
         return mode
 
     def _empirical_pitting_composition_enabled(self) -> bool:
         return self._pitting_composition_mode() == "empirical"
+
+    def _fe_ni_softmax_pitting_composition_enabled(self) -> bool:
+        return self._pitting_composition_mode() == "fe_ni_softmax"
 
     @staticmethod
     def _standardize_array(values: np.ndarray) -> np.ndarray:
@@ -1133,6 +1148,18 @@ class SCMPrior(Prior):
             "target_mix_weight": float(target_mix_weight),
             "synthetic_environment_mode": "raw" if physical_profile_applied else "rank_semantic",
         }
+        if profile_info is not None and profile_info.material_family_ids is not None:
+            material_family_ids = profile_info.material_family_ids.detach().cpu()
+            if material_family_ids.numel() != X.shape[0]:
+                raise ValueError(
+                    "Synthetic material-family metadata must match the row count."
+                )
+            rule.update(
+                {
+                    "synthetic_material_family_ids": material_family_ids.numpy(),
+                    "synthetic_material_family_names": EPIT_FE_NI_FAMILY_NAMES,
+                }
+            )
         selection = self._sample_fixed_epit_target_rule_family()
         if selection is None:
             return rule
@@ -1239,8 +1266,21 @@ class SCMPrior(Prior):
         linear_material = chromium + 3.25 * mow
         synergy_material = linear_material + torch.sqrt(chromium * mow)
         threshold_material = torch.sigmoid((chromium - 12.0) / 2.0) + torch.log1p(mow)
+        synthetic_family_ids = rule.get("synthetic_material_family_ids")
+        if synthetic_family_ids is None:
+            ni_cr_mo_rows = nickel > iron
+        else:
+            family_ids = torch.as_tensor(
+                synthetic_family_ids, device=X.device, dtype=torch.long
+            ).reshape(-1)
+            if family_ids.shape[0] != X.shape[0] or torch.any(
+                (family_ids != EPIT_FE_FAMILY_ID)
+                & (family_ids != EPIT_NI_CR_MO_FAMILY_ID)
+            ):
+                raise ValueError("Invalid synthetic Fe/NiCrMo family metadata.")
+            ni_cr_mo_rows = family_ids == EPIT_NI_CR_MO_FAMILY_ID
         class_threshold = torch.where(
-            nickel > iron,
+            ni_cr_mo_rows,
             torch.full_like(chromium, 15.0),
             torch.full_like(chromium, 12.0),
         )
@@ -1652,6 +1692,97 @@ class SCMPrior(Prior):
             raise ValueError("pitting_material_dirichlet_active_prob must be finite.")
         return float(np.clip(active_prob, 0.0, 1.0))
 
+    def _validate_fe_ni_softmax_configuration(self) -> None:
+        if not self._fixed_epit_schema_enabled():
+            raise ValueError("fe_ni_softmax requires pitting_fixed_epit_schema=True.")
+        if float(self.fixed_hp.get("informed_physical_marginal_prob", 0.0)) != 1.0:
+            raise ValueError("fe_ni_softmax requires informed_physical_marginal_prob=1.")
+        style_probs = np.asarray(
+            self.fixed_hp.get("pitting_material_style_probs"), dtype=float
+        )
+        if style_probs.shape != (5,) or not np.allclose(
+            style_probs, (1.0, 0.0, 0.0, 0.0, 0.0)
+        ):
+            raise ValueError(
+                "fe_ni_softmax requires composition-like material style only."
+            )
+        if self._pitting_material_dirichlet_prob() != 0.0:
+            raise ValueError("fe_ni_softmax does not permit masked Dirichlet sampling.")
+
+    @staticmethod
+    def _rearrange_fe_ni_softmax_composition(
+        composition: Tensor, family_ids: Tensor
+    ) -> Tensor:
+        """Move row order statistics to family-defining element positions.
+
+        The operation constructs a complete row-wise permutation. It changes
+        elemental identities without changing any generated percentage.
+        """
+
+        if composition.ndim != 2 or composition.shape[1] < 4:
+            raise ValueError("Fe/NiCrMo rearrangement requires a 2D material table.")
+        family_ids = torch.as_tensor(
+            family_ids, device=composition.device, dtype=torch.long
+        ).reshape(-1)
+        if family_ids.shape[0] != composition.shape[0]:
+            raise ValueError("One Fe/NiCrMo family id is required per composition row.")
+        if torch.any(
+            (family_ids != EPIT_FE_FAMILY_ID)
+            & (family_ids != EPIT_NI_CR_MO_FAMILY_ID)
+        ):
+            raise ValueError("Fe/NiCrMo family ids must be 0 (Fe) or 1 (NiCrMo).")
+
+        sorted_sources = torch.argsort(composition, dim=-1, descending=True)
+        permutation = torch.arange(
+            composition.shape[1], device=composition.device, dtype=torch.long
+        ).expand(composition.shape[0], -1).clone()
+
+        def place_source(rows: Tensor, destination: int, rank: int) -> None:
+            if rows.numel() == 0:
+                return
+            sources = sorted_sources[rows, rank]
+            current_positions = torch.argmax(
+                (permutation[rows] == sources.unsqueeze(-1)).to(torch.int64),
+                dim=-1,
+            )
+            displaced_sources = permutation[rows, destination].clone()
+            permutation[rows, destination] = sources
+            permutation[rows, current_positions] = displaced_sources
+
+        fe_rows = torch.nonzero(
+            family_ids == EPIT_FE_FAMILY_ID, as_tuple=False
+        ).flatten()
+        ni_rows = torch.nonzero(
+            family_ids == EPIT_NI_CR_MO_FAMILY_ID, as_tuple=False
+        ).flatten()
+        place_source(fe_rows, destination=0, rank=0)  # Fe receives the largest value.
+        place_source(ni_rows, destination=2, rank=0)  # Ni receives the largest value.
+        place_source(ni_rows, destination=1, rank=1)  # Cr receives the second largest.
+        place_source(ni_rows, destination=3, rank=2)  # Mo receives the third largest.
+        return torch.gather(composition, dim=1, index=permutation)
+
+    def _apply_fe_ni_softmax_composition(
+        self, composition: Tensor, info: PittingProfileInfo
+    ) -> Tensor:
+        if composition.shape[1] != EPIT_MATERIAL_FEATURE_COUNT:
+            raise ValueError(
+                "fe_ni_softmax requires the fixed 17-column EPIT material schema."
+            )
+        sampled_ids = np.random.choice(
+            len(EPIT_FE_NI_FAMILY_NAMES),
+            size=composition.shape[0],
+            p=np.asarray(EPIT_FE_NI_FAMILY_PROBS, dtype=float),
+        )
+        family_ids = torch.as_tensor(
+            sampled_ids, device=composition.device, dtype=torch.long
+        )
+        rearranged = self._rearrange_fe_ni_softmax_composition(
+            composition, family_ids
+        )
+        info.material_family_ids = family_ids
+        self.last_pitting_material_family_ids = family_ids.detach().cpu()
+        return rearranged
+
     def _apply_masked_dirichlet_composition_marginal(self, X: Tensor, feature_slice: slice) -> None:
         width = feature_slice.stop - feature_slice.start
         if width <= 1:
@@ -1766,8 +1897,15 @@ class SCMPrior(Prior):
                 if np.random.random() < 0.30:
                     row_scale = torch.empty(X.shape[0], 1, device=X.device, dtype=X.dtype).uniform_(0.92, 1.08)
                     composition = composition * row_scale
+                if self._fe_ni_softmax_pitting_composition_enabled():
+                    composition = self._apply_fe_ni_softmax_composition(
+                        composition, info
+                    )
+                    info.material_style = "fe_ni_softmax_composition"
+                    role = "material_fe_ni_softmax_composition"
+                else:
+                    role = "material_composition"
                 X[:, material_slice] = composition
-                role = "material_composition"
             for col in cols:
                 info.add_role(role, col)
             signal_cols = cols
@@ -2005,6 +2143,8 @@ class SCMPrior(Prior):
         self, X: Tensor, blocks: Dict[str, slice], family: str
     ) -> Tuple[Tensor, PittingProfileInfo]:
         info = PittingProfileInfo()
+        if self._fe_ni_softmax_pitting_composition_enabled():
+            self._validate_fe_ni_softmax_configuration()
         marginal_prob = float(self.fixed_hp.get("informed_physical_marginal_prob", 0.0))
         marginal_prob = float(np.clip(marginal_prob, 0.0, 1.0))
         apply_full_profile = marginal_prob > 0.0 and np.random.random() < marginal_prob
@@ -2726,13 +2866,29 @@ class SCMPrior(Prior):
             raise ValueError("Informed target mix weight must be finite and between 0 and 1.")
         profile_applied = profile_info is not None and profile_info.applied
         if self._fixed_epit_schema_enabled():
-            rule = self._sample_fixed_epit_target_rule(X, blocks, target_mix_weight, profile_info)
+            fe_ni_target_only = self._fe_ni_softmax_pitting_composition_enabled()
+            effective_mix_weight = 1.0 if fe_ni_target_only else target_mix_weight
+            rule = self._sample_fixed_epit_target_rule(
+                X, blocks, effective_mix_weight, profile_info
+            )
+            if fe_ni_target_only:
+                rule.update(
+                    {
+                        "configured_target_mix_weight": float(target_mix_weight),
+                        "target_mix_policy": "epit_only_for_fe_ni_softmax",
+                    }
+                )
             target_component, epit_drive = self._evaluate_fixed_epit_target_rule_tensor(X, rule)
             self.last_pitting_target_rule = rule
             self.last_pitting_target_component = target_component.detach().cpu()
             self.last_pitting_target_drive = epit_drive.detach().cpu()
             if torch.std(epit_drive.float(), unbiased=False) > 1e-6:
-                y = (1.0 - target_mix_weight) * generic_target + target_component.to(dtype=y.dtype)
+                y = (
+                    (1.0 - effective_mix_weight) * generic_target
+                    + target_component.to(dtype=y.dtype)
+                )
+            elif fe_ni_target_only:
+                y = torch.zeros_like(generic_target)
             else:
                 y = generic_target
             return X, y
@@ -2967,6 +3123,7 @@ class SCMPrior(Prior):
         self.last_pitting_target_component = None
         self.last_pitting_target_drive = None
         self.last_pitting_composition_batch = None
+        self.last_pitting_material_family_ids = None
 
         block_strength = float(self.fixed_hp.get("informed_feature_block_strength", 0.30))
         block_strength = float(np.clip(block_strength, 0.0, 0.95))

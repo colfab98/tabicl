@@ -22,7 +22,11 @@ if str(REPO_ROOT) not in sys.path:
 
 from scripts import optuna_pitting_magpie_prior_search as original
 from scripts.epit_pipeline.artifact_hashes import load_frozen_split, sha256_file
-from tabicl.prior.dataset import EPIT_TARGET_RULE_COEFFICIENTS
+from tabicl.prior.dataset import (
+    EPIT_FE_NI_FAMILY_NAMES,
+    EPIT_FE_NI_FAMILY_PROBS,
+    EPIT_TARGET_RULE_COEFFICIENTS,
+)
 from tabicl.prior.magpie_features import (
     EPIT_BASE_FEATURE_COUNT,
     EPIT_MAGPIE_DESCRIPTOR_NAMES,
@@ -44,6 +48,7 @@ FIXED_VALIDATION_FOLDS = (1, 2, 3, 4, 5)
 PIPELINE_FINGERPRINT_SCHEMA = "epit_pipeline_stage3_fingerprint_v2"
 STUDY_FINGERPRINT_ATTR = "epit_pipeline_fingerprint"
 STUDY_FINGERPRINT_SHA256_ATTR = "epit_pipeline_fingerprint_sha256"
+PITTING_COMPOSITION_MODES = ("legacy", "fe_ni_softmax")
 
 
 @dataclass(frozen=True)
@@ -137,34 +142,46 @@ def build_pipeline_fingerprint(
     rules: TargetRuleConfig,
 ) -> dict[str, Any]:
     """Bind one Optuna study to one immutable EPIT Stage 3 definition."""
+    composition_mode = str(args.pitting_composition_mode)
+    search_space: dict[str, Any] = {
+        "use_magpie": [False, True],
+        "informed_prior_ratio": list(original.INFORMED_PRIOR_RATIO_GRID),
+        "mlp_prob": list(original.MLP_PROB_GRID),
+        "informed_feature_block_strength": [0.0, 0.95],
+    }
+    fixed_prior: dict[str, Any] = {
+        "reference_workflow": "pitting_magpie_full_v1",
+        "prior_type": "hybrid_scm",
+        "block_allocation": list(original.FIXED_BLOCK_ALLOCATION),
+        "material_style": "composition_like",
+        "composition_mode": composition_mode,
+        "physical_marginal_probability": 1.0,
+        "feature_permutation": False,
+    }
+    if composition_mode == "legacy":
+        search_space.update(
+            {
+                "informed_target_mix_weight": [0.0, 1.0],
+                "pitting_material_dirichlet_prob": list(original.DIRICHLET_PROB_GRID),
+                "pitting_material_dirichlet_concentration": list(original.DIRICHLET_CONCENTRATION_GRID),
+                "pitting_material_dirichlet_active_prob": list(original.DIRICHLET_ACTIVE_PROB_GRID),
+            }
+        )
+    else:
+        fixed_prior.update(
+            {
+                "informed_target_policy": "epit_only",
+                "informed_target_mix_weight": 1.0,
+                "pitting_material_dirichlet_prob": 0.0,
+                "synthetic_material_families": list(EPIT_FE_NI_FAMILY_NAMES),
+                "synthetic_material_family_probabilities": list(EPIT_FE_NI_FAMILY_PROBS),
+            }
+        )
     return {
         "schema_version": PIPELINE_FINGERPRINT_SCHEMA,
         "artifacts": pipeline_artifact_identity(rules),
-        "search_space": {
-            "use_magpie": [False, True],
-            "informed_prior_ratio": list(original.INFORMED_PRIOR_RATIO_GRID),
-            "mlp_prob": list(original.MLP_PROB_GRID),
-            "informed_feature_block_strength": [0.0, 0.95],
-            "informed_target_mix_weight": [0.0, 1.0],
-            "pitting_material_dirichlet_prob": list(
-                original.DIRICHLET_PROB_GRID
-            ),
-            "pitting_material_dirichlet_concentration": list(
-                original.DIRICHLET_CONCENTRATION_GRID
-            ),
-            "pitting_material_dirichlet_active_prob": list(
-                original.DIRICHLET_ACTIVE_PROB_GRID
-            ),
-        },
-        "fixed_prior": {
-            "reference_workflow": "pitting_magpie_full_v1",
-            "prior_type": "hybrid_scm",
-            "block_allocation": list(original.FIXED_BLOCK_ALLOCATION),
-            "material_style": "composition_like",
-            "composition_mode": "legacy",
-            "physical_marginal_probability": 1.0,
-            "feature_permutation": False,
-        },
+        "search_space": search_space,
+        "fixed_prior": fixed_prior,
         "proxy_training": {
             "device": str(args.device),
             "max_steps": int(args.max_steps),
@@ -242,6 +259,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=("optuna", "random"), default="optuna")
     parser.add_argument("--study-name", default="epit_pipeline_optuna_v3")
+    parser.add_argument(
+        "--pitting-composition-mode",
+        choices=PITTING_COMPOSITION_MODES,
+        default="legacy",
+        help="Fixed informed composition mode for this versioned study.",
+    )
     parser.add_argument("--storage", default=None)
     parser.add_argument("--n-trials", type=int, default=50)
     parser.add_argument("--n-startup-trials", type=int, default=10)
@@ -408,7 +431,9 @@ def load_target_rule_config(
     )
 
 
-def sample_params(trial: SuggestTrial) -> TrialParams:
+def sample_params(
+    trial: SuggestTrial, *, composition_mode: str = "legacy"
+) -> TrialParams:
     use_magpie = bool(
         trial.suggest_categorical("use_magpie", [False, True])
     )
@@ -424,31 +449,39 @@ def sample_params(trial: SuggestTrial) -> TrialParams:
     block_strength = float(
         trial.suggest_float("informed_feature_block_strength", 0.0, 0.95)
     )
-    target_mix = float(
-        trial.suggest_float("informed_target_mix_weight", 0.0, 1.0)
-    )
-    dirichlet_prob = float(
-        trial.suggest_categorical(
-            "pitting_material_dirichlet_prob",
-            list(original.DIRICHLET_PROB_GRID),
-        )
-    )
-    if dirichlet_prob > 0.0:
-        concentration = float(
-            trial.suggest_categorical(
-                "pitting_material_dirichlet_concentration",
-                list(original.DIRICHLET_CONCENTRATION_GRID),
-            )
-        )
-        active_prob = float(
-            trial.suggest_categorical(
-                "pitting_material_dirichlet_active_prob",
-                list(original.DIRICHLET_ACTIVE_PROB_GRID),
-            )
-        )
-    else:
+    if composition_mode == "fe_ni_softmax":
+        target_mix = 1.0
+        dirichlet_prob = 0.0
         concentration = None
         active_prob = None
+    elif composition_mode == "legacy":
+        target_mix = float(
+            trial.suggest_float("informed_target_mix_weight", 0.0, 1.0)
+        )
+        dirichlet_prob = float(
+            trial.suggest_categorical(
+                "pitting_material_dirichlet_prob",
+                list(original.DIRICHLET_PROB_GRID),
+            )
+        )
+        if dirichlet_prob > 0.0:
+            concentration = float(
+                trial.suggest_categorical(
+                    "pitting_material_dirichlet_concentration",
+                    list(original.DIRICHLET_CONCENTRATION_GRID),
+                )
+            )
+            active_prob = float(
+                trial.suggest_categorical(
+                    "pitting_material_dirichlet_active_prob",
+                    list(original.DIRICHLET_ACTIVE_PROB_GRID),
+                )
+            )
+        else:
+            concentration = None
+            active_prob = None
+    else:
+        raise ValueError(f"Unsupported pitting composition mode: {composition_mode!r}")
     return TrialParams(
         use_magpie=use_magpie,
         informed_prior_ratio=informed_prior_ratio,
@@ -461,36 +494,54 @@ def sample_params(trial: SuggestTrial) -> TrialParams:
     )
 
 
-def trial_params_from_mapping(values: dict[str, Any]) -> TrialParams:
+def trial_params_from_mapping(
+    values: dict[str, Any], *, composition_mode: str = "legacy"
+) -> TrialParams:
     """Reconstruct the conditional search configuration from saved values."""
     required = {
         "use_magpie",
         "informed_prior_ratio",
         "mlp_prob",
         "informed_feature_block_strength",
-        "informed_target_mix_weight",
-        "pitting_material_dirichlet_prob",
     }
+    if composition_mode == "legacy":
+        required.update(
+            {
+                "informed_target_mix_weight",
+                "pitting_material_dirichlet_prob",
+            }
+        )
+    elif composition_mode != "fe_ni_softmax":
+        raise ValueError(
+            f"Unsupported pitting composition mode: {composition_mode!r}"
+        )
     missing = sorted(required.difference(values))
     if missing:
         raise RuntimeError(f"Optuna trial is missing parameters: {missing}")
-    dirichlet_prob = float(values["pitting_material_dirichlet_prob"])
-    if dirichlet_prob > 0.0:
-        for name in (
-            "pitting_material_dirichlet_concentration",
-            "pitting_material_dirichlet_active_prob",
-        ):
-            if name not in values:
-                raise RuntimeError(
-                    f"Enabled Dirichlet Optuna trial is missing {name!r}."
-                )
-        concentration = float(
-            values["pitting_material_dirichlet_concentration"]
-        )
-        active_prob = float(values["pitting_material_dirichlet_active_prob"])
-    else:
+    if composition_mode == "fe_ni_softmax":
+        target_mix = 1.0
+        dirichlet_prob = 0.0
         concentration = None
         active_prob = None
+    else:
+        target_mix = float(values["informed_target_mix_weight"])
+        dirichlet_prob = float(values["pitting_material_dirichlet_prob"])
+        if dirichlet_prob > 0.0:
+            for name in (
+                "pitting_material_dirichlet_concentration",
+                "pitting_material_dirichlet_active_prob",
+            ):
+                if name not in values:
+                    raise RuntimeError(
+                        f"Enabled Dirichlet Optuna trial is missing {name!r}."
+                    )
+            concentration = float(
+                values["pitting_material_dirichlet_concentration"]
+            )
+            active_prob = float(values["pitting_material_dirichlet_active_prob"])
+        else:
+            concentration = None
+            active_prob = None
     return TrialParams(
         use_magpie=bool(values["use_magpie"]),
         informed_prior_ratio=float(values["informed_prior_ratio"]),
@@ -498,9 +549,7 @@ def trial_params_from_mapping(values: dict[str, Any]) -> TrialParams:
         informed_feature_block_strength=float(
             values["informed_feature_block_strength"]
         ),
-        informed_target_mix_weight=float(
-            values["informed_target_mix_weight"]
-        ),
+        informed_target_mix_weight=target_mix,
         pitting_material_dirichlet_prob=dirichlet_prob,
         pitting_material_dirichlet_concentration=concentration,
         pitting_material_dirichlet_active_prob=active_prob,
@@ -521,6 +570,11 @@ def _remove_option(command: list[str], option: str) -> None:
     del command[index : index + 2]
 
 
+def _replace_option(command: list[str], option: str, value: str) -> None:
+    index = command.index(option)
+    command[index + 1] = value
+
+
 def training_command(
     args: argparse.Namespace,
     params: TrialParams,
@@ -532,6 +586,21 @@ def training_command(
         _original_params(params),
         checkpoint_dir,
     )
+    composition_mode = str(
+        getattr(args, "pitting_composition_mode", "legacy")
+    )
+    if composition_mode not in PITTING_COMPOSITION_MODES:
+        raise ValueError(
+            f"Unsupported pitting composition mode: {composition_mode!r}"
+        )
+    if composition_mode == "fe_ni_softmax" and (
+        params.informed_target_mix_weight != 1.0
+        or params.pitting_material_dirichlet_prob != 0.0
+    ):
+        raise ValueError(
+            "fe_ni_softmax requires an EPIT-only target and softmax composition."
+        )
+    _replace_option(command, "--pitting_composition_mode", composition_mode)
     for option in (
         "--epit_material_coef",
         "--epit_environment_coef",
@@ -686,7 +755,7 @@ def run_trial(
         ),
         "fixed_block_allocation": original.FIXED_BLOCK_ALLOCATION,
         "fixed_material_style": "composition_like",
-        "fixed_composition_mode": "legacy",
+        "fixed_composition_mode": args.pitting_composition_mode,
         "fixed_physical_marginal_prob": 1.0,
         "fixed_prior_type": "hybrid_scm",
         "magpie_version": EPIT_MAGPIE_VERSION if params.use_magpie else None,
@@ -834,7 +903,9 @@ def run_optuna(args: argparse.Namespace) -> None:
 
     def objective(trial: Any) -> float:
         trial.set_user_attr(STUDY_FINGERPRINT_SHA256_ATTR, fingerprint_sha256)
-        params = sample_params(trial)
+        params = sample_params(
+            trial, composition_mode=args.pitting_composition_mode
+        )
         result = run_trial(args, int(trial.number), params)
         for key in (
             "mean_test_mae",
@@ -892,7 +963,9 @@ def run_random(args: argparse.Namespace) -> None:
         / "random_results.csv"
     )
     for trial_number in range(args.n_trials):
-        params = sample_params(RandomTrial(rng))
+        params = sample_params(
+            RandomTrial(rng), composition_mode=args.pitting_composition_mode
+        )
         result = run_trial(args, trial_number, params)
         append_random_result(
             output,
