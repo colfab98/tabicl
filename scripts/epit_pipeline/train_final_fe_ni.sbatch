@@ -17,6 +17,7 @@ STUDY_DIR="${OPTUNA_STORAGE_ROOT}/${STUDY_NAME}"
 STORAGE="${STORAGE:-journal://${STUDY_DIR}/study_journal_v1.log}"
 SPLIT_MANIFEST="${SPLIT_MANIFEST:-corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json}"
 TARGET_RULE_SUMMARY="${TARGET_RULE_SUMMARY:-corrosion_datasets/analysis/epit_pipeline/target_rules_v2/calibration_summary.json}"
+SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-25}"
 NPROC_PER_NODE="${NPROC_PER_NODE:-1}"
 MAX_STEPS="${MAX_STEPS:-10000}"
 SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-10000}"
@@ -37,6 +38,9 @@ echo "Study: ${STUDY_NAME}"
 
 python -m scripts.epit_pipeline.train_final \
   --study-name "$STUDY_NAME" \
+  --selected-trial-number "$SELECTED_TRIAL_NUMBER" \
+  --allow-stale-running-trials \
+  --allow-missing-selected-trial-artifacts \
   --storage "$STORAGE" \
   --split-manifest "$SPLIT_MANIFEST" \
   --target-rule-summary "$TARGET_RULE_SUMMARY" \

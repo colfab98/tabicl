@@ -119,5 +119,10 @@ def test_fe_ni_pipeline_has_separate_versioned_launchers() -> None:
 
     assert "epit_pipeline_optuna_fe_ni_v4" in optuna_launcher
     assert "--pitting-composition-mode fe_ni_softmax" in optuna_launcher
-    assert "--selected-trial-number" not in final_launcher
+    assert 'SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-25}"' in final_launcher
+    assert '--selected-trial-number "$SELECTED_TRIAL_NUMBER"' in final_launcher
+    assert "--allow-stale-running-trials" in final_launcher
+    assert "--allow-missing-selected-trial-artifacts" in final_launcher
     assert "epit_pipeline_optuna_fe_ni_v4" in final_launcher
+    assert 'MAX_STEPS="${MAX_STEPS:-10000}"' in final_launcher
+    assert 'SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-10000}"' in final_launcher
