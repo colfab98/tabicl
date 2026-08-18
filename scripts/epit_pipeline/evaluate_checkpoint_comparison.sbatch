@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=epit_trial36_compare
+#SBATCH --job-name=epit_trial25_compare
 #SBATCH --gpus=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
@@ -15,8 +15,8 @@ source .venv/bin/activate
 SPLIT_MANIFEST="${SPLIT_MANIFEST:-corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json}"
 CHECKPOINT_ROOT="${CHECKPOINT_ROOT:-/home/fcolanto/projects/tabicl/checkpoints}"
 GENERIC_RUN="${GENERIC_RUN:-/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline}"
-TRIAL_RUN="${TRIAL_RUN:-/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v1/final_epit_pipeline_optuna_v3_trial_0036}"
-OUTPUT_ROOT="${OUTPUT_ROOT:-corrosion_datasets/analysis/epit_pipeline/trial36_checkpoint_folds_${SLURM_JOB_ID}}"
+TRIAL_RUN="${TRIAL_RUN:-/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v1/final_epit_pipeline_optuna_fe_ni_v4_trial_0025}"
+OUTPUT_ROOT="${OUTPUT_ROOT:-corrosion_datasets/analysis/epit_pipeline/trial25_checkpoint_folds_${SLURM_JOB_ID}}"
 N_ESTIMATORS="${N_ESTIMATORS:-8}"
 CATBOOST_THREAD_COUNT="${CATBOOST_THREAD_COUNT:-${SLURM_CPUS_PER_TASK:-8}}"
 
@@ -26,7 +26,7 @@ for FOLD in 1 2 3 4 5; do
     --run "$GENERIC_RUN" \
     --run "$TRIAL_RUN" \
     --local-model-label generic_baseline \
-    --local-model-label trial_0036 \
+    --local-model-label trial_0025 \
     --checkpoint all \
     --checkpoint-root "$CHECKPOINT_ROOT" \
     --run-prefix "/" \
@@ -45,7 +45,7 @@ for FOLD in 1 2 3 4 5; do
     --regression-output median \
     --no-regression-uncertainty \
     --max-samples-per-task 0 \
-    --pitting-magpie-model trial_0036 \
+    --pitting-magpie-model trial_0025 \
     --compare-pretrained-tabicl \
     --pretrained-checkpoint-version tabicl-regressor-v2-20260212.ckpt \
     --compare-catboost \
