@@ -8,7 +8,6 @@ import json
 import math
 import re
 import sys
-from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -226,6 +225,21 @@ def verify_study_pipeline_identity(
     return fingerprint, fingerprint_sha256
 
 
+def verify_empirical_feature_profile_identity(
+    fixed_prior: dict[str, Any],
+) -> None:
+    """Require final training to use the profile locked by the v5 study."""
+    expected = search.empirical_feature_profile_identity()
+    observed = {
+        key: fixed_prior.get(key)
+        for key in expected
+    }
+    if observed != expected:
+        raise RuntimeError(
+            "Current empirical feature profile differs from the selected Optuna study."
+        )
+
+
 def verify_trial_file(trial: Any, path_attr: str, sha_attr: str) -> Path:
     path_value = trial.user_attrs.get(path_attr)
     expected_sha256 = trial.user_attrs.get(sha_attr)
@@ -356,7 +370,7 @@ def verify_selected_trial_evaluation(
         "status": "completed",
         "trial_number": int(trial.number),
         "sampler_seed": trial.user_attrs.get("sampler_seed"),
-        "params": asdict(params),
+        "params": search.trial_params_payload(params),
         "pipeline_fingerprint_sha256": study_fingerprint_sha256,
         "checkpoint_path": str(checkpoint),
         "checkpoint_sha256": sha256_file(checkpoint),
@@ -649,6 +663,25 @@ def run(args: argparse.Namespace) -> Path:
             f"{composition_mode!r}."
         )
     args.pitting_composition_mode = composition_mode
+    if composition_mode == "empirical_features":
+        verify_empirical_feature_profile_identity(fixed_prior)
+    proxy_training = study_fingerprint.get("proxy_training", {})
+    for argument_name, fingerprint_name in (
+        ("np_seed", "np_seed"),
+        ("torch_seed", "torch_seed"),
+        ("prior_n_jobs", "prior_n_jobs"),
+    ):
+        expected = int(proxy_training.get(fingerprint_name, -1))
+        observed = int(getattr(args, argument_name))
+        if observed != expected:
+            raise RuntimeError(
+                f"Final {argument_name}={observed} differs from the selected "
+                f"Optuna study value {expected}."
+            )
+    if composition_mode == "empirical_features" and args.prior_n_jobs != 1:
+        raise RuntimeError(
+            "empirical_features final training requires --prior-n-jobs 1."
+        )
     params = search.trial_params_from_mapping(
         dict(trial.params), composition_mode=composition_mode
     )
@@ -697,7 +730,7 @@ def run(args: argparse.Namespace) -> Path:
         "storage": args.storage,
         "trial_number": int(trial.number),
         "trial_value": float(trial.value),
-        "trial_params": asdict(params),
+        "trial_params": search.trial_params_payload(params),
         "split_manifest_sha256": frozen_split.manifest_sha256,
         "split_lock_sha256": frozen_split.lock_sha256,
         "target_rule_summary_sha256": rules.summary_sha256,
@@ -765,7 +798,7 @@ def run(args: argparse.Namespace) -> Path:
             "unfinished_trials_at_selection": unfinished_trials_at_selection,
             "selected_trial_number": int(trial.number),
             "selected_trial_value": float(trial.value),
-            "selected_trial_params": asdict(params),
+            "selected_trial_params": search.trial_params_payload(params),
             "selected_trial_user_attrs": dict(trial.user_attrs),
             "selected_trial_fold_evaluation": trial_eval,
             "pipeline_fingerprint": study_fingerprint,

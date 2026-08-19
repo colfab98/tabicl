@@ -2127,9 +2127,81 @@ Keeping the legacy mode allows earlier experiments to be reproduced and permits
 a direct comparison between unconstrained synthetic compositions and the new
 dataset-specific empirical template generator.
 
+\subsection{Complete Empirical Feature Mode}
+
+The second implementation step adds the opt-in mode
+
+\[
+\texttt{pitting\_composition\_mode}
+=
+\texttt{empirical\_features}.
+\]
+
+This mode replaces the complete physical feature table rather than transforming
+SCM-generated feature values. Each synthetic row contains the fixed EPIT order
+
+\[
+17\text{ composition columns}
++
+3\text{ environment columns}
++
+1\text{ test-method column}.
+\]
+
+The composition is sampled from the Fe-alloy and Ni--Cr--Mo subsets of the
+existing 24-element \texttt{epit\_dataset\_v1} template bank. The complete
+24-element vector is perturbed and closed before the 17 evaluated elements are
+selected, as described above.
+
+Independently, one of the 565 Fe/Ni--Cr--Mo environment records in
+\texttt{epit\_fe\_nicrmo\_features\_v1} is sampled with replacement. Its
+temperature, chloride concentration, pH, and test method remain paired. Missing
+numeric values use the same full-task means as the direct evaluator, and the
+test method uses the same 52-category ordinal mapping. Environment selection is
+not conditioned on the generated alloy family, so the generator does not copy
+the dataset's study-specific family--environment assignment.
+
+The fixed 21-column layout is retained even when a rare element is constant in
+one synthetic task. The generic constant-column compaction would otherwise move
+temperature, chloride, pH, or test method into different positions. Normal
+per-feature standardization still occurs at the existing final preprocessing
+stage.
+
+This mode is separate from the older \texttt{empirical} latent-expansion mode,
+which remains available for reproducibility. Step 2 changed only the generated
+features; the target change is specified below. The Step~4 configuration then
+selects the completed \texttt{empirical\_features} mode.
+
+\subsection{EPIT-Only Target for Complete Empirical Features}
+
+For \texttt{pitting\_composition\_mode=empirical\_features}, the synthetic
+target is now produced directly from the sampled physical row by the existing
+fixed-schema EPIT target rule:
+
+\[
+X_{\mathrm{physical}}
+\longrightarrow
+s_r(X_{\mathrm{physical}})
+\longrightarrow
+y_{\mathrm{synthetic}}
+=
+\operatorname{standardize}\!\left(s_r(X_{\mathrm{physical}})\right),
+\]
+
+where \(r\) is the sampled EPIT target-rule family. The generic SCM target is
+not added to this result. Consequently, the configured
+\texttt{informed\_target\_mix\_weight} (the former mixture parameter
+\(\lambda\)) has no effect in this mode. Its configured value is retained in
+the rule diagnostics, while the effective EPIT weight is recorded as \(1\).
+
+The older composition modes retain their previous target behavior. Step~4
+below selects \texttt{empirical\_features} in a separate Optuna study and
+removes \texttt{informed\_target\_mix\_weight} from that study's search
+space.
+
 \subsection{Updated Empirical Optuna Configuration}
 
-The empirical fixed-EPIT study keeps the following settings fixed:
+The complete empirical-feature study keeps the following settings fixed:
 
 \begin{center}
 \small
@@ -2137,41 +2209,49 @@ The empirical fixed-EPIT study keeps the following settings fixed:
 \hline
 \textbf{Parameter} & \textbf{Fixed value} \\
 \hline
-\texttt{pitting\_composition\_mode} & \texttt{empirical} \\
-\texttt{pitting\_composition\_profile} & \texttt{epit\_dataset\_v1} \\
-\texttt{pitting\_composition\_family\_probs} & dataset frequencies above \\
-\texttt{pitting\_material\_latent\_count} & \(2\) \\
+\texttt{pitting\_composition\_mode} & \texttt{empirical\_features} \\
+\texttt{pitting\_feature\_profile} & \texttt{epit\_fe\_nicrmo\_features\_v1} \\
+composition families & Fe and Ni--Cr--Mo, \(298:17\) \\
 \texttt{informed\_feature\_block\_strength} & \(0\) \\
+\texttt{informed\_physical\_marginal\_prob} & \(1\) \\
+target policy & EPIT rule only \\
+\texttt{pitting\_material\_dirichlet\_prob} & \(0\) \\
+\texttt{pitting\_magpie\_features} & \texttt{False} \\
 \texttt{informed\_normal\_block\_allocation} & \(17,3,1\) \\
 \texttt{pitting\_fixed\_epit\_schema} & \texttt{True} \\
 \texttt{permute\_features} & \texttt{False} \\
+\texttt{prior\_n\_jobs} & \(1\) \\
 \hline
 \end{tabular}
 \end{center}
 
-The study continues to optimize the meaningful routing and EPIT-target
-parameters:
+Only three parameters remain in the Optuna search:
 
 \begin{itemize}
     \item \texttt{informed\_prior\_ratio};
-    \item the MLP/tree mixture probability;
-    \item \texttt{informed\_target\_mix\_weight}, corresponding to \(\lambda\);
-    \item \texttt{informed\_physical\_marginal\_prob};
-    \item \texttt{pitting\_composition\_perturb\_strength}, corresponding to
-    \(\tau\);
-    \item \texttt{epit\_material\_coef};
-    \item \texttt{epit\_environment\_coef};
-    \item \texttt{epit\_interaction\_coef}.
+    \item the MLP/tree mixture probability; and
+    \item \texttt{pitting\_composition\_perturb\_strength}
+    \(\tau\in[0,0.15]\).
 \end{itemize}
 
-The empirical study uses the separate default study name
+The seven rule probabilities and calibrated coefficients remain fixed inputs
+from Stage~2. The target-mixture parameter \(\lambda\), Magpie descriptors,
+block coupling, Dirichlet controls, physical-marginal probability, and the old
+three EPIT coefficients are not Optuna dimensions. Magpie can therefore be
+tested later as a matched add-on to the selected base configuration.
+
+The new study and launchers use the separate name
 
 \[
-\texttt{pitting\_fixed\_pren\_empirical\_composition\_search},
+\texttt{epit\_pipeline\_optuna\_empirical\_features\_v5},
 \]
 
-so that its trials cannot be mixed accidentally with results from the earlier
-legacy Dirichlet search.
+so these trials cannot mix with Trial~25 or earlier studies. Proxy and final
+training use fixed NumPy and Torch seeds of \(42\) and
+\texttt{prior\_n\_jobs=1}. The study fingerprint stores these values and the
+versioned feature-profile identity.
+Stage~4 revalidates that identity against the current profile files before
+starting final training.
 
 \subsection{Interpretation and Limitations}
 
@@ -2992,8 +3072,11 @@ r
 
 All rows in that synthetic task use the same rule family. The task uses the
 frozen final-development coefficient set associated with the sampled rule.
-The resulting informed target is then combined with the generic synthetic
-target using the trial's target-mixture weight.
+Historical composition modes can still combine that rule output with the
+generic synthetic target. In \texttt{empirical\_features} mode, however, the
+rule acts directly on the generated physical row and its standardized output is
+the complete synthetic target. The generic SCM target and target-mixture weight
+are not used.
 
 The rule probabilities and coefficients are passed to training dynamically
 through the new target-rule configuration. They are not manually copied into
@@ -3017,26 +3100,30 @@ classification.
 \subsection{Optuna Trial Evaluation}
 \label{sec:epit-new-optuna}
 
-The new Optuna runner reuses the previous
-\texttt{pitting\_magpie\_full\_v1} workflow rather than replacing the
-underlying training implementation. The following settings were retained:
+The Stage~3 runner remains backward-compatible with the earlier legacy and
+\texttt{fe\_ni\_softmax} studies. Step~4 adds the separate
+\texttt{empirical\_features} configuration and the versioned study
+\texttt{epit\_pipeline\_optuna\_empirical\_features\_v5}. Its retained
+evaluation and optimization settings are
 
 \begin{itemize}
     \item TPE sampling with \(10\) startup trials;
     \item \(50\) total trials by default;
     \item \(1{,}000\) proxy-training steps per trial;
     \item a \(10{,}000\)-step learning-rate schedule;
-    \item optional Magpie descriptor augmentation;
-    \item the informed-prior ratio, MLP probability, feature-block strength,
-    target-mixture weight, and material-generator parameters;
     \item eight-estimator trial evaluation; and
     \item mean development-fold Spearman correlation as the Optuna objective.
 \end{itemize}
 
-The old material, environment, and material--chloride coefficients were
-removed from the Optuna search space. These coefficients are now determined
-during Stage~2 calibration instead of being independently selected by every
-Optuna trial.
+The active search space now contains only the informed-prior ratio, the
+MLP/tree mixture probability, and composition perturbation strength
+\(\tau\in[0,0.15]\). Magpie is fixed off so it can be tested afterward on
+top of the selected base configuration. The target-mixture weight is absent
+because the target is EPIT-only. Feature-block coupling is fixed to zero, the
+physical feature profile is always active, and the Dirichlet mechanism is
+disabled. The old material, environment, and material--chloride coefficients
+also remain absent because Stage~2 calibration supplies the seven rule
+coefficient sets.
 
 For one Optuna trial, TabICL is pretrained once on synthetic tasks generated
 from the fixed rule distribution. The resulting checkpoint is then evaluated
@@ -3062,6 +3149,12 @@ to the same Optuna study because they use the same journal file on shared
 storage. The study records trial identifiers, commands, parameters, metrics,
 rule probabilities, coefficients, and artifact hashes. This makes interrupted
 studies recoverable and records the complete provenance of every trial.
+
+The empirical-feature launcher fixes NumPy and Torch seeds to \(42\) and uses
+one prior-generation worker. Final training must match all three values stored
+in the selected study fingerprint. The Optuna sampler seed remains recorded
+per worker so parallel workers do not produce identical suggestions; the
+training seed inside every trial remains fixed.
 
 Feature shuffling is disabled in the new Optuna evaluation command because the
 EPIT feature order is fixed. Power-normalized inference is also explicitly

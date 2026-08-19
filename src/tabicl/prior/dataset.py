@@ -43,6 +43,8 @@ from .epit_composition_profile import (
     load_epit_composition_profile,
     map_epit_latents_to_compositions,
 )
+from .epit_feature_generator import EpitFeatureBatch, sample_epit_feature_rows
+from .epit_feature_profile import EPIT_FEATURE_PROFILE, load_epit_feature_profile
 from .magpie_features import (
     EPIT_BASE_FEATURE_COUNT,
     EPIT_MATERIAL_FEATURE_COUNT,
@@ -679,6 +681,7 @@ class SCMPrior(Prior):
         self.last_pitting_target_component: Optional[Tensor] = None
         self.last_pitting_target_drive: Optional[Tensor] = None
         self.last_pitting_composition_batch: Optional[EpitCompositionBatch] = None
+        self.last_pitting_feature_batch: Optional[EpitFeatureBatch] = None
         self.last_pitting_material_family_ids: Optional[Tensor] = None
 
     def hp_sampling(self) -> Dict[str, Any]:
@@ -891,17 +894,22 @@ class SCMPrior(Prior):
             "dataset": "empirical",
             "profile": "empirical",
             "empirical_profile": "empirical",
+            "feature_profile": "empirical_features",
+            "empirical_feature_profile": "empirical_features",
         }
         mode = aliases.get(mode, mode)
-        if mode not in {"legacy", "empirical", "fe_ni_softmax"}:
+        if mode not in {"legacy", "empirical", "empirical_features", "fe_ni_softmax"}:
             raise ValueError(
-                "pitting_composition_mode must be 'legacy', 'empirical', or "
-                "'fe_ni_softmax'."
+                "pitting_composition_mode must be 'legacy', 'empirical', "
+                "'empirical_features', or 'fe_ni_softmax'."
             )
         return mode
 
     def _empirical_pitting_composition_enabled(self) -> bool:
         return self._pitting_composition_mode() == "empirical"
+
+    def _empirical_pitting_feature_profile_enabled(self) -> bool:
+        return self._pitting_composition_mode() == "empirical_features"
 
     def _fe_ni_softmax_pitting_composition_enabled(self) -> bool:
         return self._pitting_composition_mode() == "fe_ni_softmax"
@@ -1107,7 +1115,13 @@ class SCMPrior(Prior):
             dtype=float,
         )
         process_count = self.fixed_hp.get("pitting_process_category_count")
-        if process_count is None:
+        if process_count is None and self._empirical_pitting_feature_profile_enabled():
+            feature_profile_name = str(
+                self.fixed_hp.get("pitting_feature_profile", EPIT_FEATURE_PROFILE)
+            )
+            feature_profile = load_epit_feature_profile(feature_profile_name)
+            process_count = int(feature_profile.metadata["evaluator_preprocessing"]["category_count"])
+        elif process_count is None:
             process_values = X[:, process_slice.start].detach()
             process_count = int(torch.nan_to_num(process_values, nan=0.0).long().clamp(min=0).max().item()) + 1
         process_count = int(process_count)
@@ -1459,7 +1473,18 @@ class SCMPrior(Prior):
         linear_material = chromium + 3.25 * mow
         synergy_material = linear_material + np.sqrt(chromium * mow)
         threshold_material = 1.0 / (1.0 + np.exp(-(chromium - 12.0) / 2.0)) + np.log1p(mow)
-        class_threshold = np.where(nickel > iron, 15.0, 12.0)
+        synthetic_family_ids = rule.get("synthetic_material_family_ids")
+        if synthetic_family_ids is None:
+            ni_cr_mo_rows = nickel > iron
+        else:
+            family_ids = np.asarray(synthetic_family_ids, dtype=np.int64).reshape(-1)
+            if family_ids.shape[0] != X.shape[0] or np.any(
+                (family_ids != EPIT_FE_FAMILY_ID)
+                & (family_ids != EPIT_NI_CR_MO_FAMILY_ID)
+            ):
+                raise ValueError("Invalid synthetic Fe/NiCrMo family metadata.")
+            ni_cr_mo_rows = family_ids == EPIT_NI_CR_MO_FAMILY_ID
+        class_threshold = np.where(ni_cr_mo_rows, 15.0, 12.0)
         fe_ni_threshold_material = (
             1.0 / (1.0 + np.exp(-(chromium - class_threshold) / 2.0))
             + np.log1p(mow)
@@ -2662,6 +2687,132 @@ class SCMPrior(Prior):
         self.last_pitting_composition_batch = batch
         return X
 
+    def _apply_empirical_pitting_feature_profile(
+        self,
+        X: Tensor,
+        blocks: Dict[str, slice],
+        family: str,
+    ) -> Tuple[Tensor, PittingProfileInfo]:
+        """Replace the complete fixed EPIT schema with empirical physical rows."""
+
+        if not self._fixed_epit_schema_enabled():
+            raise ValueError("empirical_features requires pitting_fixed_epit_schema=True.")
+        if family != "normal_corrosion":
+            raise ValueError("empirical_features requires the normal_corrosion task family.")
+        if self._informed_target_family() != "pitting_potential":
+            raise ValueError("empirical_features requires informed_target_family='pitting_potential'.")
+        if X.ndim != 2 or X.shape[1] != EPIT_BASE_FEATURE_COUNT:
+            raise ValueError(
+                f"empirical_features requires exactly {EPIT_BASE_FEATURE_COUNT} generated columns."
+            )
+
+        profile_name = str(
+            self.fixed_hp.get("pitting_feature_profile", EPIT_FEATURE_PROFILE)
+        )
+        profile = load_epit_feature_profile(profile_name)
+        material_slice = blocks.get("material")
+        environment_slice = blocks.get("environment")
+        process_slice = blocks.get("process_history")
+        if material_slice is None or (
+            material_slice.stop - material_slice.start
+            != len(profile.composition_profile.observed_elements)
+        ):
+            raise ValueError("empirical_features requires the fixed 17-column material block.")
+        if environment_slice is None or environment_slice.stop - environment_slice.start != 3:
+            raise ValueError("empirical_features requires temperature, chloride, and pH columns.")
+        if process_slice is None or process_slice.stop - process_slice.start != 1:
+            raise ValueError("empirical_features requires one test-method column.")
+
+        nonempty_blocks = {
+            name
+            for name, feature_slice in blocks.items()
+            if feature_slice.stop > feature_slice.start
+        }
+        if nonempty_blocks != {"material", "environment", "process_history"}:
+            raise ValueError(
+                "empirical_features permits only material, environment, and process blocks."
+            )
+
+        expected_category_count = int(
+            profile.metadata["evaluator_preprocessing"]["category_count"]
+        )
+        configured_category_count = self.fixed_hp.get("pitting_process_category_count")
+        if configured_category_count is not None:
+            configured_value = float(configured_category_count)
+            if (
+                not np.isfinite(configured_value)
+                or not configured_value.is_integer()
+                or int(configured_value) != expected_category_count
+            ):
+                raise ValueError(
+                    "empirical_features requires pitting_process_category_count="
+                    f"{expected_category_count}."
+                )
+
+        configured_family_probabilities = self.fixed_hp.get(
+            "pitting_composition_family_probs"
+        )
+        feature_family_probabilities = None
+        if configured_family_probabilities is not None:
+            full_probabilities = np.asarray(
+                configured_family_probabilities,
+                dtype=np.float64,
+            )
+            expected_shape = (len(profile.composition_profile.families),)
+            if full_probabilities.shape != expected_shape:
+                raise ValueError(
+                    "pitting_composition_family_probs must match the complete composition profile."
+                )
+            if not np.isfinite(full_probabilities).all() or np.any(full_probabilities < 0.0):
+                raise ValueError(
+                    "pitting_composition_family_probs must be finite and non-negative."
+                )
+            feature_family_probabilities = [
+                full_probabilities[profile.composition_profile.families.index(name)]
+                for name in profile.families
+            ]
+
+        random_seed = int(np.random.randint(0, np.iinfo(np.int32).max))
+        batch = sample_epit_feature_rows(
+            X.shape[0],
+            profile=profile,
+            composition_family_probabilities=feature_family_probabilities,
+            perturb_strength=float(
+                self.fixed_hp.get("pitting_composition_perturb_strength", 0.05)
+            ),
+            random_state=random_seed,
+        )
+        sampled = torch.as_tensor(batch.features.copy(), device=X.device, dtype=X.dtype)
+        X = X.clone()
+        X[:, material_slice] = sampled[:, :17]
+        X[:, environment_slice] = sampled[:, 17:20]
+        X[:, process_slice] = sampled[:, 20:21]
+
+        info = PittingProfileInfo(
+            applied=True,
+            material_style="empirical_feature_profile",
+            physical_profile_applied=True,
+        )
+        for col in range(material_slice.start, material_slice.stop):
+            info.add_role("material_empirical_composition", col)
+        for role, col in zip(
+            ("temperature_like", "chloride_like", "ph_like"),
+            range(environment_slice.start, environment_slice.stop),
+            strict=True,
+        ):
+            info.add_role(role, col)
+        info.add_role("test_method_category", process_slice.start, categorical=True)
+        family_ids = torch.as_tensor(
+            batch.composition_family_indices.copy(),
+            device=X.device,
+            dtype=torch.long,
+        )
+        info.material_family_ids = family_ids
+        self.last_pitting_feature_batch = batch
+        self.last_pitting_composition_batch = batch.compositions
+        self.last_pitting_material_family_ids = family_ids.detach().cpu()
+        return X, info
+
     @staticmethod
     def _standardize_signal(values: Tensor) -> Tensor:
         values = torch.nan_to_num(values, nan=0.0, posinf=0.0, neginf=0.0)
@@ -2867,15 +3018,21 @@ class SCMPrior(Prior):
         profile_applied = profile_info is not None and profile_info.applied
         if self._fixed_epit_schema_enabled():
             fe_ni_target_only = self._fe_ni_softmax_pitting_composition_enabled()
-            effective_mix_weight = 1.0 if fe_ni_target_only else target_mix_weight
+            empirical_features_target_only = self._empirical_pitting_feature_profile_enabled()
+            epit_target_only = fe_ni_target_only or empirical_features_target_only
+            effective_mix_weight = 1.0 if epit_target_only else target_mix_weight
             rule = self._sample_fixed_epit_target_rule(
                 X, blocks, effective_mix_weight, profile_info
             )
-            if fe_ni_target_only:
+            if epit_target_only:
                 rule.update(
                     {
                         "configured_target_mix_weight": float(target_mix_weight),
-                        "target_mix_policy": "epit_only_for_fe_ni_softmax",
+                        "target_mix_policy": (
+                            "epit_only_for_empirical_features"
+                            if empirical_features_target_only
+                            else "epit_only_for_fe_ni_softmax"
+                        ),
                     }
                 )
             target_component, epit_drive = self._evaluate_fixed_epit_target_rule_tensor(X, rule)
@@ -2884,10 +3041,12 @@ class SCMPrior(Prior):
             self.last_pitting_target_drive = epit_drive.detach().cpu()
             if torch.std(epit_drive.float(), unbiased=False) > 1e-6:
                 y = (
-                    (1.0 - effective_mix_weight) * generic_target
+                    target_component.to(dtype=y.dtype)
+                    if epit_target_only
+                    else (1.0 - effective_mix_weight) * generic_target
                     + target_component.to(dtype=y.dtype)
                 )
-            elif fe_ni_target_only:
+            elif epit_target_only:
                 y = torch.zeros_like(generic_target)
             else:
                 y = generic_target
@@ -3123,6 +3282,7 @@ class SCMPrior(Prior):
         self.last_pitting_target_component = None
         self.last_pitting_target_drive = None
         self.last_pitting_composition_batch = None
+        self.last_pitting_feature_batch = None
         self.last_pitting_material_family_ids = None
 
         block_strength = float(self.fixed_hp.get("informed_feature_block_strength", 0.30))
@@ -3153,8 +3313,20 @@ class SCMPrior(Prior):
             X = self._expand_epit_material_latents(X, epit_latent_context)
 
         profile = self._informed_physical_marginal_profile()
+        if (
+            self._empirical_pitting_feature_profile_enabled()
+            and not self._is_pitting_profile_name(profile)
+        ):
+            raise ValueError("empirical_features requires the pitting_potential_v1 profile.")
         if self._is_pitting_profile_name(profile):
-            X, profile_info = self._apply_pitting_potential_profile(X, blocks, family)
+            if self._empirical_pitting_feature_profile_enabled():
+                X, profile_info = self._apply_empirical_pitting_feature_profile(
+                    X,
+                    blocks,
+                    family,
+                )
+            else:
+                X, profile_info = self._apply_pitting_potential_profile(X, blocks, family)
             X, y = self._apply_informed_corrosion_mechanism(
                 X,
                 y,
@@ -3255,7 +3427,12 @@ class SCMPrior(Prior):
             d = torch.tensor([active_feature_count], device=self.device, dtype=torch.long)
 
             # Only keep valid datasets with sufficient features and usable targets.
-            X, d = self.delete_unique_features(X, d)
+            preserve_fixed_epit_schema = (
+                generation_params.get("informed_mode", False)
+                and self._empirical_pitting_feature_profile_enabled()
+            )
+            if not preserve_fixed_epit_schema:
+                X, d = self.delete_unique_features(X, d)
             if params["num_classes"] == 0:
                 valid_target = self.regression_sanity_check(X, y, params["train_size"])
             else:

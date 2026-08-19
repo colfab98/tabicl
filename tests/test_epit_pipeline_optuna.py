@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, replace
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -366,7 +366,7 @@ def test_stage4_verifies_selected_trial_files_and_objective(tmp_path: Path) -> N
         "status": "completed",
         "trial_number": 3,
         "sampler_seed": 123,
-        "params": asdict(params),
+        "params": search.trial_params_payload(params),
         "pipeline_fingerprint_sha256": fingerprint_sha256,
         "checkpoint_path": str(checkpoint),
         "checkpoint_sha256": train_final.sha256_file(checkpoint),

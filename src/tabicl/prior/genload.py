@@ -544,6 +544,8 @@ class SavePriorDataset:
             scm_fixed_hp["pitting_composition_mode"] = self.args.pitting_composition_mode
         if self.args.pitting_composition_profile is not None:
             scm_fixed_hp["pitting_composition_profile"] = self.args.pitting_composition_profile
+        if self.args.pitting_feature_profile is not None:
+            scm_fixed_hp["pitting_feature_profile"] = self.args.pitting_feature_profile
         if self.args.pitting_composition_family_probs is not None:
             scm_fixed_hp["pitting_composition_family_probs"] = tuple(self.args.pitting_composition_family_probs)
         if self.args.pitting_composition_perturb_strength is not None:
@@ -687,6 +689,7 @@ class SavePriorDataset:
             "pitting_material_dirichlet_active_prob": self.args.pitting_material_dirichlet_active_prob,
             "pitting_composition_mode": self.args.pitting_composition_mode,
             "pitting_composition_profile": self.args.pitting_composition_profile,
+            "pitting_feature_profile": self.args.pitting_feature_profile,
             "pitting_composition_family_probs": self.args.pitting_composition_family_probs,
             "pitting_composition_perturb_strength": self.args.pitting_composition_perturb_strength,
             "pitting_material_latent_count": self.args.pitting_material_latent_count,
@@ -886,11 +889,12 @@ if __name__ == "__main__":
     parser.add_argument("--pitting_material_dirichlet_active_prob", type=float, default=None)
     parser.add_argument(
         "--pitting_composition_mode",
-        choices=("legacy", "empirical", "fe_ni_softmax"),
+        choices=("legacy", "empirical", "empirical_features", "fe_ni_softmax"),
         default=None,
     )
     parser.add_argument("--pitting_composition_profile", type=str, default=None)
     parser.add_argument("--pitting_composition_family_probs", type=float, nargs=5, default=None)
+    parser.add_argument("--pitting_feature_profile", type=str, default=None)
     parser.add_argument("--pitting_composition_perturb_strength", type=float, default=None)
     parser.add_argument("--pitting_material_latent_count", type=int, default=None)
     parser.add_argument(

@@ -301,6 +301,8 @@ class Trainer:
                 scm_fixed_hp["pitting_composition_mode"] = self.config.pitting_composition_mode
             if self.config.pitting_composition_profile is not None:
                 scm_fixed_hp["pitting_composition_profile"] = self.config.pitting_composition_profile
+            if self.config.pitting_feature_profile is not None:
+                scm_fixed_hp["pitting_feature_profile"] = self.config.pitting_feature_profile
             if self.config.pitting_composition_family_probs is not None:
                 scm_fixed_hp["pitting_composition_family_probs"] = tuple(
                     self.config.pitting_composition_family_probs

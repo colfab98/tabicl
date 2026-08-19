@@ -1,7 +1,8 @@
 # EPIT pipeline
 
 This directory replaces the mixed workflow with five separate stages.
-Existing scripts remain unchanged so old results stay reproducible.
+Historical configurations remain backward-compatible so old results stay
+reproducible.
 
 ## Fixed workflow
 
@@ -25,10 +26,14 @@ Existing scripts remain unchanged so old results stay reproducible.
    - Never use the 152 final-test targets.
 
 3. `run_optuna.py`
-   - Preserve the `pitting_magpie_full_v1` search, proxy-training, and inference
-     settings.
+   - Keep the legacy and `fe_ni_softmax` studies reproducible.
+   - Use `empirical_features` for the separate v5 study.
    - Load candidate rule scores and all-development coefficients from Stage 2.
    - Sample rule families with `score / sum(scores)`.
+   - Search only informed-prior ratio, MLP/tree mix, and composition perturbation.
+   - Fix Magpie off, the target to EPIT-only, block coupling to zero, and
+     Dirichlet off.
+   - Use fixed NumPy/Torch seeds and one prior-generation worker.
    - Evaluate every trial on the same five saved development folds.
    - Explicitly use only `norm_methods=["none"]`; the power transform is off.
    - Never use the 152 final-test rows.
@@ -93,13 +98,15 @@ from the Stage 2 JSON files. The prior normalizes scores as `score / sum(scores)
 and samples one rule family per synthetic task. If these options are omitted,
 the old single-PREN generator remains unchanged.
 
-Run Stage 3 on the GPU node with:
+Run the empirical-feature Stage 3 from `sv1225`, directory
+`/home/fcolanto/projects/tabicl`:
 
-`sbatch scripts/epit_pipeline/run_optuna.sbatch`
+`sbatch scripts/epit_pipeline/run_optuna_empirical_features.sbatch`
 
-After every Stage 3 worker has finished, run Stage 4 with:
+After every Stage 3 worker has finished, run Stage 4 from the same host and
+directory:
 
-`sbatch scripts/epit_pipeline/train_final.sbatch`
+`sbatch scripts/epit_pipeline/train_final_empirical_features.sbatch`
 
 The default Stage 4 run trains to 10,000 steps, saves permanent checkpoints
 every 500 steps, evaluates them on the five development folds, and freezes the
@@ -135,6 +142,8 @@ Only after inspecting the frozen Stage 4 manifest, run the one-shot Stage 5:
 - [x] Add development-only direct rule evaluation and a visual report.
 - [x] Reuse the latest Optuna workflow without changing the original script.
 - [x] Implement fixed-fold Optuna evaluation and trial records.
+- [x] Add the empirical-feature-only Optuna search and separate v5 launchers.
+- [x] Lock proxy/final seeds and `prior_n_jobs=1` for the v5 study.
 - [x] Add the shared-study single-GPU Slurm launcher.
 - [x] Explicitly disable power transformation in every EPIT evaluation stage.
 - [x] Implement final training and development-only checkpoint selection.

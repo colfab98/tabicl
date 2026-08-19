@@ -1,0 +1,422 @@
+{
+  "analysis_scope": {
+    "elements": 24,
+    "min_positive_cooccurrences_for_log_correlation": 8,
+    "missing_value_treatment": "Missing entries are counted separately and treated as zero for active-count, dominance, sum, and correlation summaries, matching the empirical runtime generator.",
+    "model_observed_elements": 17,
+    "positive_core_range": "5th--95th percentiles among positive entries",
+    "support_bands": {
+      "insufficient": "<15 templates",
+      "limited": ">=15 and <50 templates",
+      "supported": ">=50 templates"
+    },
+    "templates": 403,
+    "uses_composition_features_only": true,
+    "uses_epit_targets": false
+  },
+  "families": [
+    {
+      "dominant_element_counts": {
+        "Cr": 1,
+        "Fe": 294,
+        "Mo": 1,
+        "Ni": 2
+      },
+      "expected_base_dominant_fraction": 0.9865771812080537,
+      "expected_base_element": "Fe",
+      "family": "fe_alloy",
+      "full_active_elements": {
+        "maximum": 13.0,
+        "median": 7.0,
+        "minimum": 2.0,
+        "p05": 2.0,
+        "p25": 5.0,
+        "p75": 9.75,
+        "p95": 11.0
+      },
+      "full_sum_wt_percent": {
+        "maximum": 100.00300000000001,
+        "median": 100.0,
+        "minimum": 99.99999999999997,
+        "p05": 99.99999999999999,
+        "p25": 100.0,
+        "p75": 100.0,
+        "p95": 100.00000000000001
+      },
+      "largest_element_share_percent": {
+        "maximum": 99.03,
+        "median": 66.707,
+        "minimum": 26.65,
+        "p05": 47.44755,
+        "p25": 58.61325000000001,
+        "p75": 71.68325,
+        "p95": 83.02646499999999
+      },
+      "observed_17_active_elements": {
+        "maximum": 6.0,
+        "median": 4.0,
+        "minimum": 2.0,
+        "p05": 2.0,
+        "p25": 3.0,
+        "p75": 4.0,
+        "p95": 5.0
+      },
+      "observed_17_sum_wt_percent": {
+        "maximum": 100.00000000000001,
+        "median": 99.2695,
+        "minimum": 76.861,
+        "p05": 85.96485000000001,
+        "p25": 97.26599999999999,
+        "p75": 99.96475000000001,
+        "p95": 100.0
+      },
+      "profile_probability": 0.739454094292804,
+      "support_band": "supported",
+      "templates": 298,
+      "unique_observed_active_masks": 29,
+      "unique_zero_filled_compositions": 296
+    },
+    {
+      "dominant_element_counts": {
+        "Al": 49,
+        "Cr": 2,
+        "Mo": 3,
+        "Nb": 2
+      },
+      "expected_base_dominant_fraction": 0.875,
+      "expected_base_element": "Al",
+      "family": "al_alloy",
+      "full_active_elements": {
+        "maximum": 8.0,
+        "median": 2.0,
+        "minimum": 1.0,
+        "p05": 2.0,
+        "p25": 2.0,
+        "p75": 2.25,
+        "p95": 5.25
+      },
+      "full_sum_wt_percent": {
+        "maximum": 100.066,
+        "median": 100.0,
+        "minimum": 99.5,
+        "p05": 99.99465000000001,
+        "p25": 100.0,
+        "p75": 100.0,
+        "p95": 100.0
+      },
+      "largest_element_share_percent": {
+        "maximum": 100.0,
+        "median": 76.495,
+        "minimum": 50.37,
+        "p05": 54.765,
+        "p25": 64.57249999999999,
+        "p75": 91.24000000000001,
+        "p95": 99.45082945256131
+      },
+      "observed_17_active_elements": {
+        "maximum": 5.0,
+        "median": 2.0,
+        "minimum": 1.0,
+        "p05": 1.0,
+        "p25": 2.0,
+        "p75": 2.0,
+        "p95": 3.0
+      },
+      "observed_17_sum_wt_percent": {
+        "maximum": 100.0,
+        "median": 100.0,
+        "minimum": 94.69000000000001,
+        "p05": 96.75,
+        "p25": 100.0,
+        "p75": 100.0,
+        "p95": 100.0
+      },
+      "profile_probability": 0.13895781637717122,
+      "support_band": "supported",
+      "templates": 56,
+      "unique_observed_active_masks": 13,
+      "unique_zero_filled_compositions": 56
+    },
+    {
+      "dominant_element_counts": {
+        "Co": 4,
+        "Cr": 1,
+        "Cu": 1,
+        "Fe": 2,
+        "Ni": 10,
+        "Ti": 1
+      },
+      "expected_base_dominant_fraction": null,
+      "expected_base_element": null,
+      "family": "hea",
+      "full_active_elements": {
+        "maximum": 10.0,
+        "median": 5.0,
+        "minimum": 4.0,
+        "p05": 4.0,
+        "p25": 5.0,
+        "p75": 5.0,
+        "p95": 8.199999999999996
+      },
+      "full_sum_wt_percent": {
+        "maximum": 100.52000000000001,
+        "median": 100.0,
+        "minimum": 99.86789999999999,
+        "p05": 99.90453000000001,
+        "p25": 99.98949999999999,
+        "p75": 100.0,
+        "p95": 100.142
+      },
+      "largest_element_share_percent": {
+        "maximum": 49.0,
+        "median": 25.502952657391653,
+        "minimum": 18.86018860188602,
+        "p05": 21.488018860188603,
+        "p25": 24.387662337662338,
+        "p75": 34.84366873374675,
+        "p95": 41.68962571790615
+      },
+      "observed_17_active_elements": {
+        "maximum": 5.0,
+        "median": 4.0,
+        "minimum": 3.0,
+        "p05": 3.9,
+        "p25": 4.0,
+        "p75": 5.0,
+        "p95": 5.0
+      },
+      "observed_17_sum_wt_percent": {
+        "maximum": 100.52000000000001,
+        "median": 99.89,
+        "minimum": 74.99,
+        "p05": 75.26899999999999,
+        "p25": 82.4,
+        "p75": 100.0,
+        "p95": 100.14200000000001
+      },
+      "profile_probability": 0.04714640198511166,
+      "support_band": "limited",
+      "templates": 19,
+      "unique_observed_active_masks": 10,
+      "unique_zero_filled_compositions": 18
+    },
+    {
+      "dominant_element_counts": {
+        "Ni": 17
+      },
+      "expected_base_dominant_fraction": 1.0,
+      "expected_base_element": "Ni",
+      "family": "nicrmo_alloy",
+      "full_active_elements": {
+        "maximum": 3.0,
+        "median": 3.0,
+        "minimum": 3.0,
+        "p05": 3.0,
+        "p25": 3.0,
+        "p75": 3.0,
+        "p95": 3.0
+      },
+      "full_sum_wt_percent": {
+        "maximum": 100.00000000000001,
+        "median": 100.0,
+        "minimum": 99.99,
+        "p05": 99.99,
+        "p25": 99.99999999999999,
+        "p75": 100.0,
+        "p95": 100.0
+      },
+      "largest_element_share_percent": {
+        "maximum": 81.45,
+        "median": 66.67,
+        "minimum": 54.35543554355435,
+        "p05": 55.73957395739574,
+        "p25": 62.82,
+        "p75": 74.36,
+        "p95": 76.002
+      },
+      "observed_17_active_elements": {
+        "maximum": 3.0,
+        "median": 3.0,
+        "minimum": 3.0,
+        "p05": 3.0,
+        "p25": 3.0,
+        "p75": 3.0,
+        "p95": 3.0
+      },
+      "observed_17_sum_wt_percent": {
+        "maximum": 100.00000000000001,
+        "median": 100.0,
+        "minimum": 99.99,
+        "p05": 99.99,
+        "p25": 100.0,
+        "p75": 100.0,
+        "p95": 100.0
+      },
+      "profile_probability": 0.04218362282878412,
+      "support_band": "limited",
+      "templates": 17,
+      "unique_observed_active_masks": 1,
+      "unique_zero_filled_compositions": 17
+    },
+    {
+      "dominant_element_counts": {
+        "Cr": 3,
+        "Fe": 2,
+        "Mo": 3,
+        "Ni": 5
+      },
+      "expected_base_dominant_fraction": null,
+      "expected_base_element": null,
+      "family": "other",
+      "full_active_elements": {
+        "maximum": 8.0,
+        "median": 2.0,
+        "minimum": 1.0,
+        "p05": 1.0,
+        "p25": 1.0,
+        "p75": 3.0,
+        "p95": 8.0
+      },
+      "full_sum_wt_percent": {
+        "maximum": 100.0,
+        "median": 100.0,
+        "minimum": 100.0,
+        "p05": 100.0,
+        "p25": 100.0,
+        "p75": 100.0,
+        "p95": 100.0
+      },
+      "largest_element_share_percent": {
+        "maximum": 100.0,
+        "median": 72.03,
+        "minimum": 39.13,
+        "p05": 39.1402,
+        "p25": 60.71,
+        "p75": 100.0,
+        "p95": 100.0
+      },
+      "observed_17_active_elements": {
+        "maximum": 4.0,
+        "median": 2.0,
+        "minimum": 1.0,
+        "p05": 1.0,
+        "p25": 1.0,
+        "p75": 3.0,
+        "p95": 4.0
+      },
+      "observed_17_sum_wt_percent": {
+        "maximum": 100.0,
+        "median": 100.0,
+        "minimum": 98.232,
+        "p05": 98.7402,
+        "p25": 100.0,
+        "p75": 100.0,
+        "p95": 100.0
+      },
+      "profile_probability": 0.03225806451612903,
+      "support_band": "insufficient",
+      "templates": 13,
+      "unique_observed_active_masks": 10,
+      "unique_zero_filled_compositions": 13
+    }
+  ],
+  "profile": "epit_dataset_v1",
+  "profile_metadata": {
+    "csv_file": "epit_dataset_v1.csv",
+    "csv_sha256": "deac07b3f5c60d86f53b14df59c7c5143484e89023466e91f8f7778011e740eb",
+    "deduplication": "first occurrence of exact numeric 24-element vector rounded to 6 decimals; missing values remain missing",
+    "default_family_probabilities": {
+      "al_alloy": 0.13895781637717122,
+      "fe_alloy": 0.739454094292804,
+      "hea": 0.04714640198511166,
+      "nicrmo_alloy": 0.04218362282878412,
+      "other": 0.03225806451612903
+    },
+    "description": "Exact distinct 24-element compositions from usable EPIT evaluation rows; target values are not stored.",
+    "distinct_templates": 403,
+    "elements": [
+      "Fe",
+      "Cr",
+      "Ni",
+      "Mo",
+      "W",
+      "N",
+      "Nb",
+      "C",
+      "Si",
+      "Mn",
+      "Cu",
+      "P",
+      "S",
+      "Al",
+      "V",
+      "Ta",
+      "Re",
+      "Ce",
+      "Ti",
+      "Co",
+      "B",
+      "Mg",
+      "Y",
+      "Gd"
+    ],
+    "families": [
+      "fe_alloy",
+      "al_alloy",
+      "hea",
+      "nicrmo_alloy",
+      "other"
+    ],
+    "family_display_names": {
+      "al_alloy": "Al Alloy",
+      "fe_alloy": "Fe Alloy",
+      "hea": "HEA",
+      "nicrmo_alloy": "NiCrMo Alloy",
+      "other": "Other"
+    },
+    "family_template_counts": {
+      "al_alloy": 56,
+      "fe_alloy": 298,
+      "hea": 19,
+      "nicrmo_alloy": 17,
+      "other": 13
+    },
+    "missing_value_encoding": "empty CSV field",
+    "observed_elements": [
+      "Fe",
+      "Cr",
+      "Ni",
+      "Mo",
+      "W",
+      "Nb",
+      "Al",
+      "V",
+      "Ta",
+      "Re",
+      "Ce",
+      "Ti",
+      "Co",
+      "B",
+      "Mg",
+      "Y",
+      "Gd"
+    ],
+    "omitted_elements": [
+      "N",
+      "C",
+      "Si",
+      "Mn",
+      "Cu",
+      "P",
+      "S"
+    ],
+    "profile_name": "epit_dataset_v1",
+    "profile_version": 1,
+    "row_filter": "finite Epit, mV (SCE) Avg.; target used only to reproduce evaluated rows",
+    "source_dataset": "electrochemical_metrics_alloys",
+    "source_rows": 810,
+    "source_sheet": "Pitting Potential",
+    "source_workbook_sha256": "d0ce5e9c4b42e0b5a20dbd5c4896791703c5f433ae19bc032674d5848d9d1438",
+    "usable_rows": 760
+  }
+}

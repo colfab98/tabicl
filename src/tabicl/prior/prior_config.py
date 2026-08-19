@@ -5,6 +5,7 @@ from .epit_composition_profile import (
     EPIT_COMPOSITION_FAMILY_PROBS,
     EPIT_COMPOSITION_PROFILE,
 )
+from .epit_feature_profile import EPIT_FEATURE_PROFILE
 
 
 DEFAULT_FIXED_HP = {
@@ -34,6 +35,7 @@ DEFAULT_FIXED_HP = {
     "pitting_material_dirichlet_active_prob": 0.45,
     "pitting_composition_mode": "legacy",
     "pitting_composition_profile": EPIT_COMPOSITION_PROFILE,
+    "pitting_feature_profile": EPIT_FEATURE_PROFILE,
     "pitting_composition_family_probs": EPIT_COMPOSITION_FAMILY_PROBS,
     "pitting_composition_perturb_strength": EPIT_COMPOSITION_DEFAULT_PERTURB_STRENGTH,
     "pitting_material_latent_count": EPIT_COMPOSITION_DEFAULT_LATENT_COUNT,
