@@ -53,7 +53,16 @@ FIXED_VALIDATION_FOLDS = (1, 2, 3, 4, 5)
 PIPELINE_FINGERPRINT_SCHEMA = "epit_pipeline_stage3_fingerprint_v2"
 STUDY_FINGERPRINT_ATTR = "epit_pipeline_fingerprint"
 STUDY_FINGERPRINT_SHA256_ATTR = "epit_pipeline_fingerprint_sha256"
-PITTING_COMPOSITION_MODES = ("legacy", "fe_ni_softmax", "empirical_features")
+PITTING_COMPOSITION_MODES = (
+    "legacy",
+    "fe_ni_softmax",
+    "empirical_features",
+    "empirical_features_scm_target",
+)
+EMPIRICAL_FEATURE_MODES = {
+    "empirical_features",
+    "empirical_features_scm_target",
+}
 EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE = (0.0, 0.15)
 
 
@@ -187,23 +196,42 @@ def build_pipeline_fingerprint(
         "physical_marginal_probability": 1.0,
         "feature_permutation": False,
     }
-    if composition_mode == "empirical_features":
+    if composition_mode in EMPIRICAL_FEATURE_MODES:
         feature_profile_identity = empirical_feature_profile_identity()
         search_space["pitting_composition_perturb_strength"] = list(
             EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE
         )
         fixed_prior.update(
             {
-                "reference_workflow": "epit_empirical_features_v1",
+                "reference_workflow": (
+                    "epit_empirical_features_scm_target_v1"
+                    if composition_mode == "empirical_features_scm_target"
+                    else "epit_empirical_features_v1"
+                ),
                 "material_style": "empirical_feature_profile",
                 **feature_profile_identity,
                 "use_magpie": False,
                 "informed_feature_block_strength": 0.0,
-                "informed_target_policy": "epit_only",
+                "informed_target_policy": (
+                    "scm_target_from_standardized_physical_features_v1"
+                    if composition_mode == "empirical_features_scm_target"
+                    else "epit_only"
+                ),
                 "informed_target_mix_weight": 1.0,
                 "pitting_material_dirichlet_prob": 0.0,
             }
         )
+        if composition_mode == "empirical_features_scm_target":
+            fixed_prior.update(
+                {
+                    "scm_target_input_standardization": (
+                        "per_dataset_column_population_zscore"
+                    ),
+                    "scm_target_constant_column_policy": "zero",
+                    "scm_target_modifies_physical_features": False,
+                    "scm_target_topology": "direct_noncausal",
+                }
+            )
     else:
         search_space["use_magpie"] = [False, True]
         search_space["informed_feature_block_strength"] = [0.0, 0.95]
@@ -226,7 +254,7 @@ def build_pipeline_fingerprint(
                 "synthetic_material_family_probabilities": list(EPIT_FE_NI_FAMILY_PROBS),
             }
         )
-    elif composition_mode != "empirical_features":
+    elif composition_mode not in EMPIRICAL_FEATURE_MODES:
         raise ValueError(
             f"Unsupported pitting composition mode: {composition_mode!r}"
         )
@@ -487,7 +515,7 @@ def load_target_rule_config(
 def sample_params(
     trial: SuggestTrial, *, composition_mode: str = "legacy"
 ) -> TrialParams:
-    if composition_mode == "empirical_features":
+    if composition_mode in EMPIRICAL_FEATURE_MODES:
         use_magpie = False
     else:
         use_magpie = bool(
@@ -502,19 +530,19 @@ def sample_params(
     mlp_prob = float(
         trial.suggest_categorical("mlp_prob", list(original.MLP_PROB_GRID))
     )
-    if composition_mode == "empirical_features":
+    if composition_mode in EMPIRICAL_FEATURE_MODES:
         block_strength = 0.0
     else:
         block_strength = float(
             trial.suggest_float("informed_feature_block_strength", 0.0, 0.95)
         )
     perturb_strength = None
-    if composition_mode in {"fe_ni_softmax", "empirical_features"}:
+    if composition_mode in {"fe_ni_softmax", *EMPIRICAL_FEATURE_MODES}:
         target_mix = 1.0
         dirichlet_prob = 0.0
         concentration = None
         active_prob = None
-        if composition_mode == "empirical_features":
+        if composition_mode in EMPIRICAL_FEATURE_MODES:
             perturb_strength = float(
                 trial.suggest_float(
                     "pitting_composition_perturb_strength",
@@ -570,7 +598,7 @@ def trial_params_from_mapping(
         "informed_prior_ratio",
         "mlp_prob",
     }
-    if composition_mode == "empirical_features":
+    if composition_mode in EMPIRICAL_FEATURE_MODES:
         required.add("pitting_composition_perturb_strength")
     else:
         required.update({"use_magpie", "informed_feature_block_strength"})
@@ -581,7 +609,7 @@ def trial_params_from_mapping(
                 "pitting_material_dirichlet_prob",
             }
         )
-    elif composition_mode not in {"fe_ni_softmax", "empirical_features"}:
+    elif composition_mode not in {"fe_ni_softmax", *EMPIRICAL_FEATURE_MODES}:
         raise ValueError(
             f"Unsupported pitting composition mode: {composition_mode!r}"
         )
@@ -589,7 +617,7 @@ def trial_params_from_mapping(
     if missing:
         raise RuntimeError(f"Optuna trial is missing parameters: {missing}")
 
-    if composition_mode == "empirical_features":
+    if composition_mode in EMPIRICAL_FEATURE_MODES:
         use_magpie = False
         block_strength = 0.0
         perturb_strength = float(
@@ -600,7 +628,7 @@ def trial_params_from_mapping(
         block_strength = float(values["informed_feature_block_strength"])
         perturb_strength = None
 
-    if composition_mode in {"fe_ni_softmax", "empirical_features"}:
+    if composition_mode in {"fe_ni_softmax", *EMPIRICAL_FEATURE_MODES}:
         target_mix = 1.0
         dirichlet_prob = 0.0
         concentration = None
@@ -683,29 +711,42 @@ def training_command(
         raise ValueError(
             f"Unsupported pitting composition mode: {composition_mode!r}"
         )
-    target_only_mode = composition_mode in {
+    fixed_target_mode = composition_mode in {
         "fe_ni_softmax",
-        "empirical_features",
+        *EMPIRICAL_FEATURE_MODES,
     }
-    if target_only_mode and (
+    if fixed_target_mode and (
         params.informed_target_mix_weight != 1.0
         or params.pitting_material_dirichlet_prob != 0.0
     ):
         raise ValueError(
-            f"{composition_mode} requires an EPIT-only target and no Dirichlet mixture."
+            f"{composition_mode} requires a fixed target policy and no Dirichlet mixture."
         )
-    if composition_mode == "empirical_features":
+    if composition_mode in EMPIRICAL_FEATURE_MODES:
         low, high = EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE
+        perturb_strength = params.pitting_composition_perturb_strength
+        valid_perturb_strength = (
+            perturb_strength is not None
+            and math.isfinite(perturb_strength)
+            and (
+                perturb_strength >= 0.0
+                if composition_mode == "empirical_features_scm_target"
+                else low <= perturb_strength <= high
+            )
+        )
+        valid_magpie_setting = (
+            not params.use_magpie
+            or composition_mode == "empirical_features_scm_target"
+        )
         if (
-            params.use_magpie
+            not valid_magpie_setting
             or params.informed_feature_block_strength != 0.0
-            or params.pitting_composition_perturb_strength is None
-            or not math.isfinite(params.pitting_composition_perturb_strength)
-            or not low <= params.pitting_composition_perturb_strength <= high
+            or not valid_perturb_strength
         ):
             raise ValueError(
-                "empirical_features requires Magpie off, block coupling zero, "
-                "and a valid composition perturbation strength."
+                f"{composition_mode} requires a supported Magpie setting, "
+                "zero block coupling, and a valid composition perturbation "
+                "strength."
             )
     _replace_option(command, "--pitting_composition_mode", composition_mode)
     for option in (
@@ -714,8 +755,12 @@ def training_command(
         "--epit_interaction_coef",
     ):
         _remove_option(command, option)
-    if composition_mode == "empirical_features":
+    if composition_mode in EMPIRICAL_FEATURE_MODES:
         _remove_option(command, "--pitting_material_style_probs", value_count=5)
+        if params.use_magpie:
+            command.extend(
+                ["--pitting_material_style_probs", "1", "0", "0", "0", "0"]
+            )
         command.extend(
             [
                 "--pitting_feature_profile",
@@ -726,14 +771,15 @@ def training_command(
                 format_float(params.pitting_composition_perturb_strength),
             ]
         )
-    command.extend(
-        [
-            "--pitting_target_rule_scores",
-            *rules.score_cli_values(),
-            "--pitting_target_rule_coefficients",
-            *rules.coefficient_cli_values(),
-        ]
-    )
+    if composition_mode != "empirical_features_scm_target":
+        command.extend(
+            [
+                "--pitting_target_rule_scores",
+                *rules.score_cli_values(),
+                "--pitting_target_rule_coefficients",
+                *rules.coefficient_cli_values(),
+            ]
+        )
     return command
 
 
@@ -909,7 +955,7 @@ def run_trial(
         "train_command": train_cmd,
         "eval_command": eval_cmd,
     }
-    if args.pitting_composition_mode == "empirical_features":
+    if args.pitting_composition_mode in EMPIRICAL_FEATURE_MODES:
         metadata.update(
             {
                 "fixed_feature_profile": fixed_prior["feature_profile"],
@@ -1125,10 +1171,12 @@ def run_search(args: argparse.Namespace) -> None:
         raise ValueError("--eval-n-estimators must be positive.")
     args.split_manifest = args.split_manifest.expanduser().resolve()
     if (
-        args.pitting_composition_mode == "empirical_features"
+        args.pitting_composition_mode in EMPIRICAL_FEATURE_MODES
         and args.prior_n_jobs != 1
     ):
-        raise ValueError("empirical_features requires --prior-n-jobs 1.")
+        raise ValueError(
+            f"{args.pitting_composition_mode} requires --prior-n-jobs 1."
+        )
     args.target_rule_summary = args.target_rule_summary.expanduser().resolve()
     args.target_rules = load_target_rule_config(
         summary_path=args.target_rule_summary,

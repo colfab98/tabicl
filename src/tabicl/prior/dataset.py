@@ -683,6 +683,8 @@ class SCMPrior(Prior):
         self.last_pitting_composition_batch: Optional[EpitCompositionBatch] = None
         self.last_pitting_feature_batch: Optional[EpitFeatureBatch] = None
         self.last_pitting_material_family_ids: Optional[Tensor] = None
+        self.last_pitting_scm_target_input: Optional[Tensor] = None
+        self.last_pitting_scm_target_metadata: Optional[Dict[str, Any]] = None
 
     def hp_sampling(self) -> Dict[str, Any]:
         """Sample hyperparameters for dataset generation.
@@ -896,12 +898,21 @@ class SCMPrior(Prior):
             "empirical_profile": "empirical",
             "feature_profile": "empirical_features",
             "empirical_feature_profile": "empirical_features",
+            "feature_profile_scm_target": "empirical_features_scm_target",
+            "empirical_feature_scm_target": "empirical_features_scm_target",
         }
         mode = aliases.get(mode, mode)
-        if mode not in {"legacy", "empirical", "empirical_features", "fe_ni_softmax"}:
+        if mode not in {
+            "legacy",
+            "empirical",
+            "empirical_features",
+            "empirical_features_scm_target",
+            "fe_ni_softmax",
+        }:
             raise ValueError(
                 "pitting_composition_mode must be 'legacy', 'empirical', "
-                "'empirical_features', or 'fe_ni_softmax'."
+                "'empirical_features', 'empirical_features_scm_target', or "
+                "'fe_ni_softmax'."
             )
         return mode
 
@@ -909,7 +920,13 @@ class SCMPrior(Prior):
         return self._pitting_composition_mode() == "empirical"
 
     def _empirical_pitting_feature_profile_enabled(self) -> bool:
-        return self._pitting_composition_mode() == "empirical_features"
+        return self._pitting_composition_mode() in {
+            "empirical_features",
+            "empirical_features_scm_target",
+        }
+
+    def _empirical_pitting_scm_target_enabled(self) -> bool:
+        return self._pitting_composition_mode() == "empirical_features_scm_target"
 
     def _fe_ni_softmax_pitting_composition_enabled(self) -> bool:
         return self._pitting_composition_mode() == "fe_ni_softmax"
@@ -2822,6 +2839,56 @@ class SCMPrior(Prior):
         scale = torch.std(centered.float(), unbiased=False).to(device=values.device, dtype=values.dtype)
         return centered / scale.clamp_min(1e-6)
 
+    @staticmethod
+    def _standardize_features_for_scm_target(X: Tensor) -> Tensor:
+        """Standardize a copy of each generated column for the SCM target head."""
+        if X.ndim != 2:
+            raise ValueError("SCM target features must be a 2D tensor.")
+        clean = torch.nan_to_num(X, nan=0.0, posinf=0.0, neginf=0.0)
+        centered = clean - clean.mean(dim=0, keepdim=True)
+        scale = torch.std(clean.float(), dim=0, unbiased=False, keepdim=True).to(
+            device=X.device,
+            dtype=X.dtype,
+        )
+        variable = torch.isfinite(scale) & (scale > 1e-6)
+        standardized = torch.where(
+            variable,
+            centered / scale.clamp_min(1e-6),
+            torch.zeros_like(centered),
+        )
+        return torch.nan_to_num(standardized, nan=0.0, posinf=0.0, neginf=0.0)
+
+    @torch.no_grad()
+    def _generate_scm_target_from_physical_features(
+        self,
+        X: Tensor,
+        params: Dict[str, Any],
+        prior_cls: type[MLPSCM] | type[TreeSCM],
+    ) -> Tensor:
+        """Map unchanged physical features to a target with a direct SCM head."""
+        standardized = self._standardize_features_for_scm_target(X)
+        target_params = {
+            **params,
+            "seq_len": int(X.shape[0]),
+            "num_features": int(X.shape[1]),
+            "num_outputs": 1,
+            "is_causal": False,
+            "device": X.device,
+        }
+        target_prior = prior_cls(**target_params)
+        _, target = target_prior(causes=standardized)
+        self.last_pitting_scm_target_input = standardized.detach().cpu()
+        self.last_pitting_scm_target_metadata = {
+            "target_policy": "scm_target_from_standardized_physical_features_v1",
+            "scm_prior_type": str(params["prior_type"]),
+            "input_standardization": "per_dataset_column_population_zscore",
+            "constant_column_policy": "zero",
+            "physical_features_modified": False,
+        }
+        self.last_pitting_target_component = target.detach().cpu()
+        self.last_pitting_target_drive = target.detach().cpu()
+        return target
+
     def _block_projection(self, X: Tensor, feature_slice: Optional[slice], max_columns: int = 12) -> Optional[Tensor]:
         if feature_slice is None or feature_slice.stop <= feature_slice.start:
             return None
@@ -3018,7 +3085,9 @@ class SCMPrior(Prior):
         profile_applied = profile_info is not None and profile_info.applied
         if self._fixed_epit_schema_enabled():
             fe_ni_target_only = self._fe_ni_softmax_pitting_composition_enabled()
-            empirical_features_target_only = self._empirical_pitting_feature_profile_enabled()
+            empirical_features_target_only = (
+                self._pitting_composition_mode() == "empirical_features"
+            )
             epit_target_only = fe_ni_target_only or empirical_features_target_only
             effective_mix_weight = 1.0 if epit_target_only else target_mix_weight
             rule = self._sample_fixed_epit_target_rule(
@@ -3284,6 +3353,26 @@ class SCMPrior(Prior):
         self.last_pitting_composition_batch = None
         self.last_pitting_feature_batch = None
         self.last_pitting_material_family_ids = None
+        self.last_pitting_scm_target_input = None
+        self.last_pitting_scm_target_metadata = None
+
+        if self._empirical_pitting_scm_target_enabled():
+            if epit_latent_context is not None:
+                raise ValueError(
+                    "empirical_features_scm_target does not use SCM material latents."
+                )
+            profile = self._informed_physical_marginal_profile()
+            if not self._is_pitting_profile_name(profile):
+                raise ValueError(
+                    "empirical_features_scm_target requires the "
+                    "pitting_potential_v1 profile."
+                )
+            X, _ = self._apply_empirical_pitting_feature_profile(
+                X,
+                blocks,
+                family,
+            )
+            return torch.nan_to_num(X), torch.zeros_like(y)
 
         block_strength = float(self.fixed_hp.get("informed_feature_block_strength", 0.30))
         block_strength = float(np.clip(block_strength, 0.0, 0.95))
@@ -3405,7 +3494,22 @@ class SCMPrior(Prior):
                     "num_features": epit_latent_context.scm_num_features,
                 }
 
-            X, y = prior_cls(**scm_params)()
+            empirical_scm_target = bool(
+                generation_params.get("informed_mode", False)
+                and self._empirical_pitting_scm_target_enabled()
+            )
+            if empirical_scm_target:
+                X = torch.zeros(
+                    int(generation_params["seq_len"]),
+                    int(generation_params["num_features"]),
+                    device=generation_params["device"],
+                )
+                y = torch.zeros(
+                    int(generation_params["seq_len"]),
+                    device=generation_params["device"],
+                )
+            else:
+                X, y = prior_cls(**scm_params)()
             reg2cls_params = params
             if generation_params.get("informed_mode", False):
                 X, y = self.apply_informed_structure(
@@ -3417,6 +3521,12 @@ class SCMPrior(Prior):
                 profile = self._informed_physical_marginal_profile()
                 if self._is_pitting_profile_name(profile) or self._is_inhibitor_efficiency_profile_name(profile):
                     reg2cls_params = {**params, "cat_prob": 0.0}
+            if empirical_scm_target:
+                y = self._generate_scm_target_from_physical_features(
+                    X,
+                    generation_params,
+                    prior_cls,
+                )
             if self._pitting_magpie_features_enabled() and generation_params.get("informed_mode", False):
                 X = append_magpie_descriptors_torch(X)
             active_feature_count = int(X.shape[-1])

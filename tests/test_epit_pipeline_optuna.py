@@ -243,6 +243,30 @@ def test_stage4_explicit_selection_requires_best_completed_trial(
         train_final.load_selected_trial(args)
 
 
+def test_stage4_automatically_selects_current_best_with_active_trials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import optuna
+    from optuna.trial import TrialState
+
+    lower = SimpleNamespace(number=4, state=TrialState.COMPLETE, value=0.60)
+    best = SimpleNamespace(number=7, state=TrialState.COMPLETE, value=0.71)
+    running = SimpleNamespace(number=8, state=TrialState.RUNNING, value=None)
+    waiting = SimpleNamespace(number=9, state=TrialState.WAITING, value=None)
+    study = SimpleNamespace(trials=[lower, best, running, waiting])
+    monkeypatch.setattr(optuna, "load_study", lambda **kwargs: study)
+    monkeypatch.setattr(
+        search.original.search_utils,
+        "build_optuna_storage",
+        lambda storage: storage,
+    )
+
+    args = train_final.parse_args(["--storage", "journal:///unused.log"])
+    _, selected = train_final.load_selected_trial(args)
+
+    assert selected is best
+
+
 def test_stage4_validates_missing_worker_files_from_journal(tmp_path: Path) -> None:
     search_args = search.parse_args([])
     rules = search.load_target_rule_config(

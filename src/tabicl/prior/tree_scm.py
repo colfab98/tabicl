@@ -300,9 +300,23 @@ class TreeSCM(nn.Module):
 
         return nn.Sequential(tree_layer, noise_layer)
 
-    def forward(self):
-        """Generates synthetic data by sampling input features and applying tree-based transformations."""
-        causes = self.xsampler.sample()  # (seq_len, num_causes)
+    def forward(self, causes: torch.Tensor | None = None):
+        """Generate a task, optionally from caller-supplied cause features.
+
+        The optional input is used by target-only SCM tasks. The historical
+        no-argument path continues to sample causes internally.
+        """
+        if causes is None:
+            causes = self.xsampler.sample()  # (seq_len, num_causes)
+        else:
+            if causes.ndim != 2:
+                raise ValueError("External tree-SCM causes must be a 2D tensor.")
+            if causes.shape != (self.seq_len, self.num_causes):
+                raise ValueError(
+                    "External tree-SCM causes must have shape "
+                    f"({self.seq_len}, {self.num_causes}), got {tuple(causes.shape)}."
+                )
+            causes = causes.to(self.device)
 
         # Generate outputs through MLP layers
         outputs = [causes]

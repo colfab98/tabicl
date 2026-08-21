@@ -889,7 +889,13 @@ if __name__ == "__main__":
     parser.add_argument("--pitting_material_dirichlet_active_prob", type=float, default=None)
     parser.add_argument(
         "--pitting_composition_mode",
-        choices=("legacy", "empirical", "empirical_features", "fe_ni_softmax"),
+        choices=(
+            "legacy",
+            "empirical",
+            "empirical_features",
+            "empirical_features_scm_target",
+            "fe_ni_softmax",
+        ),
         default=None,
     )
     parser.add_argument("--pitting_composition_profile", type=str, default=None)

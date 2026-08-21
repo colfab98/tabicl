@@ -8,6 +8,7 @@ import json
 import math
 import re
 import sys
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -33,6 +34,17 @@ CHECKPOINT_RE = re.compile(r"^step-(\d+)\.ckpt$")
 PITTING_TASK_ID = "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg"
 
 
+def parse_bool(value: str) -> bool:
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise argparse.ArgumentTypeError(
+        f"Expected true or false, received {value!r}."
+    )
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--study-name", default="epit_pipeline_optuna_v3")
@@ -49,8 +61,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--allow-stale-running-trials",
         action="store_true",
         help=(
-            "Allow an explicitly pinned best completed trial to be used when "
-            "the journal contains stale RUNNING/WAITING records."
+            "Deprecated compatibility flag. RUNNING/WAITING trials are always "
+            "non-blocking; Stage 4 selects the current best completed trial."
         ),
     )
     parser.add_argument(
@@ -64,7 +76,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--storage",
         required=True,
-        help="The completed Stage 3 Optuna storage URL (including journal://).",
+        help="The Stage 3 Optuna storage URL (including journal://).",
     )
     parser.add_argument(
         "--split-manifest",
@@ -93,6 +105,26 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dataloader-num-workers", type=int, default=4)
     parser.add_argument("--dataloader-prefetch-factor", type=int, default=4)
     parser.add_argument("--eval-n-estimators", type=int, default=8)
+    parser.add_argument("--override-informed-prior-ratio", type=float, default=None)
+    parser.add_argument("--override-mlp-prob", type=float, default=None)
+    parser.add_argument(
+        "--override-pitting-composition-perturb-strength",
+        type=float,
+        default=None,
+    )
+    parser.add_argument(
+        "--override-use-magpie",
+        type=parse_bool,
+        default=None,
+        metavar="{true,false}",
+    )
+    parser.add_argument(
+        "--override-pitting-composition-family-probs",
+        type=float,
+        nargs=5,
+        default=None,
+        metavar=("FE", "AL", "HEA", "NICRMO", "OTHER"),
+    )
     return parser.parse_args(argv)
 
 
@@ -132,10 +164,6 @@ def validate_args(args: argparse.Namespace) -> None:
         )
     if args.selected_trial_number is not None and args.selected_trial_number < 0:
         raise ValueError("--selected-trial-number must be non-negative.")
-    if args.allow_stale_running_trials and args.selected_trial_number is None:
-        raise ValueError(
-            "--allow-stale-running-trials requires --selected-trial-number."
-        )
     if (
         args.allow_missing_selected_trial_artifacts
         and args.selected_trial_number is None
@@ -157,16 +185,6 @@ def load_selected_trial(args: argparse.Namespace) -> tuple[Any, Any]:
         study_name=args.study_name,
         storage=search.original.search_utils.build_optuna_storage(args.storage),
     )
-    active = [
-        trial.number
-        for trial in study.trials
-        if trial.state in (TrialState.RUNNING, TrialState.WAITING)
-    ]
-    if active and not args.allow_stale_running_trials:
-        raise RuntimeError(
-            "Stage 3 is still active; final training cannot freeze a winner. "
-            f"Active trials: {active}"
-        )
     completed = [
         trial
         for trial in study.trials
@@ -501,6 +519,88 @@ def replace_option(command: list[str], option: str, value: Any) -> None:
     command[index + 1] = str(value)
 
 
+def replace_option_values(
+    command: list[str],
+    option: str,
+    values: list[Any],
+    *,
+    expected_count: int,
+) -> None:
+    if len(values) != expected_count:
+        raise ValueError(
+            f"{option} requires exactly {expected_count} values."
+        )
+    index = command.index(option)
+    command[index + 1 : index + 1 + expected_count] = [
+        search.format_float(float(value)) for value in values
+    ]
+
+
+def apply_parameter_overrides(
+    args: argparse.Namespace,
+    selected_params: search.TrialParams,
+    *,
+    composition_mode: str,
+) -> tuple[search.TrialParams, dict[str, Any]]:
+    requested = {
+        "informed_prior_ratio": args.override_informed_prior_ratio,
+        "mlp_prob": args.override_mlp_prob,
+        "pitting_composition_perturb_strength": (
+            args.override_pitting_composition_perturb_strength
+        ),
+        "use_magpie": args.override_use_magpie,
+    }
+    family_probs = args.override_pitting_composition_family_probs
+    if not any(value is not None for value in requested.values()) and (
+        family_probs is None
+    ):
+        return selected_params, {}
+    if composition_mode != "empirical_features_scm_target":
+        raise ValueError(
+            "Final parameter overrides are supported only for "
+            "empirical_features_scm_target studies."
+        )
+
+    for name in ("informed_prior_ratio", "mlp_prob"):
+        value = requested[name]
+        if value is not None and (
+            not math.isfinite(value) or not 0.0 <= value <= 1.0
+        ):
+            raise ValueError(f"--override-{name.replace('_', '-')} must be in [0, 1].")
+    perturb_strength = requested["pitting_composition_perturb_strength"]
+    if perturb_strength is not None and (
+        not math.isfinite(perturb_strength) or perturb_strength < 0.0
+    ):
+        raise ValueError(
+            "--override-pitting-composition-perturb-strength must be finite "
+            "and non-negative."
+        )
+
+    trial_param_overrides = {
+        name: value
+        for name, value in requested.items()
+        if value is not None
+    }
+    effective_params = replace(selected_params, **trial_param_overrides)
+    provenance: dict[str, Any] = {
+        "trial_parameter_overrides": trial_param_overrides,
+    }
+    if family_probs is not None:
+        probabilities = [float(value) for value in family_probs]
+        if (
+            any(not math.isfinite(value) or value < 0.0 for value in probabilities)
+            or sum(probabilities) <= 0.0
+        ):
+            raise ValueError(
+                "--override-pitting-composition-family-probs values must be "
+                "finite and non-negative, with at least one positive value."
+            )
+        provenance["fixed_prior_overrides"] = {
+            "pitting_composition_family_probs": probabilities,
+        }
+    return effective_params, provenance
+
+
 def checkpoint_step(path: Path) -> int:
     match = CHECKPOINT_RE.match(path.name)
     if match is None:
@@ -631,10 +731,18 @@ def evaluation_record(
     }
 
 
-def output_dir_for(args: argparse.Namespace) -> Path:
+def output_dir_for(
+    args: argparse.Namespace,
+    *,
+    run_name: str,
+    isolate_run: bool,
+) -> Path:
     if args.output_dir is not None:
         return args.output_dir.expanduser().resolve()
-    return (DEFAULT_FINAL_ROOT / search.slugify(args.study_name)).resolve()
+    study_root = DEFAULT_FINAL_ROOT / search.slugify(args.study_name)
+    if isolate_run:
+        return (study_root / search.slugify(run_name)).resolve()
+    return study_root.resolve()
 
 
 def run(args: argparse.Namespace) -> Path:
@@ -652,6 +760,12 @@ def run(args: argparse.Namespace) -> Path:
         for candidate in study.trials
         if candidate.state.name in {"RUNNING", "WAITING"}
     ]
+    if unfinished_trials_at_selection:
+        print(
+            "Selecting the current best completed trial while Optuna still has "
+            f"{len(unfinished_trials_at_selection)} RUNNING/WAITING trial(s).",
+            flush=True,
+        )
     study_fingerprint, study_fingerprint_sha256 = (
         verify_study_pipeline_identity(study, rules)
     )
@@ -663,9 +777,10 @@ def run(args: argparse.Namespace) -> Path:
             f"{composition_mode!r}."
         )
     args.pitting_composition_mode = composition_mode
-    if composition_mode == "empirical_features":
+    if composition_mode in search.EMPIRICAL_FEATURE_MODES:
         verify_empirical_feature_profile_identity(fixed_prior)
     proxy_training = study_fingerprint.get("proxy_training", {})
+    proxy_training_overrides: dict[str, dict[str, int]] = {}
     for argument_name, fingerprint_name in (
         ("np_seed", "np_seed"),
         ("torch_seed", "torch_seed"),
@@ -674,15 +789,17 @@ def run(args: argparse.Namespace) -> Path:
         expected = int(proxy_training.get(fingerprint_name, -1))
         observed = int(getattr(args, argument_name))
         if observed != expected:
-            raise RuntimeError(
-                f"Final {argument_name}={observed} differs from the selected "
-                f"Optuna study value {expected}."
-            )
-    if composition_mode == "empirical_features" and args.prior_n_jobs != 1:
-        raise RuntimeError(
-            "empirical_features final training requires --prior-n-jobs 1."
+            proxy_training_overrides[argument_name] = {
+                "selected_study_value": expected,
+                "effective_final_value": observed,
+            }
+    if args.prior_n_jobs != 1 and composition_mode in search.EMPIRICAL_FEATURE_MODES:
+        print(
+            "Warning: --prior-n-jobs greater than 1 is recorded as an "
+            "experimental override and may not reproduce the single-worker run.",
+            flush=True,
         )
-    params = search.trial_params_from_mapping(
+    selected_params = search.trial_params_from_mapping(
         dict(trial.params), composition_mode=composition_mode
     )
     try:
@@ -690,7 +807,7 @@ def run(args: argparse.Namespace) -> Path:
             trial,
             split_manifest=args.split_manifest,
             rules=rules,
-            params=params,
+            params=selected_params,
             study_fingerprint_sha256=study_fingerprint_sha256,
         )
     except FileNotFoundError:
@@ -699,7 +816,7 @@ def run(args: argparse.Namespace) -> Path:
         trial_eval = verify_selected_trial_journal_record(
             trial,
             rules=rules,
-            params=params,
+            params=selected_params,
             study_fingerprint=study_fingerprint,
             study_fingerprint_sha256=study_fingerprint_sha256,
         )
@@ -708,10 +825,27 @@ def run(args: argparse.Namespace) -> Path:
             "validated the completed Optuna journal record instead.",
             flush=True,
         )
-    run_name = args.final_run_name or (
+    params, overrides = apply_parameter_overrides(
+        args,
+        selected_params,
+        composition_mode=composition_mode,
+    )
+    if proxy_training_overrides:
+        overrides["proxy_training_overrides"] = proxy_training_overrides
+    default_run_name = (
         f"final_{search.slugify(args.study_name)}_trial_{trial.number:04d}"
     )
-    output_dir = output_dir_for(args)
+    is_experimental = bool(overrides)
+    if is_experimental:
+        override_sha256 = search.canonical_json_sha256(overrides)
+        default_run_name += f"_override_{override_sha256[:10]}"
+    run_name = args.final_run_name or default_run_name
+    isolate_run = is_experimental or args.final_run_name is not None
+    output_dir = output_dir_for(
+        args,
+        run_name=run_name,
+        isolate_run=isolate_run,
+    )
     checkpoint_dir = (
         args.checkpoint_root.expanduser().resolve() / search.slugify(run_name)
     )
@@ -723,6 +857,17 @@ def run(args: argparse.Namespace) -> Path:
         )
 
     train_command = search.training_command(args, params, checkpoint_dir, rules)
+    fixed_prior_overrides = overrides.get("fixed_prior_overrides", {})
+    family_probs = fixed_prior_overrides.get(
+        "pitting_composition_family_probs"
+    )
+    if family_probs is not None:
+        replace_option_values(
+            train_command,
+            "--pitting_composition_family_probs",
+            family_probs,
+            expected_count=5,
+        )
     replace_option(train_command, "--save_temp_every", args.save_temp_every)
     replace_option(train_command, "--save_perm_every", args.save_perm_every)
     training_configuration = {
@@ -731,6 +876,10 @@ def run(args: argparse.Namespace) -> Path:
         "trial_number": int(trial.number),
         "trial_value": float(trial.value),
         "trial_params": search.trial_params_payload(params),
+        "selected_trial_params": search.trial_params_payload(selected_params),
+        "effective_trial_params": search.trial_params_payload(params),
+        "overrides": overrides,
+        "experimental_override_run": is_experimental,
         "split_manifest_sha256": frozen_split.manifest_sha256,
         "split_lock_sha256": frozen_split.lock_sha256,
         "target_rule_summary_sha256": rules.summary_sha256,
@@ -791,14 +940,16 @@ def run(args: argparse.Namespace) -> Path:
             "storage": args.storage,
             "total_trials": len(study.trials),
             "selection_mode": (
-                "explicit_best_completed_trial"
+                "explicit_current_best_completed_trial"
                 if args.selected_trial_number is not None
-                else "automatic_best_completed_trial"
+                else "automatic_current_best_completed_trial"
             ),
             "unfinished_trials_at_selection": unfinished_trials_at_selection,
             "selected_trial_number": int(trial.number),
             "selected_trial_value": float(trial.value),
-            "selected_trial_params": search.trial_params_payload(params),
+            "selected_trial_params": search.trial_params_payload(
+                selected_params
+            ),
             "selected_trial_user_attrs": dict(trial.user_attrs),
             "selected_trial_fold_evaluation": trial_eval,
             "pipeline_fingerprint": study_fingerprint,

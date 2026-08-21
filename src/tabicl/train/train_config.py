@@ -380,12 +380,18 @@ def build_parser():
     parser.add_argument(
         "--pitting_composition_mode",
         type=str,
-        choices=("legacy", "empirical", "empirical_features", "fe_ni_softmax"),
+        choices=(
+            "legacy",
+            "empirical",
+            "empirical_features",
+            "empirical_features_scm_target",
+            "fe_ni_softmax",
+        ),
         default=None,
         help=(
             "Material generation mode: unchanged legacy profile, latent SCM composition expansion, "
-            "complete empirical EPIT physical features, or rank-anchored Fe/NiCrMo softmax "
-            "compositions with EPIT-only informed targets."
+            "complete empirical EPIT physical features with either EPIT-rule or target-only SCM "
+            "labels, or rank-anchored Fe/NiCrMo softmax compositions with EPIT-only informed targets."
         ),
     )
     parser.add_argument(
