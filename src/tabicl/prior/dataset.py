@@ -2889,6 +2889,93 @@ class SCMPrior(Prior):
         self.last_pitting_target_drive = target.detach().cpu()
         return target
 
+    @torch.no_grad()
+    def _generate_scm_epit_target_from_physical_features(
+        self,
+        X: Tensor,
+        params: Dict[str, Any],
+        prior_cls: type[MLPSCM] | type[TreeSCM],
+    ) -> Tensor:
+        """Combine a direct SCM target with a calibrated raw-feature EPIT rule."""
+        if X.ndim != 2 or X.shape[1] != EPIT_BASE_FEATURE_COUNT:
+            raise ValueError(
+                "The empirical SCM+EPIT target requires exactly "
+                f"{EPIT_BASE_FEATURE_COUNT} raw physical features."
+            )
+        target_mix_weight = float(
+            self.fixed_hp.get("informed_target_mix_weight", 0.35)
+        )
+        if (
+            not np.isfinite(target_mix_weight)
+            or not 0.0 <= target_mix_weight <= 1.0
+        ):
+            raise ValueError(
+                "Informed target mix weight must be finite and between 0 and 1."
+            )
+
+        scm_target = self._generate_scm_target_from_physical_features(
+            X,
+            params,
+            prior_cls,
+        )
+        family_ids = self.last_pitting_material_family_ids
+        if family_ids is None or family_ids.numel() != X.shape[0]:
+            raise RuntimeError(
+                "The empirical physical-feature generator did not provide "
+                "material-family metadata for the EPIT target rule."
+            )
+        profile_info = PittingProfileInfo(
+            applied=True,
+            material_style="empirical_feature_profile",
+            physical_profile_applied=True,
+            material_family_ids=family_ids.to(device=X.device),
+        )
+        blocks = {
+            "material": slice(0, 17),
+            "environment": slice(17, 20),
+            "process_history": slice(20, 21),
+        }
+        rule = self._sample_fixed_epit_target_rule(
+            X,
+            blocks,
+            target_mix_weight,
+            profile_info,
+        )
+        if rule.get("rule_type") != "fixed_epit_target_rule_v3_weighted_family":
+            raise ValueError(
+                "empirical_features_scm_target requires calibrated EPIT "
+                "target-rule scores."
+            )
+        target_component, epit_drive = self._evaluate_fixed_epit_target_rule_tensor(
+            X,
+            rule,
+        )
+        combined = (
+            (1.0 - target_mix_weight) * self._standardize_signal(scm_target)
+            + target_component.to(dtype=scm_target.dtype)
+        )
+        target = self._standardize_signal(combined)
+
+        self.last_pitting_target_rule = rule
+        self.last_pitting_target_component = target_component.detach().cpu()
+        self.last_pitting_target_drive = epit_drive.detach().cpu()
+        self.last_pitting_scm_target_metadata = {
+            "target_policy": "standardized_scm_plus_calibrated_epit_v1",
+            "scm_prior_type": str(params["prior_type"]),
+            "scm_input_standardization": (
+                "per_dataset_column_population_zscore"
+            ),
+            "constant_column_policy": "zero",
+            "epit_input_representation": "raw_physical_features",
+            "target_mix_weight": target_mix_weight,
+            "final_target_standardization": "population_zscore",
+            "transformer_input_standardization": (
+                "per_dataset_column_population_zscore"
+            ),
+            "reg2cls_applied": False,
+        }
+        return target
+
     def _block_projection(self, X: Tensor, feature_slice: Optional[slice], max_columns: int = 12) -> Optional[Tensor]:
         if feature_slice is None or feature_slice.stop <= feature_slice.start:
             return None
@@ -3522,7 +3609,7 @@ class SCMPrior(Prior):
                 if self._is_pitting_profile_name(profile) or self._is_inhibitor_efficiency_profile_name(profile):
                     reg2cls_params = {**params, "cat_prob": 0.0}
             if empirical_scm_target:
-                y = self._generate_scm_target_from_physical_features(
+                y = self._generate_scm_epit_target_from_physical_features(
                     X,
                     generation_params,
                     prior_cls,
@@ -3530,7 +3617,10 @@ class SCMPrior(Prior):
             if self._pitting_magpie_features_enabled() and generation_params.get("informed_mode", False):
                 X = append_magpie_descriptors_torch(X)
             active_feature_count = int(X.shape[-1])
-            X, y = Reg2Cls(reg2cls_params)(X, y)
+            if empirical_scm_target:
+                X = self._standardize_features_for_scm_target(X)
+            else:
+                X, y = Reg2Cls(reg2cls_params)(X, y)
 
             # Add batch dim for single dataset to be compatible with delete_unique_features and sanity_check
             X, y = X.unsqueeze(0), y.unsqueeze(0)

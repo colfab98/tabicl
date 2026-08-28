@@ -64,6 +64,7 @@ EMPIRICAL_FEATURE_MODES = {
     "empirical_features_scm_target",
 }
 EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE = (0.0, 0.15)
+GENERIC_SCM_MIX_PROBS = (0.7, 0.3)
 
 
 @dataclass(frozen=True)
@@ -102,6 +103,19 @@ class TargetRuleConfig:
     def coefficient_cli_values(self) -> list[str]:
         return [
             f"{family}.{term}={format_float(value)}"
+            for family, values in self.coefficients.items()
+            for term, value in values.items()
+        ]
+
+    def exact_score_cli_values(self) -> list[str]:
+        return [
+            f"{name}={repr(float(score))}"
+            for name, score in self.scores.items()
+        ]
+
+    def exact_coefficient_cli_values(self) -> list[str]:
+        return [
+            f"{family}.{term}={repr(float(value))}"
             for family, values in self.coefficients.items()
             for term, value in values.items()
         ]
@@ -204,7 +218,7 @@ def build_pipeline_fingerprint(
         fixed_prior.update(
             {
                 "reference_workflow": (
-                    "epit_empirical_features_scm_target_v1"
+                    "epit_empirical_features_scm_target_v2"
                     if composition_mode == "empirical_features_scm_target"
                     else "epit_empirical_features_v1"
                 ),
@@ -213,25 +227,33 @@ def build_pipeline_fingerprint(
                 "use_magpie": False,
                 "informed_feature_block_strength": 0.0,
                 "informed_target_policy": (
-                    "scm_target_from_standardized_physical_features_v1"
+                    "standardized_scm_plus_calibrated_epit_v1"
                     if composition_mode == "empirical_features_scm_target"
                     else "epit_only"
                 ),
-                "informed_target_mix_weight": 1.0,
                 "pitting_material_dirichlet_prob": 0.0,
             }
         )
         if composition_mode == "empirical_features_scm_target":
+            search_space["informed_target_mix_weight"] = [0.0, 1.0]
             fixed_prior.update(
                 {
                     "scm_target_input_standardization": (
                         "per_dataset_column_population_zscore"
                     ),
                     "scm_target_constant_column_policy": "zero",
-                    "scm_target_modifies_physical_features": False,
                     "scm_target_topology": "direct_noncausal",
+                    "epit_target_input": "raw_physical_features",
+                    "final_target_standardization": "population_zscore",
+                    "transformer_input_standardization": (
+                        "per_dataset_column_population_zscore"
+                    ),
+                    "informed_reg2cls_policy": "bypass",
+                    "generic_scm_mix_probs": list(GENERIC_SCM_MIX_PROBS),
                 }
             )
+        else:
+            fixed_prior["informed_target_mix_weight"] = 1.0
     else:
         search_space["use_magpie"] = [False, True]
         search_space["informed_feature_block_strength"] = [0.0, 0.95]
@@ -537,7 +559,7 @@ def sample_params(
             trial.suggest_float("informed_feature_block_strength", 0.0, 0.95)
         )
     perturb_strength = None
-    if composition_mode in {"fe_ni_softmax", *EMPIRICAL_FEATURE_MODES}:
+    if composition_mode in {"fe_ni_softmax", "empirical_features"}:
         target_mix = 1.0
         dirichlet_prob = 0.0
         concentration = None
@@ -549,6 +571,19 @@ def sample_params(
                     *EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE,
                 )
             )
+    elif composition_mode == "empirical_features_scm_target":
+        target_mix = float(
+            trial.suggest_float("informed_target_mix_weight", 0.0, 1.0)
+        )
+        dirichlet_prob = 0.0
+        concentration = None
+        active_prob = None
+        perturb_strength = float(
+            trial.suggest_float(
+                "pitting_composition_perturb_strength",
+                *EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE,
+            )
+        )
     elif composition_mode == "legacy":
         target_mix = float(
             trial.suggest_float("informed_target_mix_weight", 0.0, 1.0)
@@ -609,6 +644,8 @@ def trial_params_from_mapping(
                 "pitting_material_dirichlet_prob",
             }
         )
+    elif composition_mode == "empirical_features_scm_target":
+        required.add("informed_target_mix_weight")
     elif composition_mode not in {"fe_ni_softmax", *EMPIRICAL_FEATURE_MODES}:
         raise ValueError(
             f"Unsupported pitting composition mode: {composition_mode!r}"
@@ -628,8 +665,13 @@ def trial_params_from_mapping(
         block_strength = float(values["informed_feature_block_strength"])
         perturb_strength = None
 
-    if composition_mode in {"fe_ni_softmax", *EMPIRICAL_FEATURE_MODES}:
+    if composition_mode in {"fe_ni_softmax", "empirical_features"}:
         target_mix = 1.0
+        dirichlet_prob = 0.0
+        concentration = None
+        active_prob = None
+    elif composition_mode == "empirical_features_scm_target":
+        target_mix = float(values["informed_target_mix_weight"])
         dirichlet_prob = 0.0
         concentration = None
         active_prob = None
@@ -713,7 +755,7 @@ def training_command(
         )
     fixed_target_mode = composition_mode in {
         "fe_ni_softmax",
-        *EMPIRICAL_FEATURE_MODES,
+        "empirical_features",
     }
     if fixed_target_mode and (
         params.informed_target_mix_weight != 1.0
@@ -721,6 +763,15 @@ def training_command(
     ):
         raise ValueError(
             f"{composition_mode} requires a fixed target policy and no Dirichlet mixture."
+        )
+    if composition_mode == "empirical_features_scm_target" and (
+        not math.isfinite(params.informed_target_mix_weight)
+        or not 0.0 <= params.informed_target_mix_weight <= 1.0
+        or params.pitting_material_dirichlet_prob != 0.0
+    ):
+        raise ValueError(
+            "empirical_features_scm_target requires a target mix weight in "
+            "[0, 1] and no Dirichlet mixture."
         )
     if composition_mode in EMPIRICAL_FEATURE_MODES:
         low, high = EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE
@@ -749,6 +800,11 @@ def training_command(
                 "strength."
             )
     _replace_option(command, "--pitting_composition_mode", composition_mode)
+    if composition_mode == "empirical_features_scm_target":
+        mix_index = command.index("--mix_probs")
+        command[mix_index + 1 : mix_index + 3] = [
+            format_float(value) for value in GENERIC_SCM_MIX_PROBS
+        ]
     for option in (
         "--epit_material_coef",
         "--epit_environment_coef",
@@ -771,15 +827,20 @@ def training_command(
                 format_float(params.pitting_composition_perturb_strength),
             ]
         )
-    if composition_mode != "empirical_features_scm_target":
-        command.extend(
-            [
-                "--pitting_target_rule_scores",
-                *rules.score_cli_values(),
-                "--pitting_target_rule_coefficients",
-                *rules.coefficient_cli_values(),
-            ]
-        )
+    if composition_mode == "empirical_features_scm_target":
+        score_cli_values = rules.exact_score_cli_values()
+        coefficient_cli_values = rules.exact_coefficient_cli_values()
+    else:
+        score_cli_values = rules.score_cli_values()
+        coefficient_cli_values = rules.coefficient_cli_values()
+    command.extend(
+        [
+            "--pitting_target_rule_scores",
+            *score_cli_values,
+            "--pitting_target_rule_coefficients",
+            *coefficient_cli_values,
+        ]
+    )
     return command
 
 

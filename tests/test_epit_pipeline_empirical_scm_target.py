@@ -7,9 +7,10 @@ import numpy as np
 import pytest
 import torch
 
+import tabicl.prior.dataset as dataset_module
 from scripts.epit_pipeline import run_optuna as search
 from scripts.epit_pipeline import train_final
-from tabicl.prior.dataset import SCMPrior
+from tabicl.prior.dataset import EPIT_TARGET_RULE_COEFFICIENTS, SCMPrior
 from tabicl.prior.epit_feature_generator import sample_epit_feature_rows
 from tabicl.prior.epit_feature_profile import EPIT_FEATURE_PROFILE
 from tabicl.prior.mlp_scm import MLPSCM
@@ -62,6 +63,13 @@ def _fixed_hp() -> dict:
             "cat_prob": 0.0,
             "permute_features": False,
             "permute_labels": False,
+            "pitting_target_rule_scores": {"pren_linear": 1.0},
+            "pitting_target_rule_coefficients": [
+                f"pren_linear.{name}={value}"
+                for name, value in EPIT_TARGET_RULE_COEFFICIENTS[
+                    "pren_linear"
+                ].items()
+            ],
         }
     )
     return fixed_hp
@@ -220,10 +228,147 @@ def test_mlp_and_tree_target_heads_start_from_the_same_physical_features():
     assert torch.isfinite(mlp_y).all()
     assert torch.isfinite(tree_y).all()
     assert not torch.equal(mlp_y, tree_y)
-    assert mlp_prior.last_pitting_target_rule is None
-    assert tree_prior.last_pitting_target_rule is None
+    assert mlp_prior.last_pitting_target_rule["target_rule_family"] == (
+        "pren_linear"
+    )
+    assert tree_prior.last_pitting_target_rule["target_rule_family"] == (
+        "pren_linear"
+    )
+    assert mlp_prior.last_pitting_target_rule["target_mix_weight"] == pytest.approx(
+        _fixed_hp()["informed_target_mix_weight"]
+    )
     assert mlp_prior.last_pitting_scm_target_metadata["scm_prior_type"] == "mlp_scm"
     assert tree_prior.last_pitting_scm_target_metadata["scm_prior_type"] == "tree_scm"
+    raw = torch.as_tensor(
+        mlp_prior.last_pitting_feature_batch.features.copy(),
+        dtype=mlp_X.dtype,
+    )
+    expected = SCMPrior._standardize_features_for_scm_target(raw)
+    assert torch.allclose(mlp_X, expected)
+    assert torch.equal(mlp_prior.last_pitting_scm_target_input, expected)
+    _, raw_rule_drive = mlp_prior._evaluate_fixed_epit_target_rule_tensor(
+        raw,
+        mlp_prior.last_pitting_target_rule,
+    )
+    _, standardized_rule_drive = (
+        mlp_prior._evaluate_fixed_epit_target_rule_tensor(
+            expected,
+            mlp_prior.last_pitting_target_rule,
+        )
+    )
+    assert torch.allclose(raw_rule_drive, mlp_prior.last_pitting_target_drive)
+    assert not torch.allclose(raw_rule_drive, standardized_rule_drive)
+    assert torch.allclose(mlp_y.mean(), torch.tensor(0.0), atol=2e-6)
+    assert torch.allclose(
+        mlp_y.std(unbiased=False),
+        torch.tensor(1.0),
+        atol=2e-6,
+    )
+
+
+def test_informed_scm_epit_path_does_not_call_reg2cls(monkeypatch):
+    class ForbiddenReg2Cls:
+        def __init__(self, params):
+            raise AssertionError("Reg2Cls must be bypassed for informed SCM+EPIT")
+
+    monkeypatch.setattr(dataset_module, "Reg2Cls", ForbiddenReg2Cls)
+    (X, y, d), _ = _generated_dataset("mlp_scm")
+
+    assert X.shape == (128, 21)
+    assert y.shape == (128,)
+    assert d.item() == 21
+
+
+def test_informed_scm_epit_path_requires_calibrated_rule_scores(monkeypatch):
+    physical = torch.as_tensor(
+        sample_epit_feature_rows(
+            32,
+            perturb_strength=0.05,
+            random_state=43,
+        ).features.copy(),
+        dtype=torch.float32,
+    )
+    fixed_hp = _fixed_hp()
+    fixed_hp.pop("pitting_target_rule_scores")
+    fixed_hp.pop("pitting_target_rule_coefficients")
+    prior = SCMPrior(
+        batch_size=1,
+        fixed_hp=fixed_hp,
+        sampled_hp={},
+        n_jobs=1,
+        device="cpu",
+    )
+    prior.last_pitting_material_family_ids = torch.zeros(
+        len(physical),
+        dtype=torch.long,
+    )
+    monkeypatch.setattr(
+        prior,
+        "_generate_scm_target_from_physical_features",
+        lambda X, params, prior_cls: torch.arange(len(X), dtype=X.dtype),
+    )
+
+    with pytest.raises(ValueError, match="requires calibrated EPIT"):
+        prior._generate_scm_epit_target_from_physical_features(
+            physical,
+            {"prior_type": "mlp_scm"},
+            MLPSCM,
+        )
+
+
+@pytest.mark.parametrize("target_mix_weight", (0.0, 0.4, 1.0))
+def test_scm_epit_lambda_combines_standardized_targets(
+    monkeypatch,
+    target_mix_weight,
+):
+    physical = torch.as_tensor(
+        sample_epit_feature_rows(
+            96,
+            perturb_strength=0.05,
+            random_state=31,
+        ).features.copy(),
+        dtype=torch.float32,
+    )
+    fixed_hp = _fixed_hp()
+    fixed_hp["informed_target_mix_weight"] = target_mix_weight
+    prior = SCMPrior(
+        batch_size=1,
+        fixed_hp=fixed_hp,
+        sampled_hp={},
+        n_jobs=1,
+        device="cpu",
+    )
+    scm_target = torch.linspace(-2.0, 3.0, len(physical)) ** 3
+    prior.last_pitting_material_family_ids = torch.zeros(
+        len(physical),
+        dtype=torch.long,
+    )
+
+    monkeypatch.setattr(
+        prior,
+        "_generate_scm_target_from_physical_features",
+        lambda X, params, prior_cls: scm_target,
+    )
+    np.random.seed(37)
+    torch.manual_seed(37)
+    target = prior._generate_scm_epit_target_from_physical_features(
+        physical,
+        {"prior_type": "mlp_scm"},
+        MLPSCM,
+    )
+
+    standardized_scm = SCMPrior._standardize_signal(scm_target)
+    standardized_epit = SCMPrior._standardize_signal(
+        prior.last_pitting_target_drive
+    )
+    expected = SCMPrior._standardize_signal(
+        (1.0 - target_mix_weight) * standardized_scm
+        + target_mix_weight * standardized_epit
+    )
+    assert torch.allclose(target, expected, atol=2e-6)
+    assert prior.last_pitting_target_rule["target_mix_weight"] == pytest.approx(
+        target_mix_weight
+    )
 
 
 def _generated_generic_dataset(composition_mode: str):
@@ -264,7 +409,7 @@ def test_new_mode_does_not_change_generic_dataset_generation():
         assert torch.equal(old_value, new_value)
 
 
-def test_v6_search_and_final_training_are_bound_to_scm_target_policy(tmp_path: Path):
+def test_v7_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_path: Path):
     args = _search_args()
     rules = search.load_target_rule_config(
         summary_path=args.target_rule_summary,
@@ -282,6 +427,9 @@ def test_v6_search_and_final_training_are_bound_to_scm_target_policy(tmp_path: P
             "pitting_composition_perturb_strength": (
                 params.pitting_composition_perturb_strength
             ),
+            "informed_target_mix_weight": (
+                params.informed_target_mix_weight
+            ),
         },
         composition_mode=args.pitting_composition_mode,
     )
@@ -292,25 +440,69 @@ def test_v6_search_and_final_training_are_bound_to_scm_target_policy(tmp_path: P
     assert set(trial.suggested_names) == {
         "informed_prior_ratio",
         "mlp_prob",
+        "informed_target_mix_weight",
         "pitting_composition_perturb_strength",
     }
     assert reconstructed == params
     assert fixed_prior["informed_target_policy"] == (
-        "scm_target_from_standardized_physical_features_v1"
+        "standardized_scm_plus_calibrated_epit_v1"
     )
+    assert fingerprint["search_space"]["informed_target_mix_weight"] == [
+        0.0,
+        1.0,
+    ]
     assert fixed_prior["scm_target_input_standardization"] == (
         "per_dataset_column_population_zscore"
     )
     assert fixed_prior["scm_target_constant_column_policy"] == "zero"
-    assert fixed_prior["scm_target_modifies_physical_features"] is False
     assert fixed_prior["scm_target_topology"] == "direct_noncausal"
+    assert fixed_prior["epit_target_input"] == "raw_physical_features"
+    assert fixed_prior["transformer_input_standardization"] == (
+        "per_dataset_column_population_zscore"
+    )
+    assert fixed_prior["informed_reg2cls_policy"] == "bypass"
+    assert fixed_prior["generic_scm_mix_probs"] == [0.7, 0.3]
     train_final.verify_empirical_feature_profile_identity(fixed_prior)
     assert _value_after(command, "--pitting_composition_mode") == (
         "empirical_features_scm_target"
     )
     assert _value_after(command, "--prior_n_jobs") == "1"
-    assert "--pitting_target_rule_scores" not in command
-    assert "--pitting_target_rule_coefficients" not in command
+    assert "--pitting_target_rule_scores" in command
+    assert "--pitting_target_rule_coefficients" in command
+    score_index = command.index("--pitting_target_rule_scores")
+    coefficient_index = command.index("--pitting_target_rule_coefficients")
+    assert command[score_index + 1 : coefficient_index] == (
+        rules.exact_score_cli_values()
+    )
+    assert command[coefficient_index + 1 :] == (
+        rules.exact_coefficient_cli_values()
+    )
+    parsed_scores = {
+        entry.split("=", 1)[0]: float(entry.split("=", 1)[1])
+        for entry in rules.exact_score_cli_values()
+    }
+    parsed_coefficients = {
+        family: {
+            entry.split(".", 1)[1].split("=", 1)[0]: float(
+                entry.split("=", 1)[1]
+            )
+            for entry in rules.exact_coefficient_cli_values()
+            if entry.startswith(f"{family}.")
+        }
+        for family in rules.coefficients
+    }
+    assert parsed_scores == rules.scores
+    assert parsed_coefficients == rules.coefficients
+    mix_index = command.index("--mix_probs")
+    assert command[mix_index + 1 : mix_index + 3] == ["0.7", "0.3"]
+    informed_mix_index = command.index("--informed_mix_probs")
+    assert command[informed_mix_index + 1 : informed_mix_index + 3] == [
+        search.format_float(params.mlp_prob),
+        search.format_float(1.0 - params.mlp_prob),
+    ]
+    assert _value_after(command, "--informed_target_mix_weight") == (
+        search.format_float(params.informed_target_mix_weight)
+    )
 
     optuna_launcher = (
         search.REPO_ROOT
@@ -325,7 +517,7 @@ def test_v6_search_and_final_training_are_bound_to_scm_target_policy(tmp_path: P
         / "train_final_empirical_features_scm_target.sbatch"
     ).read_text(encoding="utf-8")
     for launcher in (optuna_launcher, final_launcher):
-        assert "epit_pipeline_optuna_empirical_features_scm_target_v6" in launcher
+        assert "epit_pipeline_optuna_empirical_features_scm_target_v7" in launcher
         assert 'NP_SEED="${NP_SEED:-42}"' in launcher
         assert 'TORCH_SEED="${TORCH_SEED:-42}"' in launcher
         assert 'PRIOR_N_JOBS="${PRIOR_N_JOBS:-1}"' in launcher
@@ -341,7 +533,7 @@ def test_v6_search_and_final_training_are_bound_to_scm_target_policy(tmp_path: P
         assert override in final_launcher
 
 
-def test_v6_final_overrides_change_effective_config_not_selected_trial(
+def test_v7_final_overrides_change_effective_config_not_selected_trial(
     tmp_path: Path,
 ):
     args = train_final.parse_args(
@@ -432,11 +624,11 @@ def test_v6_final_overrides_change_effective_config_not_selected_trial(
         "4",
         "5",
     ]
-    assert "--pitting_target_rule_scores" not in command
-    assert "--pitting_target_rule_coefficients" not in command
+    assert "--pitting_target_rule_scores" in command
+    assert "--pitting_target_rule_coefficients" in command
 
 
-def test_v6_fixed_magpie_override_generates_31_features():
+def test_v7_fixed_magpie_override_generates_31_features():
     fixed_hp = _fixed_hp()
     fixed_hp.update(
         {
@@ -478,13 +670,15 @@ def test_v6_fixed_magpie_override_generates_31_features():
     assert torch.isfinite(X).all()
     assert torch.isfinite(y).all()
     assert prior.last_pitting_scm_target_input.shape == (64, 21)
+    assert torch.equal(X[:, :21], prior.last_pitting_scm_target_input)
+    assert prior.last_pitting_scm_target_metadata["reg2cls_applied"] is False
 
 
 def test_final_override_runs_use_isolated_default_output_directory():
     args = train_final.parse_args(
         [
             "--study-name",
-            "epit_pipeline_optuna_empirical_features_scm_target_v6",
+            "epit_pipeline_optuna_empirical_features_scm_target_v7",
             "--storage",
             "journal:///unused.log",
         ]
@@ -492,17 +686,17 @@ def test_final_override_runs_use_isolated_default_output_directory():
 
     canonical = train_final.output_dir_for(
         args,
-        run_name="final_v6_trial_0001",
+        run_name="final_v7_trial_0001",
         isolate_run=False,
     )
     overridden = train_final.output_dir_for(
         args,
-        run_name="final_v6_trial_0001_override_abcdef",
+        run_name="final_v7_trial_0001_override_abcdef",
         isolate_run=True,
     )
 
     assert overridden.parent == canonical
-    assert overridden.name == "final_v6_trial_0001_override_abcdef"
+    assert overridden.name == "final_v7_trial_0001_override_abcdef"
 
 
 def test_new_mode_is_available_from_training_cli():
