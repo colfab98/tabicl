@@ -1,2 +1,0 @@
-M scripts/train_stage1_reg.sbatch
-?? model_params/tabicl_s1_regression_pitting_t21_l_6k/

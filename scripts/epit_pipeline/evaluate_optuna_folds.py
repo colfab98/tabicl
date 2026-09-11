@@ -36,7 +36,7 @@ DEFAULT_OUTPUT_ROOT = (
     / "corrosion_datasets"
     / "analysis"
     / "epit_pipeline"
-    / "optuna_v1"
+    / "optuna_v2"
     / "evaluations"
 )
 PITTING_TASK_ID = "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg"

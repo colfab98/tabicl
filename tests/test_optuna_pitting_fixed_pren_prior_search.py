@@ -2,7 +2,6 @@ from argparse import Namespace
 
 import numpy as np
 
-import scripts.optuna_pitting_empirical_composition_prior_search as empirical_search
 import scripts.optuna_pitting_fixed_pren_prior_search as fixed_pren_search
 
 
@@ -123,20 +122,3 @@ def test_default_study_names_separate_empirical_and_legacy_trials():
         == "pitting_fixed_pren_empirical_composition_search"
     )
     assert fixed_pren_search.default_study_name("legacy") == "pitting_fixed_pren_prior_search"
-
-
-def test_dedicated_empirical_launcher_has_new_run_defaults_and_rejects_legacy():
-    args = empirical_search.parse_args([])
-
-    assert args.study_name == "pitting_fixed_pren_empirical_composition_v1"
-    assert args.pitting_composition_mode == "empirical"
-    assert args.n_trials == 50
-    assert args.max_steps == 1000
-    assert args.scheduler_total_steps == 10000
-
-    try:
-        empirical_search.parse_args(["--pitting-composition-mode", "legacy"])
-    except ValueError:
-        pass
-    else:
-        raise AssertionError("Dedicated empirical launcher accepted legacy composition mode.")

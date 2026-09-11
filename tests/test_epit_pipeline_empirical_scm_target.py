@@ -94,6 +94,33 @@ def _value_after(command: list[str], option: str) -> str:
     return command[command.index(option) + 1]
 
 
+def test_final_training_rechecks_empirical_feature_profile_identity():
+    args = _search_args()
+    rules = search.load_target_rule_config(
+        summary_path=args.target_rule_summary,
+        split_manifest_path=args.split_manifest,
+    )
+    fixed_prior = search.build_pipeline_fingerprint(args, rules)["fixed_prior"]
+
+    train_final.verify_empirical_feature_profile_identity(fixed_prior)
+
+    changed = dict(fixed_prior)
+    changed["feature_profile_csv_sha256"] = "0" * 64
+    with pytest.raises(
+        RuntimeError,
+        match="differs from the selected Optuna study",
+    ):
+        train_final.verify_empirical_feature_profile_identity(changed)
+
+
+def test_scm_epit_search_requires_one_prior_worker():
+    args = _search_args()
+    args.prior_n_jobs = 8
+
+    with pytest.raises(ValueError, match="prior-n-jobs 1"):
+        search.run_search(args)
+
+
 def test_generated_physical_features_are_standardized_only_for_scm_target():
     physical = torch.as_tensor(
         sample_epit_feature_rows(
@@ -508,13 +535,13 @@ def test_v7_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_pa
         search.REPO_ROOT
         / "scripts"
         / "epit_pipeline"
-        / "run_optuna_empirical_features_scm_target.sbatch"
+        / "run_optuna.sbatch"
     ).read_text(encoding="utf-8")
     final_launcher = (
         search.REPO_ROOT
         / "scripts"
         / "epit_pipeline"
-        / "train_final_empirical_features_scm_target.sbatch"
+        / "train_final.sbatch"
     ).read_text(encoding="utf-8")
     for launcher in (optuna_launcher, final_launcher):
         assert "epit_pipeline_optuna_empirical_features_scm_target_v7" in launcher
@@ -522,7 +549,9 @@ def test_v7_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_pa
         assert 'TORCH_SEED="${TORCH_SEED:-42}"' in launcher
         assert 'PRIOR_N_JOBS="${PRIOR_N_JOBS:-1}"' in launcher
     assert "--pitting-composition-mode empirical_features_scm_target" in optuna_launcher
-    assert "--selected-trial-number" not in final_launcher
+    assert 'SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-56}"' in final_launcher
+    assert '--selected-trial-number "$SELECTED_TRIAL_NUMBER"' in final_launcher
+    assert "--allow-missing-selected-trial-artifacts" in final_launcher
     for override in (
         "OVERRIDE_INFORMED_PRIOR_RATIO",
         "OVERRIDE_MLP_PROB",

@@ -47,7 +47,7 @@ def parse_bool(value: str) -> bool:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--study-name", default="epit_pipeline_optuna_v3")
+    parser.add_argument("--study-name", default=search.DEFAULT_STUDY_NAME)
     parser.add_argument(
         "--selected-trial-number",
         type=int,
@@ -101,7 +101,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--checkpoint-selection-interval", type=int, default=500)
     parser.add_argument("--np-seed", type=int, default=42)
     parser.add_argument("--torch-seed", type=int, default=42)
-    parser.add_argument("--prior-n-jobs", type=int, default=8)
+    parser.add_argument("--prior-n-jobs", type=int, default=1)
     parser.add_argument("--dataloader-num-workers", type=int, default=4)
     parser.add_argument("--dataloader-prefetch-factor", type=int, default=4)
     parser.add_argument("--eval-n-estimators", type=int, default=8)

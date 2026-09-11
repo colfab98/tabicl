@@ -1,0 +1,1682 @@
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{xurl}
+\usepackage[hidelinks]{hyperref}
+
+\newcommand{\zscore}{\operatorname{zscore}}
+\newcommand{\sigmoid}{\operatorname{sigmoid}}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\setlength{\emergencystretch}{2em}
+
+% Add the named PDF/PNG figures when they are ready. Until then this macro
+% displays a labelled placeholder, so the document compiles without images.
+% For SVG artwork, export to PDF or replace the call with \includesvg.
+\newcommand{\projectfigure}[2]{%
+  \IfFileExists{#1}{%
+    \includegraphics[width=0.92\linewidth]{#1}%
+  }{%
+    \fbox{\parbox[c][4cm][c]{0.86\linewidth}{%
+      \centering\textbf{Figure placeholder}\par\medskip
+      #2\par\medskip\small\path{#1}%
+    }}%
+  }%
+}
+
+\title{CorrPFN: An EPIT-Informed Prior for Pitting-Potential Prediction}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+\label{sec:introduction}
+
+Pitting corrosion is a localized degradation process in which a protective
+passive film breaks down and stable pits begin to form. A commonly reported
+measure of this transition is the pitting potential, denoted here by EPIT.
+Under comparable environmental and experimental conditions, a more positive
+EPIT generally indicates that a higher applied potential is required to
+initiate sustained pitting and therefore corresponds to greater resistance to
+passive-film breakdown. Predicting EPIT from alloy composition, exposure
+conditions, and test information is nevertheless difficult because the
+available data are heterogeneous, sparse relative to the number of possible
+material--environment combinations, and strongly affected by measurement
+protocol.
+
+This work investigates whether a Prior-Data Fitted Network can be specialized
+for EPIT prediction by modifying the synthetic task distribution used during
+pretraining. The starting point is TabICL, which learns an in-context
+prediction procedure from many synthetically generated tabular tasks. Its
+generic prior produces diverse nonlinear and tree-structured prediction
+problems, but its features are scientifically anonymous and its target has no
+fixed physical interpretation. It therefore does not explicitly represent the
+material, environment, and process structure of an EPIT dataset or the
+physical direction of a pitting-potential target.
+
+CorrPFN introduces an informed synthetic prior that combines empirical
+physical features with stochastic prediction tasks. Alloy compositions are
+sampled from observed Fe and Ni--Cr--Mo templates, perturbed, and combined with
+empirical environmental conditions. An MLP or tree SCM maps the resulting
+features to a synthetic target. Independently, one of seven calibrated EPIT
+rules supplies a corrosion-specific target component. Both components are
+standardized and combined using an optimized mixture weight. Generic tasks
+remain available in the same pretraining run.
+
+The added component represents broad probabilistic tendencies rather than a
+deterministic corrosion model: material passivity tends to increase EPIT,
+environmental aggressiveness tends to decrease it, material--environment
+interactions can further reduce it, and test protocol can shift the reported
+value in either direction. Empirical feature generation constrains the inputs
+to patterns represented in the source dataset, while the SCM component
+retains nonlinear task diversity beyond the analytical rules.
+
+The final workflow separates target-rule calibration and model selection on
+608 development rows from evaluation on 152 rows assigned to different
+composition groups. The selected CorrPFN checkpoint obtains a final-test
+Spearman correlation of 0.7681 and MAE of 186.8~mV, improving on the reported
+pretrained TabICL V2, CatBoost, and local generic-prior references. These are
+internal results from one source dataset and one final training seed; the
+scope of dataset exposure and the limits of the comparison are stated below.
+
+This report describes the final implementation, identified as v7 in the
+experiment artifacts. Earlier experiments are discussed only where they
+explain a retained design choice or affect the interpretation of the results.
+
+\section{EPIT Dataset and Evaluation Design}
+\label{sec:epit-dataset}
+
+\subsection{Source Data, Rows, and Feature Schema}
+
+The evaluated EPIT task is derived from the public dataset
+\textit{Electrochemical Metrics for Corrosion Resistant Alloys}, released on
+Figshare and described by Nyby et al. in \textit{Scientific Data}
+\cite{nyby2021electrochemical}. In this project, the dataset is identified as
+\path{electrochemical_metrics_alloys}, and the evaluated task identifier is
+\path{electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg}.
+The source workbook table is \texttt{Pitting Potential}, and the prediction
+target is \texttt{Epit, mV (SCE) Avg.}, where SCE denotes the saturated calomel
+reference electrode.
+
+The source table contains \(810\) observed rows. Of these, \(760\) have a
+usable numeric value for the selected average EPIT target. The remaining
+\(50\) rows are excluded because the target is missing or cannot be
+interpreted as a numeric EPIT measurement.
+
+The evaluated input schema contains \(21\) features:
+\begin{equation}
+21\text{ features}
+=17\text{ material}+3\text{ environment}+1\text{ process/history}.
+\label{eq:epit-schema}
+\end{equation}
+This subset is aligned with the feature set used by the reference modelling
+study, allowing results to be compared under a consistent input definition.
+Columns omitted from the source workbook should not therefore be interpreted
+as scientifically irrelevant.
+
+The \(17\) material features are alloy-composition values reported in weight
+percent, retained in the following fixed order:
+\[
+\mathrm{Fe,\ Cr,\ Ni,\ Mo,\ W,\ Nb,\ Al,\ V,\ Ta,\ Re,\ Ce,\ Ti,\ Co,\ B,\ Mg,\ Y,\ Gd}.
+\]
+They are retained as separate inputs rather than being reduced to one
+aggregate alloy descriptor.
+
+The next three columns are \texttt{Test Temp. oC}, the test temperature in
+degrees Celsius; \texttt{[Cl-] M}, the chloride-ion concentration in molar
+units; and \texttt{[Cl-] pH}, the reported pH of the chloride-containing
+solution. The final column is \texttt{[Cl-] Test Method}, which records the
+experimental method or protocol associated with the measurement.
+
+Test method is classified as process/history information because polarization
+procedure, scan conditions, specimen preparation, stabilization time, and the
+operational breakdown criterion can all affect the reported EPIT. It is a
+single recorded protocol feature; these individual experimental factors are
+not all separately observed in the retained schema.
+
+\subsection{Target Meaning and Experimental Heterogeneity}
+
+EPIT is the reported electrochemical potential associated with passive-film
+breakdown or the onset of sustained pitting. Under comparable
+reference-electrode, environmental, surface, and test-protocol conditions, a
+more positive EPIT indicates that a higher applied potential is required
+before the reported breakdown criterion is reached. It is therefore generally
+interpreted as stronger resistance to pit initiation.
+
+This interpretation is conditional rather than universal. The workbook
+combines measurements obtained using potentiodynamic, potentiostatic,
+scratch-based, and other polarization procedures. Different studies can
+identify breakdown using different current thresholds, scan rates,
+stabilization periods, or visual criteria. Consequently, the operational
+meaning of the reported EPIT is not identical for every row.
+
+A measured EPIT depends jointly on alloy composition and microstructure,
+chloride concentration and other solution chemistry, pH and temperature,
+surface preparation and prior exposure, polarization method and scan rate,
+and the criterion used to identify breakdown. A higher raw EPIT therefore
+does not by itself prove that one alloy is intrinsically more resistant than
+another when the measurements were obtained under different environments or
+protocols.
+
+\subsection{Data Representation}
+\label{sec:data-representation}
+
+The \(20\) material and environment columns are converted to numeric values.
+During real-data model evaluation, numeric mean imputation and categorical
+encoding are fitted on the context/training portion and applied to the
+validation or final-test portion. The local preprocessing implementation
+restores the original column order after these transformations.
+
+Test method is represented by a single integer-coded column rather than
+one-hot encoding. The complete task contains \(52\) categories including a
+missing-value category; the empirical synthetic profile stores a fixed
+lexicographically ordered mapping over these categories. Context-fitted
+evaluation encodings can contain fewer categories, with an explicit code for
+unknown or missing values. These integers are nominal identifiers. They do
+not define a physical ordering or distance between experimental methods.
+Treating the encoded column as numeric remains an approximation.
+
+The synthetic feature profile has its own stored imputation means and category
+mapping, described in Section~\ref{sec:feature-profile-provenance}. These
+profile statistics must be distinguished from context-fitted preprocessing
+during model evaluation. Similarly, analytical target-rule calibration fits
+its imputation and scaling state within the relevant calibration context.
+
+\subsection{Composition-Aware Split Construction}
+\label{sec:composition-split}
+
+The split is designed primarily to evaluate prediction for unseen alloy
+composition groups. Measurements of sufficiently similar compositions are
+therefore kept together. Grouping uses the \(17\) composition columns visible
+to TabICL. The compositions are not renormalized to \(100\%\), because seven
+composition columns from the source data are absent from the fixed model
+schema. For grouping only, missing values are treated as zero and each visible
+composition value is rounded to \(0.01\)~wt.\%.
+
+For two rounded composition vectors \(x_i\) and \(x_j\), their distance is
+\[
+d(i,j)=\sum_{e=1}^{17}|x_{i,e}-x_{j,e}|.
+\]
+Every pair satisfying
+\[
+d(i,j)\leq1.0\ \text{wt.\%}
+\]
+is connected. The final groups are the connected components of this threshold
+graph. Consequently, every directly similar pair remains in the same component
+and cannot cross either the development/final-test boundary or a development
+fold boundary.
+
+This connected-component definition is intentionally transitive. For example,
+if alloy \(A\) is within \(1\)~wt.\% of \(B\), and \(B\) is within
+\(1\)~wt.\% of \(C\), all three are grouped together even when \(A\) and
+\(C\) are farther apart. The frozen split contains \(301\) composition
+components. The largest component contains \(45\) rows, and the largest
+within-component span is \(5.0\)~wt.\%. This wider span is the cost of
+guaranteeing that no directly close pair crosses a split boundary.
+
+Complete composition components were assigned to obtain exactly
+\[
+|\mathcal{D}_{\mathrm{dev}}|=608,
+\qquad
+|\mathcal{D}_{\mathrm{final}}|=152.
+\]
+The outer split and the five development folds were balanced using material
+class, EPIT range, temperature, chloride concentration, pH, test method,
+source reference, and row count. EPIT values were therefore used once to
+construct a balanced fixed split; the split is not target-blind. Source
+reference overlap is balanced but not prohibited.
+
+\subsection{Development and Final Evaluation}
+
+The development set is divided into five fixed folds. For each fold,
+\(486\)--\(487\) rows are used as context or training rows and
+\(121\)--\(122\) rows are used as validation rows. Every development row
+serves as validation data once.
+
+Three different evaluations must be distinguished:
+\begin{itemize}
+    \item \textbf{Direct target-rule evaluation} measures how well a corrosion
+    formula orders real EPIT values on development validation rows, using
+    coefficients fitted on the corresponding context rows.
+    \item \textbf{Transformer development evaluation} measures how well a
+    synthetically pretrained TabICL checkpoint predicts the five development
+    validation folds. It is used for Optuna and checkpoint selection.
+    \item \textbf{Final model evaluation} uses all \(608\) development rows
+    as context and the \(152\) reserved rows as queries for the locked model.
+\end{itemize}
+
+The seven candidate target rules are calibrated on the \(452\) development
+rows belonging to the eligible Fe and Ni--Cr--Mo classes. Transformer
+development evaluation uses all \(608\) development rows, and final evaluation
+uses all \(152\) final-test rows. The restriction of the informed generator
+and rule calibration to two alloy families does not restrict the evaluated
+task to those families.
+
+Final-test targets are excluded from rule calibration, Optuna selection, and
+checkpoint selection in this workflow. The complete corpus had nevertheless
+influenced earlier exploratory development, and feature information from it
+is retained in the empirical profiles. The resulting evaluation is an
+internal composition-separated assessment, with the limitations discussed in
+Section~\ref{sec:discussion}.
+
+\begin{figure}[htbp]
+    \centering
+    \projectfigure{images/corrpfn_split_overview.pdf}
+    {Composition groups, the 608/152 partition, and five development folds.}
+    \caption{Composition-aware evaluation design. Target-rule calibration and
+    model selection use the development partition; the selected model uses
+    all development rows as context for the final evaluation.}
+    \label{fig:split-overview}
+\end{figure}
+
+\section{TabICL Model and Regression Setup}
+\label{sec:tabicl}
+
+\subsection{Generic Synthetic Tasks}
+
+TabICL is pretrained on a distribution of synthetic supervised-learning tasks.
+In this context, the \emph{prior} is the stochastic procedure that generates
+those tasks, not one fixed synthetic dataset. Each sampled task contains a
+feature table \(X\), a target \(y\), and a context/query split. During
+pretraining, the model receives all feature rows and the targets associated
+with the context rows, and it learns to predict the withheld query targets.
+
+The generic TabICL prior is domain-independent. Its purpose is to expose the
+model to diverse tabular relationships from which it can learn a reusable
+in-context prediction procedure. The principal generator choices are
+\texttt{mlp\_scm}, which produces nonlinear relationships using a randomly
+sampled multilayer perceptron; \texttt{tree\_scm}, which produces split-based
+and piecewise relationships using a random tree or ensemble; and
+\texttt{mix\_scm}, which samples between the two generators.
+
+The MLP generator supports two internal topologies through the sampled
+parameter \texttt{is\_causal}. When it is true, latent root variables are
+transformed into intermediate variables from which the observed features and
+target are selected. When it is false, the sampled variables are used directly
+as features and the final MLP output becomes the target. The tree generator
+uses the latter, direct predictive structure. Conceptually,
+\begin{equation}
+\begin{aligned}
+\text{causal-style MLP:}\quad &z\longrightarrow h\longrightarrow(X,y),\\
+\text{direct MLP or tree:}\quad &X=z,\qquad y=f(X).
+\end{aligned}
+\label{eq:generic-generator-modes}
+\end{equation}
+Here, \(z\) denotes sampled root variables and \(h\) denotes generated
+intermediate variables. The SCM terminology describes the synthetic
+construction; it does not identify causal effects in the real corrosion data.
+
+Generic tasks pass through the standard TabICL preprocessing pipeline.
+Depending on configuration, this can convert numerical columns into
+categorical-like columns, limit extreme values, standardize and permute
+features, remove unusable columns, and pad unused positions. Invalid tasks are
+rejected and resampled. The informed branch described in
+Section~\ref{sec:informed-prior} supplies its own fixed-schema preprocessing.
+
+These mechanisms allow the generic prior to produce nonlinear effects,
+interactions, correlated or redundant features, irrelevant variables,
+different feature counts, and different context/query sizes. However, its
+columns remain scientifically anonymous: no feature is inherently identified
+as an alloy-composition variable, an environmental condition, or a test
+parameter.
+
+\subsection{PFN Interpretation}
+
+Let \(\theta\) denote the complete latent mechanism sampled for one synthetic
+task. It can include the generator family, network or tree parameters, feature
+distributions, dependency structure, noise, and other task-specific random
+quantities. A synthetic dataset is then sampled conditionally on that
+mechanism. Thus, \(\theta\) describes how one task is generated; it is not the
+generated dataset itself.
+
+The TabICL transformer has a separate set of shared parameters, denoted by
+\(\phi\). During pretraining, many mechanisms \(\theta\) and their associated
+datasets are sampled, while \(\phi\) is optimized across all tasks.
+
+For a labeled context dataset
+\[
+\mathcal{D}_{\mathrm{c}}=\{(x_i,y_i)\}_{i=1}^{n}
+\]
+and a query input \(x^\ast\), the posterior predictive distribution induced
+by a task prior \(p(\theta)\) is
+\begin{equation}
+p(y^\ast\mid x^\ast,\mathcal{D}_{\mathrm{c}})
+=\int p(y^\ast\mid x^\ast,\theta)
+       p(\theta\mid\mathcal{D}_{\mathrm{c}})\,d\theta.
+\label{eq:posterior-predictive}
+\end{equation}
+A PFN is trained to amortize this inference. Its predictive distribution is
+intended to approximate the posterior predictive distribution associated with
+its synthetic training prior:
+\begin{equation}
+q_{\phi}(y^\ast\mid x^\ast,\mathcal{D}_{\mathrm{c}})
+\approx p(y^\ast\mid x^\ast,\mathcal{D}_{\mathrm{c}}).
+\label{eq:pfn-approximation}
+\end{equation}
+
+At inference time, the transformer produces predictions through forward
+evaluation. Its parameters \(\phi\) remain fixed: it does not retrain on the
+context data, enumerate possible mechanisms, or numerically evaluate the
+integral in Equation~\eqref{eq:posterior-predictive}. The reported inference
+configuration uses an ensemble of eight estimators.
+
+This interpretation is conditional on the synthetic training distribution.
+The model is not guaranteed to approximate the unknown posterior predictive
+distribution of real corrosion data. Transfer depends on how well the
+synthetic prior covers the statistical structure of the real task, as well as
+on model capacity, training diversity, optimization, and the amount and
+quality of context data.
+
+\subsection{Regression and Training Scope}
+
+The local models use the available TabICL V1 implementation with a
+continuous-target regression path added for this project. This path is not
+native to the original TabICL V1 implementation. Synthetic targets are
+standardized for regression rather than converted into class labels. At
+evaluation, predictions are returned on the EPIT scale and the reported point
+output is the predictive median.
+
+All locally trained models considered here use Stage~1 of the original TabICL
+curriculum. Stage~1 trains from scratch on synthetic tables containing up to
+\(1{,}024\) rows. Later curriculum stages extend long-context capability and
+were unnecessary for the \(760\)-row EPIT task. The proxy and final training
+horizons are specified in Section~\ref{sec:model-selection}.
+
+\section{CorrPFN Synthetic Prior}
+\label{sec:informed-prior}
+
+\subsection{Generation Pipeline}
+
+The informed prior separates the generation of physical features from the
+construction of a synthetic response. Each informed task first receives a
+complete empirical physical table
+\[
+X_{\mathrm{raw}}\in\mathbb{R}^{n\times21}.
+\]
+Its standardized representation, \(X_{\mathrm{std}}\), is used by both the
+SCM target head and the transformer. The raw representation is retained for
+the analytical EPIT rule:
+\begin{equation}
+X_{\mathrm{raw}}\longrightarrow
+\begin{cases}
+g_k(X_{\mathrm{raw}}), & \text{analytical EPIT rule},\\
+f_{\theta}(X_{\mathrm{std}}), & \text{SCM target head},\\
+X_{\mathrm{std}}, & \text{transformer input}.
+\end{cases}
+\label{eq:informed-pipeline}
+\end{equation}
+The two target components are then mixed and standardized. This order ensures
+that the SCM response is generated from the same physical columns that the
+transformer observes, while the analytical rule can use their original units.
+
+\begin{figure}[htbp]
+    \centering
+    \projectfigure{images/corrpfn_generation_pipeline.pdf}
+    {Empirical features, raw and standardized representations, SCM and EPIT
+    target branches, target mixture, and generic/informed routing.}
+    \caption{Final CorrPFN synthetic-task construction. The empirical feature
+    generator provides the inputs, the SCM contributes stochastic nonlinear
+    responses, and the calibrated EPIT rule contributes domain structure.}
+    \label{fig:generation-pipeline}
+\end{figure}
+
+\subsection{Empirical Alloy-Composition Generator}
+\label{sec:composition-generator}
+
+Compositions are sampled from real templates in the versioned
+\texttt{epit\_dataset\_v1} profile. The complete profile contains \(403\)
+distinct reported composition vectors. The final informed generator uses the
+restricted bank of \(298\) Fe-alloy templates and \(17\) Ni--Cr--Mo templates.
+Family probabilities are proportional to these distinct-template counts:
+\[
+P(\mathrm{Fe})=\frac{298}{315}\approx0.9460,
+\qquad
+P(\mathrm{Ni\!-!Cr\!-!Mo})=\frac{17}{315}\approx0.0540.
+\]
+These are frequencies among distinct templates, not among all experimental
+rows. A template is sampled within the selected family. The runtime generator
+loads the static profile and does not reopen or reprocess the source Excel
+workbook during training.
+
+A selected template is represented using the complete \(24\)-element source
+composition. For every positive component \(c_{ij}>0\), a multiplicative
+perturbation is applied:
+\begin{equation}
+\widetilde c_{ij}=c_{ij}\exp(\epsilon_{ij}),
+\qquad \epsilon_{ij}\sim\mathcal{N}(0,\tau^2),
+\label{eq:composition-perturbation}
+\end{equation}
+where \(\tau\) is the composition perturbation strength. Zero and unreported
+elements remain zero. The perturbation therefore changes the amounts of
+reported alloying elements without introducing elements absent from that
+template.
+
+The complete \(24\)-element composition is subsequently closed to \(100\)
+weight percent:
+\begin{equation}
+c_{ij}^{\mathrm{closed}}
+=100\frac{\widetilde c_{ij}}{\sum_{e=1}^{24}\widetilde c_{ie}}.
+\label{eq:composition-closure}
+\end{equation}
+Only after this closure are the \(17\) elements visible to the model selected.
+Consequently, the sum of the visible elements can be below \(100\%\) when
+part of the source composition belongs to elements omitted from the evaluated
+schema. At \(\tau=0\), the generator replays a template after this closure;
+it does not necessarily preserve an unnormalized source total.
+
+This approach retains dominant elements, approximate concentration ranges,
+sparsity, and element co-occurrence patterns represented in the template bank.
+The joint material structure is supplied by these templates and full-vector
+closure. Additional shared block coupling and masked Dirichlet generation are
+disabled in this branch.
+
+\subsection{Empirical Environmental Conditions}
+
+The environmental part of each synthetic row is generated separately from its
+composition. One of the \(565\) real Fe/Ni--Cr--Mo experimental records in the
+versioned \texttt{epit\_fe\_nicrmo\_features\_v1} profile is sampled with
+replacement. Temperature, chloride concentration, pH, and test method are
+retained as a complete tuple from the same source row. This preserves
+experimentally observed combinations of environmental conditions.
+
+Composition and environment are sampled independently. The generator therefore
+retains empirical composition structure and empirical environmental structure
+without copying the dataset's existing association between a particular alloy
+family and a particular experimental campaign. The resulting composition and
+environment combination need not itself occur in the source workbook.
+
+Missing environmental values use the means stored in the feature profile.
+Test methods use its fixed \(52\)-category encoding. The final synthetic input
+always follows the fixed \(17+3+1\) schema. The physical profile is applied to
+every informed task.
+
+\subsection{Feature-Profile Provenance}
+\label{sec:feature-profile-provenance}
+
+The empirical profiles were built from the usable source corpus, rather than
+from the \(608\)-row development subset alone. The composition bank contains
+distinct compositions from the \(760\) usable rows, and the environmental
+profile contains the \(565\) Fe/Ni--Cr--Mo rows from that same corpus. The
+stored numeric imputation means and complete method-category mapping were also
+constructed using feature information across the usable corpus.
+
+EPIT values are not stored in these feature profiles or used to calculate
+their feature statistics. Target availability is used to identify the usable
+task rows. Nevertheless, the profiles expose the synthetic generator to
+feature information from final-test rows, including compositions assigned to
+final-test groups. Composition separation therefore applies to the labeled
+development and evaluation partitions; it does not imply that final-test
+compositions were absent from the synthetic feature bank. This makes the prior
+dataset-specific and limits a strictly inductive interpretation of the result.
+
+\begin{figure}[htbp]
+    \centering
+    \projectfigure{images/corrpfn_empirical_feature_distributions.pdf}
+    {Observed and generated composition distributions, material-family
+    frequencies, and environmental tuple distributions.}
+    \caption{Comparison of empirical source features and generated informed
+    features. Composition perturbation changes positive element amounts while
+    preserving template sparsity; environmental tuples are sampled intact.}
+    \label{fig:feature-distributions}
+\end{figure}
+
+\subsection{Raw and Standardized Feature Representations}
+\label{sec:feature-standardization}
+
+A separate standardized representation is constructed using the population
+mean and standard deviation of each column within the generated task:
+\begin{equation}
+X_{\mathrm{std},ij}=
+\begin{cases}
+\displaystyle\frac{X_{\mathrm{raw},ij}-\mu_j}{\sigma_j},
+&\sigma_j>10^{-6},\\[6pt]
+0,&\sigma_j\leq10^{-6}.
+\end{cases}
+\label{eq:feature-standardization}
+\end{equation}
+The raw table is preserved and used by the analytical EPIT rule. The
+standardized table is used by both the SCM target head and the transformer.
+
+This separation is necessary because the two target mechanisms have different
+requirements. The randomly initialized SCM should receive standardized
+features so that variables with large numerical units do not dominate only
+because of their scale. In contrast, the analytical EPIT rules must receive
+the raw physical values because they contain composition thresholds,
+chromium--molybdenum terms, logarithmic chloride transformations, temperature
+thresholds, pH corrections, and test-method category lookups.
+
+For informed tasks, the general \texttt{Reg2Cls} preprocessing operation is
+bypassed. The explicitly constructed \(X_{\mathrm{std}}\) is passed directly
+to the transformer. Constant columns become zero but are not deleted, so the
+fixed column positions remain valid. A column with one value contains no
+within-task variation; in another task where it varies, it is standardized
+normally and can influence the target.
+
+Feature permutation is disabled. The model receives anonymous numeric columns
+rather than textual feature names, but their positions remain stable. This
+permits position-dependent regularities and deliberately narrows the informed
+prior to the evaluated schema. Generic tasks retain their separate existing
+preprocessing path.
+
+\subsection{SCM Target from the Informed Features}
+
+The standardized empirical features are passed through a direct non-causal
+target head:
+\begin{equation}
+y_{\mathrm{SCM}}=f_{\theta}^{\mathrm{MLP/tree}}(X_{\mathrm{std}}).
+\label{eq:scm-target}
+\end{equation}
+The supplied \(21\) physical columns are treated as external causes. The
+target head produces one response per row without generating a replacement
+feature table or modifying the supplied physical features.
+
+The MLP uses the existing MLP-SCM sampling of depth, width, activation,
+initialization, dropout structure, and noise. Its final layer produces one
+target value per row. When the tree branch is selected, the same standardized
+features are passed through the existing direct tree-SCM transformation.
+These randomly sampled mappings provide synthetic nonlinear and piecewise
+relationships; they are not calibrated mechanistic EPIT equations.
+
+\subsection{Calibrated EPIT Target Component}
+
+Independently of the SCM target head, one calibrated analytical rule \(g_k\)
+is sampled and evaluated on the raw physical table:
+\begin{equation}
+y_{\mathrm{EPIT}}=g_k(X_{\mathrm{raw}}).
+\label{eq:epit-target}
+\end{equation}
+All rows in a synthetic task use the same rule family and its saved
+coefficient vector. These corrosion-target families are distinct from the Fe
+and Ni--Cr--Mo alloy families used by the feature generator.
+
+The seven rules include linear PREN-inspired material resistance, Cr--Mo/W
+synergy, chromium thresholds and Mo/W saturation, separate environmental
+penalties, coupled environmental breakdown, Fe/Ni-specific thresholds, and a
+test-method correction. Their calibration and sampling probabilities are
+given in Section~\ref{sec:model-selection}; their equations are collected in
+Appendix~\ref{app:target-rules}.
+
+The material and environmental terms encode broad tendencies rather than
+universal physical laws. Chloride concentration and, in many systems,
+temperature tend to reduce EPIT, but their effects depend on the alloy and
+experimental range. The influence of pH is likewise alloy- and range-dependent.
+The candidate rules consequently include different environmental structures.
+PREN-inspired material terms omit nitrogen because it is absent from the
+retained schema.
+
+\subsection{SCM--EPIT Target Mixture}
+\label{sec:target-mixture}
+
+Both target components are standardized before mixing, and the combined
+target is standardized once more:
+\begin{equation}
+y_{\mathrm{informed}}
+=\zscore\!\left[
+ (1-\lambda)\zscore(y_{\mathrm{SCM}})
+ +\lambda\zscore(y_{\mathrm{EPIT}})
+\right],\qquad0\leq\lambda\leq1.
+\label{eq:scm-epit-target}
+\end{equation}
+Here, \(\zscore\) denotes population standardization within the generated
+task, with numerical handling for effectively constant signals. The parameter
+\(\lambda\) is implemented as \texttt{informed\_target\_mix\_weight}.
+
+For nondegenerate components, \(\lambda=0\) gives a pure SCM target,
+\(\lambda=1\) gives a pure calibrated EPIT-rule target, and intermediate
+values combine stochastic SCM diversity with the calibrated corrosion
+contribution. Equal mixture coefficients do not necessarily imply equal
+fractions of explained target variance, because the components can be
+correlated. Final target standardization removes any literal millivolt
+interpretation from the synthetic response.
+
+The implementation requires calibrated rule scores in this mode and fails if
+they are absent. Unusable synthetic tasks are rejected by the generation
+validity checks. The relative weights within an EPIT rule are its calibrated
+coefficients; \(\lambda\) controls the complete EPIT component relative to the
+SCM component.
+
+\subsection{Generic and Informed Task Mixture}
+
+The hybrid prior samples informed tasks with probability
+\[
+\rho=\texttt{informed\_prior\_ratio}.
+\]
+Conceptually, the training-task distribution is
+\begin{equation}
+\mathcal{D}_{\mathrm{train}}\sim
+\begin{cases}
+\mathcal{D}_{\mathrm{SCM+EPIT}},&\text{with probability }\rho,\\
+\mathcal{D}_{\mathrm{generic}},&\text{with probability }1-\rho.
+\end{cases}
+\label{eq:hybrid-routing}
+\end{equation}
+The implementation samples routing and several generator hyperparameters at
+the subgroup level. Datasets within a subgroup share these choices while
+retaining separately sampled data and noise. This behavior is inherited from
+the TabICL training implementation.
+
+For informed tasks, \texttt{mlp\_prob} controls whether the MLP or tree head
+generates \(y_{\mathrm{SCM}}\). It has no effect on whether the task is
+informed. Generic tasks retain the fixed mixture
+\[
+P(\mathrm{MLP}\mid\mathrm{generic})=0.7,
+\qquad P(\mathrm{tree}\mid\mathrm{generic})=0.3.
+\]
+Thus, varying the informed MLP/tree mixture does not change the generic
+control distribution. Generic tasks receive neither empirical physical
+features nor a calibrated EPIT target component.
+
+\subsection{Optional Magpie Representation}
+
+Ten deterministic Magpie-style composition descriptors are available as a
+recorded final-training override. When enabled, they are calculated from the
+raw composition and appended to the physical table before column-wise
+standardization, giving \(31\) model inputs. The SCM target head continues to
+use only the \(21\) physical features, and the analytical EPIT rule continues
+to use their raw physical representation. The first \(21\) standardized
+transformer inputs therefore remain identical to the SCM inputs.
+
+Magpie descriptors are disabled in the base Optuna search and in the reported
+Trial~56 model. Their definitions and evaluation requirements are retained in
+Appendix~\ref{app:magpie}; they do not contribute to the reported final result.
+
+\section{Target-Rule Calibration and Model Selection}
+\label{sec:model-selection}
+
+\subsection{Workflow and Data Boundaries}
+
+The workflow has five stages: composition-aware split construction,
+target-rule calibration and direct evaluation, Optuna trial training and
+development-fold evaluation, final long training of the selected
+configuration, and evaluation of the locked model on the final-test set.
+Split construction is described in Section~\ref{sec:composition-split}.
+
+The split manifest records all row assignments, composition components, and
+fold identifiers. A separate lock records hashes of the manifest and related
+artifacts. Source-data and split hashes are verified before later stages use
+them, preventing a newly generated split from being silently combined with
+coefficients calibrated on an older split. Inspection files redact final-test
+EPIT values. The relevant scripts and artifacts are listed in
+Appendix~\ref{app:implementation}.
+
+\subsection{Target-Rule Families}
+
+A common target-rule interface is used for the seven candidates in
+Table~\ref{tab:rule-families}. All candidates are evaluated on the same
+\(452\) eligible Fe and Ni--Cr--Mo development rows.
+
+\begin{table}[htbp]
+\centering
+\caption{Candidate analytical EPIT rules used by the informed target sampler.}
+\label{tab:rule-families}
+\small
+\begin{tabularx}{\linewidth}{lL}
+\toprule
+Rule & Main structure \\
+\midrule
+Linear PREN & Cr--Mo--W resistance with environment and
+material--chloride terms. \\
+Cr--Mo/W synergy & Additional Cr--Mo/W cooperation and
+temperature--chloride interaction. \\
+Threshold and saturation & Smooth chromium threshold and a saturating
+Mo/W contribution. \\
+Improved environment & Separate logarithmic-chloride,
+high-temperature, temperature--chloride, and acidic-pH penalties. \\
+Coupled breakdown & Environmental aggressiveness opposed by material
+resistance within one breakdown term. \\
+Fe/Ni chromium threshold & Separate chromium thresholds for Fe and
+Ni--Cr--Mo alloys, with the improved environmental terms. \\
+Method-aware & Cr--Mo/W synergy with a test-method correction. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The method-aware calibration uses four broad method families:
+potentiodynamic, potentiostatic, scratch, and other. It learns shrunken method
+offsets from context targets only. Synthetic generation instead samples
+random offsets over the encoded test-method categories; it does not copy the
+fitted real-data method directions. The calibrated coefficient controls the
+relative contribution of this synthetic method term. Scan rate is excluded
+because it is not part of the fixed \(21\)-feature schema.
+
+The historical all-alloy PREN rule and its Fe/Ni-restricted counterpart are
+retained only as direct-calibration references. They do not enter the seven-rule
+synthetic sampler. Exact rule definitions and the final coefficient vectors
+are given in Appendix~\ref{app:target-rules}.
+
+\subsection{Fold-Local Calibration}
+\label{sec:rule-calibration}
+
+Target-rule calibration has two separate purposes: estimating rule quality
+and determining the coefficient values used during synthetic training.
+
+First, each candidate rule is evaluated using the five fixed development
+folds. For fold \(f\), its coefficients and preprocessing state are fitted
+using only the eligible context rows. The fitted rule is then applied to the
+eligible validation rows, which were not used to fit those coefficients.
+
+The calibration target is the standardized rank of the observed EPIT value.
+Let \(B_k\) contain the signed, standardized terms of rule \(k\), let
+\(r_y\) be the standardized target ranks, and let \(a_k\) be a predefined
+coefficient anchor. The calibration solves
+\begin{equation}
+\widehat c_k=\arg\min_{c}
+\left\{
+\frac{1}{n}\|B_kc-r_y\|_2^2+\gamma\|c-a_k\|_2^2
+\right\},
+\quad \sum_jc_j=1,\quad 0\leq c_j\leq u_{k,j}.
+\label{eq:rule-calibration}
+\end{equation}
+Here, \(\gamma\) controls regularization toward the anchor, and
+\(u_{k,j}\) contains the configured upper bounds. Nonnegative coefficients
+preserve the signs already assigned to the rule terms. They are dimensionless
+relative weights, not fitted electrochemical slopes in millivolts.
+
+For rule \(k\), the direct validation score on fold \(f\) is
+\[
+r_{k,f}=\operatorname{Spearman}
+\left(s_{k,f}(X_{\mathrm{val},f}),y_{\mathrm{val},f}\right),
+\]
+where \(s_{k,f}\) is the rule fitted on that fold's context portion. The
+rule-quality score is
+\begin{equation}
+s_k=\frac{1}{5}\sum_{f=1}^{5}r_{k,f}.
+\label{eq:rule-quality}
+\end{equation}
+This fold procedure is necessary because fitting and scoring a rule on the
+same rows would exaggerate its apparent quality.
+
+After direct evaluation, each rule is fitted once more using all eligible
+development rows. For the seven candidates, this means all \(452\) eligible
+rows, not the complete \(608\)-row development set. These final-development
+coefficients are frozen and reused during both Optuna pretraining and final
+long training.
+
+Thus, the five-fold mean Spearman score determines how often a rule is sampled,
+while the final-development fit supplies the coefficient values used to
+generate synthetic targets. Context-fitted real-data scaling supports direct
+rule validation; synthetic rule terms are standardized within each generated
+task. The final-development coefficients are transferred to those synthetic
+terms rather than used as a direct final-inference predictor.
+
+\subsection{Direct Rule Results and Sampling Probabilities}
+\label{sec:rule-probabilities}
+
+Table~\ref{tab:rule-probabilities} reports the development-fold scores and the
+resulting sampling probabilities. All seven scores are positive. Rule \(k\)
+is sampled with probability
+\begin{equation}
+p_k=\frac{s_k}{\sum_{\ell=1}^{7}s_\ell}.
+\label{eq:rule-probabilities}
+\end{equation}
+This normalization gives better-performing rules a larger sampling
+probability while keeping all seven candidates present. It is a calibrated
+task-sampling policy, not Bayesian posterior weighting over corrosion laws.
+
+\begin{table}[htbp]
+\centering
+\caption{Mean direct development-fold Spearman scores and normalized
+synthetic sampling probabilities for the seven candidate target rules.}
+\label{tab:rule-probabilities}
+\begin{tabular}{lrr}
+\toprule
+Rule & Mean Spearman & Sampling probability \\
+\midrule
+Linear PREN & 0.5174 & 0.1342 \\
+Cr--Mo/W synergy & 0.5583 & 0.1448 \\
+Threshold and saturation & 0.5181 & 0.1343 \\
+Improved environment & 0.5850 & 0.1517 \\
+Coupled breakdown & 0.5525 & 0.1433 \\
+Fe/Ni chromium threshold & 0.5252 & 0.1362 \\
+Method-aware & \textbf{0.5999} & \textbf{0.1556} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The historical all-alloy PREN baseline obtained a mean fold Spearman
+correlation of \(0.4598\). On the matched \(452\)-row Fe/Ni scope, the
+historical PREN baseline obtained \(0.5123\). The matched value is the
+appropriate reference for the seven candidates. These direct correlations
+measure formula alignment, not transformer performance.
+
+The training command supplies all seven scores and all \(29\) calibrated
+coefficient values using round-trip-exact floating-point precision. Their
+values are therefore identical to those recorded in the calibration artifacts
+and pipeline fingerprint; table entries in this report are rounded for
+readability.
+
+\begin{figure}[htbp]
+    \centering
+    \projectfigure{images/corrpfn_rule_calibration.pdf}
+    {Five development-fold scores for each analytical rule, their means, and
+    the resulting sampling probabilities.}
+    \caption{Direct rule calibration on the eligible development rows. Fold
+    predictions use context-fitted coefficients; mean fold scores determine
+    the synthetic rule-sampling probabilities.}
+    \label{fig:rule-calibration}
+\end{figure}
+
+\subsection{Optuna Search and Proxy Training}
+
+The final study is identified as
+\path{epit_pipeline_optuna_empirical_features_scm_target_v7}.
+Its four active search dimensions are shown in
+Table~\ref{tab:search-space}.
+
+\begin{table}[htbp]
+\centering
+\caption{Search space for the final CorrPFN prior. The MLP probability applies
+only to informed target heads.}
+\label{tab:search-space}
+\begin{tabular}{ll}
+\toprule
+Parameter & Search space \\
+\midrule
+Informed-task probability \(\rho\) & \(\{0.25,0.50,0.75,1.00\}\) \\
+Informed MLP probability \(p_{\mathrm{MLP}}\)
+    & \(\{0,0.25,0.50,0.70,0.75,1.00\}\) \\
+SCM--EPIT mixture weight \(\lambda\) & \([0,1]\), continuous \\
+Composition perturbation \(\tau\) & \([0,0.15]\), continuous \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The empirical feature profiles, Fe/Ni template-frequency mixture, calibrated
+rule scores and coefficients, fixed feature schema, preprocessing policy,
+and generic MLP/tree mixture remain fixed. Magpie descriptors are disabled.
+Physical feature generation is always active for informed tasks, feature
+permutation is disabled, and feature-block coupling is fixed to zero.
+
+The study uses the tree-structured Parzen estimator sampler with ten startup
+trials. Each proxy trial is pretrained once from scratch to step \(1{,}000\),
+while the learning-rate scheduler retains a \(10{,}000\)-step horizon. The
+checkpoint is then evaluated on each of the five saved development folds.
+The five validation Spearman correlations are averaged to obtain the trial
+objective. MAE, RMSE, \(R^2\), and fold variability are recorded as secondary
+diagnostics.
+
+Spearman correlation is the primary metric because the EPIT target covers a
+wide numerical range and contains extreme values. Magnitude-based errors can
+be strongly influenced by a small number of observations, whereas Spearman
+measures whether predicted and observed values have a consistent monotonic
+ordering. MAE, RMSE, and \(R^2\) remain necessary because good ranking alone
+does not guarantee accurate predictions on the millivolt scale.
+
+Workers can contribute to a shared Optuna journal using one GPU and one
+training process per worker. The study records parameters, generated commands,
+metrics, seeds, worker configuration, and artifact hashes. The final base
+configuration uses NumPy and Torch seeds of \(42\) and one parallel
+prior-generation job. Worker and seed settings are part of the recorded
+experiment rather than implicit defaults.
+
+\subsection{Interpretation of Development Scores}
+
+The direct rule evaluation is fold-local: each fold's direct rule prediction
+is produced using coefficients fitted without that fold's validation targets.
+
+The subsequent Optuna evaluation is intentionally not fully fold-pure. The
+sampling probabilities use the direct outcomes from all five development
+folds, and the synthetic coefficients are fitted on all eligible development
+targets before Optuna begins. Those frozen values are then reused while
+every Optuna fold is evaluated. The target rules are not refitted inside each
+transformer fold evaluation.
+
+This design keeps the informed-target distribution identical across trials
+and excludes outer final-test targets from model selection. It also means
+that the Optuna and checkpoint-development scores are model-selection scores
+rather than unbiased estimates of generalization. They are reported separately
+from the final-test metrics.
+
+\subsection{Final Training and Checkpoint Selection}
+
+Final training selects a completed trial with a finite development objective.
+The implementation permits selecting the best completed trial available at
+that time even when other trials remain running or waiting; their identifiers
+and states are recorded. This is a snapshot decision: later study results
+cannot silently change an already frozen final run.
+
+The selected configuration is retrained from scratch for \(10{,}000\)
+Stage~1 steps using the same calibrated rule distribution. Transformer weights
+are optimized on synthetic tasks. Real development labels influence the
+calibrated prior and are supplied as context during evaluation; they are not
+used as a conventional supervised transformer training set.
+
+Permanent checkpoints are saved every \(500\) steps. Each candidate is
+evaluated on the five frozen development folds using the same inference
+configuration. The checkpoint with the highest mean development-fold Spearman
+correlation is selected. MAE, RMSE, and \(R^2\) are retained as diagnostics
+but do not determine the selection.
+
+A final-model manifest records the selected trial, effective training
+configuration, target-rule artifacts, split hashes, checkpoint evaluations,
+selected-checkpoint hash, and final inference settings. A separate lock binds
+the manifest to that checkpoint. Existing final manifests and locks are not
+overwritten. Recorded overrides use a distinct run identity so that they can
+be distinguished from an unmodified Optuna winner.
+
+\subsection{Final Inference Configuration}
+
+The selected model receives all \(608\) development rows and their EPIT
+targets as context and predicts the \(152\) final-test rows. The locked
+configuration uses eight estimators, no feature-order shuffling, only the
+numerical view selected by \texttt{norm\_methods=[``none'']}, median
+regression output, no regression-uncertainty output, and all available rows.
+The normalization option disables additional power-transformed inference
+views; it does not remove the estimator's ordinary numeric preprocessing.
+
+The evaluator verifies the model and split hashes and the expected feature
+schema before prediction. A completion manifest prevents an existing
+successful final evaluation from being silently replaced. Separate comparison
+and diagnostic outputs are distinguished from model selection.
+
+The corrosion formulas are not applied directly during final inference.
+Their role is to shape the synthetic pretraining distribution. During final
+evaluation, the trained TabICL model itself predicts the EPIT values.
+
+\section{Final Results}
+\label{sec:results}
+
+\subsection{Selected Prior Configuration}
+
+At the time of final-model freezing, the Optuna study contained \(78\)
+trials, of which six were still marked as running. Final training explicitly
+selected the best completed trial available at that time, Trial~56. Its mean
+five-fold development Spearman correlation was \(0.6903\), with mean MAE
+\(211.0\)~mV, RMSE \(298.0\)~mV, and \(R^2=0.4373\).
+
+\begin{table}[htbp]
+\centering
+\caption{Selected prior configuration for the reported CorrPFN model.}
+\label{tab:selected-configuration}
+\begin{tabular}{lr}
+\toprule
+Parameter & Selected value \\
+\midrule
+Optuna trial & 56 \\
+Informed-task probability \(\rho\) & 0.75 \\
+Informed MLP probability \(p_{\mathrm{MLP}}\) & 0.50 \\
+SCM--EPIT mixture weight \(\lambda\) & 0.2048 \\
+Composition perturbation \(\tau\) & 0.1028 \\
+Magpie descriptors & disabled \\
+Physical feature count & 21 \\
+Final training steps & 10,000 \\
+Development-selected checkpoint & 2,500 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Trial~56 therefore combines \(75\%\) informed tasks with \(25\%\) generic
+tasks. Within the informed branch, MLP and tree target heads have equal
+probability. The SCM component receives the larger target-mixture coefficient,
+while the calibrated EPIT component contributes a smaller explicit domain
+bias. These values describe the selected configuration; they are not an
+estimate of the proportion of real EPIT variation explained by each mechanism.
+
+\begin{figure}[htbp]
+    \centering
+    \projectfigure{images/corrpfn_optuna_parallel_coordinates.pdf}
+    {The four searched parameters and development Spearman scores of completed
+    trials available at final-model freezing, highlighting Trial 56.}
+    \caption{Final Optuna search. Each completed trial is represented by its
+    prior configuration and mean five-fold development Spearman correlation
+    after \(1{,}000\) proxy-training steps.}
+    \label{fig:optuna-search}
+\end{figure}
+
+\subsection{Development-Based Checkpoint Selection}
+
+Trial~56 was retrained from scratch for \(10{,}000\) Stage~1 steps. Permanent
+checkpoints were saved every \(500\) steps and evaluated using the five
+frozen development folds. The selected and cryptographically locked checkpoint
+was step \(2{,}500\), which obtained mean development-fold Spearman
+\(0.6966\), MAE \(191.3\)~mV, RMSE \(280.9\)~mV, and \(R^2=0.4717\).
+
+\begin{table}[htbp]
+\centering
+\caption{Development metrics for Trial~56 at proxy selection and after final
+training. These are selection scores, not final-test results.}
+\label{tab:development-results}
+\begin{tabular}{lrrrr}
+\toprule
+Checkpoint & Spearman & MAE (mV) & RMSE (mV) & \(R^2\) \\
+\midrule
+Proxy run, step 1,000 & 0.6903 & 211.0 & 298.0 & 0.4373 \\
+Final run, step 2,500 & 0.6966 & 191.3 & 280.9 & 0.4717 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The final training budget does not imply that the last checkpoint is the
+preferred model. Development evaluation selected an earlier checkpoint using
+the stated metric and without consulting final-test targets.
+
+\begin{figure}[htbp]
+    \centering
+    \projectfigure{images/corrpfn_development_checkpoints.pdf}
+    {Mean development-fold Spearman over the 500-step checkpoints of final
+    Trial 56 training, with step 2,500 marked as selected.}
+    \caption{Development-only checkpoint selection during final training.
+    The reported checkpoint is the one selected by mean development-fold
+    Spearman correlation.}
+    \label{fig:development-checkpoints}
+\end{figure}
+
+\subsection{Comparison Models}
+
+The \emph{generic retrained baseline} uses the same local TabICL architecture
+and core training setup, but is pretrained on the unmodified generic
+\texttt{mix\_scm} prior with MLP and tree probabilities of \(0.7\) and
+\(0.3\). It provides a control for the complete change in pretraining
+distribution. It is shown at the matching training step; this comparison
+does not establish its best possible checkpoint under independent selection.
+
+The \emph{pretrained TabICL V2} checkpoint provides an external pretrained
+model reference. It is not an architecture-matched control because CorrPFN
+uses the local TabICL V1 implementation and may lack later model and training
+changes included in V2. \emph{CatBoost} provides a conventional supervised
+tabular-regression reference. Pretrained V2 and CatBoost are
+checkpoint-independent references, evaluated on the same development/final
+partition. The comparison uses the \(21\)-feature representation without
+Magpie augmentation.
+
+\subsection{Held-Out EPIT Results}
+
+The locked step-\(2{,}500\) CorrPFN checkpoint was evaluated using all
+\(608\) development rows as context and the \(152\) composition-separated
+final-test rows as queries. Table~\ref{tab:final-results} reports the results.
+
+\begin{table}[htbp]
+\centering
+\caption{Performance on the \(152\)-row final EPIT test partition. The
+CorrPFN checkpoint was selected on development folds; the generic local
+baseline is shown at the matching training step.}
+\label{tab:final-results}
+\begin{tabular}{lrrrr}
+\toprule
+Model & Spearman & MAE (mV) & RMSE (mV) & \(R^2\) \\
+\midrule
+CorrPFN, step 2,500
+    & \textbf{0.7681} & \textbf{186.8} & \textbf{268.7} & \textbf{0.5294} \\
+Pretrained TabICL V2 & 0.6011 & 206.8 & 343.8 & 0.2294 \\
+CatBoost & 0.6090 & 231.7 & 323.1 & 0.3194 \\
+Generic baseline, step 2,500 & 0.2829 & 326.4 & 548.8 & -0.9630 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Relative to pretrained TabICL V2, CorrPFN reduced MAE by \(9.7\%\), reduced
+RMSE by \(21.9\%\), and increased Spearman correlation by \(0.1670\).
+It also outperformed the reported CatBoost and generic local references
+across all four metrics. The result combines improved ordering with improved
+millivolt-scale errors, even though configuration and checkpoint selection
+were based on Spearman correlation.
+
+Final-test Spearman was higher than the development-fold mean, and MAE and
+RMSE were lower. These evaluations use different query rows and different
+context sizes: the final model receives \(608\) context rows rather than
+\(486\)--\(487\). Their difference should not be interpreted as an isolated
+effect of additional context or as evidence of statistical significance.
+
+\begin{figure}[htbp]
+    \centering
+    \projectfigure{images/corrpfn_final_predictions.pdf}
+    {Observed versus predicted EPIT and residuals for the locked step-2,500
+    model on the 152 final-test rows.}
+    \caption{Final-test predictions of the development-selected CorrPFN
+    checkpoint. Predictions and residuals are shown on the original
+    millivolt scale.}
+    \label{fig:final-predictions}
+\end{figure}
+
+\subsection{Post-Evaluation Checkpoint Diagnostics}
+
+All-checkpoint results on the final-test set were inspected afterward for
+diagnostic purposes. Step \(2{,}000\) produced the strongest observed
+final-test metrics, but it was not selected independently of those targets.
+It must therefore not replace the development-selected step-\(2{,}500\)
+checkpoint as the reported model. Subsequent decisions informed by these
+diagnostics would require a new independent evaluation to support a fresh
+confirmatory claim.
+
+\section{Discussion and Limitations}
+\label{sec:discussion}
+
+\subsection{What the Final Construction Achieves}
+
+The final construction implements a clear division of responsibilities: the
+empirical generator supplies physically structured features, the SCM supplies
+stochastic nonlinear task diversity, the calibrated EPIT rule supplies
+corrosion-specific target structure, and \(\lambda\) determines their
+relative weighting. The separate routing parameter \(\rho\) preserves
+generic synthetic tasks within the same pretraining workflow.
+
+Generating physical features before the target avoids a mismatch in which a
+synthetic target depends on latent variables whose information is lost during
+later composition remapping. Using identical standardized physical columns
+for the SCM and transformer keeps the target-generating representation aligned
+with the observed inputs. Preserving raw values for the EPIT rules allows
+their thresholds and transformations to retain their intended interpretation.
+
+The final model improves all four reported metrics relative to the evaluated
+references. This supports the usefulness of the complete informed
+pretraining configuration for the present EPIT task. It does not separately
+establish the contribution of empirical features, target-rule calibration,
+generic-task mixing, or each individual rule. Those claims would require
+matched ablations of the final system under the same evaluation protocol.
+
+\subsection{Relevant Lessons from Earlier Development}
+
+Direct synthetic-to-real surrogate alignment helped identify weaknesses in
+earlier target rules, but it did not reliably rank prior configurations by
+their downstream transformer performance. The final workflow therefore uses
+direct calibration to define the analytical rule distribution and actual
+transformer development evaluation to select the remaining prior parameters.
+
+Earlier composition transformations could produce unrealistic element
+combinations or discard information used by an already generated SCM target.
+The final generator addresses these structural issues through empirical
+templates and feature-first target construction. These observations explain
+the design, but the historical comparisons used different configurations and
+evaluation settings and are not treated as controlled ablations of the final
+model. The historical experiment record is retained separately in
+\texttt{main2.tex}.
+
+\subsection{Statistical and Evaluation Limits}
+
+Only one final training seed was evaluated. Differences between models are
+therefore point estimates for the recorded runs, without repeated-training
+evidence that would establish their stability. The Optuna proxy also uses
+\(1{,}000\) steps while final training runs to \(10{,}000\); development
+checkpoint selection limits the reliance on the last checkpoint but does not
+prove that the proxy identifies the best possible long-training prior.
+
+The final-test labels are reserved from calibration and model selection in
+the final workflow. However, the complete \(760\)-row corpus influenced
+historical prior development before the revised split was created. Moreover,
+the empirical profiles and their stored feature statistics include feature
+information across that corpus. Some final-test compositions can therefore
+appear as unlabeled templates during synthetic pretraining. The result
+demonstrates prediction across separated labeled composition groups under
+this dataset-adapted prior, not evaluation on compositions entirely absent
+from every source of pretraining information.
+
+The composition grouping does not establish generalization to independent
+publications, laboratories, or alloy databases. Reference overlap across
+partitions is allowed, and all observations come from the same source
+dataset. A stronger test would use a separate corpus or newly collected
+measurements, with feature profiles and model choices frozen beforehand.
+
+\subsection{Physical and Representation Limits}
+
+The empirical generator is not a thermodynamic, phase-stability,
+heat-treatment, microstructure, or passivation model. Its composition
+diversity is bounded by the observed template bank. In particular, the
+Ni--Cr--Mo family contains only \(17\) distinct templates and is much less
+diverse than the Fe-alloy family. Other alloy classes occur in the evaluated
+task but are not directly represented in the informed composition generator
+or the seven-rule calibration scope.
+
+Sampling composition and environment independently removes the source
+dataset's specific pairing between alloys and experimental campaigns. It
+also assumes that recombining these observed components provides useful
+training tasks; it does not establish the feasibility or experimental
+relevance of every generated combination. The synthetic features and the
+calibrated rules are physically informed rather than a complete physical
+description of pitting.
+
+The test-method code has no physical ordering, yet the SCM and transformer
+receive it as a single numeric feature. The method-aware rule treats it as a
+category, but its synthetic offsets are randomly sampled rather than copied
+from calibrated real protocol effects. Finally, fixed feature order makes the
+model specific to the documented schema, and synthetic target standardization
+removes any direct millivolt interpretation of the generating equations.
+
+The current evidence supports CorrPFN as a working dataset-specific EPIT
+predictor. Repeated training seeds, matched final-system ablations, and an
+external evaluation with development-only feature profiles would determine
+how much of the observed improvement persists beyond this setting.
+
+\appendix
+
+\section{Analytical EPIT Rules and Calibrated Coefficients}
+\label{app:target-rules}
+
+\subsection{Notation and Material Scores}
+
+The following definitions describe the weighted analytical rules used in the
+final informed branch. Let \(\mathcal{Z}\) denote population standardization
+of a signal across a generated task, with a denominator floor of \(10^{-6}\)
+and exactly constant signals mapped to zero, and let
+\(\sigma(u)=(1+e^{-u})^{-1}\). Material inputs use raw
+weight-percent values; \(T\) is in degrees Celsius and \(C_{\mathrm{Cl}}\)
+is chloride concentration in molar units. Nonnegative composition inputs and
+a positive floor of \(10^{-12}\) for the chloride logarithm are used.
+
+Define the combined molybdenum/tungsten concentration
+\[
+Q=\mathrm{Mo}+0.55\mathrm{W}.
+\]
+The four material scores are
+\begin{align}
+R_{\mathrm{linear}}
+    &=\mathrm{Cr}+3.25Q,\label{eq:rule-linear}\\
+R_{\mathrm{synergy}}
+    &=\mathrm{Cr}+3.25Q+\sqrt{\mathrm{Cr}\,Q},\label{eq:rule-synergy}\\
+R_{\mathrm{threshold}}
+    &=\sigma\!\left(\frac{\mathrm{Cr}-12}{2}\right)
+      +\log(1+Q),\label{eq:rule-threshold}\\
+R_{\mathrm{Fe/Ni}}
+    &=\sigma\!\left(\frac{\mathrm{Cr}-t_i}{2}\right)
+      +\log(1+Q),\label{eq:rule-fe-ni}
+\end{align}
+where \(t_i=12\) for Fe-alloy rows and \(t_i=15\) for Ni--Cr--Mo rows.
+Thresholds, slopes, and the implicit unit concentration in the logarithm are
+defined for inputs expressed in weight percent. These expressions are
+heuristic response scores rather than dimensionally calibrated physical
+equations.
+
+The final empirical generator supplies alloy-family metadata to determine
+\(t_i\). Direct calibration uses the recorded material class. The broader
+rule interface has a fallback based on whether Ni exceeds Fe, but the final
+empirical branch uses the supplied family metadata.
+
+For the material score \(R_k\) associated with rule \(k\), define
+\begin{equation}
+m_k=\mathcal{Z}(R_k),\qquad
+P_k=\mathcal{Z}(\tanh m_k),\qquad
+I_k=\mathcal{Z}\!\left(\sigma(-m_k)C\right),
+\label{eq:rule-material-signals}
+\end{equation}
+where \(C\) is the chloride drive defined below. \(P_k\) is the material
+passivity term and \(I_k\) is the susceptibility--chloride term.
+
+\subsection{Environmental and Method Terms}
+
+Let
+\begin{align}
+L&=\mathcal{Z}\!\left(\log_{10}\max(C_{\mathrm{Cl}},10^{-12})\right),\\
+C&=\sigma(L),\\
+E&=\sigma\!\left(\mathcal{Z}\!\left[
+ 0.075\mathcal{Z}(T)+0.925L+0.115\mathcal{Z}(|\mathrm{pH}-7.25|)
+\right]\right),\\
+H&=\sigma\!\left(\frac{T-50}{10}\right),\qquad
+A=\sigma(6.5-\mathrm{pH}),\\
+J_0&=\sigma(\mathcal{Z}(T))C,\qquad J_1=HC.
+\label{eq:rule-environment-signals}
+\end{align}
+Here, \(E\) is the combined chloride-dominant environment term; \(H\) is
+a high-temperature signal; \(A\) is a one-sided acidic-pH signal; and
+\(J_0\) and \(J_1\) are two temperature--chloride interactions. The
+absolute pH departure in \(E\) and the one-sided acidic term in \(A\)
+represent different candidate assumptions, not a universal pH law.
+
+The coupled-breakdown rule uses
+\begin{equation}
+D_k=\sigma\!\left[
+0.65L+0.25\mathcal{Z}(H)+0.10\mathcal{Z}(J_1)-0.75m_k
+\right].
+\label{eq:rule-coupled}
+\end{equation}
+This single term combines environmental aggressiveness with material
+protection, replacing separate environment and material--chloride penalties.
+
+For the method-aware synthetic rule, one standard-normal offset \(o_j\) is
+sampled for each of the \(52\) encoded test-method categories. A row with
+category \(a_i\) receives the standardized method term
+\begin{equation}
+M_i=\mathcal{Z}\!\left[\tanh\!\left(\mathcal{Z}(o_{a_i})\right)\right].
+\label{eq:rule-method}
+\end{equation}
+Both standardizations act on the row-wise signal across the generated task.
+The offsets have no imposed physical ordering and are resampled for each
+synthetic mechanism.
+
+\subsection{Seven Rule Vectors}
+
+Each rule is a weighted sum of signed, standardized terms:
+\begin{equation}
+g_k(X)=b_k(X)c_k,
+\qquad c_{k,j}\geq0,\qquad\sum_jc_{k,j}=1.
+\label{eq:rule-vector}
+\end{equation}
+The material score and ordered term vector for each rule are as follows:
+\begin{enumerate}
+    \item \textbf{Linear PREN} (\texttt{pren\_linear}) uses
+    \(R_{\mathrm{linear}}\) and
+    \[
+    b_k=(P_k,-\mathcal{Z}(E),-I_k).
+    \]
+    \item \textbf{Cr--Mo/W synergy} (\texttt{cr\_mow\_synergy}) uses
+    \(R_{\mathrm{synergy}}\) and
+    \[
+    b_k=(P_k,-\mathcal{Z}(E),-I_k,-\mathcal{Z}(J_0)).
+    \]
+    \item \textbf{Threshold and saturation}
+    (\texttt{threshold\_saturation}) uses \(R_{\mathrm{threshold}}\) and
+    the same ordered term vector as the synergy rule.
+    \item \textbf{Improved environment}
+    (\texttt{improved\_environment}) uses \(R_{\mathrm{linear}}\) and
+    \[
+    b_k=(P_k,-\mathcal{Z}(C),-\mathcal{Z}(H),
+                 -\mathcal{Z}(J_1),-\mathcal{Z}(A)).
+    \]
+    \item \textbf{Coupled breakdown} (\texttt{coupled\_breakdown}) uses
+    \(R_{\mathrm{linear}}\) and
+    \[
+    b_k=(P_k,-\mathcal{Z}(D_k),-\mathcal{Z}(A)).
+    \]
+    \item \textbf{Fe/Ni chromium threshold}
+    (\texttt{fe\_ni\_cr\_threshold}) uses \(R_{\mathrm{Fe/Ni}}\) and
+    the same ordered term vector as the improved-environment rule.
+    \item \textbf{Method-aware} (\texttt{method\_aware}) uses
+    \(R_{\mathrm{synergy}}\) and
+    \[
+    b_k=(P_k,-\mathcal{Z}(E),-I_k,-\mathcal{Z}(J_0),M).
+    \]
+\end{enumerate}
+
+For these weighted rule families, the numerical constants in the equations
+above are fixed. The calibrated outer coefficient vectors are also fixed
+across training tasks. Rule selection, generated feature tables, synthetic
+method offsets, and SCM mechanisms provide task-to-task variation.
+
+For direct real-data rule evaluation, standardization states are fitted on
+the relevant context rows and reused on validation rows. For synthetic
+generation, the terms are standardized within the generated task. The
+method-aware direct calibration additionally replaces random synthetic
+offsets with context-fitted offsets for the four broad real method families.
+Those offsets are derived from standardized-rank residuals relative to the
+anchored synergy rule and shrunk by the factor \(n_j/(n_j+20)\), where
+\(n_j\) is the number of context rows in the method family. The fitted offsets
+are then centered by their context-row frequencies. Unseen method families
+receive zero offset before the fitted method-term scaling is applied.
+
+\subsection{Final-Development Coefficient Vectors}
+
+Table~\ref{tab:rule-coefficients} gives the coefficient vectors stored for
+the final run, in the term order defined above. These are the fitted relative
+weights used during synthetic generation, not the separate rule-sampling
+probabilities in Table~\ref{tab:rule-probabilities}.
+
+\begin{table}[htbp]
+\centering
+\caption{Frozen final-development rule coefficients, rounded to four decimal
+places. Dashes denote terms absent from a rule. Full-precision values are
+stored in the calibrated artifacts and final-model manifest.}
+\label{tab:rule-coefficients}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+Rule & \(c_1\) & \(c_2\) & \(c_3\) & \(c_4\) & \(c_5\) \\
+\midrule
+Linear PREN & 0.5560 & 0.4013 & 0.0427 & -- & -- \\
+Cr--Mo/W synergy & 0.4331 & 0.0710 & 0.2072 & 0.2887 & -- \\
+Threshold and saturation & 0.4186 & 0.1139 & 0.1960 & 0.2715 & -- \\
+Improved environment & 0.5394 & 0.2414 & 0.0798 & 0.1393 & 0.0000 \\
+Coupled breakdown & 0.4265 & 0.5062 & 0.0673 & -- & -- \\
+Fe/Ni chromium threshold & 0.5233 & 0.2721 & 0.1058 & 0.0988 & 0.0000 \\
+Method-aware & 0.3051 & 0.0000 & 0.3124 & 0.2099 & 0.1727 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Some candidate terms receive zero fitted weight. In particular, the acidic-pH
+term is inactive in the final improved-environment and Fe/Ni-threshold fits,
+and the combined environment term is inactive in the method-aware fit.
+Their rule definitions remain available, but these particular coefficients
+should not be described as active contributions in the selected prior.
+
+\section{Optional Magpie-Style Descriptors}
+\label{app:magpie}
+
+\subsection{Descriptor Definitions}
+
+The additional features are deterministic composition descriptors rather than
+learned material embeddings. They contain no directly trained corrosion
+knowledge and do not replace the original element concentrations. The original
+\(17\) material features remain model inputs in their existing fixed order.
+
+Let \(c_{ij}\) be the weight-percentage value of element \(j\) in synthetic
+or real alloy \(i\), and let \(M_j\) be its atomic weight. A copy of the
+material vector is converted to atomic fractions according to
+\begin{equation}
+a_{ij}=\frac{c_{ij}/M_j}{\sum_e c_{ie}/M_e}.
+\label{eq:magpie-atomic-fractions}
+\end{equation}
+This conversion is used only for descriptor calculation. It does not modify
+the weight-percentage features supplied in the original material columns.
+The descriptors are calculated from the \(17\) observed elements, so their
+atomic fractions refer to the retained composition subset.
+
+For an elemental property \(q_j\), its composition-weighted mean and average
+absolute deviation are
+\begin{equation}
+\mu_q^{(i)}=\sum_j a_{ij}q_j,
+\qquad
+\delta_q^{(i)}=\sum_j a_{ij}|q_j-\mu_q^{(i)}|.
+\label{eq:magpie-mean-deviation}
+\end{equation}
+Property ranges are calculated as
+\begin{equation}
+R_q^{(i)}=\max_{j:a_{ij}\geq0.01}q_j
+         -\min_{j:a_{ij}\geq0.01}q_j.
+\label{eq:magpie-range}
+\end{equation}
+The \(1\%\) atomic-fraction threshold is used only for range descriptors.
+Weighted means and deviations continue to use all elements, and the threshold
+does not alter the generated compositions.
+
+\begin{table}[htbp]
+\centering
+\caption{The optional ten-feature Magpie-style descriptor bundle.}
+\label{tab:magpie-descriptors}
+\begin{tabularx}{\linewidth}{lL}
+\toprule
+Elemental property & Calculated statistics \\
+\midrule
+Electronegativity & Mean, range, average absolute deviation \\
+Covalent radius & Mean, average absolute deviation \\
+Melting temperature & Mean, range \\
+\(d\)-valence electrons & Mean \\
+Total valence electrons & Mean \\
+Unfilled valence states & Mean \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The elemental property and atomic-weight values were extracted once from
+Matminer~0.10.0 and stored in a fixed, versioned lookup table identified as
+\path{epit_magpie_v1_matminer_0_10_0}. Matminer is therefore used as the
+reference source for the elemental values but is not a runtime dependency
+during synthetic training. The descriptors are calculated using vectorized
+Torch operations during synthetic generation and the corresponding NumPy
+implementation during real-data evaluation.
+
+\subsection{Training and Evaluation Integration}
+
+When enabled, the ten descriptors are appended to the raw physical table:
+\[
+X_{\mathrm{raw}}^{31}
+=[X_{\mathrm{raw}}^{21},X_{\mathrm{Magpie}}^{10}].
+\]
+The complete \(31\)-column table is then standardized column by column before
+it is passed to the transformer. Because this operation is column-wise, its
+first \(21\) columns are numerically identical to the standardized
+\(21\)-column table used by the SCM:
+\[
+X_{\mathrm{transformer},1:21}^{31}=X_{\mathrm{std}}^{21}.
+\]
+
+The descriptors are calculated after the SCM--EPIT target has been constructed
+from the \(21\) physical columns. They receive no independent SCM generation,
+within-block coupling, random marginal transformation, categorical conversion,
+or independent noise. Their relationship with the target arises through their
+deterministic dependence on the same composition used by the existing target
+mechanisms.
+
+Generic hybrid tasks receive no Magpie descriptors. Their tensors can be
+zero-padded to the common batching width when necessary; padded positions are
+not interpreted as generated material descriptors.
+
+Descriptor-enabled checkpoints require the same augmentation of the real
+EPIT table. For every evaluation split, missing values in the \(17\)
+material columns are imputed using means fitted on the training portion of
+that split. The same training-fitted means are then applied to the test
+portion. The imputed weight percentages are converted to atomic fractions,
+and the same ten descriptors are calculated in the same order. The original
+\(21\) columns remain first.
+
+The implementation was checked against Matminer reference values for a
+multielement alloy, with agreement to numerical precision. The Torch and NumPy
+implementations also produce matching descriptor values. Further checks
+verify that descriptor augmentation leaves the original physical columns
+unchanged and that training and evaluation use the same schema. These
+implementation checks establish numerical consistency; the final reported
+model does not use the descriptor option.
+
+\section{Implementation and Reproducibility}
+\label{app:implementation}
+
+\subsection{Active Configuration}
+
+The final informed path is activated through
+\path{pitting_composition_mode=empirical_features_scm_target} within the
+\texttt{hybrid\_scm} prior. The implementation names corresponding to the
+four searched parameters are
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Symbol & Implementation parameter \\
+\midrule
+\(\rho\) & \texttt{informed\_prior\_ratio} \\
+\(p_{\mathrm{MLP}}\) & \texttt{mlp\_prob}, mapped to
+\texttt{informed\_mix\_probs} \\
+\(\lambda\) & \texttt{informed\_target\_mix\_weight} \\
+\(\tau\) & \texttt{pitting\_composition\_perturb\_strength} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The fixed physical feature count is \(21\), with allocation \(17,3,1\).
+The informed branch uses the fixed EPIT schema, complete empirical physical
+features, no feature permutation, no shared block coupling, and no Dirichlet
+redraw. The generic MLP/tree probabilities remain \(0.7,0.3\). The saved
+calibrated rule scores and coefficient vectors are required inputs.
+
+\subsection{Source Modules and Workflow Entry Points}
+
+The principal source files are listed below using repository-relative paths.
+Historical generator branches coexist in the repository but are not required
+to understand the method described in this report.
+\begin{itemize}
+    \item \path{src/tabicl/prior/epit_composition_profile.py} loads and
+    samples the versioned composition templates.
+    \item \path{src/tabicl/prior/epit_feature_profile.py} and
+    \path{src/tabicl/prior/epit_feature_generator.py} load the environmental
+    profile and construct complete physical feature rows.
+    \item \path{src/tabicl/prior/dataset.py} integrates empirical generation,
+    SCM target heads, weighted EPIT rules, target mixing, and task routing.
+    \item \path{src/tabicl/prior/mlp_scm.py} and
+    \path{src/tabicl/prior/tree_scm.py} implement the stochastic target heads.
+    \item \path{scripts/epit_pipeline/target_rules.py} and
+    \path{scripts/epit_pipeline/calibrate_target_rules.py} implement direct
+    rule calibration and its saved artifacts.
+    \item \path{scripts/epit_pipeline/prepare_splits.py},
+    \path{scripts/epit_pipeline/run_optuna.py},
+    \path{scripts/epit_pipeline/train_final.py}, and
+    \path{scripts/epit_pipeline/evaluate_final.py} implement the split,
+    search, final-training, and final-evaluation stages.
+    \item \path{scripts/epit_pipeline/evaluate_optuna_folds.py} evaluates
+    transformer development folds. The empirical-SCM-target search and
+    final-training Slurm launchers select the final informed mode.
+    \item \path{src/tabicl/prior/magpie_features.py} implements the optional
+    descriptor extension.
+\end{itemize}
+
+\subsection{Frozen Artifacts and Result Provenance}
+
+The split artifacts are stored under
+\path{corrosion_datasets/analysis/epit_pipeline/splits_v2/}.
+They include \texttt{split\_manifest.json}, \texttt{split\_lock.json},
+\texttt{split\_assignments.csv}, and \texttt{split\_report.html}. They record
+row assignments and component membership, bind the source and split through
+hashes, and provide inspection outputs with final-test targets redacted.
+
+The reported model is bound by the manifest and lock in
+\begin{quote}
+\small\raggedright
+\path{corrosion_datasets/analysis/epit_pipeline/final_v1/epit_pipeline_optuna_empirical_features_scm_target_v7/}
+\end{quote}
+The \texttt{final\_model\_manifest.json} records Trial~56, its effective
+parameters, the frozen rule distribution, inference configuration, and
+development-checkpoint evaluations. The corresponding
+\texttt{final\_model\_lock.json} binds that manifest to the selected
+step-\(2{,}500\) checkpoint. The checkpoint resides under
+\begin{quote}
+\small\raggedright
+\path{checkpoints/epit_pipeline_final_v1/final_epit_pipeline_optuna_empirical_features_scm_target_v7_trial_0056/step-2500.ckpt}
+\end{quote}
+
+The recorded development-checkpoint results are stored alongside the final
+manifest. The reported final-test comparison can be traced to the
+step-\(2{,}500\) rows in
+\begin{quote}
+\small\raggedright
+\path{corrosion_datasets/analysis/epit_pipeline/trial56_final_test_all_checkpoints_11172/summary.csv}
+\end{quote}
+This comparison output also includes the subsequent all-checkpoint
+diagnostics. Its additional test results are not the checkpoint-selection
+criterion; the selected step and its development score are established by
+the final-model manifest.
+
+\subsection{Implementation Validation}
+
+Validation of the final construction covered the following invariants:
+\begin{itemize}
+    \item empirical compositions are nonnegative, preserve absent elements,
+    and close in the complete \(24\)-element space before projection;
+    \item environmental tuples match stored empirical records, and their
+    sampling is independent of composition-family selection;
+    \item the analytical EPIT rule receives raw physical values;
+    \item the SCM and transformer receive identical standardized physical
+    columns, including zero-valued constant columns at fixed positions;
+    \item the informed branch bypasses generic \texttt{Reg2Cls}
+    preprocessing while generic tasks retain their established path;
+    \item the target equation agrees with an independent calculation for all
+    seven rules at \(\lambda\in\{0,0.37,1\}\);
+    \item end-to-end generation works with both target heads and with
+    \(21\) physical or \(31\) descriptor-augmented model inputs;
+    \item accepted tasks have finite features and nonconstant targets, with
+    final targets approximately centered and population-standardized;
+    \item saved rule scores and coefficients are reconstructed exactly in
+    generated training commands;
+    \item repeated generation with identical NumPy, Torch, and Python seeds
+    reproduces features, targets, and selected rule families; and
+    \item split, rule, study, and model hashes remain consistent throughout
+    calibration, Optuna reconstruction, checkpoint selection, and evaluation.
+\end{itemize}
+
+The recorded implementation validation also included Torch/NumPy rule parity,
+reduced end-to-end training, and repository regression checks. These checks
+support numerical consistency and reproducibility of the documented code
+paths. They do not establish physical validity of every generated task or
+replace the statistical limitations of the final experiment.
+
+\begin{thebibliography}{9}
+\raggedright
+\bibitem{nyby2021electrochemical}
+Nyby et al.
+\textit{Electrochemical metrics for corrosion resistant alloys}.
+Scientific Data (2021).
+\href{https://doi.org/10.1038/s41597-021-00840-y}{doi:10.1038/s41597-021-00840-y}.
+Associated dataset:
+\href{https://figshare.com/articles/dataset/Electrochemical_Metrics_for_Corrosion_Resistant_Alloys/13038257}{Electrochemical Metrics for Corrosion Resistant Alloys, Figshare}.
+\end{thebibliography}
+
+\end{document}

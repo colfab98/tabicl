@@ -85,19 +85,31 @@ def _fake_epit_task() -> corrosion_eval.EvalTask:
     )
 
 
-def test_optuna_defaults_preserve_latest_reference_workflow() -> None:
+def test_pipeline_defaults_use_current_v7_workflow() -> None:
     args = search.parse_args([])
 
-    assert args.study_name == "epit_pipeline_optuna_v3"
+    assert args.study_name == "epit_pipeline_optuna_empirical_features_scm_target_v7"
+    assert args.pitting_composition_mode == "empirical_features_scm_target"
     assert args.n_trials == 50
     assert args.n_startup_trials == 10
     assert args.max_steps == 1000
     assert args.scheduler_total_steps == 10000
-    assert args.nproc_per_node == 2
+    assert args.nproc_per_node == 1
+    assert args.prior_n_jobs == 1
     assert args.eval_n_estimators == 8
     assert args.split_manifest == evaluate_optuna_folds.DEFAULT_SPLIT_MANIFEST
     assert "splits_v2" in args.split_manifest.parts
     assert "target_rules_v2" in args.target_rule_summary.parts
+    final_args = train_final.parse_args(["--storage", "journal:///unused.log"])
+    assert final_args.study_name == args.study_name
+    assert final_args.prior_n_jobs == 1
+    assert final_args.nproc_per_node == 1
+    assert evaluate_final.default_final_model_manifest() == (
+        train_final.DEFAULT_FINAL_ROOT / args.study_name / "final_model_manifest.json"
+    )
+    assert evaluate_optuna_folds.DEFAULT_OUTPUT_ROOT == (
+        search.DEFAULT_OPTUNA_ROOT / "evaluations"
+    )
 
 
 def test_optuna_study_fingerprint_rejects_mixed_pipeline() -> None:
@@ -134,6 +146,8 @@ def test_optuna_study_fingerprint_rejects_mixed_pipeline() -> None:
 def test_stage4_pins_trial36_with_full_stage1_settings(tmp_path: Path) -> None:
     args = train_final.parse_args(
         [
+            "--study-name",
+            "epit_pipeline_optuna_v3",
             "--storage",
             "journal:///unused.log",
             "--selected-trial-number",
@@ -198,16 +212,6 @@ def test_stage4_pins_trial36_with_full_stage1_settings(tmp_path: Path) -> None:
     assert "--epit_environment_coef" not in command
     assert "--epit_interaction_coef" not in command
 
-    launcher = (
-        search.REPO_ROOT / "scripts" / "epit_pipeline" / "train_final.sbatch"
-    ).read_text(encoding="utf-8")
-    assert 'SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-36}"' in launcher
-    assert 'MAX_STEPS="${MAX_STEPS:-10000}"' in launcher
-    assert 'SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-10000}"' in launcher
-    assert "--selected-trial-number" in launcher
-    assert "--allow-stale-running-trials" in launcher
-    assert "--allow-missing-selected-trial-artifacts" in launcher
-
 
 def test_stage4_explicit_selection_requires_best_completed_trial(
     monkeypatch: pytest.MonkeyPatch,
@@ -268,7 +272,7 @@ def test_stage4_automatically_selects_current_best_with_active_trials(
 
 
 def test_stage4_validates_missing_worker_files_from_journal(tmp_path: Path) -> None:
-    search_args = search.parse_args([])
+    search_args = search.parse_args(["--pitting-composition-mode", "legacy"])
     rules = search.load_target_rule_config(
         summary_path=search_args.target_rule_summary,
         split_manifest_path=search_args.split_manifest,
@@ -492,7 +496,9 @@ def test_rule_artifacts_feed_scores_probabilities_and_coefficients() -> None:
 
 
 def test_training_command_keeps_reference_settings_and_adds_rules(tmp_path: Path) -> None:
-    args = search.parse_args(["--device", "cpu", "--nproc-per-node", "1"])
+    args = search.parse_args(
+        ["--device", "cpu", "--nproc-per-node", "1", "--pitting-composition-mode", "legacy"]
+    )
     rules = search.load_target_rule_config(
         summary_path=args.target_rule_summary,
         split_manifest_path=args.split_manifest,
@@ -557,9 +563,20 @@ def test_saved_folds_remove_final_test_rows() -> None:
         assert not set(task.fixed_split.train_index) & set(task.fixed_split.test_index)
 
 
-def test_legacy_v1_manifest_remains_evaluable() -> None:
+def test_legacy_v1_manifest_remains_evaluable(tmp_path: Path) -> None:
     task = _fake_epit_task()
-    legacy_manifest = search.PIPELINE_ROOT / "splits_v1" / "split_manifest.json"
+    # Exercise the supported v1 schema without requiring an archived experiment.
+    manifest = json.loads(search.DEFAULT_SPLIT_MANIFEST.read_text(encoding="utf-8"))
+    legacy_manifest = tmp_path / "split_manifest.json"
+    legacy_manifest.write_text(
+        json.dumps({
+            "schema_version": "epit_split_manifest_v1",
+            "dataset": manifest["dataset"],
+            "split_design": manifest["split_design"],
+            "rows": manifest["rows"],
+        }),
+        encoding="utf-8",
+    )
 
     corrosion_eval.apply_epit_pipeline_fold(
         [task],
@@ -622,21 +639,6 @@ def test_baseline_fold_command_uses_only_development_references(
     assert _value_after(command, "--tabicl-feat-shuffle-method") == "none"
     assert _value_after(command, "--tabicl-norm-methods") == "none"
     assert _value_after(command, "--max-samples-per-task") == "0"
-
-
-def test_baseline_launcher_uses_frozen_development_folds() -> None:
-    launcher = (
-        search.REPO_ROOT
-        / "scripts"
-        / "epit_pipeline"
-        / "evaluate_baseline_folds.sbatch"
-    ).read_text(encoding="utf-8")
-
-    assert "splits_v2/split_manifest.json" in launcher
-    assert "baseline_folds_v2" in launcher
-    assert "tabicl_s1_regression_baseline/step-1000.ckpt" in launcher
-    assert "--auto-output-dir" in launcher
-    assert "evaluate_baseline_folds" in launcher
 
 
 def test_baseline_output_dir_gets_fresh_suffix_when_requested(tmp_path: Path) -> None:

@@ -20,10 +20,10 @@ python scripts/plot_loss_from_err.py ~/tmp/tabicl_s1mini_generic_v4.6540.err --o
 
 
 sbatch \
-  --export=ALL,STUDY_NAME=pitting_prior_search_pitting_target_v2,N_TRIALS=50,STORAGE=journal:///home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna/pitting_prior_search_pitting_target_v2/study_journal_v1.log \
-  scripts/optuna_pitting_prior_search.sbatch
+  --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v7,N_TRIALS=50,STORAGE=journal:///home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna/epit_pipeline_optuna_empirical_features_scm_target_v7/study_journal_v1.log \
+  scripts/epit_pipeline/run_optuna.sbatch
   
-optuna-dashboard /home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna/pitting_prior_search_pitting_target_v2/study_journal_v1.log \
+optuna-dashboard /home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna/epit_pipeline_optuna_empirical_features_scm_target_v7/study_journal_v1.log \
   --storage-class JournalFileStorage \
   --host 127.0.0.1 \
   --port 8080

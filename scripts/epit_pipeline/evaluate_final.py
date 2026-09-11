@@ -43,7 +43,7 @@ REQUIRED_FINAL_METRICS = (
 def default_final_model_manifest() -> Path:
     return (
         DEFAULT_FINAL_ROOT
-        / search.slugify("epit_pipeline_optuna_v3")
+        / search.slugify(search.DEFAULT_STUDY_NAME)
         / FINAL_MODEL_MANIFEST_NAME
     )
 

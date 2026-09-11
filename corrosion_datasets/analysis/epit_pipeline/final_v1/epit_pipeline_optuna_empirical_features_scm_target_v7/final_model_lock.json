@@ -1,0 +1,14 @@
+{
+  "frozen_utc": "2026-09-01T01:05:58.076158+00:00",
+  "immutable_artifacts": {
+    "selected_checkpoint": {
+      "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v1/final_epit_pipeline_optuna_empirical_features_scm_target_v7_trial_0056/step-2500.ckpt",
+      "sha256": "c5abec140b33418ce2172a38bb3c875d964180046a0cfdaf3a67b5ab5dd22bfe"
+    }
+  },
+  "manifest": {
+    "file": "final_model_manifest.json",
+    "sha256": "7eba237baadfb0983043977626965dbd44736a8a135bc3b1d6bb33b4a3b9faa6"
+  },
+  "schema_version": "epit_final_model_lock_v1"
+}

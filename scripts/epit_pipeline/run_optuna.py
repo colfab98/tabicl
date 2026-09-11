@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Stage 3: run the original Magpie Optuna workflow on fixed EPIT folds."""
+"""Stage 3: search CorrPFN prior configurations on fixed EPIT development folds."""
 
 from __future__ import annotations
 
@@ -49,6 +49,7 @@ DEFAULT_TARGET_RULE_SUMMARY = (
     PIPELINE_ROOT / "target_rules_v2" / "calibration_summary.json"
 )
 DEFAULT_OPTUNA_ROOT = PIPELINE_ROOT / "optuna_v2"
+DEFAULT_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v7"
 FIXED_VALIDATION_FOLDS = (1, 2, 3, 4, 5)
 PIPELINE_FINGERPRINT_SCHEMA = "epit_pipeline_stage3_fingerprint_v2"
 STUDY_FINGERPRINT_ATTR = "epit_pipeline_fingerprint"
@@ -361,11 +362,11 @@ def bind_study_pipeline_fingerprint(
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=("optuna", "random"), default="optuna")
-    parser.add_argument("--study-name", default="epit_pipeline_optuna_v3")
+    parser.add_argument("--study-name", default=DEFAULT_STUDY_NAME)
     parser.add_argument(
         "--pitting-composition-mode",
         choices=PITTING_COMPOSITION_MODES,
-        default="legacy",
+        default="empirical_features_scm_target",
         help="Fixed informed composition mode for this versioned study.",
     )
     parser.add_argument("--storage", default=None)
@@ -399,12 +400,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=DEFAULT_OPTUNA_ROOT / "evaluations",
     )
     parser.add_argument("--device", default="cuda")
-    parser.add_argument("--nproc-per-node", type=int, default=2)
+    parser.add_argument("--nproc-per-node", type=int, default=1)
     parser.add_argument("--max-steps", type=int, default=1000)
     parser.add_argument("--scheduler-total-steps", type=int, default=10000)
     parser.add_argument("--np-seed", type=int, default=42)
     parser.add_argument("--torch-seed", type=int, default=42)
-    parser.add_argument("--prior-n-jobs", type=int, default=8)
+    parser.add_argument("--prior-n-jobs", type=int, default=1)
     parser.add_argument("--dataloader-num-workers", type=int, default=4)
     parser.add_argument("--dataloader-prefetch-factor", type=int, default=4)
     parser.add_argument("--eval-n-estimators", type=int, default=8)
