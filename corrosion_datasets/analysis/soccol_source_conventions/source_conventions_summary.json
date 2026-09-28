@@ -1,0 +1,58 @@
+{
+  "generated_from": "corrosion_datasets/datasets/soccol_pitting_potential/raw/Pitting_potential_dataset_2024.xlsx",
+  "sources": 154,
+  "samples": 4460,
+  "review_status_sources": {
+    "keep_separate_non_Fe_family": 1,
+    "repair_required": 1,
+    "split_or_filter_material_families": 4,
+    "usable_Fe_based": 131,
+    "usable_with_composition_caveat": 14,
+    "usable_with_material_taxonomy_caveat": 3
+  },
+  "review_status_samples": {
+    "keep_separate_non_Fe_family": 92,
+    "repair_required": 24,
+    "split_or_filter_material_families": 169,
+    "usable_Fe_based": 3706,
+    "usable_with_composition_caveat": 265,
+    "usable_with_material_taxonomy_caveat": 204
+  },
+  "stainless_scope_sources": {
+    "borderline_related_alloy_not_conventional_stainless": 1,
+    "mixed": 4,
+    "no": 1,
+    "yes": 140,
+    "yes_model_alloys": 5,
+    "yes_with_borderline_high_alloy_grades": 2,
+    "yes_with_high_nickel_variants": 1
+  },
+  "stainless_scope_samples": {
+    "borderline_related_alloy_not_conventional_stainless": 64,
+    "mixed": 169,
+    "no": 92,
+    "yes": 3876,
+    "yes_model_alloys": 103,
+    "yes_with_borderline_high_alloy_grades": 140,
+    "yes_with_high_nickel_variants": 16
+  },
+  "mixed_family_sources": [
+    "1968Horvath",
+    "1988Roberge",
+    "1991Cortest",
+    "1994Carroll"
+  ],
+  "non_Fe_sources": [
+    "2009Wong"
+  ],
+  "repair_required_sources": [
+    "2000Russell"
+  ],
+  "global_conventions": {
+    "composition": "wt%; certificate or standard; blanks missing/unreported",
+    "target": "breakdown potential Ebr in mV vs Ag/AgCl (3 M KCl)",
+    "event": "1 actual pitting; 0 competing breakdown/right censored",
+    "raw_environment": "anion concentrations in M; log10/floor were paper-model preprocessing",
+    "row_identity": "reported measurement/condition; rows within source are dependent"
+  }
+}

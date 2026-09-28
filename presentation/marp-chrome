@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+exec /home/fcolanto/.cache/marp-browser/chrome-headless-shell/linux-151.0.7922.47/chrome-headless-shell-linux64/chrome-headless-shell --no-sandbox "$@"

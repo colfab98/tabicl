@@ -1,0 +1,250 @@
+{
+  "schema": "target_variation_diagnostic_v1",
+  "created_utc": "20260925T160755_387637Z",
+  "arguments": {
+    "manifest": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/final_v1/epit_pipeline_optuna_empirical_features_scm_target_v7/final_model_manifest.json",
+    "target_rule_summary": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/target_rules_v2/calibration_summary.json",
+    "split_manifest": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json",
+    "output_dir": null,
+    "tables_per_cell": 8,
+    "draws": 10,
+    "variations": [
+      0.0,
+      0.1,
+      0.2,
+      0.3
+    ],
+    "seed": 42,
+    "seq_len": null,
+    "max_attempts": 100
+  },
+  "output_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/target_variation/run_20260925T160755_387637Z",
+  "seq_len": 1024,
+  "fixed_hp": {
+    "mix_probs": [
+      0.7,
+      0.3
+    ],
+    "informed_mix_probs": [
+      0.5,
+      0.5
+    ],
+    "informed_task_family_probs": [
+      1.0,
+      0.0
+    ],
+    "informed_normal_block_allocation": [
+      17.0,
+      3.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "informed_normal_block_allocation_ranges": null,
+    "informed_normal_block_allocation_min_counts": [
+      17,
+      3,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "informed_inhibitor_block_allocation": [
+      0.05,
+      0.08,
+      0.02,
+      0.02,
+      0.0,
+      0.05,
+      0.78,
+      0.0,
+      0.0
+    ],
+    "informed_inhibitor_block_allocation_ranges": null,
+    "informed_inhibitor_block_allocation_min_counts": null,
+    "informed_feature_block_strength": 0.0,
+    "informed_interaction_strength": 0.35,
+    "informed_target_mix_weight": 0.204826404,
+    "informed_history_strength": 0.0,
+    "informed_intervention_strength": 0.0,
+    "informed_target_family": "pitting_potential",
+    "informed_physical_marginal_prob": 1.0,
+    "informed_physical_marginal_profile": "pitting_potential_v1",
+    "epit_material_coef": 0.575,
+    "epit_environment_coef": 0.5,
+    "epit_interaction_coef": 0.775,
+    "pitting_material_dirichlet_prob": 0.0,
+    "pitting_material_dirichlet_concentration": 1.0,
+    "pitting_material_dirichlet_active_prob": 0.45,
+    "pitting_composition_mode": "empirical_features_scm_target",
+    "pitting_composition_profile": "epit_dataset_v1",
+    "pitting_feature_profile": "epit_fe_nicrmo_features_v1",
+    "pitting_composition_family_probs": [
+      0.7394540943,
+      0.1389578164,
+      0.04714640199,
+      0.04218362283,
+      0.03225806452
+    ],
+    "pitting_composition_perturb_strength": 0.1028145075,
+    "pitting_material_latent_count": 2,
+    "pitting_process_role": "test_method_category",
+    "pitting_process_category_count": 52,
+    "pitting_fixed_epit_schema": true,
+    "pitting_target_rule_scores": [
+      "pren_linear=0.5173957909247695",
+      "cr_mow_synergy=0.5582635753159582",
+      "threshold_saturation=0.518068026848147",
+      "improved_environment=0.5850467977714929",
+      "coupled_breakdown=0.5524590763079118",
+      "fe_ni_cr_threshold=0.525244351325761",
+      "method_aware=0.5998946040758614"
+    ],
+    "pitting_target_rule_coefficients": [
+      "pren_linear.environment_aggressiveness=0.401299938336423",
+      "pren_linear.material_chloride_interaction=0.04272022577515931",
+      "pren_linear.material_passivity=0.5559798358884177",
+      "cr_mow_synergy.environment_aggressiveness=0.07104322463544993",
+      "cr_mow_synergy.material_chloride_interaction=0.20715501984839696",
+      "cr_mow_synergy.material_passivity=0.4331301963066418",
+      "cr_mow_synergy.temperature_chloride_interaction=0.28867155920951126",
+      "threshold_saturation.environment_aggressiveness=0.11387352655234903",
+      "threshold_saturation.material_chloride_interaction=0.19604080271123986",
+      "threshold_saturation.material_passivity=0.4185554036373855",
+      "threshold_saturation.temperature_chloride_interaction=0.27153026709902567",
+      "improved_environment.acidic_ph_aggressiveness=0.0",
+      "improved_environment.high_temperature_aggressiveness=0.07983148105803244",
+      "improved_environment.log_chloride_aggressiveness=0.24143842415320108",
+      "improved_environment.material_passivity=0.5394047306245447",
+      "improved_environment.temperature_chloride_interaction=0.13932536416422184",
+      "coupled_breakdown.acidic_ph_aggressiveness=0.06731814260336669",
+      "coupled_breakdown.coupled_environment_breakdown=0.5061946205060569",
+      "coupled_breakdown.material_passivity=0.4264872368905764",
+      "fe_ni_cr_threshold.acidic_ph_aggressiveness=0.0",
+      "fe_ni_cr_threshold.high_temperature_aggressiveness=0.10578615837324422",
+      "fe_ni_cr_threshold.log_chloride_aggressiveness=0.2721036452352813",
+      "fe_ni_cr_threshold.material_passivity=0.5233150233973575",
+      "fe_ni_cr_threshold.temperature_chloride_interaction=0.09879517299411691",
+      "method_aware.environment_aggressiveness=0.0",
+      "method_aware.material_chloride_interaction=0.31241264432052585",
+      "method_aware.material_passivity=0.30507228713044593",
+      "method_aware.temperature_chloride_interaction=0.20985961333296332",
+      "method_aware.test_method_correction=0.17265545521606493"
+    ],
+    "pitting_magpie_features": false,
+    "inhibitor_descriptor_coef": 0.65,
+    "inhibitor_context_coef": 0.14,
+    "inhibitor_environment_interaction_coef": 0.365,
+    "inhibitor_material_interaction_coef": 0.24,
+    "inhibitor_intervention_coef": 0.375,
+    "inhibitor_descriptor_coef_scale": 1.0,
+    "inhibitor_context_coef_scale": 1.0,
+    "inhibitor_environment_interaction_coef_scale": 1.0,
+    "inhibitor_material_interaction_coef_scale": 1.0,
+    "inhibitor_intervention_coef_scale": 1.0,
+    "tree_model": "xgboost",
+    "tree_depth_lambda": 0.5,
+    "tree_n_estimators_lambda": 0.5,
+    "balanced": false,
+    "multiclass_ordered_prob": 0.0,
+    "cat_prob": 0.0,
+    "max_categories": "inf",
+    "scale_by_max_features": false,
+    "permute_features": false,
+    "permute_labels": true
+  },
+  "coefficient_upper_bounds": {
+    "pren_linear": {
+      "material_passivity": 1.0,
+      "environment_aggressiveness": 1.0,
+      "material_chloride_interaction": 1.0
+    },
+    "cr_mow_synergy": {
+      "material_passivity": 1.0,
+      "environment_aggressiveness": 1.0,
+      "material_chloride_interaction": 1.0,
+      "temperature_chloride_interaction": 1.0
+    },
+    "threshold_saturation": {
+      "material_passivity": 1.0,
+      "environment_aggressiveness": 1.0,
+      "material_chloride_interaction": 1.0,
+      "temperature_chloride_interaction": 1.0
+    },
+    "improved_environment": {
+      "acidic_ph_aggressiveness": 0.15,
+      "high_temperature_aggressiveness": 0.45,
+      "log_chloride_aggressiveness": 0.65,
+      "material_passivity": 1.0,
+      "temperature_chloride_interaction": 0.45
+    },
+    "coupled_breakdown": {
+      "acidic_ph_aggressiveness": 0.15,
+      "coupled_environment_breakdown": 0.8,
+      "material_passivity": 1.0
+    },
+    "fe_ni_cr_threshold": {
+      "acidic_ph_aggressiveness": 0.15,
+      "high_temperature_aggressiveness": 0.45,
+      "log_chloride_aggressiveness": 0.65,
+      "material_passivity": 1.0,
+      "temperature_chloride_interaction": 0.45
+    },
+    "method_aware": {
+      "environment_aggressiveness": 1.0,
+      "material_chloride_interaction": 1.0,
+      "material_passivity": 1.0,
+      "temperature_chloride_interaction": 1.0,
+      "test_method_correction": 0.25
+    }
+  },
+  "manifest_sha256": "7eba237baadfb0983043977626965dbd44736a8a135bc3b1d6bb33b4a3b9faa6",
+  "rule_summary_sha256": "ecf1cccee7e29caf5322fa268bea490493af551971dcb1488424fb7d7a1b9712",
+  "rule_artifact_sha256s": {
+    "pren_linear": "7d089073a80cb0cf7958910fa5a6bc82c4f2586e97de9f95e62f6e7e3332b2d9",
+    "cr_mow_synergy": "9b152c5a2c7bdad0d132cbd122b818ff8573fbaad930c69c29f7ae451df42c4e",
+    "threshold_saturation": "641c8b72c20410c0267c9b9365d0dfa34ea5b3f7c881131e3e93da399af9312c",
+    "improved_environment": "5aada13f3426aaa31491972c726fefb3fbf7a3507e329120965d84443d888bd4",
+    "coupled_breakdown": "6d287c012a241c06a79aaeb07a35b8ef393662248b4965e84e4466ae82eac512",
+    "fe_ni_cr_threshold": "66cef7d9d7ab01107536e2550f5893e7317c139bb20bdbdb3fafd059d01353c7",
+    "method_aware": "5294a56ce3760ca162b6cb83b782d32c3a6567441f84715aca29b6f8a05d5b6e"
+  },
+  "source_sha256s": {
+    "src/tabicl/prior/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/tabicl/prior/activations.py": "46002136cd7a19e9bec432b6e931f66cdf5f824a15ca9a557aa8df70462b823f",
+    "src/tabicl/prior/dataset.py": "fc7dd620c506430c2161b74f07ba8c089ce5e42cd6056eef6b0ed3f2b78b1c9a",
+    "src/tabicl/prior/epit_composition_profile.py": "3b72d4c6e8e81b7f7ced4617c47981b0a0bf0a1551552aae236d510e818930ff",
+    "src/tabicl/prior/epit_feature_generator.py": "002c1cf259aa8b5d7325273a3091db7fb08dbe8bb19d0b46f603361462b158bf",
+    "src/tabicl/prior/epit_feature_profile.py": "8e978e0a5c52f7ca9d93d52f96fa3988464d5e08104647e9773183a3e62f0147",
+    "src/tabicl/prior/genload.py": "a24c88516dc46b81ec5441d2e7279ce60f3444f3ba8d66984ae84b176e05cf9b",
+    "src/tabicl/prior/hp_sampling.py": "aa9496c140ee2219bb54665dda39eaa6a543d680fc64bfe6925aa2bc4f43dee1",
+    "src/tabicl/prior/magpie_features.py": "74952a194b124b7672755bb92e14264918589145c36a345b2a80cf95c3fae827",
+    "src/tabicl/prior/mlp_scm.py": "3ca5716a5fcb05051e5a94986f1b7ae7672e203a64b5d317609c03373cf8afcf",
+    "src/tabicl/prior/prior_config.py": "e636fe4a4a7c7800b0aa40fc155e039ef6c1503ca4f85f0f0ce82c18671052ec",
+    "src/tabicl/prior/reg2cls.py": "4e50cfabfc3d973433d61837d14b313ebcf39b63b2e6a76428c5251bbab270e5",
+    "src/tabicl/prior/target_variation.py": "9a5c0001606340deb736158f9dee1682a7b131a5686a29dadbd213997ce253d6",
+    "src/tabicl/prior/tree_scm.py": "c22de01f884a0ad75979869985401dbcd7b6948bbb4cbf6e0b0f63041a6fd466",
+    "src/tabicl/prior/utils.py": "71480ae62ce9ca2ace2fbe166cce9071e27ec5a6d8765488b03f002330a1af8b",
+    "scripts/epit_pipeline/diagnose_target_variation.py": "3d54b3d3c11ee0f8d018146269941c2b19388fd713ec022645c68d19cd2150e1",
+    "src/tabicl/train/train_config.py": "ac1cd9bb60c23f0104490cda3d3b0d1d83be9a7f96869ec54bc5f2931e9a8dee",
+    "scripts/epit_pipeline/run_optuna.py": "59be8f66d0a6d1b14db78714f7faa3abb23a1bd97980692bb96d4a3bd63df0f0",
+    "scripts/epit_pipeline/artifact_hashes.py": "e3fd7e4993e6950770c6a031555a36fa30e0854da4a1228a76923a553d97ce25"
+  },
+  "versions": {
+    "python": "3.12.3",
+    "numpy": "2.4.4",
+    "torch": "2.11.0+cu130",
+    "scipy": "1.17.1"
+  },
+  "git_commit": "0144043d7336a8416a3edb45ef83f4147fb82a57",
+  "git_status": " M main3.tex\n?? corrosion_datasets/analysis/epit_pipeline/target_variation/\n?? main4.tex\n?? mainpres.tex\n?? presentation/\n?? resources_pres/\n?? scripts/epit_pipeline/diagnose_target_variation.py\n?? src/tabicl/prior/target_variation.py\n?? tests/test_target_variation.py\n",
+  "design": "balanced family/SCM cells; independent base-task seeds; separate coefficient RNG; context size = half the table",
+  "scope": "generator diagnostic only; no Optuna or model training; no real target labels read"
+}

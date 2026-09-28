@@ -1,0 +1,146 @@
+{
+  "created": "2026-08-18T02:03:10.820229+00:00",
+  "modified": "2026-08-19T04:09:09.775996+00:00",
+  "id": 21987599,
+  "conceptrecid": "21987598",
+  "doi": "10.5281/zenodo.21987599",
+  "conceptdoi": "10.5281/zenodo.21987598",
+  "doi_url": "https://doi.org/10.5281/zenodo.21987599",
+  "metadata": {
+    "title": "A comprehensive dataset of chloride thresholds and electrochemical parameters for steel rebar corrosion in cementitious environments",
+    "doi": "10.5281/zenodo.21987599",
+    "publication_date": "2026-08-18",
+    "description": "<p>This dataset is a centralized, comprehensive collection of chloride threshold values and electrochemical parameters for steel rebar corrosion in cementitious environments, compiled from peer-reviewed published literature and experimental datasets. The dataset includes steel and cementitious-material information, simulated concrete pore-solution composition, CT values, corrosion potential (E<sub>cp</sub>), pitting potential (E<sub>b</sub>), pH, exposure conditions, and associated source information.</p>",
+    "access_right": "open",
+    "creators": [
+      {
+        "name": "Hou, Xiaofan",
+        "affiliation": null
+      },
+      {
+        "name": "Zhang, Lu",
+        "affiliation": null
+      },
+      {
+        "name": "Jiang, Yingyang",
+        "affiliation": null
+      },
+      {
+        "name": "Yan, Zhenghao",
+        "affiliation": null
+      },
+      {
+        "name": "Yan, Cong",
+        "affiliation": null
+      },
+      {
+        "name": "Xie, Yi",
+        "affiliation": null
+      },
+      {
+        "name": "Zhu, Yakun",
+        "affiliation": null
+      },
+      {
+        "name": "Wang, Luning",
+        "affiliation": null
+      }
+    ],
+    "resource_type": {
+      "title": "Dataset",
+      "type": "dataset"
+    },
+    "license": {
+      "id": "cc-by-4.0"
+    },
+    "relations": {
+      "version": [
+        {
+          "index": 0,
+          "is_last": true,
+          "parent": {
+            "pid_type": "recid",
+            "pid_value": "21987598"
+          }
+        }
+      ]
+    }
+  },
+  "title": "A comprehensive dataset of chloride thresholds and electrochemical parameters for steel rebar corrosion in cementitious environments",
+  "links": {
+    "self": "https://zenodo.org/api/records/21987599",
+    "self_html": "https://zenodo.org/records/21987599",
+    "preview_html": "https://zenodo.org/records/21987599?preview=1",
+    "doi": "https://doi.org/10.5281/zenodo.21987599",
+    "self_doi": "https://doi.org/10.5281/zenodo.21987599",
+    "self_doi_html": "https://zenodo.org/doi/10.5281/zenodo.21987599",
+    "reserve_doi": "https://zenodo.org/api/records/21987599/draft/pids/doi",
+    "parent": "https://zenodo.org/api/records/21987598",
+    "parent_html": "https://zenodo.org/records/21987598",
+    "parent_doi": "https://doi.org/10.5281/zenodo.21987598",
+    "parent_doi_html": "https://zenodo.org/doi/10.5281/zenodo.21987598",
+    "self_iiif_manifest": "https://zenodo.org/api/iiif/record:21987599/manifest",
+    "self_iiif_sequence": "https://zenodo.org/api/iiif/record:21987599/sequence/default",
+    "files": "https://zenodo.org/api/records/21987599/files",
+    "media_files": "https://zenodo.org/api/records/21987599/media-files",
+    "archive": "https://zenodo.org/api/records/21987599/files-archive",
+    "archive_media": "https://zenodo.org/api/records/21987599/media-files-archive",
+    "latest": "https://zenodo.org/api/records/21987599/versions/latest",
+    "latest_html": "https://zenodo.org/records/21987599/latest",
+    "versions": "https://zenodo.org/api/records/21987599/versions",
+    "draft": "https://zenodo.org/api/records/21987599/draft",
+    "access_links": "https://zenodo.org/api/records/21987599/access/links",
+    "access_grants": "https://zenodo.org/api/records/21987599/access/grants",
+    "access_users": "https://zenodo.org/api/records/21987599/access/users",
+    "access_request": "https://zenodo.org/api/records/21987599/access/request",
+    "access": "https://zenodo.org/api/records/21987599/access",
+    "communities": "https://zenodo.org/api/records/21987599/communities",
+    "communities-suggestions": "https://zenodo.org/api/records/21987599/communities-suggestions",
+    "request_deletion": "https://zenodo.org/api/records/21987599/request-deletion",
+    "file_modification": "https://zenodo.org/api/records/21987599/file-modification",
+    "quota_increase": "https://zenodo.org/api/records/21987599/quota-increase",
+    "requests": "https://zenodo.org/api/records/21987599/requests"
+  },
+  "updated": "2026-08-19T04:09:09.775996+00:00",
+  "recid": "21987599",
+  "revision": 6,
+  "files": [
+    {
+      "id": "9fe375bc-6e29-4d3f-954d-7a2473eac790",
+      "key": "A comprehensive dataset of chloride thresholds and electrochemical parameters for steel rebar corrosion in cementitious environments.xlsx",
+      "size": 1502832,
+      "checksum": "md5:9a1741d0e65c1b4e37bb61fdc7b69699",
+      "links": {
+        "self": "https://zenodo.org/api/records/21987599/files/A%20comprehensive%20dataset%20of%20chloride%20thresholds%20and%20electrochemical%20parameters%20for%20steel%20rebar%20corrosion%20in%20cementitious%20environments.xlsx/content"
+      }
+    },
+    {
+      "id": "6b31a0bc-15a9-4053-93fc-4c03ad9cad46",
+      "key": "Usage Notes.docx",
+      "size": 14796,
+      "checksum": "md5:082938d8947b00ecadb186df1ca780c8",
+      "links": {
+        "self": "https://zenodo.org/api/records/21987599/files/Usage%20Notes.docx/content"
+      }
+    }
+  ],
+  "swh": {},
+  "owners": [
+    {
+      "id": "1816082"
+    }
+  ],
+  "status": "published",
+  "stats": {
+    "downloads": 27,
+    "unique_downloads": 27,
+    "views": 27,
+    "unique_views": 18,
+    "version_downloads": 27,
+    "version_unique_downloads": 27,
+    "version_unique_views": 18,
+    "version_views": 27
+  },
+  "state": "done",
+  "submitted": true
+}

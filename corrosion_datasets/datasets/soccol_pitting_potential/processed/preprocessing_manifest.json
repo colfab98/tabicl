@@ -1,0 +1,59 @@
+{
+  "version": "soccol_benchmark_v1",
+  "input_workbook": "corrosion_datasets/datasets/soccol_pitting_potential/raw/Pitting_potential_dataset_2024.xlsx",
+  "input_sha256": "cb255c5a94d90bd207248f6e25727f965d587c29a73b2ffcef6b8c0ced6da1da",
+  "source_registry": "corrosion_datasets/analysis/soccol_source_conventions/source_conventions.csv",
+  "source_registry_sha256": "4de749294c24c9a5e442c23adcd660fe0cf9e5667e1c29c86a62c2ecff5298cb",
+  "generator": "corrosion_datasets/datasets/soccol_pitting_potential/prepare_benchmark.py",
+  "generator_sha256": "25ddf15cabb69fbab4986ff008df031b13edc28bf658c77b622ff0beb11a7cce",
+  "transformations": {
+    "2000Russell_Ti": "24 PRE values removed, then zero-filled with Ti_missing=1",
+    "composition": "C,N,Si,P,S,Ti,V,Cr,Mn,Ni,Nb,Mo blanks zero-filled with per-element missingness indicators",
+    "Fe": "approximate remainder only where the row-level material rule and reported major composition support it; otherwise Fe=0 with Fe_missing=1",
+    "material": "row-level family and include/exclude/review flags added; no rows removed by material family",
+    "environment": "left in raw units with blanks preserved"
+  },
+  "targets": {
+    "all_rows": 4460,
+    "uncensored_regression_event1": 4027,
+    "censor_aware_defined_event": 4384
+  },
+  "material_family_rows": {
+    "Fe_Ni_Cr_alloy_800": 66,
+    "fe_based_high_alloy_taxonomy_caveat": 140,
+    "fe_based_model_alloy": 95,
+    "fe_based_stainless": 4044,
+    "high_Ni_Cr_Fe_uncertain": 1,
+    "ni_based_20Cr80Ni_model": 10,
+    "ni_based_G3": 10,
+    "ni_based_alloy_600": 2,
+    "ni_based_model_alloy": 92
+  },
+  "material_scope_rows": {
+    "exclude": 114,
+    "include": 4139,
+    "review": 207
+  },
+  "outputs": {
+    "soccol_processed_all_rows.csv": {
+      "role": "all processed rows",
+      "size_bytes": 1668492,
+      "sha256": "e7265e12068239b181a16abc3bfe2b8ca837815bd0ff079accbaaad337d61ff4"
+    },
+    "soccol_regression_event1.csv": {
+      "role": "numeric event=1 regression rows",
+      "size_bytes": 1508579,
+      "sha256": "280f8ff3f89c5d47b22f46a483b9a67eb612a9cbbe0a3394685a0e3da3a0200c"
+    },
+    "soccol_breakdown_survival.csv": {
+      "role": "numeric target with event in {0,1}",
+      "size_bytes": 1643890,
+      "sha256": "d5f9154f4475ec41c31f277273004d7250b8216fff55591b9c7f4aebe2fad744"
+    },
+    "feature_manifest.json": {
+      "role": "feature and target roles",
+      "size_bytes": 2986,
+      "sha256": "9c17c9f5e9d546dc2be588e98241f3557ab90954577be2429c7c0eaf63e88dbb"
+    }
+  }
+}

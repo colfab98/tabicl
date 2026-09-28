@@ -1,0 +1,170 @@
+{
+  "github_commit": "50f2df0918116e12026f8ea18c32704a5f6822e5",
+  "soccol": {
+    "all": {
+      "rows": 4460,
+      "source_identifiers": 154,
+      "distinct_labels": 4448,
+      "distinct_reported_compositions_including_missingness": 530,
+      "exact_duplicate_rows_beyond_first": 0
+    },
+    "columns": [
+      "label",
+      "source",
+      "ID",
+      "alloy_designation",
+      "C",
+      "N",
+      "Si",
+      "P",
+      "S",
+      "Ti",
+      "V",
+      "Cr",
+      "Mn",
+      "Ni",
+      "Nb",
+      "Mo",
+      "Prep_grinding_grit",
+      "Prep_Ra_micron",
+      "Prep_medium",
+      "Prep_pH",
+      "Prep_redox",
+      "Prep_time",
+      "CP_time",
+      "CP_aeration",
+      "CP_agitation",
+      "CP_temp",
+      "CP_pH",
+      "CP_Cl",
+      "CP_Br",
+      "CP_OH",
+      "CP_SO4",
+      "CP_CO3",
+      "CP_NO3",
+      "CP_PO4",
+      "CP_MoO4",
+      "CP_CrO4",
+      "CP_ion_other",
+      "CP_anions_info",
+      "Test_area_cm2",
+      "scan_rate",
+      "E_corr",
+      "E_pit",
+      "event"
+    ],
+    "numeric_E_pit": 4408,
+    "observed_numeric": {
+      "rows": 4027,
+      "source_identifiers": 152,
+      "distinct_labels": 4015,
+      "distinct_reported_compositions_including_missingness": 491,
+      "exact_duplicate_rows_beyond_first": 0
+    },
+    "censored_event_0": 398,
+    "censored_numeric": 357,
+    "unknown_event": 33,
+    "unknown_event_numeric": 24,
+    "observed_missing_target": 2,
+    "reference_rows": 154,
+    "reference_rows_missing_doi": 20,
+    "overlap": {
+      "all_nyby": {
+        "shared_source_identifiers": 44,
+        "shared_distinct_dois": 43,
+        "shared_all_rows": 664,
+        "shared_observed_numeric_rows": 632,
+        "remaining_observed_numeric": {
+          "rows": 3395,
+          "source_identifiers": 108,
+          "distinct_labels": 3383,
+          "distinct_reported_compositions_including_missingness": 238,
+          "exact_duplicate_rows_beyond_first": 0
+        },
+        "remaining_observed_numeric_with_doi": {
+          "rows": 2724,
+          "source_identifiers": 89,
+          "distinct_labels": 2715,
+          "distinct_reported_compositions_including_missingness": 152,
+          "exact_duplicate_rows_beyond_first": 0
+        }
+      },
+      "pitting_nyby": {
+        "shared_source_identifiers": 43,
+        "shared_distinct_dois": 42,
+        "shared_all_rows": 645,
+        "shared_observed_numeric_rows": 613,
+        "remaining_observed_numeric": {
+          "rows": 3414,
+          "source_identifiers": 109,
+          "distinct_labels": 3402,
+          "distinct_reported_compositions_including_missingness": 257,
+          "exact_duplicate_rows_beyond_first": 0
+        },
+        "remaining_observed_numeric_with_doi": {
+          "rows": 2743,
+          "source_identifiers": 90,
+          "distinct_labels": 2734,
+          "distinct_reported_compositions_including_missingness": 171,
+          "exact_duplicate_rows_beyond_first": 0
+        }
+      }
+    },
+    "manual_bibliographic_matches": {
+      "1991Azuma": 16,
+      "1986Jargelius": 42,
+      "2009Wong": 44
+    },
+    "additional_observed_rows_excluded_by_bibliographic_match": 71,
+    "after_all_known_source_exclusions": {
+      "rows": 3324,
+      "source_identifiers": 105,
+      "distinct_labels": 3312,
+      "distinct_reported_compositions_including_missingness": 209,
+      "exact_duplicate_rows_beyond_first": 0
+    },
+    "remaining_without_doi": {
+      "rows": 600,
+      "source_identifiers": 16,
+      "distinct_labels": 597,
+      "distinct_reported_compositions_including_missingness": 62,
+      "exact_duplicate_rows_beyond_first": 0
+    }
+  },
+  "mpea": {
+    "raw_rows": 619,
+    "numeric_E_pit": 335,
+    "numeric_E_pit_in_NaCl": 226,
+    "source_strings_among_numeric": 73,
+    "numeric_E_pit_matching_nyby_doi": 22,
+    "numeric_E_pit_after_known_source_exclusion": 313,
+    "paper_reports_E_pit_rows": 306,
+    "note": "Public workbook count differs from the ML paper; preprocessing/version difference unresolved."
+  },
+  "rebar": [
+    {
+      "sheet": "Carbon steel 1",
+      "parsed_rows": 1390,
+      "target": "Epit/Vsce, V",
+      "numeric_target_rows": 95
+    },
+    {
+      "sheet": "Carbon steel 2",
+      "parsed_rows": 2414,
+      "target": "Expt Eb/Vsce, V",
+      "numeric_target_rows": 188
+    },
+    {
+      "sheet": "Stainless steel 1",
+      "parsed_rows": 112,
+      "target": "Eb/Vsce, V",
+      "numeric_target_rows": 19
+    },
+    {
+      "sheet": "Stainless steel 2",
+      "parsed_rows": 121,
+      "target": "Expt Eb/Vsce, V",
+      "numeric_target_rows": 49
+    }
+  ]
+}

@@ -38,6 +38,7 @@ from .tree_scm import TreeSCM
 from .hp_sampling import HpSamplerList
 from .reg2cls import Reg2Cls
 from .prior_config import DEFAULT_FIXED_HP, DEFAULT_SAMPLED_HP
+from .target_variation import sample_coefficients
 from .epit_composition_profile import (
     EpitCompositionBatch,
     load_epit_composition_profile,
@@ -685,6 +686,21 @@ class SCMPrior(Prior):
         self.last_pitting_material_family_ids: Optional[Tensor] = None
         self.last_pitting_scm_target_input: Optional[Tensor] = None
         self.last_pitting_scm_target_metadata: Optional[Dict[str, Any]] = None
+        self.coefficient_variation = float(fixed_hp.get("pitting_coefficient_variation", 0.0))
+        if not np.isfinite(self.coefficient_variation) or not 0 <= self.coefficient_variation < 1:
+            raise ValueError("pitting_coefficient_variation must be in [0, 1).")
+        self._coefficient_rng = None
+        self._coefficient_worker_seed = None
+        if self.coefficient_variation:
+            if fixed_hp.get("pitting_composition_mode") != "empirical_features_scm_target" or n_jobs != 1:
+                raise ValueError("Coefficient variation requires empirical_features_scm_target and n_jobs=1.")
+            bounds = fixed_hp.get("pitting_coefficient_upper_bounds")
+            overrides = self._fixed_epit_target_rule_coefficient_overrides()
+            if not isinstance(bounds, dict) or not overrides or set(bounds) != set(overrides):
+                raise ValueError("Coefficient variation requires explicit calibrated coefficients and matching upper bounds.")
+            self._coefficient_rng = np.random.default_rng(fixed_hp.get("pitting_coefficient_variation_seed", 42))
+            for family, values in overrides.items():
+                sample_coefficients(values, 0, self._coefficient_rng, upper_bounds=bounds[family])
 
     def hp_sampling(self) -> Dict[str, Any]:
         """Sample hyperparameters for dataset generation.
@@ -1208,6 +1224,27 @@ class SCMPrior(Prior):
                 EPIT_TARGET_RULE_COEFFICIENTS[family],
             )
         )
+        if self.coefficient_variation:
+            if family not in coefficient_overrides:
+                raise ValueError(f"Missing calibrated coefficients for sampled family {family!r}.")
+            worker = get_worker_info()
+            if worker is not None and self._coefficient_worker_seed != worker.seed:
+                self._coefficient_rng = np.random.default_rng(np.random.SeedSequence([
+                    self.fixed_hp.get("pitting_coefficient_variation_seed", 42), worker.seed,
+                ]))
+                self._coefficient_worker_seed = worker.seed
+            draw = sample_coefficients(
+                coefficients, self.coefficient_variation, self._coefficient_rng,
+                upper_bounds=self.fixed_hp["pitting_coefficient_upper_bounds"][family],
+            )
+            rule["coefficient_variation"] = {
+                "strength": self.coefficient_variation,
+                "reference": coefficients,
+                "attempts": draw.attempts,
+                "rejected_draws": draw.rejected_draws,
+                "used_fallback": draw.used_fallback,
+            }
+            coefficients = draw.coefficients
         coefficient_values = np.asarray(list(coefficients.values()), dtype=float)
         if not np.isclose(coefficient_values.sum(), 1.0):
             raise ValueError(f"Calibrated coefficients for {family!r} must sum to one.")

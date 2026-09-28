@@ -1,0 +1,32 @@
+[
+  {
+    "file": "raw/Pitting_database_2023_extended.xlsx",
+    "bytes": 402894,
+    "sha256": "a032d583ccdb647df5b44a456117a1bcf348c0750cba982c42c9d236fe375ab8"
+  },
+  {
+    "file": "raw/Pitting_database_update_231002.xlsx",
+    "bytes": 1014431,
+    "sha256": "1cc46d31f42fd73600e9cc21e4dfd21ee4731383d7e38a91f71c8ecc3b4c8915"
+  },
+  {
+    "file": "raw/Pitting_potential_dataset_2024.xlsx",
+    "bytes": 687176,
+    "sha256": "cb255c5a94d90bd207248f6e25727f965d587c29a73b2ffcef6b8c0ced6da1da"
+  },
+  {
+    "file": "raw/README.md",
+    "bytes": 313,
+    "sha256": "ab12cda3c1a50348611dad61ec92ae1b9453127fcf5737863bfb1075a62f6e42"
+  },
+  {
+    "file": "raw/rebar_electrochemical_parameters.xlsx",
+    "bytes": 1502832,
+    "sha256": "1ed10a3a6da71799e34051874844e86a1a1229a474051908bd3551c2feeab1cf"
+  },
+  {
+    "file": "raw/rebar_usage.docx",
+    "bytes": 14796,
+    "sha256": "a2647d548809e8a5673ded6ea2501658403e12988d3eb42605fe5069cb395d03"
+  }
+]

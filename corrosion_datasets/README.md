@@ -8,6 +8,7 @@ Raw files should stay unchanged. Any cleaning, derived tables, or scripts should
 
 | Dataset | Status | Primary Use For Informed Prior Work |
 |---|---|---|
+| `soccol_pitting_potential` | audited; composition-separated benchmark v1 ready | Literature-compiled pitting-potential prediction data with composition, preparation, environment, protocol, censoring, and source metadata. |
 | `electrochemical_metrics_alloys` | downloaded and inspected | Broad alloy composition, environment, test-method, and electrochemical target structure. |
 | `mpea_corrosion` | downloaded and inspected | MPEA composition, phases, processing, electrolyte, and electrochemical targets. |
 | `am_mpea_corrosion` | downloaded and inspected | Additive-manufacturing/processing signal plus MPEA corrosion targets. |

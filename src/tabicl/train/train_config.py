@@ -1,6 +1,7 @@
 """Define argument parser for TabICL training."""
 
 import argparse
+import json
 
 
 def str2bool(value):
@@ -59,6 +60,7 @@ def build_parser():
     )
     parser.add_argument("--np_seed", type=int, default=42, help="Random seed for numpy")
     parser.add_argument("--torch_seed", type=int, default=42, help="Random seed for torch")
+    parser.add_argument("--python_seed", type=int, default=None, help="Optional seed for Python random; legacy default unchanged")
     parser.add_argument("--max_steps", type=int, default=60000, help="Training steps")
     parser.add_argument("--batch_size", type=int, default=512, help="Batch size")
     parser.add_argument(
@@ -466,6 +468,18 @@ def build_parser():
         default=None,
         metavar="FAMILY.TERM=VALUE",
         help="Calibrated target-rule coefficients loaded by the EPIT pipeline.",
+    )
+    parser.add_argument(
+        "--pitting_coefficient_variation", type=float, default=0.0,
+        help="Opt-in relative coefficient multiplier range in [0, 1); zero preserves existing generation.",
+    )
+    parser.add_argument(
+        "--pitting_coefficient_variation_seed", type=int, default=42,
+        help="Seed for the separate coefficient-sampling random stream.",
+    )
+    parser.add_argument(
+        "--pitting_coefficient_upper_bounds", type=json.loads, default=None,
+        help="JSON object mapping formula families to calibrated coefficient upper bounds.",
     )
     parser.add_argument(
         "--pitting_magpie_features",

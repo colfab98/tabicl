@@ -1,0 +1,5 @@
+coefficient_variation,completed_seeds,expected_seeds,complete,mean_spearman_2000,std_across_seeds,paired_baseline_seeds,mean_paired_gain,std_paired_gain
+0,0,3,False,,,0,,
+0.3,0,3,False,,,0,,
+0.5,0,3,False,,,0,,
+0.8,2,3,False,0.6961256239967784,0.013317583562169125,0,,

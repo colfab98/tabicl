@@ -1,0 +1,4035 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xurl}
+\usepackage[hidelinks]{hyperref}
+
+\newcommand{\pr}{\operatorname{pr}}
+
+\setlength{\emergencystretch}{2em}
+\newenvironment{notes}
+  {\begin{itemize}\setlength{\itemsep}{0.45em}\setlength{\parsep}{0pt}}
+  {\end{itemize}}
+
+\title{CorrPFN: Method and Experiment Notes}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+% Sections 1--8 of the agreed report structure.
+% Add the later sections below.
+
+\section{The EPIT Dataset and Its Splits}
+\label{sec:epit-dataset}
+
+\subsection{Source, Prediction Task, and Usable Rows}
+\label{sec:dataset-source}
+
+\begin{notes}
+    \item \textbf{Source.} The data come from
+    \textit{Electrochemical Metrics for Corrosion Resistant Alloys},
+    released on
+    \href{https://figshare.com/articles/dataset/Electrochemical_Metrics_for_Corrosion_Resistant_Alloys/13038257}{Figshare}
+    and described by Nyby et al.\ in
+    \href{https://doi.org/10.1038/s41597-021-00840-y}{\textit{Scientific Data} (2021)}.
+
+    \item \textbf{Selected table and target.} This project uses the workbook
+    table \texttt{Pitting Potential}. The value to predict is
+    \texttt{Epit, mV (SCE) Avg.}: the reported average pitting potential.
+    Here, mV means millivolts, and SCE means saturated calomel electrode,
+    the reference electrode relative to which the potential is expressed.
+
+    \item \textbf{Meaning of a row.} Each row links an alloy composition
+    and reported test conditions to an EPIT value. The same or a similar
+    composition can appear in several rows, for example when measurements
+    use different environments or test methods.
+
+    \item \textbf{Usable observations.} The source table has \(810\) rows.
+    Of these, \(760\) contain a usable numeric value for the selected target.
+
+    \item \textbf{Excluded observations.} The other \(50\) rows cannot be
+    used as numeric targets: \(41\) contain the text
+    \texttt{Transpassive}, and \(9\) contain \texttt{NA}.
+    These entries are excluded rather than replaced with invented EPIT values.
+\end{notes}
+
+\subsection{What EPIT Means for Corrosion}
+\label{sec:epit-meaning}
+
+\begin{notes}
+    \item \textbf{Pitting corrosion.} A protective surface film, called the
+    \emph{passive film}, can break down locally. Corrosion then develops
+    at these localized sites, forming pits.
+
+    \item \textbf{Pitting potential.} EPIT is the reported electrochemical
+    potential at which passive-film breakdown or sustained pitting is
+    identified during a test. It describes a breakdown threshold, not a
+    corrosion rate.
+
+    \item \textbf{Meaning of a higher EPIT.} Under comparable conditions,
+    a more positive EPIT generally means that a higher applied potential
+    is needed to initiate sustained pitting. It therefore indicates
+    greater resistance to pit initiation under those conditions.
+
+    \item \textbf{Why chemistry and environment matter.} EPIT depends on
+    the alloy composition and material state, together with temperature,
+    chloride concentration, pH, and other solution conditions. Surface
+    preparation and previous exposure can also affect the measurement.
+
+    \item \textbf{Why the test method matters.} Different procedures can
+    report breakdown at different potentials. The workbook combines
+    potentiodynamic, potentiostatic, scratch-based, and other procedures.
+    Scan rate, stabilization time, current thresholds, and the criterion
+    used to identify breakdown can differ between studies.
+
+    \item \textbf{How to compare values.} A higher recorded EPIT does not,
+    by itself, prove that one alloy is intrinsically more resistant than
+    another. The environments, reference electrodes, surface conditions,
+    and test procedures must also be considered.
+
+    \item \textbf{What the inputs cannot fully describe.} The retained
+    columns do not separately record every relevant detail of
+    microstructure, surface preparation, exposure history, or test
+    procedure. Some differences between measurements therefore remain
+    unexplained by the available inputs.
+\end{notes}
+
+\subsection{Input Features and Alloy Classes}
+\label{sec:dataset-features}
+
+\begin{notes}
+    \item \textbf{Input schema.} Each row has \(21\) retained input columns:
+    \[
+        21
+        = 17\text{ composition}
+        + 3\text{ environment}
+        + 1\text{ test method}.
+    \]
+    The reported models receive the same raw input columns.
+
+    \item \textbf{Composition columns.} The \(17\) elements are kept in
+    this fixed order:
+    \[
+    \begin{gathered}
+        \mathrm{Fe,\ Cr,\ Ni,\ Mo,\ W,\ Nb,\ Al,\ V,\ Ta,}\\
+        \mathrm{Re,\ Ce,\ Ti,\ Co,\ B,\ Mg,\ Y,\ Gd}.
+    \end{gathered}
+    \]
+    Each element has its own column. For example, the model receives the
+    chromium amount and the molybdenum amount separately; they are not
+    combined into a single alloy score.
+
+    \item \textbf{Composition units.} Element amounts are reported in
+    weight percent, written wt.\%. For example, \(20\)~wt.\% chromium
+    means \(20\)~g of chromium per \(100\)~g of alloy.
+
+    \item \textbf{Environmental columns.}
+    \begin{notes}
+        \item \texttt{Test Temp. oC}: the test temperature in degrees
+        Celsius.
+        \item \texttt{[Cl-] M}: the chloride-ion concentration in the
+        solution. The unit M means moles per litre.
+        \item \texttt{[Cl-] pH}: the reported pH of the chloride-containing
+        solution, describing its acidity or alkalinity.
+    \end{notes}
+
+    \item \textbf{Test-method column.}
+    \texttt{[Cl-] Test Method} records the experimental method or
+    protocol. It is classified as process/history information because
+    the procedure can influence the measured EPIT. It is one recorded
+    category, not a complete record of every procedural detail.
+
+    \item \textbf{How columns were selected.} The evaluator filters
+    columns by feature group, availability of usable values, and the
+    number of categories in categorical columns. Availability of usable
+    values is called \emph{coverage}; the number of distinct categories
+    is called \emph{categorical cardinality}.
+
+    \item \textbf{Omitted composition columns.} N, C, Si, Mn, Cu, P,
+    and S fall below the required \(80\%\) finite-value coverage.
+    They are therefore omitted from the model inputs. This is a
+    data-availability decision; these elements can still be relevant
+    to corrosion.
+
+    \item \textbf{Alloy classes.} The dataset includes Fe alloys,
+    Ni--Cr--Mo alloys, Al alloys, high-entropy alloys, and other alloys.
+    These are material classes, separate from the composition groups
+    constructed below.
+\end{notes}
+
+\subsection{Building Composition Groups}
+\label{sec:composition-groups}
+
+\begin{notes}
+    \item \textbf{Reason for grouping.} Several rows can describe the
+    same or very similar alloy compositions. These rows are kept
+    together so that a composition and a closely related version do
+    not end up on opposite sides of a split.
+
+    \item \textbf{Values used for grouping.} Grouping uses the \(17\)
+    retained composition columns. For this operation only, missing
+    values are treated as zero and each value is rounded to
+    \(0.01\)~wt.\%.
+
+    \item \textbf{No rescaling to \(100\%\).} The retained composition
+    values are not renormalized before grouping. The seven omitted
+    elements can account for part of the alloy, so the \(17\) visible
+    amounts need not sum to \(100\%\).
+
+    \item \textbf{Composition distance.} Compare two rows by adding
+    the absolute differences in their element amounts:
+    \begin{equation}
+        d(i,j)=\sum_{e=1}^{17}|x_{i,e}-x_{j,e}|.
+        \label{eq:composition-distance}
+    \end{equation}
+    Here, \(x_{i,e}\) is the rounded weight-percent value of element
+    \(e\) in row \(i\). This is called the \emph{L1 distance}.
+    For example, differences of \(0.6\)~wt.\% in one element and
+    \(0.3\)~wt.\% in another, with all other retained amounts equal,
+    give \(d=0.9\)~wt.\%.
+
+    \item \textbf{Linking rule.} Two rows are linked when
+    \[
+        d(i,j)\leq1.0\ \text{wt.\%}.
+    \]
+    All rows connected by these links form one group. The technical
+    name for such a group is a \emph{connected component}.
+
+    \item \textbf{Why a group can span more than the threshold.}
+    If \(A\) is close to \(B\), and \(B\) is close to \(C\), all three
+    stay together even if \(A\) and \(C\) are more than \(1.0\)~wt.\%
+    apart. This ensures that every directly linked pair stays on the
+    same side of every split.
+
+    \item \textbf{Resulting groups.} The frozen split has \(301\)
+    composition groups. The largest group contains \(45\) rows.
+    The largest within-group composition span is \(5.0\)~wt.\%;
+    this is possible because of the chain of links described above.
+
+    \item \textbf{Meaning of composition separation.} The split tests
+    prediction for composition groups absent from the labeled examples
+    supplied as context. A labeled example contains both the input
+    features and a known EPIT value.
+
+    \item \textbf{Scope of that separation.} These groups are separated
+    between the labeled partitions. Their compositions are not
+    necessarily absent from every source used by the project:
+    the empirical feature profiles used for synthetic generation also
+    include final-test features.
+\end{notes}
+
+\subsection{Development Partition, Final-Test Partition, and Folds}
+\label{sec:dataset-partitions}
+
+\begin{notes}
+    \item \textbf{Outer split.} Whole composition groups are assigned
+    to two partitions:
+    \[
+        760\text{ rows}
+        =
+        \underbrace{608\text{ development rows}}_{80\%}
+        +
+        \underbrace{152\text{ final-test rows}}_{20\%}.
+    \]
+    Development rows support method development. The final-test
+    partition is used to assess the selected model.
+
+    \item \textbf{Five development folds.} The development partition
+    is divided into five fixed subsets called \emph{folds}. Each fold
+    contains \(121\)--\(122\) rows.
+
+    \item \textbf{Role of a fold.} For one development evaluation,
+    one fold supplies the validation rows to predict. The other four
+    folds supply the \(486\)--\(487\) labeled context rows.
+
+    \item \textbf{Example.} First, fold~1 can be the validation subset,
+    with folds~2--5 as context. Next, fold~2 can be the validation
+    subset, with the other four as context. Repeating this for all five
+    folds gives every development row one turn as a validation row.
+
+    \item \textbf{Group boundaries are respected throughout.}
+    A composition group cannot be divided between development and
+    final test, or between development folds. No pair linked by the
+    distance rule crosses either type of boundary.
+
+    \item \textbf{Balancing the partitions.} With the row counts fixed,
+    the assignment aims to balance the following properties across the
+    outer split and the development folds:
+    \begin{notes}
+        \item Alloy class and broad test-method family.
+        \item EPIT values, divided into ten groups using target
+        quantiles (\emph{deciles}).
+        \item Composition isolation, divided into five quantile
+        groups (\emph{quintiles}). Isolation is the distance from a
+        composition group to its nearest other group.
+        \item Temperature, chloride concentration, and pH.
+        \item Source reference, so the source studies are represented
+        across the partitions.
+    \end{notes}
+
+    \item \textbf{Environmental bins used for balancing.}
+    Temperature uses boundaries at \(10\), \(35\), and
+    \(70\,^{\circ}\mathrm{C}\); chloride concentration uses
+    \(0.01\), \(0.1\), \(0.6\), and \(1.0\)~M, with a separate zero
+    category; and pH uses \(3\), \(6\), and \(8\).
+    Missing environmental values form separate categories.
+
+    \item \textbf{Source-reference categories.} The ten most frequent
+    source references are kept as separate categories. The remaining
+    references are pooled into an \texttt{other} category.
+
+    \item \textbf{Use of targets when constructing the split.}
+    EPIT values from the usable corpus help balance the partitions.
+    The split is therefore not \emph{target-blind}: it is not
+    constructed using input features alone. This use of EPIT values
+    concerns the assignment of rows to partitions.
+
+    \item \textbf{Source overlap.} Measurements from one source study
+    may appear in both development and final test, provided their
+    composition groups remain separate. The split therefore does not
+    test generalization to entirely new publications or laboratories.
+
+    \item \textbf{Fixed assignments.} The chosen groups, row
+    assignments, and fold identifiers are saved in frozen split
+    artifacts. Later steps verify these records so that they all use
+    the same split.
+\end{notes}
+
+\subsection{Preparing Real Inputs After Splitting}
+\label{sec:real-data-representation}
+
+\begin{notes}
+    \item \textbf{Numeric inputs.} The \(17\) composition and three
+    environmental columns are converted to numeric values.
+
+    \item \textbf{Missing numeric values.} For TabICL evaluation,
+    a missing value is replaced by the mean of that column calculated
+    from the context/training rows. The same fitted means are applied
+    to the validation or final-test rows.
+
+    \item \textbf{Example of context-fitted imputation.} If the
+    context rows have a mean test temperature of
+    \(25\,^{\circ}\mathrm{C}\), a missing temperature is filled with
+    \(25\,^{\circ}\mathrm{C}\). Temperatures in the validation or
+    final-test rows do not change that fitted mean. This evaluation
+    treatment differs from the zero replacement used only for
+    composition grouping.
+
+    \item \textbf{Encoding the test method.} TabICL receives one
+    integer-coded method column. For illustration,
+    \[
+        \text{method A}\mapsto0,\qquad
+        \text{method B}\mapsto1,\qquad
+        \text{method C}\mapsto2.
+    \]
+    One-hot encoding would instead create a separate yes/no column
+    for each method; it is not used here.
+
+    \item \textbf{Categories available in one split.} The complete
+    task contains \(52\) categories, including a missing-value category.
+    The evaluation mapping is learned only from the context/training
+    rows, so a particular mapping can contain fewer categories.
+    For example, a context containing only \(40\) methods provides a
+    mapping for those observed methods.
+
+    \item \textbf{Unseen and missing methods.} A method found in a
+    validation or final-test row but absent from the fitted mapping
+    receives the reserved code \(-1\). The encoder also uses
+    \(-1\) for missing values.
+
+    \item \textbf{Meaning of the codes.} The integers are
+    \emph{nominal identifiers}: they identify categories without
+    ranking them. Method~2 is not physically higher than method~1,
+    and adjacent codes do not mean that two methods are more similar.
+    Treating these labels as numeric inputs remains an approximation.
+
+    \item \textbf{Column order.} After preprocessing, the original
+    \(21\)-column order is restored. Each element, environmental
+    variable, and test-method column therefore stays in its designated
+    position.
+\end{notes}
+
+\section{How TabICL Learns and Makes Predictions}
+\label{sec:tabicl}
+
+\subsection{The Prediction Task and the Presentation's Notation}
+\label{sec:pfn-notation}
+
+\begin{notes}
+    \item \textbf{Sources and notation.} This section follows Philipp
+    Benner's presentation \textit{Prior-Data Fitted Networks}
+    (10 June 2026), stored in
+    \path{resources_pres/21_-_pfn.pdf}. The accompanying notes in
+    \path{resources_pres/Baysian PFN.docx} supply further explanations.
+    References to slide numbers below use the numbered slides, not
+    the PDF page numbers.
+
+    \item \textbf{Observed examples.} Following the slides, write
+    \[
+        x=(x_i)_{i=1}^{n},
+        \qquad
+        y=(y_i)_{i=1}^{n}.
+    \]
+    The pair \((x,y)\) is the labeled context: \(x_i\) contains the
+    inputs for one observed row, and \(y_i\) is its known response.
+    For this project, \(y_i\) is EPIT.
+
+    \item \textbf{The row to predict.} The new input is \(x^\ast\),
+    called the \emph{query}. Its unknown response is \(y^\ast\).
+    The star marks a query quantity; it does not mean multiplication.
+
+    \item \textbf{Tabular notation.} When the context inputs are
+    arranged as a matrix, the presentation writes
+    \(X\in\mathbb{R}^{n\times p}\), with
+    \(x^\ast\in\mathbb{R}^{p}\). Here, \(n\) is the number of context
+    rows and \(p\) is the number of input columns. The reported
+    CorrPFN model uses \(p=21\). Thus, \((x,y)\) and \((X,y)\)
+    describe the same context in collection and matrix notation.
+
+    \item \textbf{Task mechanism: \(\theta\).} In the PFN
+    interpretation, \(\theta\) describes one possible mechanism
+    that could generate a task: for example, its function, dependency
+    structure, generator parameters, and noise. It is neither a
+    dataset nor the weights of the TabICL transformer.
+
+    \item \textbf{Transformer weights: \(\phi\).} These are the
+    parameters learned during PFN pretraining. One set of weights
+    \(\phi\) is shared across many sampled mechanisms \(\theta\).
+
+    \item \textbf{Two predictive distributions.}
+    \(\pr(y^\ast\mid x^\ast,x,y)\) denotes the predictive distribution
+    implied by the statistical model and its prior.
+    \(q_\phi(y^\ast\mid x^\ast,x,y)\) denotes the distribution
+    produced by the trained PFN. The symbol \(\mid\) means
+    \emph{given}. For a continuous response such as EPIT, these
+    expressions can denote probability densities.
+
+    \item \textbf{A distribution rather than just one value.}
+    A predictive distribution describes which response values are
+    plausible and how concentrated or spread out they are.
+    A mean, median, or prediction interval can then be calculated
+    from that distribution.
+\end{notes}
+
+\subsection{How This Differs from the Usual Machine-Learning Workflow}
+\label{sec:traditional-ml-versus-pfn}
+
+\begin{notes}
+    \item \textbf{Usual fit-then-predict workflow.} For a supervised
+    neural network or a model such as CatBoost, the labeled dataset
+    is used to fit a model. In generic parameter notation,
+    \[
+        (x,y)\xrightarrow{\text{fit}}\widehat\theta,
+        \qquad
+        \widehat y^\ast=f_{\widehat\theta}(x^\ast).
+    \]
+    The data determine a fitted parameter setting
+    \(\widehat\theta\), which is then used to predict new rows.
+
+    \item \textbf{What happens for another dataset.} In that workflow,
+    a new prediction task normally requires fitting or adapting a
+    model to its labeled examples. The fitted model may itself be
+    an ensemble, and it may output probabilities; one fitted model
+    does not necessarily mean one tree or one point-valued output.
+
+    \item \textbf{PFN pretraining.} A Prior-Data Fitted Network is
+    trained in advance on many synthetic prediction tasks. Its
+    weights \(\phi\) learn a procedure for using a labeled context
+    to predict a query, rather than only a relationship fitted to
+    one observed dataset.
+
+    \item \textbf{PFN use on a new context.} The labeled examples and
+    the query are supplied together as inputs:
+    \[
+        (x,y,x^\ast)
+        \xrightarrow{\text{frozen PFN}}
+        q_\phi(y^\ast\mid x^\ast,x,y).
+    \]
+    The prediction can change when the context changes, even though
+    the transformer weights \(\phi\) remain fixed.
+
+    \item \textbf{Where the adaptation happens.} Both workflows can
+    use fixed weights when predicting a query. The difference is how
+    they use the labeled examples for a new task: the conventional
+    workflow fits model parameters, whereas the PFN uses those
+    examples inside its forward computation. This is
+    \emph{in-context learning}.
+
+    \item \textbf{Scope of the comparison.} This describes the usual
+    fitted-model workflow, not every traditional method. Methods
+    such as nearest-neighbour prediction also use stored examples
+    at prediction time. The distinctive PFN idea is to learn the
+    context-to-prediction procedure through pretraining across tasks.
+
+    \item \textbf{Computational trade-off.} PFNs invest computation
+    in pretraining and reuse the resulting prediction procedure.
+    They still have to process the context during inference.
+    This does not imply that every PFN prediction is cheaper than
+    a prediction from an already fitted conventional model.
+\end{notes}
+
+\subsection{Bayesian Interpretation: Prior, Likelihood, Posterior, and MAP}
+\label{sec:bayesian-updating}
+
+The previous subsection explained that a PFN uses labeled examples
+as context. We now ask what prediction that context should imply
+under a statistical model. This subsection and the next develop
+the Bayesian reference calculation; they are not additional
+inference steps executed by CorrPFN. Section~\ref{sec:pfn-pretraining}
+then explains how synthetic training teaches a network to
+approximate the resulting prediction.
+
+\begin{notes}
+    \item \textbf{Prior: \(\pr(\theta)\).} The prior describes which
+    mechanisms are plausible before observing the current context.
+    For a synthetic task generator, it determines which kinds of
+    mechanisms are sampled and how often.
+
+    \item \textbf{The prior in this project is a sampling recipe.}
+    Instead of specifying only a simple density such as a normal
+    prior on regression coefficients, CorrPFN specifies a program
+    that samples task mechanisms and observations. For the selected
+    Trial~56, the recipe includes these fixed settings, rounded here:
+    \begin{notes}
+        \item An informed task is chosen with probability
+        \(\rho=0.75\); otherwise a generic task is chosen.
+        \item Within informed tasks, a multilayer perceptron (MLP)
+        and a tree are equally likely as target generators. The
+        generic branch uses
+        MLP/tree probabilities of \(0.7/0.3\).
+        \item Informed rows use empirical composition templates
+        and environmental/test-method records. Positive element
+        amounts are multiplied by \(\exp(\epsilon)\), where
+        \(\epsilon\sim\operatorname{Normal}(0,0.1028^2)\),
+        before full-composition normalization.
+        \item Each informed response combines a standardized
+        random-generator response with a standardized analytical
+        response, using coefficients \(0.7952\) and \(0.2048\),
+        respectively, and then standardizes the result again.
+    \end{notes}
+    These are actual selected settings, not illustrative choices.
+    The complete recipe appears in
+    Section~\ref{sec:informed-prior}. Its response coefficients
+    describe a weighted combination, not shares of explained variance.
+
+    \item \textbf{A fixed recipe still generates different mechanisms.}
+    One possible draw selects the informed branch, a particular
+    random MLP, and the linear PREN-inspired analytical rule.
+    Another can select a tree and a different rule. The first
+    rule is sampled with probability about \(0.1342\); its
+    saved weights for material protection, environmental
+    aggressiveness, and material--chloride interaction are
+    approximately \((0.5560,0.4013,0.0427)\).
+    The rule selection can change between tasks, while that
+    rule's coefficient vector stays fixed. The selected response
+    mixture and perturbation strength also stay fixed during
+    the run; Optuna chose them beforehand.
+
+    \item \textbf{Keep the recipe, mechanism, data, and predictor separate.}
+    The recipe defines which mechanisms can be drawn and how often.
+    A particular draw of the task-level choices, random function,
+    and noise settings belongs to \(\theta\). The generated rows
+    form a dataset \(D\), with observations varying under that
+    mechanism. The transformer weights \(\phi\) are learned across
+    many such datasets. If the generator is an MLP, its random
+    weights belong to the mechanism; they are different from the
+    trained weights of the prediction transformer. The seven
+    analytical rules are therefore only one part of the space of
+    possible mechanisms.
+
+    \item \textbf{An example of an observation drawn from the recipe.}
+    The saved composition bank includes an Fe-alloy template with
+    \(16\) wt.\% Cr, \(11\) wt.\% Ni, and \(3\) wt.\% Mo.
+    An illustrative chromium perturbation of \(\epsilon=0.05\)
+    changes its amount to \(16e^{0.05}\approx16.82\) wt.\%
+    before normalization; other positive amounts receive their own
+    perturbations. A sampled environment and method complete the
+    row. Its response is generated using the task's random function
+    and selected analytical rule. It is a standardized synthetic
+    score; the original experimental EPIT label is not copied.
+
+    \item \textbf{What the prior means after project development.}
+    The recipe is fixed before conditioning for a prediction,
+    but it has already been adapted using empirical feature
+    profiles, development-label rule calibration, and development
+    selection. Thus, the word prior does not imply that no real
+    data influenced its construction. The relevant data boundaries
+    are documented in Sections~\ref{sec:feature-profile-provenance}
+    and~\ref{sec:development-score-interpretation}.
+
+    \item \textbf{Likelihood: \(\pr(x,y\mid\theta)\).} The likelihood
+    measures how well a proposed mechanism explains the observed
+    context. The observations are held fixed while different
+    \(\theta\) values are compared. It is not itself a probability
+    distribution over \(\theta\).
+
+    \item \textbf{Posterior: \(\pr(\theta\mid x,y)\).}
+    Bayes' theorem combines the prior and likelihood:
+    \begin{equation}
+        \pr(\theta\mid x,y)
+        =
+        \frac{\pr(x,y\mid\theta)\pr(\theta)}
+             {\pr(x,y)}.
+        \label{eq:bayes-posterior}
+    \end{equation}
+    In words: the plausibility after seeing the context is
+    proportional to the prior plausibility multiplied by how well
+    the mechanism explains the context. The denominator normalizes
+    the result.
+
+    \item \textbf{A corrosion interpretation.} Imagine candidate
+    mechanisms with different strengths of composition effects,
+    environmental effects, and their interactions. Context
+    observations can make some candidates more plausible than others.
+    This is an illustration of statistical reasoning, not a claim
+    that the real physical mechanism has been identified.
+
+    \item \textbf{What compatibility with the context would mean.}
+    Suppose otherwise comparable context rows show lower EPIT at
+    higher chloride concentration. A mechanism that reproduces
+    this pattern would receive more support than one that
+    systematically contradicts it, taking its noise assumptions
+    into account. This is about explaining the observed responses
+    at the observed inputs, not about matching synthetic row
+    identifiers or finding the nearest saved synthetic table.
+    CorrPFN does not explicitly evaluate this likelihood or
+    construct \(\pr(\theta\mid x,y)\) at inference. Its generator
+    supplies samples from an implicit probability model even
+    though evaluating that model's likelihood may be difficult.
+
+    \item \textbf{MAP chooses one setting.} The
+    \emph{maximum a posteriori} estimate is
+    \begin{equation}
+        \widehat\theta
+        =
+        \underset{\theta}{\arg\max}\,
+        \pr(\theta\mid x,y)
+        =
+        \underset{\theta}{\arg\max}\,
+        \pr(x,y\mid\theta)\pr(\theta).
+        \label{eq:map-estimate}
+    \end{equation}
+    The expression \(\arg\max\) means the value of \(\theta\)
+    that makes this expression largest. For continuous
+    parameters, MAP selects the highest posterior density.
+
+    \item \textbf{MAP is a comparison here, not CorrPFN's selection step.}
+    It illustrates committing to one explanation after seeing a
+    context. Optuna selecting Trial~56 instead chooses the generator
+    recipe, and selecting step~\(2{,}500\) chooses transformer
+    weights. Neither operation computes the MAP mechanism for a
+    prediction context. The next subsection explains the alternative
+    of retaining several plausible mechanisms in the prediction.
+
+    \item \textbf{Connection to conventional fitting.} Maximizing
+    the posterior is equivalent to minimizing
+    \[
+        -\log\pr(x,y\mid\theta)-\log\pr(\theta).
+    \]
+    A loss plus regularization can therefore be interpreted as MAP
+    when its terms correspond to a negative log-likelihood and a
+    negative log-prior. With a constant prior over the relevant
+    parameter space, MAP reduces to maximum likelihood.
+    Ordinary machine-learning fitting is not automatically MAP.
+
+    \item \textbf{Bayesian neural networks are a different use of
+    random weights.} The presentation writes \(W\sim\pr(W)\)
+    for a Bayesian neural network and averages predictions using
+    \(\pr(W\mid x,y)\). For PFNs, the Bayesian averaging discussed
+    next concerns the task mechanism \(\theta\).
+    The inference network has its own weights \(\phi\), which
+    are not sampled from a transformer-weight posterior at test time.
+    These distinctions follow slides~1--3 and~15.
+\end{notes}
+
+\subsection{Posterior Prediction: Combining Plausible Mechanisms}
+\label{sec:posterior-prediction}
+
+Bayesian updating gives a distribution over mechanisms. We now
+turn that distribution into a prediction for a query. Several
+mechanisms can explain the context reasonably well but disagree
+about the query; posterior prediction retains that disagreement
+instead of discarding it when choosing one mechanism.
+
+\begin{notes}
+    \item \textbf{Prediction using one estimated mechanism.}
+    A plug-in prediction uses a single setting, such as MAP:
+    \[
+        \pr(y^\ast\mid x^\ast,\widehat\theta).
+    \]
+    It can describe response noise, but it does not average over
+    uncertainty about the mechanism \(\theta\).
+
+    \item \textbf{Posterior predictive distribution.}
+    Following slide~3, combine the predictions from possible
+    mechanisms:
+    \begin{equation}
+        \pr(y^\ast\mid x^\ast,x,y)
+        =
+        \int
+        \pr(y^\ast\mid x^\ast,\theta)
+        \pr(\theta\mid x,y)\,d\theta.
+        \label{eq:posterior-predictive}
+    \end{equation}
+    The first factor is the prediction under one mechanism.
+    The second is its posterior plausibility. The integral adds
+    their contributions across mechanisms.
+
+    \item \textbf{Assumptions behind this form.} The displayed
+    expression uses the slides' convention that the query input
+    is treated as given for mechanism inference, and that
+    \(\theta\) and \(x^\ast\) suffice to predict \(y^\ast\).
+    In a joint model where the query's feature values also provide
+    information about \(\theta\), the mechanism posterior must
+    additionally condition on \(x^\ast\).
+
+    \item \textbf{What is being averaged.} The integral averages
+    \emph{predictive distributions}, not the values of the
+    parameters \(\theta\). It therefore retains contributions from
+    several plausible explanations instead of choosing only one.
+
+    \item \textbf{Two sources of predictive spread.}
+    A particular mechanism can allow noisy responses even when
+    its parameters are known. Different plausible mechanisms can
+    also predict different responses at the same input. Averaging
+    their distributions retains both within-mechanism response
+    variation and between-mechanism disagreement. The latter is
+    why selecting one mechanism can miss uncertainty even if its
+    own predictive distribution includes noise.
+
+    \item \textbf{Small illustrative example.} The accompanying
+    Word notes consider three mechanisms with posterior weights
+    \(0.2\), \(0.1\), and \(0.7\). Suppose their predictive means
+    for one query are \(200\), \(350\), and \(300\)~mV.
+    The combined predictive mean is
+    \[
+        0.2(200)+0.1(350)+0.7(300)=285\ \text{mV}.
+    \]
+    Choosing only the most plausible mechanism would instead use
+    the third mechanism. These numbers illustrate averaging;
+    they are not results from the EPIT experiment.
+
+    \item \textbf{These weights differ from the seven rule probabilities.}
+    The illustrative \(0.2,0.1,0.7\) weights express plausibility
+    after a context has been observed. CorrPFN's saved rule
+    probabilities, such as \(0.1342\) for linear PREN, determine
+    frequencies during synthetic generation. They come from
+    normalized development correlations and are not likelihoods
+    or posterior probabilities for the current context. CorrPFN
+    does not produce an explicit updated weight for each of the
+    seven rules at inference.
+
+    \item \textbf{Mean and median are different summaries.}
+    The \(285\)~mV calculation gives a mean, not the complete
+    predictive distribution or necessarily its median. The
+    reported CorrPFN model uses the median of its predicted
+    distribution as its point prediction.
+    In general, the median of a mixture must be obtained from
+    the combined distribution; averaging the component medians
+    does not give that median.
+
+    \item \textbf{Numerical Bayesian approximation.} The integral
+    can be difficult to calculate. Slide~4 describes approximating
+    the posterior or drawing samples
+    \(\theta^{(1)},\ldots,\theta^{(S)}\) from it, giving
+    \[
+        \pr(y^\ast\mid x^\ast,x,y)
+        \approx
+        \frac{1}{S}\sum_{s=1}^{S}
+        \pr(y^\ast\mid x^\ast,\theta^{(s)}).
+    \]
+    Here, \(S\) is the number of samples. Equal weights are
+    appropriate because the samples represent the
+    \emph{posterior}. Drawing mechanisms from the prior and
+    averaging them equally does not, by itself, incorporate the
+    observed context.
+
+    \item \textbf{Where the implementation differs from this calculation.}
+    Explicit posterior sampling is a general numerical approach,
+    not a step in the reported CorrPFN prediction path. CorrPFN
+    learns a direct context-to-distribution function instead.
+    The next subsection explains why generated observations are
+    enough to train that function without first computing the
+    posterior-predictive integral for every training example.
+\end{notes}
+
+\subsection{How a PFN Learns the Predictive Distribution}
+\label{sec:pfn-pretraining}
+
+The preceding subsections defined a statistical prediction that
+may be expensive to calculate explicitly. We now move to the
+PFN training procedure: use the generator to create prediction
+problems, then learn a function that maps each context and query
+to an appropriate predictive distribution.
+
+\begin{notes}
+    \item \textbf{Learning the prediction procedure.} A PFN is
+    trained to produce
+    \begin{equation}
+        q_\phi(y^\ast\mid x^\ast,x,y)
+        \approx
+        \pr(y^\ast\mid x^\ast,x,y).
+        \label{eq:pfn-predictive-approximation}
+    \end{equation}
+    It learns this mapping across many synthetic tasks.
+    At inference, it does not explicitly enumerate mechanisms,
+    calculate their posterior weights, or retrieve its original
+    synthetic training datasets.
+
+    \item \textbf{Sample a mechanism, then sample observations.}
+    Slides~7--8 describe the generative model
+    \[
+        \pr(\theta,x,y,x^\ast,y^\ast)
+        =
+        \pr(\theta)\pr(x,y,x^\ast,y^\ast\mid\theta).
+    \]
+    First draw \(\theta\sim\pr(\theta)\). Then draw the context
+    and query from that mechanism. One mechanism can generate many
+    different datasets because the observations and noise also vary.
+
+    \item \textbf{The prior predictive distribution.}
+    Averaging out the unobserved mechanism gives
+    \[
+        \pr(x,y,x^\ast,y^\ast)
+        =
+        \int
+        \pr(x,y,x^\ast,y^\ast\mid\theta)\pr(\theta)\,d\theta.
+    \]
+    This is the distribution of observable training tasks.
+    Sampling a mechanism and then a task produces samples from
+    this distribution without calculating the integral.
+
+    \item \textbf{Prior predictive and posterior predictive describe
+    different stages.} The prior predictive distribution describes
+    complete possible datasets before a particular context is
+    observed. Once a context and query inputs are given, the
+    relevant distribution is the conditional distribution of the
+    missing query responses. This conditional distribution
+    averages over the remaining uncertainty about the mechanism;
+    the posterior-predictive expression in the preceding subsection
+    describes that averaging under its stated assumptions.
+    The two distributions come from the same generative model.
+
+    \item \textbf{What the network sees.} It receives the context
+    inputs \(x\), their labels \(y\), and the query input \(x^\ast\).
+    The sampled query label \(y^\ast\) is withheld from the network
+    input and used to score its prediction.
+
+    \item \textbf{Why context and query must share a task.}
+    In one generated task, the labeled rows demonstrate the
+    relationship that also produces its query responses. In
+    another task, that relationship can change. The transformer
+    must therefore learn how to use the context to predict under
+    the current relationship. Merely learning one fixed mapping
+    from alloy features to a target would not solve all these
+    changing tasks.
+
+    \item \textbf{The presentation's training objective.}
+    For probabilistic prediction, the slides use negative
+    log-likelihood:
+    \begin{equation}
+        \mathcal{L}(\phi)
+        =
+        \mathbb{E}
+        \left[-\log q_\phi(y^\ast\mid x^\ast,x,y)\right].
+        \label{eq:pfn-nll}
+    \end{equation}
+    The expectation is an average over sampled tasks and their
+    context/query observations. Training adjusts \(\phi\) so that
+    the generated query outcomes receive better predictions.
+
+    \item \textbf{Why this can learn a Bayesian prediction.}
+    For a fixed context and query, the expected log loss is
+    minimized by the true conditional distribution of the sampled
+    tasks, if the model can represent it. Training on enough
+    tasks therefore targets that predictive distribution.
+    Exact posterior calculations are not required as training
+    labels: the sampled outcomes \(y^\ast\) provide supervision.
+    This is the construction described by
+    \href{https://arxiv.org/abs/2112.10510}{M\"uller et al.,
+    \textit{Transformers Can Do Bayesian Inference}}.
+
+    \item \textbf{Why individual outcomes can teach a whole distribution.}
+    At a given context and query, a distributional scoring rule
+    rewards assigning suitable probabilities to the outcomes that
+    can occur. Across generated tasks, the network learns shared
+    patterns of how those probabilities depend on the context.
+    It need not encounter exactly the same continuous-valued table
+    repeatedly. The training examples contain generated outcomes,
+    not exact Bayesian predictive distributions supplied by a
+    separate calculation. The local loss is CRPS rather than the
+    slides' log loss; Section~\ref{sec:tabicl-regression} explains
+    why it still targets a conditional distribution.
+
+    \item \textbf{Several queries in one synthetic dataset.}
+    Slide~32 writes
+    \[
+        D=\{(x_i,y_i)\}_{i=1}^{s}\sim p(D),
+    \]
+    where \(p(D)\) is the prior predictive distribution over
+    whole datasets. A row permutation \(\pi\) and context size
+    \(n\) define
+    \[
+    \begin{aligned}
+        D_{\mathrm{ctx}}
+        &=\{(x_{\pi(i)},y_{\pi(i)})\}_{i=1}^{n},\\
+        D_{\mathrm{qry}}
+        &=\{(x_{\pi(i)},y_{\pi(i)})\}_{i=n+1}^{s}.
+    \end{aligned}
+    \]
+    There are \(s\) total rows and \(s-n\) query rows.
+    The presentation's task loss is
+    \[
+        \mathcal{L}(\phi;D,\pi,n)
+        =
+        -\sum_{i=n+1}^{s}
+        \log q_\phi
+        \left(y_{\pi(i)}\mid x_{\pi(i)},D_{\mathrm{ctx}}\right).
+    \]
+    The overall objective averages this loss over datasets,
+    permutations, and context sizes. This is a general PFN
+    description; the local EPIT regression loss is specified in
+    Section~\ref{sec:tabicl-regression}.
+
+    \item \textbf{A concrete CorrPFN training task.}
+    The reported run uses \(s=1{,}024\) synthetic rows.
+    For an illustrative allowed split, \(n=700\) rows supply
+    context and \(324\) supply queries; the actual context size
+    varies across training tasks. For an informed task, the model
+    receives all \(1{,}024\) rows of the standardized
+    \(21\)-column input table and only the \(700\) context labels.
+    It predicts distributions for the remaining \(324\) responses.
+    Their generated labels enter CRPS, whose gradients update
+    \(\phi\). New tasks repeat the procedure with different
+    observations and sampled mechanisms.
+
+    \item \textbf{Amortized inference.} The work of learning how to
+    use different contexts is paid during pretraining and reused
+    afterward. Amortized refers to spreading that learning
+    cost across later prediction tasks. A new context changes
+    internal representations and predictions without a gradient
+    update to \(\phi\).
+
+    \item \textbf{The corresponding real-data prediction.}
+    At final evaluation, the \(608\) development rows and their
+    EPIT labels supply context; the \(152\) final-test rows supply
+    query features. The selected transformer applies the learned
+    prediction procedure with fixed \(\phi\). Real query labels
+    are used afterward for evaluation. The analytical rules have
+    already influenced pretraining and are not added as a separate
+    correction to these final predictions.
+
+    \item \textbf{Why the approximation sign matters.} Finite
+    training data, limited model capacity, imperfect optimization,
+    and restrictions in the output distribution can all create
+    approximation error. A mismatch between the synthetic prior
+    and real corrosion data is a further issue. Approximating a
+    synthetic-prior predictive distribution does not establish
+    that the distribution is correct for the real dataset.
+
+    \item \textbf{A statistical view without explicit posterior
+    computation.} With \(\phi\) fixed, the PFN is a prediction rule
+    whose output still depends on the observed sample \((x,y)\).
+    Its behavior can therefore also be studied through how its
+    predictions change across samples. Bayesian motivation does
+    not imply automatic statistical consistency for arbitrary
+    data distributions; see
+    \href{https://proceedings.mlr.press/v202/nagler23a.html}
+    {Nagler (2023), \textit{Statistical Foundations of Prior-Data
+    Fitted Networks}}.
+\end{notes}
+
+
+\subsection{Where the Generic Synthetic Tasks Come From}
+\label{sec:generic-synthetic-tasks}
+
+So far, task sampling has been treated as an available operation.
+This subsection explains how random functions and dependency
+structures supply varied training problems. It describes the
+generic generator first, then identifies how the informed branch
+uses related components with the physical EPIT inputs.
+
+\begin{notes}
+    \item \textbf{The prior is a generator.} A configured prior
+    produces many tasks with different sampled mechanisms,
+    observations, and noise. It is not one fixed synthetic table.
+    The generator's settings control the distribution from which
+    the task mechanisms \(\theta\) are drawn.
+
+    \item \textbf{MLP-generated tasks.} A randomly configured
+    multilayer perceptron (MLP) creates nonlinear relationships.
+    In the generic generator, one possible construction transforms
+    latent root variables into intermediate variables, then selects
+    features and a target from them:
+    \[
+        z\longrightarrow h\longrightarrow(X,y).
+    \]
+    Here, \(z\) and \(h\) belong to the synthetic generator, not
+    the prediction transformer.
+
+    \item \textbf{The two neural networks have different jobs.}
+    A generator MLP creates a relationship from which observations
+    are sampled. Its particular random weights help define
+    \(\theta\). The TabICL transformer learns across those generated
+    relationships by updating \(\phi\). Randomly changing the
+    generator MLP creates another prediction problem; training
+    the transformer improves its ability to solve such problems
+    from their labeled examples.
+
+    \item \textbf{Direct MLP or tree construction.} Another form
+    generates features and then maps them to a target:
+    \[
+        X=z,\qquad y=f_\theta(X).
+    \]
+    Tree-based generators supply split-based or piecewise
+    relationships. The mixed generator samples between the MLP
+    and tree alternatives.
+
+    \item \textbf{What SCM means.} A structural causal model
+    describes variables using a directed graph without cycles
+    and one equation for each variable. Following slide~15,
+    \[
+        v_j=f_j(\mathrm{pa}_j,\epsilon_j),
+    \]
+    where \(\mathrm{pa}_j\) denotes the parents of variable \(v_j\)
+    in the graph and \(\epsilon_j\) denotes noise.
+    Some generated variables can become observed features and
+    another can become the target. This construction supplies
+    synthetic dependencies; it does not establish causal effects
+    in the real EPIT data.
+
+    \item \textbf{Why latent variables are useful in the generic generator.}
+    A shared hidden input can influence two observed columns and
+    make them correlated. Other paths can make the response depend
+    on interactions or leave some observed columns uninformative.
+    Varying these constructions teaches the transformer to handle
+    different statistical relationships. The graph notation
+    explains this source of variation; it does not identify an
+    unobserved physical cause in the corrosion dataset.
+
+    \item \textbf{The informed target head uses a specific simpler path.}
+    In the reported informed branch, physical alloy, environment,
+    and method features are generated first. A random MLP or tree
+    maps their standardized values directly to a response, with
+    \texttt{is\_causal=False}. That response is combined with the
+    analytical EPIT contribution. Thus, the generic latent-variable
+    example above is background for the generator family; the
+    informed implementation does not infer a causal graph from
+    the real EPIT data or replace its physical inputs with latent
+    features. Section~\ref{sec:informed-scm-target} gives the
+    exact target construction.
+
+    \item \textbf{Diversity and preprocessing.} Generic tasks can
+    contain interactions, correlated or irrelevant inputs,
+    different feature counts, and different context/query sizes.
+    Depending on configuration, preprocessing can standardize,
+    transform, permute, remove unusable columns, and pad inputs.
+    Invalid tasks are rejected and sampled again.
+
+    \item \textbf{Which probabilities apply to the reported model.}
+    Trial~56 routes to generic tasks with probability \(0.25\),
+    using MLP/tree probabilities of \(0.7/0.3\) within that branch.
+    Its informed branch has routing probability \(0.75\) and
+    uses MLP/tree probabilities of \(0.5/0.5\).
+    These are sampling probabilities, not exact counts required
+    in each batch. Some routing choices are shared by subgroups
+    of tasks, as explained in Section~\ref{sec:generation-order}.
+
+    \item \textbf{Why an informed prior is useful to investigate.}
+    Generic columns have no built-in identity as chromium,
+    chloride, or temperature. Their targets also have no fixed
+    corrosion meaning. CorrPFN changes the task distribution
+    so that part of the pretraining reflects the structure of the
+    EPIT problem. The following sections define that construction.
+\end{notes}
+
+\subsection{How TabICL Uses the Context}
+\label{sec:tabicl-context-processing}
+
+We have described the prediction target, the training procedure,
+and the source of synthetic examples. We now turn to the
+computation that implements the learned function. Attention and
+embeddings describe how the network processes its inputs; they
+are not extra steps in the Bayesian reference calculation.
+
+\begin{notes}
+    \item \textbf{PFN, TabPFN, and TabICL.} PFN names the general
+    approach. The presentation uses TabPFN to explain a tabular
+    architecture. This project uses TabICL, which follows the
+    in-context prediction idea with a different tabular architecture.
+    The presentation's exact TabPFN layer counts and simple
+    row-encoding example should therefore not be read as the
+    configuration of CorrPFN.
+
+    \item \textbf{The local TabICL computation.} The model first
+    builds representations of cells using information from their
+    columns. It then combines features within each row, and finally
+    uses labeled context rows to predict query rows:
+    \[
+    \begin{gathered}
+        \text{column representations}
+        \longrightarrow \text{within-row feature interactions}\\
+        \longrightarrow \text{in-context prediction}.
+    \end{gathered}
+    \]
+    An \emph{embedding} or \emph{representation} is a learned
+    vector used internally by the model.
+
+    \item \textbf{Read the stages using one EPIT query.}
+    Column processing represents values such as chromium amount
+    using information from the corresponding column; the local
+    target-aware components can also use context labels.
+    Within-row processing combines the alloy composition with
+    temperature, chloride, pH, and method for that observation.
+    In-context processing then uses labeled examples to determine
+    what response is plausible for the query. These are learned
+    representations rather than explicit corrosion-rule terms.
+
+    \item \textbf{Features and labels have different roles.}
+    Context rows provide both their features and known targets.
+    Query rows provide features only. Target information is
+    supplied for the context; the unknown query labels are not
+    input values. The model produces the query predictions from
+    these representations.
+    In the local in-context module, encoded context labels are
+    added to the context-row representations before transformer
+    processing. Unknown query labels receive no such encoding.
+
+    \item \textbf{Rows form a set.} Context rows are examples,
+    not positions in a time sequence. Changing their order should
+    not change the prediction meaning. This is different from
+    permuting feature columns: the EPIT columns have fixed roles
+    and remain in their specified order.
+
+    \item \textbf{Attention combines useful information.}
+    In the basic attention example from slides~22--23, a receiving
+    vector \(h^\ast\) is compared with source vectors \(h_j\).
+    Learned projections produce
+    \[
+        q_\ast=W_Qh^\ast,\qquad
+        k_j=W_Kh_j,\qquad
+        v_j=W_Vh_j.
+    \]
+    The query vector \(q_\ast\) describes what information is
+    being sought, the key \(k_j\) helps determine relevance, and
+    the value \(v_j\) carries the information to combine.
+
+    \item \textbf{Scores become weights.} In that basic example,
+    \[
+        s_j=\frac{q_\ast^\top k_j}{\sqrt{d}},
+        \qquad
+        \alpha_j=\frac{\exp(s_j)}{\sum_i\exp(s_i)},
+        \qquad
+        o_\ast=\sum_j\alpha_jv_j.
+    \]
+    Here, \(d\) is the vector dimension, the weights
+    \(\alpha_j\) are nonnegative and sum to one, and \(o_\ast\)
+    is the combined information. Different queries can place
+    different weights on the available information. These
+    equations explain basic attention; the local V2 components
+    also use query-aware attention scaling.
+
+    \item \textbf{An intuition for attention on corrosion data.}
+    A query could benefit from examples with comparable compositions,
+    similar environments, or informative material--environment
+    contrasts. Attention provides a learned way to combine relevant
+    internal information. Its similarity scores operate on learned
+    vectors, so they need not equal raw composition distances or
+    nearest-neighbour weights. This is an explanation of what the
+    architecture can represent, not a measured interpretation of
+    particular attention heads in the reported model.
+
+    \item \textbf{Attention weights are not posterior mechanism
+    probabilities.} The \(\alpha_j\) values weight internal
+    vectors. They are not explicit values of
+    \(\pr(\theta\mid x,y)\). Likewise, the attention vector
+    \(q_\ast\) is different from the predictive distribution
+    \(q_\phi\).
+
+    \item \textbf{What remains learned after pretraining.}
+    The projection weights and other transformer parameters are
+    part of \(\phi\). New context inputs change the vectors,
+    attention scores, and output, while these parameters stay
+    fixed.
+
+    \item \textbf{Why fixed weights still allow adaptation.}
+    A fixed prediction procedure can produce different answers
+    when its inputs change. For comparison, the least-squares
+    formula is fixed, but different \((X,y)\) produce different
+    fitted coefficients. TabICL learns its own computation across
+    tasks: changing the context changes its internal vectors and
+    predicted distribution without a gradient update to \(\phi\).
+    This analogy explains dependence on the data; it does not mean
+    that TabICL necessarily computes least-squares coefficients.
+\end{notes}
+
+\subsection{Regression, Loss Functions, and Predictive Uncertainty}
+\label{sec:tabicl-regression}
+
+Context processing produces a representation for each query.
+We now specify what prediction is read from it and how that
+prediction is scored during training. The Gaussian and Laplace
+examples below explain general connections between distributions
+and familiar losses. CorrPFN specifically uses the quantile
+output and CRPS described afterward.
+
+\begin{notes}
+    \item \textbf{Why the loss matters.} The training loss specifies
+    what a good prediction means. A point-prediction loss assesses
+    a selected value. A distributional loss assesses the
+    predictive distribution.
+
+    \item \textbf{Squared error and a Gaussian likelihood.}
+    Slide~11 considers
+    \(q_\phi(\cdot\mid x^\ast,x,y)=
+    \operatorname{Normal}(\mu_\phi,\sigma^2)\).
+    When \(\sigma^2\) is fixed,
+    \[
+        -\log q_\phi(y^\ast\mid x^\ast,x,y)
+        =
+        \frac{(y^\ast-\mu_\phi)^2}{2\sigma^2}
+        +\text{constant}.
+    \]
+    Minimizing this negative log-likelihood is therefore
+    equivalent to minimizing mean squared error. The predictive
+    mean \(\mu_\phi\) depends on the context and query.
+
+    \item \textbf{Absolute error and a Laplace likelihood.}
+    With a fixed scale \(b>0\), the same slide gives
+    \[
+    \begin{aligned}
+        q_\phi(\cdot\mid x^\ast,x,y)
+        &=\operatorname{Laplace}(\mu_\phi,b),\\
+        -\log q_\phi(y^\ast\mid x^\ast,x,y)
+        &=\frac{|y^\ast-\mu_\phi|}{b}+\text{constant}.
+    \end{aligned}
+    \]
+    This connects mean absolute error to a different assumed
+    predictive noise distribution.
+
+    \item \textbf{Learning the spread as well as the centre.}
+    Slide~12 lets a Gaussian PFN predict both \(\mu_\phi\) and
+    \(\sigma_\phi^2\), with loss
+    \[
+        \mathcal{L}(\phi)
+        =
+        \mathbb{E}\left[
+            \frac{1}{2}\log\sigma_\phi^2
+            +\frac{(y^\ast-\mu_\phi)^2}{2\sigma_\phi^2}
+        \right]+\text{constant}.
+    \]
+    The model must balance accurate predictions with a suitable
+    spread. The logarithmic term prevents it from reducing the
+    error penalty simply by making the variance arbitrarily large.
+    This is an explanatory example from the presentation.
+
+    \item \textbf{The actual EPIT model uses quantiles.}
+    CorrPFN uses a different regression head: it predicts
+    \(999\) quantiles at probability levels
+    \(0.001,0.002,\ldots,0.999\).
+    A quantile gives a response value associated with a cumulative
+    probability; the \(0.5\) quantile is the median.
+    These outputs are used to construct a predictive distribution
+    without restricting it to the Gaussian example above.
+
+    \item \textbf{Reading a quantile prediction.}
+    Suppose, illustratively, that after conversion to millivolts
+    the \(0.10\), \(0.50\), and \(0.90\) quantiles are
+    \(100\), \(250\), and \(500\)~mV. The first means the model
+    assigns approximately \(10\%\) probability to EPIT at or below
+    \(100\)~mV; the middle value is its median prediction.
+    The \(999\) outputs describe one predictive distribution for
+    a query. They are not \(999\) sampled mechanisms or separate
+    models. These example values are not experimental results.
+
+    \item \textbf{The actual training loss is CRPS.}
+    The local regression path minimizes the
+    \emph{continuous ranked probability score}, averaged over
+    synthetic query targets. To express it, write
+    \(F_\phi(t\mid x^\ast,x,y)\) for the cumulative distribution
+    associated with \(q_\phi\): its predicted probability that
+    the response is at most \(t\). In the loss convention,
+    \begin{equation}
+        \operatorname{CRPS}(F_\phi,y^\ast)
+        =
+        \int_{-\infty}^{\infty}
+        \left[
+            F_\phi(t\mid x^\ast,x,y)
+            -\mathbf{1}\{y^\ast\leq t\}
+        \right]^2\,dt.
+        \label{eq:crps-loss}
+    \end{equation}
+    The indicator is one when the observed outcome is at most
+    \(t\), and zero otherwise. Lower CRPS is better.
+
+    \item \textbf{An intuitive threshold calculation.}
+    On an illustrative millivolt scale, suppose the observed EPIT
+    is \(250\)~mV. At threshold \(t=300\)~mV, the event
+    \emph{EPIT is at most \(300\)~mV} occurred, so the indicator is
+    one. Predicted probabilities of \(0.8\) and \(0.2\) give
+    squared errors \((0.8-1)^2=0.04\) and
+    \((0.2-1)^2=0.64\), respectively. CRPS integrates these
+    comparisons across thresholds; it balances concentration
+    with assigning probability to plausible outcomes. Actual
+    synthetic training uses the generated standardized target scale.
+
+    \item \textbf{Statistical purpose of CRPS.} It compares
+    predicted cumulative probabilities with the observed
+    outcome across thresholds. Like log loss, ideal expected
+    CRPS favors the true conditional distribution, under its
+    usual finite-moment assumptions. Thus, changing from the
+    slides' log loss to CRPS still supports learning a
+    predictive distribution. See
+    \href{https://doi.org/10.1198/016214506000001437}
+    {Gneiting and Raftery (2007)}.
+
+    \item \textbf{How this completes the PFN training argument.}
+    At each threshold, expected squared error is minimized by
+    predicting the true conditional probability of the event.
+    Integrating over thresholds therefore favors the true
+    conditional CDF, under the stated moment assumptions.
+    This is the connection to Section~\ref{sec:pfn-pretraining}:
+    CRPS, like log loss, lets generated query outcomes teach a
+    conditional distribution without exact posterior calculations
+    as training labels. The target distribution is the one induced
+    by the configured synthetic tasks; its accuracy for real
+    corrosion remains an empirical question.
+
+    \item \textbf{What is reported as the prediction.} The
+    reported EPIT point estimate is the median of the predicted
+    distribution. Target scaling is fitted on context labels,
+    and predictions are transformed back to millivolts.
+    A distributional training objective does not, by itself,
+    establish that prediction intervals are calibrated on real
+    corrosion data.
+
+    \item \textbf{How a standardized prediction returns to millivolts.}
+    The synthetic response has no literal EPIT unit. For real
+    inference, the estimator fits target standardization on the
+    context EPIT labels and reverses it for the output. If the
+    context mean were \(200\)~mV, its standard deviation
+    \(300\)~mV, and the predicted standardized median \(0.5\),
+    the returned value would be \(200+300(0.5)=350\)~mV.
+    These numbers illustrate scaling, not a reported prediction.
+    Fitting this context scaling does not update transformer weights.
+
+    \item \textbf{Keep training, selection, and reporting distinct.}
+    Synthetic query CRPS supplies the gradients that train
+    \(\phi\). Mean development-fold Spearman selects the prior
+    configuration and checkpoint. Final Spearman, MAE, RMSE,
+    and \(R^2\) assess the reported point predictions.
+    These quantities serve different stages of the workflow;
+    Spearman is not the transformer's gradient-training loss.
+    Likewise, a fixed transformer can output a spread of plausible
+    responses without sampling a posterior over its own weights.
+\end{notes}
+
+\subsection{Which Implementation and Training Scope This Project Uses}
+\label{sec:tabicl-provenance}
+
+\begin{notes}
+    \item \textbf{Local architecture.} CorrPFN and the local
+    generic baseline use the same configured transformer
+    architecture, including V2 components such as target-aware
+    column embeddings and query-aware scalable softmax.
+    Their saved architecture configurations and parameter
+    shapes match.
+
+    \item \textbf{Generic generator and training framework.}
+    The generic MLP/tree generators and Stage~1 training
+    framework derive from TabICLv1. The project adds the
+    informed prior and the continuous-target training path,
+    using the V2 quantile/distribution implementation.
+
+    \item \textbf{Pretrained weights are a separate choice.}
+    Both local models are trained from scratch.
+    The authors' released pretrained TabICL V2 weights are
+    used only for the external reference model. Using V2
+    architectural components locally does not mean reproducing
+    the authors' full V2 pretraining recipe.
+
+    \item \textbf{Version labels refer to different things.}
+    A project label such as \texttt{v7} identifies a revision of
+    the CorrPFN experiment pipeline. TabICL V1 and V2 identify
+    upstream model generations. A software-package version is
+    a third, separate label.
+
+    \item \textbf{Stage~1 scope.} The reported local runs use
+    synthetic tables of \(1{,}024\) rows and only Stage~1 of the
+    original curriculum. Later stages extend long-context
+    capability. Earlier attempts to extend training did not
+    improve loss in the implementations tested at that time;
+    this does not rule out improvements from newer versions.
+
+    \item \textbf{Dataset adaptation and inference are separate.}
+    CorrPFN's prior is adapted to the EPIT task. Real development
+    labels influence rule calibration and model selection,
+    while transformer weight optimization uses synthetic
+    tasks. The absence of gradient updates during final
+    inference does not mean that the whole project used no
+    real labels during development.
+
+    \item \textbf{Implementation references.}
+    The architecture and loss descriptions above can be traced
+    to \path{src/tabicl/model/tabicl.py},
+    \path{src/tabicl/model/learning.py},
+    \path{src/tabicl/model/quantile_dist.py}, and
+    \path{src/tabicl/train/run.py}.
+    The upstream model references are
+    \href{https://arxiv.org/abs/2502.05564}{Qu et al.,
+    \textit{TabICL} (2025)} and
+    \href{https://arxiv.org/abs/2602.11139}{Qu et al.,
+    \textit{TabICLv2} (2026)}.
+\end{notes}
+
+\subsection{Figures for the Presentation, Described in Words}
+\label{sec:presentation-figure-description}
+
+\begin{notes}
+    \item \textbf{Main figure: where the labeled data enter.}
+    Draw two horizontal lanes with the headings
+    \emph{Fit a model for this task} and
+    \emph{Use a pretrained PFN for this task}.
+    Use the same small example table and query row in both
+    lanes so that the difference is the computation.
+
+    \item \textbf{Upper lane: conventional fitting.}
+    Show the labeled table \((x,y)\) entering a box marked
+    \emph{Fit model parameters}. An orange update loop produces
+    \(\widehat\theta\). Place a separate prediction box to its
+    right: it receives the fitted model and \(x^\ast\), then
+    outputs a prediction. Add a small note that another task
+    normally requires another fit or adaptation.
+
+    \item \textbf{Lower lane, first part: PFN pretraining.}
+    Show several small synthetic tables generated from different
+    \(\theta\sim\pr(\theta)\). Arrows lead to a transformer
+    training box that updates \(\phi\). Show a sampled query
+    target \(y^\ast\) going to the loss calculation, not to the
+    transformer input. Put this part in a shaded area labeled
+    \emph{Pretraining across many tasks}.
+
+    \item \textbf{Lower lane, second part: PFN inference.}
+    After a clear divider, show the real labeled context
+    \((x,y)\) and query \(x^\ast\) entering the frozen transformer
+    together. Put a lock symbol on \(\phi\). Its output is
+    \(q_\phi(y^\ast\mid x^\ast,x,y)\), drawn as a small
+    predictive distribution. There is no parameter-update loop
+    in this part.
+
+    \item \textbf{Use consistent visual labels.} Orange marks
+    parameter updates; a lock marks fixed parameters.
+    Use the same colour for the real context in both lanes.
+    Mark the unknown query target with a question mark.
+    Label the main distinction:
+    \emph{New labels are used for parameter fitting above,
+    and as context inputs below}.
+
+    \item \textbf{What the main figure should communicate.}
+    Both approaches use labeled data and can produce
+    probabilistic predictions. The PFN has already learned how
+    to use different contexts during pretraining.
+    The figure should not imply that PFNs require no training,
+    or that conventional models must update their weights for
+    every individual query.
+
+    \item \textbf{Optional second figure: MAP versus Bayesian
+    prediction versus PFN.} Use a one-dimensional synthetic
+    example, as in slide~9: input on the horizontal axis and
+    response on the vertical axis. Show the same black context
+    points and a blue query position in three panels.
+    The MAP panel shows one selected mechanism's curve.
+    The Bayesian panel shows several plausible curves with
+    thickness indicating posterior weight, together with their
+    combined predictive distribution at the query.
+    The PFN panel shows a learned approximation to that
+    distribution, labeled \(q_\phi\approx\pr\).
+    Mark the whole example as illustrative.
+
+    \item \textbf{A useful animation.} Add one new labeled
+    context point. In the Bayesian panel, the relative weights
+    of mechanisms change. In the PFN panel, the prediction
+    changes after another forward computation while the lock
+    on \(\phi\) stays visible. This makes context adaptation
+    without weight updates concrete.
+\end{notes}
+
+\section{How the Synthetic Training Tasks Are Generated}
+\label{sec:informed-prior}
+
+\subsection{Starting Point and Order of Operations}
+\label{sec:generation-order}
+
+\begin{notes}
+    \item \textbf{What is generated.} One synthetic task contains
+    input rows and their generated responses. Following the
+    presentation's notation, \(s\) is the total number of rows and
+    \(n\) is the number later used as labeled context. For the
+    informed branch, the raw input table is
+    \[
+        X_{\mathrm{raw}}\in\mathbb{R}^{s\times21}.
+    \]
+    Its columns follow the dataset schema in
+    Section~\ref{sec:dataset-features}.
+
+    \item \textbf{What must already be available.} Before transformer
+    pretraining starts, the generator needs the saved feature
+    profiles, calibrated analytical-rule coefficients, and
+    rule-sampling probabilities. The coefficient-fitting procedure
+    is covered in Section~4. The steps below describe how these
+    prepared inputs are used to generate training tasks.
+
+    \item \textbf{Choose the task branch first.} The hybrid prior
+    uses an informed task with probability \(\rho\), and a generic
+    task with probability \(1-\rho\). Using the presentation's
+    \(p(D)\) notation for a distribution over datasets,
+    \begin{equation}
+        p(D)=\rho\,p_{\mathrm{informed}}(D)
+             +(1-\rho)\,p_{\mathrm{generic}}(D).
+        \label{eq:hybrid-task-distribution}
+    \end{equation}
+    The setting \(\rho\) is
+    \texttt{informed\_prior\_ratio}. It controls how often the
+    informed branch is used.
+
+    \item \textbf{Order within an informed task.} Sample alloy
+    compositions; sample environmental conditions and test methods;
+    keep raw and standardized copies of the resulting table;
+    generate an SCM response and an analytical EPIT response;
+    combine the responses; then supply context and query rows
+    for transformer training.
+
+    \item \textbf{The generic branch.} Generic tasks use the
+    construction described in Section~\ref{sec:generic-synthetic-tasks}.
+    Their MLP/tree probabilities remain \(0.7/0.3\).
+    They use their existing preprocessing and receive neither the
+    empirical EPIT feature table nor an analytical EPIT contribution.
+
+    \item \textbf{How this is batched in the implementation.}
+    Routing and several generator settings are sampled for a
+    subgroup of datasets. Datasets in that subgroup share those
+    choices, while their observations and noise are sampled
+    separately. Thus, the routing choices are not independent
+    for every dataset in a batch.
+\end{notes}
+
+\subsection{Saved Feature Profiles and Their Data Sources}
+\label{sec:feature-profile-provenance}
+
+\begin{notes}
+    \item \textbf{Composition profile.}
+    \texttt{epit\_dataset\_v1} stores \(403\) distinct reported
+    composition templates. Each template contains the complete
+    \(24\)-element source composition and its alloy-family label.
+    The final informed branch draws from the \(298\) Fe-alloy
+    templates and \(17\) Ni--Cr--Mo templates. Several related
+    templates can belong to one composition group used for splitting.
+
+    \item \textbf{Environmental profile.}
+    \texttt{epit\_fe\_nicrmo\_features\_v1} stores the
+    \(565\) Fe/Ni--Cr--Mo experimental records used to sample
+    temperature, chloride concentration, pH, and test method.
+    It also records the numeric imputation means and method encoding.
+
+    \item \textbf{Scope of the two alloy families.}
+    The Fe/Ni--Cr--Mo restriction applies to these informed
+    feature draws and to analytical-rule calibration. The
+    transformer evaluation still includes all alloy classes
+    in the dataset.
+
+    \item \textbf{Where the profile information came from.}
+    The profiles were built using feature information from the
+    full \(760\)-row usable corpus. The imputation means and
+    complete method mapping also use that corpus. They were
+    not fitted only on the \(608\) development rows.
+
+    \item \textbf{What this means for the final-test boundary.}
+    The profiles contain no EPIT values, although target
+    availability was used to select the usable rows. They do
+    expose the generator to final-test feature information,
+    including compositions assigned to final-test groups.
+    The composition split therefore separates labeled examples;
+    it does not establish that final-test compositions were
+    unseen during synthetic feature generation.
+
+    \item \textbf{Use during training.} These profiles are fixed,
+    versioned assets. The generator loads them directly; it does
+    not reopen the source Excel workbook for each task.
+\end{notes}
+
+\subsection{Sampling and Perturbing an Alloy Composition}
+\label{sec:composition-generator}
+
+\begin{notes}
+    \item \textbf{Choose a family for each row.} Sampling
+    probabilities follow the numbers of distinct templates:
+    \[
+        \pr(\mathrm{Fe})=\frac{298}{315}\approx0.9460,
+        \qquad
+        \pr(\mathrm{Ni\!-\!Cr\!-\!Mo})
+            =\frac{17}{315}\approx0.0540.
+    \]
+    A template is then sampled uniformly within the chosen
+    family. These frequencies count distinct compositions,
+    rather than repeated experimental measurements.
+
+    \item \textbf{Perturb the reported element amounts.}
+    Let \(c_{ij}\) be the source amount of element \(j\) in
+    the template selected for row \(i\). For positive amounts,
+    \begin{equation}
+        \widetilde c_{ij}=c_{ij}\exp(\epsilon_{ij}),
+        \qquad
+        \epsilon_{ij}\sim\operatorname{Normal}(0,\tau^2).
+        \label{eq:composition-perturbation}
+    \end{equation}
+    The perturbations are sampled independently before
+    composition closure. Larger \(\tau\) produces stronger
+    changes around a template.
+    Its setting is \texttt{pitting\_composition\_perturb\_strength}.
+
+    \item \textbf{Preserve absent elements.} Zero and unreported
+    source amounts remain zero. The perturbation changes the
+    amounts of elements already present in the template.
+
+    \item \textbf{Close the full composition to \(100\) wt.\%.}
+    All \(24\) source elements take part in the normalization:
+    \begin{equation}
+        c_{ij}^{\mathrm{closed}}
+        =
+        100\frac{\widetilde c_{ij}}
+                 {\sum_{e=1}^{24}\widetilde c_{ie}}.
+        \label{eq:composition-closure}
+    \end{equation}
+    Only afterward are the \(17\) model-visible elements selected.
+    Their sum can be below \(100\%\), because the omitted elements
+    can account for part of the alloy.
+
+    \item \textbf{Meaning of \(\tau=0\).} With no perturbation,
+    the generator reuses a template after full-composition
+    closure. Its values can still differ slightly from the
+    original reported values if their total was not exactly
+    \(100\) wt.\%.
+
+    \item \textbf{Composition structure retained by this procedure.}
+    The templates retain the dominant elements, typical amounts,
+    and patterns of elements occurring together. Closure keeps
+    the full vector consistent with a total of \(100\) wt.\%.
+    The final branch has no extra shared block coupling or
+    Dirichlet redraw; those belong to other generator variants
+    discussed in earlier development.
+\end{notes}
+
+\subsection{Sampling the Environment and Test Method}
+\label{sec:environment-generator}
+
+\begin{notes}
+    \item \textbf{Sample one complete experimental tuple.}
+    Independently of the composition, choose one of the
+    \(565\) environmental records uniformly with replacement.
+    Copy its temperature, chloride concentration, pH, and
+    test method together:
+    \[
+        (T_i,C_{\mathrm{Cl},i},\mathrm{pH}_i,a_i).
+    \]
+    Here, \(a_i\) is the encoded test-method category.
+
+    \item \textbf{Which relationships are preserved.}
+    Keeping the tuple intact preserves observed combinations
+    of environmental conditions and methods. Independent
+    composition sampling allows those conditions to be paired
+    with a different alloy from the template bank.
+    The resulting complete row need not have occurred in the
+    real dataset.
+
+    \item \textbf{Missing values and category codes.}
+    Missing numeric environmental values use the means saved
+    in the profile. Methods use the fixed lexicographically
+    ordered mapping over \(52\) categories, including the
+    missing-value category. This is the synthetic profile's
+    mapping; context-fitted evaluation encodings are described
+    in Section~\ref{sec:real-data-representation}.
+
+    \item \textbf{Assemble the physical row.}
+    Append the three environmental values and method code to
+    the \(17\) element amounts. Every informed task uses this
+    complete \(21\)-column profile, with the same feature order.
+\end{notes}
+
+\subsection{Keeping Raw and Standardized Feature Tables}
+\label{sec:feature-standardization}
+
+\begin{notes}
+    \item \textbf{Keep the physical values.}
+    \(X_{\mathrm{raw}}\) retains compositions in wt.\%,
+    temperature in degrees Celsius, chloride concentration in
+    molar units, pH, and the method identifiers.
+
+    \item \textbf{Make a standardized copy.}
+    Let \(\mu_j\) and \(\sigma_j\) be the population mean and
+    standard deviation of column \(j\) across all \(s\) rows
+    in the generated task. Then
+    \begin{equation}
+        X_{\mathrm{std},ij}
+        =
+        \begin{cases}
+            \displaystyle
+            \frac{X_{\mathrm{raw},ij}-\mu_j}{\sigma_j},
+                & \sigma_j>10^{-6},\\[6pt]
+            0,  & \sigma_j\leq10^{-6}.
+        \end{cases}
+        \label{eq:feature-standardization}
+    \end{equation}
+
+    \item \textbf{Use each copy where it is needed.}
+    \begin{equation}
+        X_{\mathrm{raw}}\longrightarrow
+        \begin{cases}
+            g_k(X_{\mathrm{raw}}),
+                & \text{analytical EPIT response},\\
+            f_\theta(X_{\mathrm{std}}),
+                & \text{SCM response},\\
+            X_{\mathrm{std}},
+                & \text{transformer inputs}.
+        \end{cases}
+        \label{eq:informed-pipeline}
+    \end{equation}
+    The analytical rule needs raw values for its thresholds,
+    concentration terms, and method lookup. Standardized
+    features give the random SCM comparable input scales.
+    The SCM and transformer receive the same standardized
+    physical columns.
+
+    \item \textbf{Preserve the schema.} Constant columns become
+    zero and keep their positions. Feature permutation is
+    disabled. The model receives numeric columns without
+    textual feature names, so stable positions preserve their
+    roles. The informed branch bypasses the general
+    \texttt{Reg2Cls} transformation.
+
+    \item \textbf{Standardization of response signals.}
+    In the equations below, \(\mathcal{Z}\) acts on one
+    row-wise signal \(v\) across the generated task:
+    \[
+        \mathcal{Z}(v)_i
+        =
+        \frac{v_i-\overline v}
+             {\max(\operatorname{sd}_{\mathrm{pop}}(v),10^{-6})}.
+    \]
+    Exactly constant signals become zero. The denominator floor
+    handles nearly constant signals. These statistics are
+    recomputed for each synthetic task; they are distinct
+    from the context-fitted states used for real-data evaluation.
+\end{notes}
+
+\subsection{Generating the SCM Response}
+\label{sec:informed-scm-target}
+
+\begin{notes}
+    \item \textbf{Choose the stochastic target head.}
+    Within the informed branch,
+    \[
+        \pr(\mathrm{MLP}\mid\mathrm{informed})=p_{\mathrm{MLP}},
+        \qquad
+        \pr(\mathrm{tree}\mid\mathrm{informed})=1-p_{\mathrm{MLP}}.
+    \]
+    The search setting \texttt{mlp\_prob} controls this choice.
+    It is separate from \(\rho\), which selects the task branch.
+
+    \item \textbf{Generate one response per row.}
+    The selected head maps the standardized physical inputs to
+    a response:
+    \begin{equation}
+        y_{\mathrm{SCM}}
+        =
+        f_\theta^{\mathrm{MLP/tree}}(X_{\mathrm{std}}).
+        \label{eq:scm-target}
+    \end{equation}
+    This is a direct feature-to-target construction, configured
+    as \texttt{is\_causal=False}. The input table stays fixed.
+    Its statistical relationships can be nonlinear, but it is
+    not an identified causal model of corrosion.
+
+    \item \textbf{MLP head.} Its depth, width, activation,
+    initialization, dropout structure, and noise are sampled
+    through the existing MLP-SCM generator. The final layer
+    returns one target value for each row.
+
+    \item \textbf{Tree head.} Each layer fits a regression tree
+    or ensemble to random Gaussian targets using its current
+    input table, then predicts on that table. These outputs
+    become the next layer's inputs, with additive noise in
+    subsequent layers. This produces random piecewise
+    relationships. The fitted targets in this construction are
+    synthetic random values; they are not real EPIT measurements.
+\end{notes}
+
+
+\subsection{Selecting the Analytical EPIT Rule}
+\label{sec:analytical-target-selection}
+
+\begin{notes}
+    \item \textbf{Select one of seven rule families.} Let \(s_k\)
+    be the saved development-validation score of rule \(k\).
+    All seven reported scores are positive, and the sampler uses
+    \[
+        p_k=\frac{s_k}{\sum_{\ell=1}^{7}s_\ell}.
+    \]
+    Better-scoring rules are sampled more often. These are
+    sampling probabilities chosen from validation scores, not
+    Bayesian posterior probabilities. Section~4 explains how
+    the scores are obtained.
+
+    \item \textbf{Use one rule across the task.}
+    The selected rule \(g_k\) acts on the raw physical table:
+    \begin{equation}
+        y_{\mathrm{EPIT}}=g_k(X_{\mathrm{raw}}).
+        \label{eq:epit-target}
+    \end{equation}
+    Every row uses the same rule family and its saved
+    coefficient vector. A rule family describes a mathematical
+    response formula; it is distinct from an alloy family.
+
+    \item \textbf{What is fixed and what changes.}
+    The numerical constants inside the formulas and the saved
+    coefficient vectors stay fixed across training tasks.
+    The selected rule, feature values, and term-standardization
+    statistics can change. The method-aware rule also draws
+    fresh method offsets.
+
+    \item \textbf{Additional generator information.}
+    The Fe/Ni threshold rule uses the sampled template's
+    alloy-family label. This label is internal metadata and
+    is not an extra transformer input. The compact notation
+    \(g_k(X_{\mathrm{raw}})\) leaves this metadata and the
+    random method offsets implicit.
+
+    \item \textbf{Role of the formulas.}
+    The rules add selected corrosion-related relationships to
+    the synthetic response. They are heuristic scores with
+    calibrated relative weights, not equations that directly
+    return physical EPIT values in millivolts. Their complete
+    terms are given below.
+\end{notes}
+
+\subsection{Material Terms in the Analytical Rules}
+\label{sec:analytical-material-terms}
+
+\begin{notes}
+    \item \textbf{Notation and input units.}
+    Element symbols denote nonnegative raw weight-percent
+    amounts. \(\sigma\) denotes the logistic sigmoid,
+    \(\log\) is the natural logarithm, and \(\mathcal{Z}\)
+    is the task-wise standardization defined in
+    Section~\ref{sec:feature-standardization}.
+    The numerical constants below assume these input units.
+
+    \item \textbf{Combine the Mo and W contributions.}
+    \[
+        Q=\mathrm{Mo}+0.55\mathrm{W}.
+    \]
+    This quantity is used inside the material scores; the
+    original Mo and W columns remain separate model inputs.
+
+    \item \textbf{Linear PREN-inspired score.}
+    \[
+        R_{\mathrm{linear}}=\mathrm{Cr}+3.25Q.
+    \]
+    This gives positive material-resistance contributions to
+    Cr, Mo, and W. It is not a complete conventional PREN
+    formula: nitrogen is absent from the retained schema.
+
+    \item \textbf{Cr--Mo/W synergy score.}
+    \[
+        R_{\mathrm{synergy}}
+        =\mathrm{Cr}+3.25Q+\sqrt{\mathrm{Cr}\,Q}.
+    \]
+    The extra term represents a joint contribution from
+    chromium and Mo/W.
+
+    \item \textbf{Common chromium-threshold score.}
+    \[
+        R_{\mathrm{threshold}}
+        =\sigma\!\left(\frac{\mathrm{Cr}-12}{2}\right)
+         +\log(1+Q).
+    \]
+    This uses a chromium threshold near \(12\) wt.\% and a
+    Mo/W contribution with diminishing increments.
+
+    \item \textbf{Family-dependent chromium-threshold score.}
+    \[
+    \begin{aligned}
+        R_{\mathrm{Fe/Ni}}
+        &=\sigma\!\left(\frac{\mathrm{Cr}-t_i}{2}\right)
+          +\log(1+Q),\\
+        t_i&=
+        \begin{cases}
+            12,&\text{Fe-alloy row},\\
+            15,&\text{Ni--Cr--Mo row}.
+        \end{cases}
+    \end{aligned}
+    \]
+    The template metadata determine which threshold is used.
+
+    \item \textbf{Turn the selected score into rule terms.}
+    For the material score \(R_k\) used by rule \(k\),
+    \begin{equation}
+    \begin{aligned}
+        m_k&=\mathcal{Z}(R_k),\\
+        P_k&=\mathcal{Z}(\tanh m_k),\\
+        I_k&=\mathcal{Z}\!\left(\sigma(-m_k)C\right).
+    \end{aligned}
+    \label{eq:rule-material-signals}
+    \end{equation}
+    \(P_k\) is the material-protection term.
+    \(I_k\) combines material susceptibility with the chloride
+    drive \(C\), defined next. It enters the relevant rules
+    with a negative sign.
+\end{notes}
+
+\subsection{Environmental and Test-Method Terms}
+\label{sec:analytical-environment-terms}
+
+\begin{notes}
+    \item \textbf{Chloride terms.}
+    With \(C_{\mathrm{Cl}}\) in molar units,
+    \[
+        L=\mathcal{Z}\!\left(
+            \log_{10}\max(C_{\mathrm{Cl}},10^{-12})
+        \right),
+        \qquad C=\sigma(L).
+    \]
+    The concentration floor allows zero reported chloride
+    values to pass through the logarithm.
+
+    \item \textbf{Combined environmental term.}
+    \begin{equation}
+        E=\sigma\!\left(
+            \mathcal{Z}\!\left[
+                0.075\mathcal{Z}(T)+0.925L
+                +0.115\mathcal{Z}(|\mathrm{pH}-7.25|)
+            \right]
+        \right).
+        \label{eq:rule-combined-environment}
+    \end{equation}
+    This combines temperature, logarithmic chloride, and
+    departure from a reference pH of \(7.25\). The fixed
+    internal weights give chloride the largest coefficient.
+
+    \item \textbf{Separate temperature and acidic-pH terms.}
+    \[
+        H=\sigma\!\left(\frac{T-50}{10}\right),
+        \qquad A=\sigma(6.5-\mathrm{pH}).
+    \]
+    \(H\) represents higher-temperature conditions, with its
+    transition centered at \(50\,^{\circ}\mathrm{C}\).
+    \(A\) represents an acidic-pH contribution.
+
+    \item \textbf{Temperature--chloride interactions.}
+    \[
+        J_0=\sigma(\mathcal{Z}(T))C,
+        \qquad
+        J_1=HC.
+    \]
+    \(J_0\) uses temperature relative to the generated task;
+    \(J_1\) uses the fixed high-temperature term.
+    Both combine temperature with chloride.
+
+    \item \textbf{Coupled material/environment breakdown.}
+    \begin{equation}
+        D_k=\sigma\!\left[
+            0.65L+0.25\mathcal{Z}(H)
+            +0.10\mathcal{Z}(J_1)-0.75m_k
+        \right].
+        \label{eq:rule-coupled-breakdown}
+    \end{equation}
+    Environmental contributions increase this breakdown
+    score, while the material score opposes them.
+    \(D_k\) is a rule term; \(D\) without a subscript denotes
+    a dataset elsewhere in the report.
+
+    \item \textbf{Random test-method term.}
+    For a method-aware task, draw an offset for each encoded
+    category:
+    \[
+        o_j\sim\operatorname{Normal}(0,1),
+        \qquad j=0,\ldots,51.
+    \]
+    A row with category \(a_i\) uses \(v_i=o_{a_i}\), giving
+    \begin{equation}
+        M=\mathcal{Z}\!\left[\tanh\!\left(\mathcal{Z}(v)\right)\right].
+        \label{eq:rule-method-term}
+    \end{equation}
+    Rows with the same method receive the same offset within
+    a task. Both standardizations act across rows.
+    These offsets are resampled for each task; they do not
+    copy fitted real-data method effects.
+
+    \item \textbf{How to interpret the environmental assumptions.}
+    The rules offer different candidate relationships.
+    In particular, the pH-departure term in \(E\) and the
+    acidic term \(A\) express different assumptions.
+    Their presence does not establish a universal pH law
+    for every alloy and experimental range.
+\end{notes}
+
+\subsection{The Seven Complete Analytical Rules}
+\label{sec:analytical-rule-families}
+
+\begin{notes}
+    \item \textbf{Common weighted form.}
+    Each rule combines its listed terms:
+    \begin{equation}
+        g_k(X_{\mathrm{raw}})
+        =b_k(X_{\mathrm{raw}})c_k,
+        \qquad
+        c_{k,j}\geq0,\qquad
+        \sum_j c_{k,j}=1.
+        \label{eq:analytical-rule-vector}
+    \end{equation}
+    The columns of \(b_k\) contain the signed terms in the
+    order shown below. The entries of \(c_k\) are their
+    saved calibrated weights. Nonnegative weights preserve
+    the signs assigned to those terms; a zero coefficient
+    makes its term inactive.
+
+    \item \textbf{Linear PREN}
+    (\texttt{pren\_linear}).
+    Use \(R_{\mathrm{linear}}\) and
+    \[
+        b_k=(P_k,-\mathcal{Z}(E),-I_k).
+    \]
+    Material protection competes with the combined environment
+    and susceptibility--chloride contributions.
+
+    \item \textbf{Cr--Mo/W synergy}
+    (\texttt{cr\_mow\_synergy}).
+    Use \(R_{\mathrm{synergy}}\) and
+    \[
+        b_k=(P_k,-\mathcal{Z}(E),-I_k,-\mathcal{Z}(J_0)).
+    \]
+    This adds material synergy and a separate
+    temperature--chloride contribution.
+
+    \item \textbf{Threshold and saturation}
+    (\texttt{threshold\_saturation}).
+    Use \(R_{\mathrm{threshold}}\) and
+    \[
+        b_k=(P_k,-\mathcal{Z}(E),-I_k,-\mathcal{Z}(J_0)).
+    \]
+    Its environmental terms match the synergy rule, while
+    its material score uses the chromium threshold and
+    logarithmic Mo/W contribution.
+
+    \item \textbf{Improved environment}
+    (\texttt{improved\_environment}).
+    Use \(R_{\mathrm{linear}}\) and
+    \[
+        b_k=(P_k,-\mathcal{Z}(C),-\mathcal{Z}(H),
+                   -\mathcal{Z}(J_1),-\mathcal{Z}(A)).
+    \]
+    Chloride, high temperature, their interaction, and acidic
+    pH have separate weights. The name identifies this
+    candidate formula; it does not by itself imply better
+    prediction performance.
+
+    \item \textbf{Coupled breakdown}
+    (\texttt{coupled\_breakdown}).
+    Use \(R_{\mathrm{linear}}\) and
+    \[
+        b_k=(P_k,-\mathcal{Z}(D_k),-\mathcal{Z}(A)).
+    \]
+    The breakdown term combines environmental aggressiveness
+    and material resistance before entering the weighted rule.
+
+    \item \textbf{Fe/Ni chromium threshold}
+    (\texttt{fe\_ni\_cr\_threshold}).
+    Use \(R_{\mathrm{Fe/Ni}}\) and
+    \[
+        b_k=(P_k,-\mathcal{Z}(C),-\mathcal{Z}(H),
+                   -\mathcal{Z}(J_1),-\mathcal{Z}(A)).
+    \]
+    This pairs the family-dependent material threshold with
+    the separate environmental terms.
+
+    \item \textbf{Method-aware}
+    (\texttt{method\_aware}).
+    Use \(R_{\mathrm{synergy}}\) and
+    \[
+        b_k=(P_k,-\mathcal{Z}(E),-I_k,-\mathcal{Z}(J_0),M).
+    \]
+    The method term adds task-specific variation associated
+    with the measurement category. Its contribution can be
+    positive or negative because \(M\) is centered.
+\end{notes}
+
+\subsection{Combining the SCM and Analytical Responses}
+\label{sec:target-mixture}
+
+\begin{notes}
+    \item \textbf{Standardize, combine, and standardize again.}
+    The final informed response is
+    \begin{equation}
+        y_{\mathrm{informed}}
+        =
+        \mathcal{Z}\!\left[
+            (1-\lambda)\mathcal{Z}(y_{\mathrm{SCM}})
+            +\lambda\mathcal{Z}(y_{\mathrm{EPIT}})
+        \right],
+        \qquad 0\leq\lambda\leq1.
+        \label{eq:scm-epit-target}
+    \end{equation}
+    The setting \(\lambda\) is
+    \texttt{informed\_target\_mix\_weight}.
+
+    \item \textbf{Why standardize the components separately.}
+    The SCM and analytical rule can produce different
+    numerical scales. Separate standardization lets
+    \(\lambda\) control their relative contribution without
+    those arbitrary scales dominating the mixture.
+
+    \item \textbf{Meaning of the endpoints.}
+    For usable, nonconstant components, \(\lambda=0\) gives
+    the SCM response, and \(\lambda=1\) gives the analytical
+    response. Intermediate values combine stochastic
+    relationships with the calibrated EPIT contribution.
+    If the analytical response has a population standard deviation
+    at or below \(10^{-6}\), its contribution is set to zero.
+
+    \item \textbf{Different weights control different choices.}
+    \(\rho\) selects the informed or generic task branch.
+    Within an informed task, \(\lambda\) combines the two
+    responses. Within the analytical response, \(c_k\)
+    weights its individual terms. The rule probability \(p_k\)
+    selects which analytical formula supplies that response.
+
+    \item \textbf{The mixture is not a variance decomposition.}
+    Its two components can be correlated. A coefficient of
+    \(0.5\) therefore does not establish that each component
+    explains half the target variance. Final standardization
+    also means that the synthetic response has no literal
+    millivolt scale.
+\end{notes}
+
+\subsection{Preparing the Task for Transformer Training}
+\label{sec:synthetic-task-handoff}
+
+\begin{notes}
+    \item \textbf{Optional composition descriptors.}
+    An optional Magpie-style representation appends ten
+    deterministic composition descriptors to the raw table
+    before column standardization, giving \(31\) transformer
+    inputs. The response construction still uses the original
+    \(21\) physical columns. Because standardization is
+    column-wise, those first \(21\) standardized inputs remain
+    identical to the SCM inputs.
+    This option is disabled in the reported search and
+    Trial~56 model.
+
+    \item \textbf{Check that the task is usable.}
+    The generator checks the generated inputs and targets.
+    Unusable draws are rejected and regenerated.
+    Missing calibrated-rule scores are a configuration error
+    in this mode; the generator requires them to construct
+    the informed response.
+
+    \item \textbf{Use the synthetic context/query split.}
+    The generated standardized inputs and responses form \(D\).
+    Its context and query portions are \(D_{\mathrm{ctx}}\)
+    and \(D_{\mathrm{qry}}\), as defined in
+    Section~\ref{sec:pfn-pretraining}.
+    The transformer receives the context features and labels,
+    plus the query features. Query labels are used to calculate
+    the training loss.
+
+    \item \textbf{What changes through repeated generation.}
+    New tasks can use different compositions, environments,
+    MLP/tree mechanisms, analytical rules, and noise.
+    Transformer training updates the shared parameters
+    \(\phi\) across those tasks. This connects the generator
+    described here to the PFN training procedure in
+    Section~\ref{sec:pfn-pretraining}.
+\end{notes}
+
+\section{Calibrating and Validating the Analytical EPIT Rules}
+\label{sec:rule-calibration}
+
+\subsection{Purpose, Inputs, and Eligible Rows}
+\label{sec:calibration-scope}
+
+\begin{notes}
+    \item \textbf{Where this step belongs.}
+    Calibration takes place after the real-data splits are
+    frozen and before transformer pretraining begins.
+    It prepares the analytical-rule inputs required by the
+    generator in Section~\ref{sec:informed-prior}.
+
+    \item \textbf{Two outputs are needed.}
+    Each rule needs a validation score to determine how often
+    it will be sampled, and a fitted coefficient vector to
+    determine how it combines its terms.
+    These outputs come from different fits, as described below.
+
+    \item \textbf{Use the same eligible rows for all seven candidates.}
+    The candidate formulas in
+    Section~\ref{sec:analytical-rule-families} use the
+    \(452\) Fe-alloy and Ni--Cr--Mo rows within the development
+    partition. The other development rows are outside this
+    calibration scope. The saved composition groups and fold
+    assignments remain unchanged.
+
+    \item \textbf{Final-test labels are excluded.}
+    The calibration script checks the saved source and split
+    hashes, then masks final-test EPIT values before fitting
+    or scoring any rule. Its calculations use development
+    labels only. The broader feature-profile provenance is
+    documented separately in
+    Section~\ref{sec:feature-profile-provenance}.
+
+    \item \textbf{Candidate-set history.}
+    Earlier Al-specific and high-entropy-alloy-specific
+    proposals were not retained because their eligible subsets
+    were too small or their direct results were unreliable.
+    Two historical PREN rules remain as comparison references;
+    the synthetic sampler uses the seven candidates defined
+    in Section~\ref{sec:analytical-rule-families}.
+\end{notes}
+
+\subsection{Preparing One Development Fold}
+\label{sec:calibration-fold-inputs}
+
+\begin{notes}
+    \item \textbf{Separate context from validation.}
+    For fold \(f\), keep its eligible rows as the validation
+    queries \(D_{\mathrm{qry},f}\). The eligible rows in the
+    other four folds form the labeled context
+    \(D_{\mathrm{ctx},f}\).
+    Here, the presentation's context/query notation describes
+    a real-data rule evaluation.
+
+    \item \textbf{Row counts after the alloy restriction.}
+    Folds \(1\)--\(5\) contain
+    \((95,96,92,95,74)\) eligible validation rows.
+    Their corresponding context sizes are
+    \((357,356,360,357,378)\).
+    These counts are smaller than the complete-fold counts
+    in Section~\ref{sec:dataset-partitions} because calibration
+    uses only the two eligible alloy families.
+
+    \item \textbf{Fit preprocessing on the context.}
+    Estimate missing-value imputation means for the numeric
+    columns required by the rule. Then fit the means and
+    scales used by its intermediate signals and final terms.
+    All of these estimates use the eligible context rows.
+    Apply the saved values unchanged to the validation rows.
+
+    \item \textbf{Construct the term matrices.}
+    \(B_{k,\mathrm{ctx},f}\) contains the signed, standardized
+    terms of rule \(k\) for the context rows.
+    \(B_{k,\mathrm{qry},f}\) contains those terms for the
+    validation rows, using the same fitted preprocessing.
+    Columns follow the term order listed in
+    Section~\ref{sec:analytical-rule-families}.
+
+    \item \textbf{Use target ranks for coefficient fitting.}
+    Let \(\mathcal{Z}_{\mathrm{ctx},f}\) denote standardization
+    with the relevant mean and scale fitted on the context.
+    The fitting target is
+    \[
+        r_{y,f}
+        =
+        \mathcal{Z}_{\mathrm{ctx},f}
+        \!\left(\operatorname{rank}(y_{\mathrm{ctx},f})\right).
+    \]
+    Tied EPIT values receive average ranks.
+    The objective therefore emphasizes the ordering of EPIT
+    values rather than their absolute differences in millivolts.
+\end{notes}
+
+\subsection{Preparing the Method-Aware Correction}
+\label{sec:method-calibration}
+
+\begin{notes}
+    \item \textbf{Group real methods into four broad families.}
+    Direct calibration uses potentiodynamic, potentiostatic,
+    scratch, and other. These families are used to estimate
+    the analytical correction; they do not replace the model's
+    original test-method input.
+    Scan rate is excluded because it is outside the fixed
+    \(21\)-feature schema.
+
+    \item \textbf{Start from an anchored synergy score.}
+    Use the context-fitted synergy terms with the predefined
+    anchor \(a_{\mathrm{syn}}\), specified in
+    Section~\ref{sec:calibration-anchors}:
+    \[
+        v_f=B_{\mathrm{syn},\mathrm{ctx},f}a_{\mathrm{syn}},
+        \qquad
+        e_f=r_{y,f}-\mathcal{Z}_{\mathrm{ctx},f}(v_f).
+    \]
+    The residual \(e_f\) measures what remains unexplained by
+    that anchored score. The EPIT target is rank-transformed;
+    the anchored prediction is standardized without a rank
+    transformation.
+
+    \item \textbf{Estimate and shrink each method-family offset.}
+    For family \(j\), let \(n_j\) be its context-row count
+    and \(\overline e_j\) its mean residual. Set
+    \[
+        \widetilde o_j
+        =
+        \frac{n_j}{n_j+20}\,\overline e_j.
+    \]
+    Small families receive stronger shrinkage toward zero,
+    reducing the influence of offsets estimated from few rows.
+
+    \item \textbf{Center the offsets across context rows.}
+    With \(n_f\) context rows in total,
+    \[
+        \widehat o_j
+        =
+        \widetilde o_j
+        -
+        \sum_{\ell}\frac{n_\ell}{n_f}\widetilde o_\ell.
+    \]
+    Each row receives its family's centered offset. These
+    row-wise values are standardized using the context and
+    become the fifth column of the method-aware term matrix.
+
+    \item \textbf{Reuse the correction for validation.}
+    Apply the fitted family offsets and method-term scaling
+    to validation rows. An unseen family receives an offset
+    of zero before that saved scaling is applied.
+    Validation EPIT values do not enter any of these steps.
+
+    \item \textbf{Then fit the five outer coefficients.}
+    Once the correction column is ready, fit the method-aware
+    coefficient vector using the same constrained objective as
+    the other rules. The base score used to estimate offsets
+    uses the predefined synergy anchor, so it does not require
+    an earlier fitted synergy coefficient vector.
+
+    \item \textbf{What transfers to synthetic generation.}
+    The fitted weight of the method term transfers with the
+    other coefficients. The real-data family offsets do not:
+    synthetic tasks draw fresh offsets over the \(52\) encoded
+    categories, using the construction in
+    Section~\ref{sec:analytical-environment-terms}.
+\end{notes}
+
+\subsection{Fitting the Relative Coefficients}
+\label{sec:coefficient-objective}
+
+\begin{notes}
+    \item \textbf{Calibration objective.}
+    For candidate \(k\) and fold \(f\), solve
+    \begin{equation}
+    \begin{aligned}
+        \widehat c_{k,f}
+        =\underset{c}{\arg\min}\ \bigg\{&
+            \frac{1}{n_f}
+            \left\|B_{k,\mathrm{ctx},f}c-r_{y,f}\right\|_2^2\\
+            &+\gamma\left\|c-a_k\right\|_2^2
+        \bigg\},\\
+        &\sum_j c_j=1,\qquad 0\leq c_j\leq u_{k,j}.
+    \end{aligned}
+    \label{eq:rule-calibration}
+    \end{equation}
+    Here, \(n_f\) is the number of eligible context rows,
+    \(a_k\) is a predefined coefficient anchor, and
+    \(u_{k,j}\) is the upper bound for coefficient \(j\).
+
+    \item \textbf{Fit term.}
+    The first term measures how closely the weighted rule
+    scores match the standardized target ranks.
+    This is a least-squares objective on ranks.
+    It does not directly maximize Spearman correlation;
+    Spearman is used afterward to validate the fitted rule.
+
+    \item \textbf{Regularization term.}
+    The second term penalizes movement away from the anchor.
+    This encourages stable coefficients when several rule
+    terms can explain similar patterns.
+    Every reported fold fit and final-development fit uses
+    \(\gamma=0.1\).
+
+    \item \textbf{Coefficient constraints.}
+    Nonnegative coefficients preserve the signs already
+    assigned to the rule terms. Requiring their sum to be one
+    makes them relative weights. Individual upper bounds
+    restrict selected contributions, such as the acidic-pH
+    and method terms.
+
+    \item \textbf{What is estimated.}
+    The fitted values are dimensionless outer weights.
+    The internal constants of the analytical formulas,
+    including the chromium thresholds, remain fixed.
+    The transformer parameters \(\phi\) are not optimized
+    during this calibration stage.
+
+    \item \textbf{Numerical solution.}
+    The implementation uses constrained optimization with
+    SLSQP, initialized at the anchor. A failed optimization
+    stops calibration instead of supplying an invalid
+    coefficient vector to later training.
+\end{notes}
+
+\subsection{Predefined Anchors and Coefficient Bounds}
+\label{sec:calibration-anchors}
+
+\begin{notes}
+    \item \textbf{Reading the vectors.}
+    Each entry follows the corresponding rule-term order in
+    Section~\ref{sec:analytical-rule-families}.
+    The anchors below are fixed reference weights used during
+    fitting. The fitted weights are reported later in this section.
+
+    \item \textbf{Linear PREN.}
+    \[
+        a_{\mathrm{PREN}}
+        =\frac{(0.575,0.50,0.775)}{1.85},
+        \qquad
+        u_{\mathrm{PREN}}=(1,1,1).
+    \]
+
+    \item \textbf{Synergy and threshold-and-saturation rules.}
+    Both use
+    \[
+        a_{\mathrm{syn}}
+        =\frac{(0.575,0.50,0.775,0.20)}{2.05},
+        \qquad
+        u=(1,1,1,1).
+    \]
+
+    \item \textbf{Improved-environment and Fe/Ni-threshold rules.}
+    Both use
+    \[
+        a=(0.42,0.24,0.14,0.14,0.06),
+        \qquad
+        u=(1,0.65,0.45,0.45,0.15).
+    \]
+
+    \item \textbf{Coupled-breakdown rule.}
+    \[
+        a=(0.55,0.40,0.05),
+        \qquad
+        u=(1,0.80,0.15).
+    \]
+
+    \item \textbf{Method-aware rule.}
+    \[
+        a=(0.90a_{\mathrm{syn}},0.10),
+        \qquad
+        u=(1,1,1,1,0.25).
+    \]
+    Thus, the method term is capped at \(0.25\).
+    The acidic-pH term is capped at \(0.15\) in the three
+    candidate rules that contain it. Every anchor sums to one.
+\end{notes}
+
+
+\subsection{Validating Each Rule on Unused Fold Rows}
+\label{sec:direct-rule-validation}
+
+\begin{notes}
+    \item \textbf{Apply the fitted rule to the validation queries.}
+    Once preprocessing and coefficients are fixed for fold \(f\),
+    calculate
+    \[
+        \widehat v_{k,f}
+        =B_{k,\mathrm{qry},f}\widehat c_{k,f}.
+    \]
+    These are analytical rule scores. The validation EPIT
+    values are used to assess them, not to fit that fold's rule.
+
+    \item \textbf{Measure ordering with Spearman correlation.}
+    The score for candidate \(k\) on fold \(f\) is
+    \[
+        r_{k,f}
+        =
+        \operatorname{Spearman}
+        \!\left(\widehat v_{k,f},y_{\mathrm{qry},f}\right).
+    \]
+    Repeat the preparation, fitting, and validation for all
+    five folds. Each eligible row receives a prediction from
+    a rule fitted without that row's validation fold.
+
+    \item \textbf{Average the five fold scores.}
+    The saved rule-quality score is
+    \begin{equation}
+        s_k=\frac{1}{5}\sum_{f=1}^{5}r_{k,f}.
+        \label{eq:rule-quality}
+    \end{equation}
+    Each fold has equal weight, despite their different
+    eligible-row counts. This is the mean of five correlations,
+    rather than one correlation calculated after pooling
+    every validation prediction.
+
+    \item \textbf{Convert quality scores into sampling probabilities.}
+    Normalize the seven positive \(s_k\) values using the
+    formula in Section~\ref{sec:analytical-target-selection}.
+    This gives the probabilities \(p_k\) used by the synthetic
+    generator. All seven rules remain available, with better
+    direct scores giving a larger sampling probability.
+\end{notes}
+
+\subsection{Refitting Once for Synthetic Generation}
+\label{sec:final-rule-refit}
+
+\begin{notes}
+    \item \textbf{Fit again on all eligible development rows.}
+    After fold validation, fit each candidate once more on
+    all \(452\) eligible development rows. Refit its
+    imputation, scaling, and any method offsets, then solve
+    the same coefficient objective with the same anchor,
+    bounds, and \(\gamma=0.1\).
+
+    \item \textbf{Save the resulting coefficient vector.}
+    This fit supplies the \(c_k\) used during synthetic
+    generation. It is a new fit on the complete eligible
+    development subset, not an average of the five
+    fold-specific coefficient vectors.
+
+    \item \textbf{Keep the validation score from the fold procedure.}
+    The final refit's score on its own fitting rows is only
+    an in-sample diagnostic. The five-fold \(s_k\) remains
+    the quantity used to calculate \(p_k\).
+
+    \item \textbf{Transfer the coefficients to newly generated tasks.}
+    Synthetic rule terms are standardized within each generated
+    task as described in Section~\ref{sec:informed-prior}.
+    The saved coefficients weight those new terms.
+    The real-data imputation and scaling states are retained
+    for direct-rule evaluation and reproducibility; synthetic
+    tasks use their own feature-generation and scaling procedure.
+\end{notes}
+
+\subsection{Frozen Scores, Probabilities, and Coefficients}
+\label{sec:frozen-rule-results}
+
+\begin{notes}
+    \item \textbf{How to read the values.}
+    In each entry below, \(s_k\) is the mean direct-validation
+    Spearman correlation, \(p_k\) is the synthetic sampling
+    probability, and \(c_k\) is the final-development
+    coefficient vector. Coefficient entries follow the term
+    order in Section~\ref{sec:analytical-rule-families}.
+    Values are rounded to four decimal places.
+
+    \item \textbf{Linear PREN.}
+    \[
+        s_k=0.5174,\qquad p_k=0.1342,\qquad
+        c_k=(0.5560,0.4013,0.0427).
+    \]
+
+    \item \textbf{Cr--Mo/W synergy.}
+    \[
+    \begin{aligned}
+        s_k&=0.5583,\qquad p_k=0.1448,\\
+        c_k&=(0.4331,0.0710,0.2072,0.2887).
+    \end{aligned}
+    \]
+
+    \item \textbf{Threshold and saturation.}
+    \[
+    \begin{aligned}
+        s_k&=0.5181,\qquad p_k=0.1343,\\
+        c_k&=(0.4186,0.1139,0.1960,0.2715).
+    \end{aligned}
+    \]
+
+    \item \textbf{Improved environment.}
+    \[
+    \begin{aligned}
+        s_k&=0.5850,\qquad p_k=0.1517,\\
+        c_k&=(0.5394,0.2414,0.0798,0.1393,0.0000).
+    \end{aligned}
+    \]
+
+    \item \textbf{Coupled breakdown.}
+    \[
+        s_k=0.5525,\qquad p_k=0.1433,\qquad
+        c_k=(0.4265,0.5062,0.0673).
+    \]
+
+    \item \textbf{Fe/Ni chromium threshold.}
+    \[
+    \begin{aligned}
+        s_k&=0.5252,\qquad p_k=0.1362,\\
+        c_k&=(0.5233,0.2721,0.1058,0.0988,0.0000).
+    \end{aligned}
+    \]
+
+    \item \textbf{Method-aware.}
+    \[
+    \begin{aligned}
+        s_k&=0.5999,\qquad p_k=0.1556,\\
+        c_k&=(0.3051,0.0000,0.3124,0.2099,0.1727).
+    \end{aligned}
+    \]
+    This candidate has the highest mean direct-validation
+    score among the seven and therefore the largest
+    sampling probability.
+
+    \item \textbf{Terms assigned zero weight.}
+    The acidic-pH term is inactive in the final
+    improved-environment and Fe/Ni-threshold fits.
+    The combined environment term is inactive in the
+    method-aware fit, although its material--chloride and
+    temperature--chloride terms remain active.
+    These fitted zeros do not establish that the corresponding
+    physical effects are absent in real corrosion.
+
+    \item \textbf{Historical PREN references.}
+    The older reference uses the material score
+    \[
+        R_{\mathrm{historical}}
+        =\mathrm{Cr}+0.25\mathrm{Ni}
+         +3.3\mathrm{Mo}+1.65\mathrm{W}.
+    \]
+    Its mean fold Spearman score is \(0.4598\) when calibrated
+    and evaluated across all \(608\) development rows, and
+    \(0.5123\) on the same \(452\)-row Fe/Ni scope used by the
+    seven candidates. The \(0.5123\) value is the comparison
+    with a matched row population. Neither historical
+    reference enters the seven-rule sampler.
+
+    \item \textbf{What these results measure.}
+    These correlations assess the analytical formulas directly.
+    They are not transformer prediction results.
+    A rule's direct score establishes neither the performance
+    of a PFN trained with that rule nor its real-data uncertainty
+    calibration.
+\end{notes}
+
+\subsection{Saved Outputs and the Next Workflow Step}
+\label{sec:calibration-outputs}
+
+\begin{notes}
+    \item \textbf{Saved calibration records.}
+    The directory
+    \path{corrosion_datasets/analysis/epit_pipeline/target_rules_v2/}
+    contains one JSON artifact per rule,
+    \texttt{calibration\_summary.json},
+    \texttt{direct\_evaluation\_predictions.csv}, and the
+    direct-evaluation HTML report. The records include fold
+    scores, fitted coefficients, preprocessing states, and
+    the final-development fits.
+
+    \item \textbf{What is passed to transformer training.}
+    Training receives all seven rule scores and all
+    \(29\) final-development coefficient values.
+    Saved floating-point values are preserved when constructing
+    the training arguments; the rounded values above are
+    only for reading. Artifact hashes bind these values to
+    the source data and frozen split.
+
+    \item \textbf{Freeze the calibrated rule distribution.}
+    The same scores and coefficient vectors are reused during
+    the Optuna search and final transformer training.
+    At this point, all eligible development labels have
+    influenced the calibrated prior. The next stage searches
+    the generator settings and evaluates the resulting
+    transformers while keeping these calibration outputs fixed.
+
+    \item \textbf{Implementation references.}
+    \path{scripts/epit_pipeline/target_rules.py} constructs
+    the real-data rule terms and preprocessing states.
+    \path{scripts/epit_pipeline/calibrate_target_rules.py}
+    performs coefficient fitting, fold validation, and
+    final-development refitting.
+\end{notes}
+
+\section{Selecting the Prior and Training the Final Transformer}
+\label{sec:model-selection}
+
+\subsection{The Two Selection Decisions}
+\label{sec:selection-sequence}
+
+\begin{notes}
+    \item \textbf{First choose the generator settings.}
+    Starting from the calibrated rules in
+    Section~\ref{sec:rule-calibration}, Optuna compares
+    candidate settings for the synthetic-data generator.
+    One \emph{trial} means one candidate configuration,
+    its short transformer-training run, and its development
+    evaluation.
+
+    \item \textbf{Then choose a checkpoint.}
+    Train a new transformer from scratch using the selected
+    configuration for a longer run. Compare checkpoints
+    from that run and keep the one with the best development
+    score. Choosing the prior configuration and choosing the
+    training step are separate decisions.
+
+    \item \textbf{Use development data for both decisions.}
+    All trial and checkpoint comparisons use the five frozen
+    development folds. The \(152\) final-test rows are
+    excluded from these evaluations.
+
+    \item \textbf{Study identity.}
+    The reported search is
+    \path{epit_pipeline_optuna_empirical_features_scm_target_v7}.
+    It uses the corrected generator described in
+    Section~\ref{sec:informed-prior}. Earlier studies with
+    different target construction or preprocessing are kept
+    separate, so their scores do not enter this search.
+\end{notes}
+
+\subsection{The Four Searched Parameters}
+\label{sec:prior-search-space}
+
+\begin{notes}
+    \item \textbf{Informed-task probability.}
+    \[
+        \rho\in\{0.25,0.50,0.75,1.00\}.
+    \]
+    This chooses how frequently training uses an informed
+    task. The remaining tasks use the generic branch.
+
+    \item \textbf{MLP probability within the informed branch.}
+    \[
+        p_{\mathrm{MLP}}\in\{0,0.25,0.50,0.70,0.75,1.00\}.
+    \]
+    This chooses between MLP and tree SCM target heads for
+    informed tasks. The generic branch retains its fixed
+    MLP/tree probabilities of \(0.7/0.3\).
+
+    \item \textbf{SCM--EPIT response mixture.}
+    \[
+        \lambda\in[0,1]\qquad\text{(continuous)}.
+    \]
+    This controls the analytical EPIT contribution in the
+    target mixture from Equation~\eqref{eq:scm-epit-target}.
+
+    \item \textbf{Composition perturbation strength.}
+    \[
+        \tau\in[0,0.15]\qquad\text{(continuous)}.
+    \]
+    This controls the multiplicative changes around sampled
+    alloy templates, as in
+    Equation~\eqref{eq:composition-perturbation}.
+
+    \item \textbf{What stays fixed across trials.}
+    The empirical profiles, Fe/Ni template-frequency mixture,
+    \(21\)-column physical schema, preprocessing policy,
+    calibrated rule scores, and calibrated coefficients are
+    fixed. Informed tasks always use the physical profile;
+    feature permutation, extra block coupling, Dirichlet
+    redraw, and Magpie augmentation are disabled.
+    The model architecture and optimization settings also
+    remain fixed.
+\end{notes}
+
+\subsection{How Optuna Proposes and Records Trials}
+\label{sec:optuna-trial-proposals}
+
+\begin{notes}
+    \item \textbf{Sampler.}
+    The search uses Optuna's tree-structured Parzen estimator
+    (TPE). It uses earlier trial outcomes to propose settings
+    for later trials.
+
+    \item \textbf{Initial random sampling.}
+    The setting is \texttt{n\_startup\_trials=10}.
+    Sampling remains random while fewer than ten completed
+    or pruned trials are available. With concurrent workers,
+    more than ten trials can start randomly before enough
+    results have finished.
+
+    \item \textbf{Shared search.}
+    Workers contribute to the same Optuna journal.
+    Each worker uses one GPU and one training process.
+    The records include trial parameters, commands, scores,
+    seeds, worker settings, and hashes of the source,
+    split, and calibration artifacts.
+
+    \item \textbf{Separate sampler and training seeds.}
+    The NumPy and Torch training seeds are both \(42\).
+    Optuna sampler seeds are recorded per worker and trial;
+    the selected Trial~56 records sampler seed \(66373\).
+    The sampler seed controls proposed configurations, while
+    the training seeds control randomness within the
+    generated tasks and model-training run.
+\end{notes}
+
+\subsection{Short Transformer Training for Each Trial}
+\label{sec:proxy-training}
+
+\begin{notes}
+    \item \textbf{Train one model from scratch.}
+    Each trial trains a transformer for \(1{,}000\) steps
+    using tasks from its candidate generator configuration.
+    A step is a parameter update from a batch of synthetic
+    tasks. The resulting checkpoint supplies all five
+    development-fold evaluations for that trial.
+
+    \item \textbf{Fixed Stage~1 setup.}
+    Training uses synthetic tables of \(1{,}024\) rows.
+    The configured synthetic context fraction ranges from
+    \(0.1\) to \(0.9\).
+    Each update uses a batch of \(512\) tasks, processed
+    in microbatches of four.
+    The regression loss is CRPS, as described in
+    Section~\ref{sec:tabicl-regression}.
+
+    \item \textbf{Fixed optimizer and schedule.}
+    The local trainer uses AdamW with learning rate
+    \(10^{-4}\), a cosine schedule with warmup, and gradient
+    clipping at \(1.0\).
+    The warmup proportion is \(0.02\) of the
+    \(10{,}000\)-step scheduler horizon, giving \(200\)
+    warmup steps.
+
+    \item \textbf{The short run uses the longer schedule.}
+    The proxy stops at step \(1{,}000\), but the scheduler
+    still has a \(10{,}000\)-step horizon.
+    It therefore evaluates an early part of the intended
+    training schedule. The schedule is not compressed to
+    finish its decay within the proxy run.
+
+    \item \textbf{Data generation and loading.}
+    Synthetic tasks are generated during training on CPU.
+    The recorded configuration uses one parallel
+    prior-generation job, four data-loader workers, and
+    a prefetch factor of four. Model optimization runs on
+    the GPU.
+
+    \item \textbf{Purpose of the proxy.}
+    Short runs make it possible to compare more generator
+    configurations before committing to longer training.
+    Their ranking is an estimate of which configurations are
+    useful; it does not guarantee the same ranking after
+    every possible training duration.
+\end{notes}
+
+\subsection{Evaluating a Trial on the Development Folds}
+\label{sec:transformer-development-evaluation}
+
+\begin{notes}
+    \item \textbf{Use the complete development population.}
+    Transformer evaluation covers all \(608\) development
+    rows, across all alloy classes.
+    Each fold supplies \(486\)--\(487\) labeled context rows
+    and \(121\)--\(122\) validation query rows.
+    The rule-calibration restriction to \(452\) Fe/Ni rows
+    does not apply here.
+
+    \item \textbf{Reuse the trained checkpoint.}
+    For each fold, supply its context features and EPIT
+    labels together with its query features.
+    Apply the context-fitted real-data preprocessing from
+    Section~\ref{sec:real-data-representation}.
+    The context changes between folds while the learned
+    transformer parameters \(\phi\) remain fixed.
+
+    \item \textbf{Calculate the trial objective.}
+    Let \(t\) identify a trial and
+    \(\widehat y_{t,f}\) its EPIT predictions on fold \(f\).
+    Optuna maximizes
+    \begin{equation}
+        S_t
+        =
+        \frac{1}{5}\sum_{f=1}^{5}
+        \operatorname{Spearman}
+        \!\left(\widehat y_{t,f},y_{\mathrm{qry},f}\right).
+        \label{eq:optuna-objective}
+    \end{equation}
+    This is an equal-weight mean of the five fold correlations.
+
+    \item \textbf{Why ranking is the primary criterion.}
+    EPIT spans a wide numerical range and includes extreme
+    observations. Spearman measures agreement in the ordering
+    of predictions and observations, while magnitude-based
+    errors can be strongly affected by a few large errors.
+
+    \item \textbf{Keep magnitude-based diagnostics.}
+    MAE, RMSE, \(R^2\), and variation across folds are also
+    recorded. They help show whether good ordering is
+    accompanied by accurate millivolt predictions.
+    They do not determine the winning trial.
+
+    \item \textbf{Read saved metric names in context.}
+    Fields such as \texttt{mean\_test\_spearman} in these
+    evaluator outputs refer to the held-out development
+    folds. They are development scores, despite the word
+    \texttt{test} in the field name.
+\end{notes}
+
+
+\subsection{One Fixed Inference Configuration}
+\label{sec:selection-inference-settings}
+
+\begin{notes}
+    \item \textbf{Use the same prediction settings throughout.}
+    Proxy-fold evaluation, final-run checkpoint selection,
+    and the locked final inference configuration use the
+    same feature representation and prediction settings.
+    This keeps changes in evaluation settings from affecting
+    which trial or checkpoint wins.
+
+    \item \textbf{Requested and effective ensemble sizes.}
+    The estimator is configured with
+    \texttt{n\_estimators=8},
+    \texttt{feat\_shuffle\_method="none"}, and
+    \texttt{norm\_methods=["none"]}.
+    These options produce one feature order and one numerical
+    view, giving one actual inference configuration.
+    Eight is the requested upper limit; the effective
+    ensemble size here is one.
+
+    \item \textbf{Meaning of the normalization setting.}
+    The \texttt{none} option disables additional
+    power-transformed inference views. The estimator's
+    ordinary numeric preprocessing still applies.
+
+    \item \textbf{Outputs and row use.}
+    Predictions use the median regression output, transformed
+    back to millivolts, with regression-uncertainty output
+    disabled. Inference uses random state \(42\).
+    The locked \texttt{max\_samples\_per\_task=0} setting
+    means all available rows are used.
+    The reported representation has \(21\) inputs and no
+    Magpie descriptors.
+\end{notes}
+
+\subsection{How to Interpret the Development Scores}
+\label{sec:development-score-interpretation}
+
+\begin{notes}
+    \item \textbf{The analytical prior stays fixed within the search.}
+    Before Optuna begins, rule probabilities use results from
+    all five calibration folds, and rule coefficients are
+    fitted on all \(452\) eligible development rows.
+    These values are reused for every transformer fold;
+    calibration is not repeated inside each fold evaluation.
+
+    \item \textbf{Validation labels have already influenced the prior.}
+    The eligible validation rows are absent from the labeled
+    context for their transformer fold, but their EPIT values
+    have contributed to the frozen calibration outputs.
+    This is why the transformer evaluation is not a complete
+    cross-validation of the whole calibration-and-training
+    procedure.
+
+    \item \textbf{Use these scores for selection.}
+    The development scores guide both configuration selection
+    and checkpoint selection. They are not unbiased estimates
+    of performance on new data.
+    Final-test labels are excluded from these decisions;
+    the feature-profile boundary remains as described in
+    Section~\ref{sec:feature-profile-provenance}.
+
+    \item \textbf{Direct-rule and transformer scores have different scopes.}
+    The direct scores in
+    Section~\ref{sec:frozen-rule-results} cover the
+    \(452\)-row Fe/Ni subset. The transformer scores cover
+    all \(608\) development rows.
+    Comparing their numerical values alone does not measure
+    the improvement from replacing a formula with a transformer.
+\end{notes}
+
+\subsection{The Selected Optuna Configuration}
+\label{sec:selected-prior-configuration}
+
+\begin{notes}
+    \item \textbf{Selection uses the available completed trials.}
+    A candidate must be completed and have a finite
+    development objective. The final run takes the completed
+    candidate with the highest \(S_t\) available at selection
+    time. The recorded decision remains fixed even if the
+    study later receives more results.
+
+    \item \textbf{Recorded study state.}
+    At selection, the study contained \(78\) trials, with
+    six still marked as running.
+    Trial~56 was explicitly selected as the best completed
+    trial then available. The unfinished trial identifiers
+    and states are retained in the manifest.
+
+    \item \textbf{Selected parameter values.}
+    Rounded to four decimal places where needed,
+    \[
+        \rho=0.75,\qquad
+        p_{\mathrm{MLP}}=0.50,\qquad
+        \lambda=0.2048,\qquad
+        \tau=0.1028.
+    \]
+    Thus, \(75\%\) of tasks use the informed branch,
+    and its MLP and tree heads are equally likely.
+    The informed response mixture has coefficients of
+    approximately \(0.7952\) for the standardized SCM
+    response and \(0.2048\) for the standardized analytical
+    response.
+
+    \item \textbf{Proxy development results.}
+    At the proxy checkpoint, step \(1{,}000\), Trial~56
+    has the following means across the five development folds:
+    \[
+    \begin{aligned}
+        \text{Spearman}&=0.6903,&
+        \text{MAE}&=211.0\ \text{mV},\\
+        \text{RMSE}&=298.0\ \text{mV},&
+        R^2&=0.4373.
+    \end{aligned}
+    \]
+    The Spearman value determines its selection.
+\end{notes}
+
+\subsection{Long Training and Checkpoint Selection}
+\label{sec:final-training-and-selection}
+
+\begin{notes}
+    \item \textbf{Start a new training run.}
+    Train the selected configuration from scratch for
+    \(10{,}000\) Stage~1 steps, retaining the fixed
+    optimization settings and calibrated rule distribution.
+    Transformer weight updates use synthetic tasks.
+    Real development labels are used through prior
+    calibration and as context and scoring targets during
+    development evaluation.
+
+    \item \textbf{Save candidate checkpoints.}
+    Permanent checkpoints are saved every \(500\) steps.
+    After the training run finishes, evaluate the \(20\)
+    saved checkpoints at steps
+    \(500,1000,\ldots,10000\) on the five development folds.
+
+    \item \textbf{Select by the same primary metric.}
+    Let \(S_{\mathrm{dev}}(h)\) be the mean development-fold
+    Spearman correlation for the checkpoint at training step
+    \(h\). Select
+    \begin{equation}
+        h_{\mathrm{selected}}
+        =
+        \underset{h\in\{500,1000,\ldots,10000\}}{\arg\max}
+        \ S_{\mathrm{dev}}(h).
+        \label{eq:checkpoint-selection}
+    \end{equation}
+    All candidates use the inference settings from
+    Section~\ref{sec:selection-inference-settings}.
+    MAE, RMSE, and \(R^2\) remain diagnostics.
+
+    \item \textbf{Selected checkpoint and development results.}
+    Step \(2{,}500\) has the highest mean development
+    Spearman correlation:
+    \[
+    \begin{aligned}
+        \text{Spearman}&=0.6966,&
+        \text{MAE}&=191.3\ \text{mV},\\
+        \text{RMSE}&=280.9\ \text{mV},&
+        R^2&=0.4717.
+    \end{aligned}
+    \]
+    The \(10{,}000\)-step run was completed, but development
+    evaluation selected these earlier saved weights.
+    Final-test scores do not enter this choice.
+
+    \item \textbf{Training-repeat scope.}
+    The reported result uses one final training run with
+    the recorded seeds. Variation across development folds
+    describes different context/query partitions; it does
+    not measure variation across independently trained
+    final models.
+\end{notes}
+
+\subsection{Freezing the Model for Final Evaluation}
+\label{sec:final-model-lock}
+
+\begin{notes}
+    \item \textbf{Save the complete selection record.}
+    The final-model manifest records Trial~56, the effective
+    training configuration, rule artifacts, split hashes,
+    all checkpoint evaluations, the selected checkpoint
+    hash, and the final inference settings.
+    A separate lock binds the manifest to the selected
+    checkpoint file.
+
+    \item \textbf{Recorded run location.}
+    The manifest and lock are stored under
+    \path{corrosion_datasets/analysis/epit_pipeline/final_v1/epit_pipeline_optuna_empirical_features_scm_target_v7/}
+    as \texttt{final\_model\_manifest.json} and
+    \texttt{final\_model\_lock.json}.
+    They identify \texttt{step-2500.ckpt} as the model to
+    carry into final evaluation.
+
+    \item \textbf{Keep changes identifiable.}
+    Existing final manifests and locks are not overwritten.
+    A run with parameter overrides receives a distinct
+    identity and records those overrides.
+    The reported Trial~56 final run has no such overrides.
+
+    \item \textbf{Workflow entry points.}
+    \path{scripts/epit_pipeline/run_optuna.py} manages the
+    search, and
+    \path{scripts/epit_pipeline/evaluate_optuna_folds.py}
+    evaluates development folds.
+    \path{scripts/epit_pipeline/train_final.py} performs
+    the long training run, checkpoint comparison, and
+    final-model freezing.
+\end{notes}
+
+\section{Final Evaluation and Results}
+\label{sec:final-evaluation}
+
+\subsection{From the Frozen Model to Final-Test Predictions}
+\label{sec:final-prediction-task}
+
+\begin{notes}
+    \item \textbf{Start with the selected model.}
+    CorrPFN is Trial~56 at step \(2{,}500\), selected using
+    development scores and locked as described in
+    Section~\ref{sec:final-model-lock}.
+    The final-test scores below do not determine this choice.
+
+    \item \textbf{Supply the final context and queries.}
+    All \(608\) development rows, including their EPIT
+    labels, form \(D_{\mathrm{ctx}}\).
+    The \(152\) final-test rows supply query features.
+    These queries include all alloy classes assigned to the
+    final-test partition.
+
+    \item \textbf{Predict with fixed transformer weights.}
+    The trained model uses the labeled context to predict
+    query EPIT values. The analytical corrosion rules have
+    already shaped its synthetic pretraining; they are not
+    evaluated as an extra correction during final inference.
+
+    \item \textbf{Keep the input and output definitions fixed.}
+    The comparison uses the \(21\) raw input columns without
+    Magpie augmentation. TabICL preprocessing is fitted on
+    the development context, and its point predictions are
+    medians returned on the millivolt scale.
+    The locked inference configuration is documented in
+    Section~\ref{sec:selection-inference-settings};
+    the retained execution records are discussed in
+    Section~\ref{sec:final-result-provenance}.
+\end{notes}
+
+\subsection{Comparison Models and Their Selection}
+\label{sec:comparison-models}
+
+\begin{notes}
+    \item \textbf{Local generic baseline.}
+    This model was trained on the generic
+    \texttt{mix\_scm} prior, with MLP/tree probabilities of
+    \(0.7/0.3\). It provides a local reference with the same
+    transformer architecture as CorrPFN.
+
+    \item \textbf{What is matched in the saved baseline records.}
+    The model configurations and parameter-tensor shapes
+    match. At step \(2{,}500\), the recorded optimizer
+    hyperparameters and learning-rate settings also match.
+    The available checkpoint metadata does not establish
+    equality of every training setting.
+
+    \item \textbf{Generic baseline at the same training step.}
+    Step \(2{,}500\) matches the step of the selected CorrPFN
+    checkpoint. This comparison holds the recorded update
+    count fixed.
+
+    \item \textbf{Generic baseline selected by development scores.}
+    A second comparison applies the same selection criterion
+    used for CorrPFN: highest mean development-fold Spearman.
+    Among \(20\) saved baseline checkpoints, this selects
+    step \(7{,}000\), with development Spearman \(0.6723\).
+    This comparison was added retrospectively using the
+    development evaluations recorded on 2 September 2026;
+    it was not frozen in the original CorrPFN selection lock.
+
+    \item \textbf{Pretrained TabICL V2.}
+    This reference uses the authors' released
+    \texttt{tabicl-regressor-v2-20260212.ckpt} weights.
+    Its synthetic generator and pretraining procedure differ
+    from the local runs, even though the local architecture
+    also contains V2 components.
+    The comparison therefore changes more than the
+    corrosion-informed part of the prior.
+
+    \item \textbf{CatBoost.}
+    This is the conventional supervised regression reference.
+    It is fitted on all \(608\) development rows, then
+    predicts the same \(152\) final-test rows.
+    The recorded CatBoost version is \(1.2.10\).
+
+    \item \textbf{Fixed CatBoost settings.}
+    The run uses \(1{,}000\) boosting iterations, depth \(6\),
+    learning rate \(0.03\), L2 regularization \(3\), and
+    random seed \(42\). Its training objective is RMSE.
+    It runs on CPU with eight threads.
+    There is no CatBoost hyperparameter search, validation
+    set during fitting, or early stopping in this comparison.
+
+    \item \textbf{CatBoost input representation.}
+    CatBoost receives the same raw feature columns, handles
+    numeric missing values directly, and treats test method
+    as categorical. Missing categories are replaced by a
+    dedicated string label before fitting.
+
+    \item \textbf{References independent of local checkpoint step.}
+    Pretrained V2 and CatBoost do not change when a different
+    local checkpoint is inspected. The two reported generic
+    baseline rows represent different saved states of the
+    same local training run.
+\end{notes}
+
+\subsection{Calculating and Reading the Final Metrics}
+\label{sec:final-metrics}
+
+\begin{notes}
+    \item \textbf{Evaluation quantities.}
+    Let \(m=152\) be the number of final-test queries.
+    For query \(i\), \(y_i^\ast\) is the observed EPIT value
+    and \(\widehat y_i^\ast\) is its prediction.
+    All four metrics below are calculated on this same
+    final-test partition. They are not the five-fold
+    development means from Section~\ref{sec:model-selection}.
+
+    \item \textbf{Spearman correlation: higher is better.}
+    Spearman measures agreement between the ranks of
+    \(\widehat y^\ast\) and \(y^\ast\).
+    It measures ordering without requiring accurate
+    millivolt differences between predictions.
+
+    \item \textbf{Mean absolute error: lower is better.}
+    \begin{equation}
+        \operatorname{MAE}
+        =
+        \frac{1}{m}\sum_{i=1}^{m}
+        \left|\widehat y_i^\ast-y_i^\ast\right|.
+        \label{eq:final-mae}
+    \end{equation}
+    MAE reports the average absolute prediction error in
+    millivolts.
+
+    \item \textbf{Root mean squared error: lower is better.}
+    \begin{equation}
+        \operatorname{RMSE}
+        =
+        \sqrt{\frac{1}{m}\sum_{i=1}^{m}
+        \left(\widehat y_i^\ast-y_i^\ast\right)^2}.
+        \label{eq:final-rmse}
+    \end{equation}
+    RMSE is also in millivolts and gives larger errors more
+    influence than MAE.
+
+    \item \textbf{Coefficient of determination: higher is better.}
+    With \(\overline y^\ast\) denoting the final-test mean,
+    \begin{equation}
+        R^2
+        =
+        1-
+        \frac{\sum_{i=1}^{m}
+            (\widehat y_i^\ast-y_i^\ast)^2}
+             {\sum_{i=1}^{m}
+            (y_i^\ast-\overline y^\ast)^2}.
+        \label{eq:final-r-squared}
+    \end{equation}
+    A negative value means that the squared prediction
+    error exceeds the error of a constant predictor equal
+    to the final-test mean. That mean is the mathematical
+    reference in this metric; it is not a separately trained
+    comparison model.
+
+    \item \textbf{Scope of the reported outputs.}
+    These metrics assess point predictions.
+    They do not evaluate the calibration or coverage of
+    predictive intervals. Regression-uncertainty output is
+    disabled in the recorded comparison.
+\end{notes}
+
+\subsection{Results on the 152 Final-Test Rows}
+\label{sec:held-out-results}
+
+\begin{notes}
+    \item \textbf{Reading the results.}
+    Correlations and \(R^2\) are rounded to four decimal
+    places; errors are rounded to one decimal place.
+    Every model below uses the same final-test rows.
+
+    \item \textbf{CorrPFN, selected step \(2{,}500\).}
+    \[
+    \begin{aligned}
+        \text{Spearman}&=0.7681,&
+        \text{MAE}&=186.8\ \text{mV},\\
+        \text{RMSE}&=268.7\ \text{mV},&
+        R^2&=0.5294.
+    \end{aligned}
+    \]
+
+    \item \textbf{Pretrained TabICL V2.}
+    \[
+    \begin{aligned}
+        \text{Spearman}&=0.6011,&
+        \text{MAE}&=206.8\ \text{mV},\\
+        \text{RMSE}&=343.8\ \text{mV},&
+        R^2&=0.2294.
+    \end{aligned}
+    \]
+
+    \item \textbf{CatBoost.}
+    \[
+    \begin{aligned}
+        \text{Spearman}&=0.6090,&
+        \text{MAE}&=231.7\ \text{mV},\\
+        \text{RMSE}&=323.1\ \text{mV},&
+        R^2&=0.3194.
+    \end{aligned}
+    \]
+
+    \item \textbf{Generic baseline, same step \(2{,}500\).}
+    \[
+    \begin{aligned}
+        \text{Spearman}&=0.2829,&
+        \text{MAE}&=326.4\ \text{mV},\\
+        \text{RMSE}&=548.8\ \text{mV},&
+        R^2&=-0.9630.
+    \end{aligned}
+    \]
+
+    \item \textbf{Generic baseline, development-selected step \(7{,}000\).}
+    This is the additional retrospective comparison described
+    in Section~\ref{sec:comparison-models}.
+    \[
+    \begin{aligned}
+        \text{Spearman}&=0.5474,&
+        \text{MAE}&=226.4\ \text{mV},\\
+        \text{RMSE}&=337.8\ \text{mV},&
+        R^2&=0.2561.
+    \end{aligned}
+    \]
+\end{notes}
+
+\subsection{What the Recorded Comparison Shows}
+\label{sec:final-result-interpretation}
+
+\begin{notes}
+    \item \textbf{Best values across the four reported metrics.}
+    CorrPFN has the highest Spearman and \(R^2\), and the
+    lowest MAE and RMSE, among these recorded comparisons.
+    The improvement therefore includes both ordering and
+    millivolt-scale prediction accuracy.
+
+    \item \textbf{Difference from pretrained TabICL V2.}
+    Using the unrounded metric values, CorrPFN reduces MAE
+    by \(9.7\%\), reduces RMSE by \(21.9\%\), and increases
+    Spearman by \(0.1670\).
+    The error reductions are relative percentages; the
+    correlation difference is an absolute change.
+
+    \item \textbf{The stronger generic comparison matters.}
+    The development-selected generic checkpoint performs
+    substantially better than its step-\(2{,}500\) checkpoint
+    on this final-test partition. CorrPFN still has better
+    values on all four metrics when compared with that
+    step-\(7{,}000\) reference.
+
+    \item \textbf{Development and final-test scores are different evaluations.}
+    CorrPFN's final-test Spearman is higher than its
+    development-fold mean, while MAE and RMSE are lower.
+    Both the query rows and context size change: final
+    inference uses \(608\) context rows instead of
+    \(486\)--\(487\).
+    These numbers alone cannot isolate the effect of more
+    context or establish statistical significance.
+
+    \item \textbf{Scope of the finding.}
+    The result supports the complete informed configuration
+    on this dataset and partition.
+    It does not separately establish the benefit of empirical
+    features, rule calibration, generic-task mixing, or any
+    individual rule. Those contributions require matched
+    ablations of the final system.
+\end{notes}
+
+\subsection{Later Checkpoint Diagnostics}
+\label{sec:post-selection-diagnostics}
+
+\begin{notes}
+    \item \textbf{Keep the chronology explicit.}
+    CorrPFN was locked on 1 September 2026.
+    The comparison run recorded on 10 September evaluated
+    \(25\) common checkpoints of the two local models on
+    the final-test set. This included additional saved
+    checkpoints beyond the \(20\) candidates used for
+    development selection.
+
+    \item \textbf{The best-looking final-test checkpoint was different.}
+    CorrPFN step \(2{,}000\) produced the strongest recorded
+    final-test values across all four reported metrics.
+    This was discovered by inspecting final-test results,
+    after the development-based selection.
+
+    \item \textbf{Retain the original selected model.}
+    Step \(2{,}500\) remains the reported CorrPFN checkpoint.
+    Replacing it with step \(2{,}000\) because of the later
+    final-test scores would use the evaluation labels to
+    choose the model.
+
+    \item \textbf{Role of the additional results.}
+    The other checkpoints provide diagnostics of how
+    performance changes through training.
+    A new model or configuration chosen using these
+    final-test diagnostics would need a new independent
+    evaluation to support a fresh performance claim.
+\end{notes}
+
+\subsection{Where the Final Results Come From}
+\label{sec:final-result-provenance}
+
+\begin{notes}
+    \item \textbf{Dedicated final-evaluation entry point.}
+    \path{scripts/epit_pipeline/evaluate_final.py}
+    checks the frozen model and split, verifies the expected
+    feature schema, and predicts with the selected checkpoint.
+    A successful run writes
+    \texttt{final\_evaluation\_manifest.json} and prevents
+    a completed evaluation in that output directory from
+    being silently replaced.
+
+    \item \textbf{Retained source of the reported metrics.}
+    The scores in Section~\ref{sec:held-out-results} come
+    from the separate comparison run:
+    \path{corrosion_datasets/analysis/epit_pipeline/trial56_final_test_all_checkpoints_11172/summary.csv}.
+    Use its step-\(2{,}500\) entries for CorrPFN, pretrained
+    V2, CatBoost, and the equal-step generic baseline, plus
+    the generic step-\(7{,}000\) entry.
+    The accompanying \texttt{results.json} records the
+    comparison date, checkpoint paths, and available settings.
+
+    \item \textbf{Selection record and execution record.}
+    The comparison identifies the same CorrPFN checkpoint
+    path and step as the final-model manifest.
+    That manifest and its lock document the earlier
+    development-based selection.
+    A completion manifest from the dedicated final-evaluation
+    entry point is absent from the retained artifacts;
+    the reported metrics are therefore attributed to the
+    comparison output above.
+
+    \item \textbf{One missing setting in the comparison metadata.}
+    The retained comparison JSON records the estimator limit,
+    fixed feature order, and median output, but does not
+    record the normalization-view setting.
+    It therefore does not independently confirm that the
+    locked \texttt{norm\_methods=["none"]} setting, and hence
+    the single effective inference view described in
+    Section~\ref{sec:selection-inference-settings}, was
+    used in that comparison run.
+    The missing entry is a limit of the execution record,
+    not evidence that a different setting was used.
+
+    \item \textbf{Source of the generic checkpoint selection.}
+    The saved development results are
+    \path{corrosion_datasets/analysis/epit_pipeline/trial56_checkpoint_folds_66378/summary.csv}.
+    The generic step-\(7{,}000\) choice follows the largest
+    mean development-fold Spearman in that file.
+    Its retrospective status is kept explicit alongside
+    the final-test comparison.
+\end{notes}
+
+\section{Discussion, Limitations, and Next Experiments}
+\label{sec:discussion}
+
+\subsection{What Earlier Development Explains}
+\label{sec:development-lessons}
+
+\begin{notes}
+    \item \textbf{A good synthetic-data diagnostic need not select a good transformer.}
+    Earlier experiments trained simpler models, including
+    Ridge regression, on synthetic data and tested their
+    predictions on real EPIT data. Their scores did not
+    reliably rank prior configurations in the same order as
+    downstream transformer performance.
+    This explains the final division of work: direct rule
+    calibration shapes the analytical contribution, while
+    actual transformer evaluations select the searched
+    prior settings.
+
+    \item \textbf{The target must remain connected to the observed inputs.}
+    Earlier generators could transform a composition after
+    generating a target from latent variables. That
+    transformation could discard information needed to
+    predict the target.
+    The final construction generates the physical features
+    first, then calculates the response from them, as
+    described in Section~\ref{sec:generation-order}.
+
+    \item \textbf{Both the target formula and its inputs matter.}
+    The v7 correction restored the calibrated EPIT contribution
+    that the preceding SCM-only implementation had bypassed.
+    It also preserved raw inputs for the corrosion formulas
+    and aligned the standardized inputs supplied to the SCM
+    and transformer. These changes make the intended
+    construction explicit; they do not, by themselves,
+    quantify its predictive benefit.
+
+    \item \textbf{Historical experiments explain decisions.}
+    The earlier runs in \texttt{main2.tex} used different
+    generators, splits, and training settings.
+    They provide development evidence, but they cannot
+    substitute for comparisons that change one part of the
+    final system while keeping the rest fixed.
+\end{notes}
+
+\subsection{How Far the Final-Test Claim Extends}
+\label{sec:generalization-boundary}
+
+\begin{notes}
+    \item \textbf{The protected boundary concerns the revised workflow.}
+    After the split was fixed, final-test EPIT labels were
+    excluded from analytical-rule calibration, Optuna
+    selection, and checkpoint selection.
+    However, the complete \(760\)-row corpus had influenced
+    historical prior development before that split existed.
+    The final-test set was therefore not a newly obtained
+    dataset that had never informed the project.
+
+    \item \textbf{Unseen labeled groups do not mean unseen feature values.}
+    As documented in
+    Section~\ref{sec:feature-profile-provenance}, the saved
+    synthetic profiles include feature information from
+    the full corpus. A final-test composition can therefore
+    influence pretraining as an unlabeled template, even
+    though its composition group is absent from the labeled
+    prediction context.
+    The result measures generalization under this
+    dataset-adapted prior.
+
+    \item \textbf{The split answers a composition-group question.}
+    Source publications may occur on both sides of the
+    split, and all observations come from the same database.
+    The result does not establish performance in a new
+    laboratory, publication, alloy database, or measurement
+    campaign. Those settings can differ in ways that the
+    current split does not separate.
+
+    \item \textbf{The existing final-test set is now part of the experiment history.}
+    The later checkpoint diagnostics are described in
+    Section~\ref{sec:post-selection-diagnostics}.
+    Further changes motivated by those results need fresh
+    independent evaluation; retaining the original checkpoint
+    does not make the inspected test set unseen again.
+\end{notes}
+
+\subsection{Uncertainty in the Model Comparison}
+\label{sec:statistical-limitations}
+
+\begin{notes}
+    \item \textbf{One final training run does not show stability across runs.}
+    Different random seeds can change synthetic tasks and
+    transformer training. The current results do not measure
+    that variation. Variation across development folds
+    concerns different context/query partitions and does
+    not replace repeated training.
+
+    \item \textbf{The test rows are not necessarily independent observations.}
+    Several measurements can belong to one composition group
+    or source study. Consequently, \(152\) test rows do not
+    automatically provide the same amount of independent
+    evidence as \(152\) unrelated experiments.
+    The reported metric differences have no accompanying
+    assessment of this sampling uncertainty.
+
+    \item \textbf{Development selection has two sources of uncertainty.}
+    The prior is selected after \(1{,}000\) proxy-training
+    steps, while final training runs for \(10{,}000\) steps.
+    A configuration that learns quickly need not perform
+    best after longer training.
+    Also, the calibration outputs and development folds are
+    reused during selection, as explained in
+    Section~\ref{sec:development-score-interpretation}.
+    The best development score is therefore a selection
+    result, not an unbiased estimate for new data.
+
+    \item \textbf{The comparisons apply to the recorded configurations.}
+    The generic model's architecture is matched, but the
+    retained metadata does not prove that every training
+    setting is identical. Pretrained V2 has a different
+    pretraining procedure, and CatBoost uses fixed settings
+    without its own search.
+    The results do not establish that CorrPFN beats every
+    possible configuration of these model classes.
+
+    \item \textbf{Prediction uncertainty is a separate question.}
+    Uncertainty about a new EPIT value concerns the model's
+    predictive distribution. Uncertainty about the reported
+    improvement concerns variation across datasets and
+    training runs. Good point-prediction scores alone do
+    not establish either calibrated predictive intervals
+    or a statistically stable advantage.
+\end{notes}
+
+\subsection{Limits of the Synthetic Data and Corrosion Rules}
+\label{sec:physical-limitations}
+
+\begin{notes}
+    \item \textbf{Composition diversity is limited by the template bank.}
+    Perturbation changes amounts of elements already present
+    in a template; it does not introduce an absent element.
+    The Ni--Cr--Mo branch has only \(17\) distinct templates,
+    compared with \(298\) Fe-alloy templates.
+    Generating many rows from these templates does not
+    create equally broad evidence about new alloy systems.
+
+    \item \textbf{Synthetic coverage differs from evaluation coverage.}
+    The informed composition generator and rule calibration
+    focus on Fe and Ni--Cr--Mo alloys.
+    Other alloy classes still occur in the evaluated task.
+    Overall test metrics combine these classes and do not
+    establish equally good performance for each class.
+
+    \item \textbf{Plausible compositions are not guaranteed physical materials.}
+    Composition closure enforces the total element amount,
+    but it does not establish phase stability, microstructure,
+    heat-treatment response, or passive-film behavior.
+    The generator is not a thermodynamic or mechanistic
+    corrosion simulator.
+
+    \item \textbf{Recombining alloys and environments is an assumption.}
+    Each sampled environmental tuple preserves its observed
+    temperature, chloride, pH, and method combination.
+    Composition is drawn independently, so the original
+    alloy--experiment pairing is lost.
+    The resulting combinations may be useful training tasks,
+    but their feasibility and experimental relevance have
+    not been established for every draw.
+
+    \item \textbf{The equations express selected tendencies.}
+    The SCM adds randomly sampled nonlinear relationships,
+    while the analytical rules add chosen corrosion-related
+    structure. Neither is a complete law of pitting.
+    Rule calibration and synthetic target standardization
+    also mean that the generating score is not a physical
+    EPIT prediction in millivolts.
+    The model obtains its real prediction scale from the
+    labeled context through the regression procedure in
+    Section~\ref{sec:tabicl-regression}.
+\end{notes}
+
+\subsection{Limits of Test-Method and Feature Representation}
+\label{sec:representation-limitations}
+
+\begin{notes}
+    \item \textbf{Arbitrary method numbers can affect a numeric model.}
+    As explained in Section~\ref{sec:real-data-representation},
+    method codes identify categories without a physical
+    order or distance. Nevertheless, a numeric SCM or
+    transformer can respond to their numerical spacing.
+    For example, it can treat codes \(1\) and \(2\) as closer
+    than codes \(1\) and \(40\), although the encoding gives
+    no experimental reason for that relationship.
+
+    \item \textbf{Synthetic method effects are not copied protocol corrections.}
+    The method-aware rule uses category-specific offsets.
+    Its calibrated term weight transfers to synthetic
+    generation, but the fitted real method-family offsets
+    do not: new offsets are sampled for synthetic tasks.
+    This introduces variation between methods without
+    reproducing the estimated effect of each real protocol.
+
+    \item \textbf{The input schema omits some relevant experimental detail.}
+    A method category does not fully describe a measurement
+    procedure. The \(21\) inputs do not explicitly encode
+    every detail of surface preparation, microstructure,
+    heat treatment, or scan rate.
+    The model cannot directly distinguish two rows using
+    information that those rows do not contain.
+
+    \item \textbf{The reported model depends on the documented schema.}
+    Fixed feature order assigns each column a specific role.
+    Changing units, column positions, or the method
+    representation requires compatible preprocessing and
+    validation. Additional descriptors or a new categorical
+    representation must also be used consistently during
+    synthetic pretraining and real-data evaluation.
+\end{notes}
+
+\subsection{Next Experiments and the Questions They Would Answer}
+\label{sec:next-experiments}
+
+\begin{notes}
+    \item \textbf{Status of these proposals.}
+    The experiments below are follow-up work, not additional
+    evidence already included in the reported results.
+
+    \item \textbf{Use a fresh evaluation with development-only profiles.}
+    Rebuild composition templates, environmental records,
+    imputation statistics, and method mappings using only
+    the new development data. Freeze the entire procedure
+    before evaluating independent measurements.
+    An external dataset or a split that holds out entire
+    source studies would test transfer across data sources.
+
+    \item \textbf{Repeat training and quantify uncertainty.}
+    Train CorrPFN and its local generic comparator with
+    several predefined seeds under matched settings.
+    Select checkpoints using development data for every run.
+    Compare models on the same queries and assess metric
+    differences while accounting for composition groups
+    and shared sources.
+    This separates variation from training from variation
+    in the measured test sample.
+
+    \item \textbf{Change one part of the final generator at a time.}
+    An ablation is a controlled comparison that removes or
+    changes one component.
+    Setting \(\lambda=0\) tests the contribution of the
+    analytical response while retaining informed features;
+    setting \(\rho=1\) removes generic-task mixing.
+    Calibrated versus predefined coefficients, or
+    score-weighted versus uniform rule sampling, answer
+    different questions and should be separate comparisons.
+    Keep the training budget, feature representation,
+    development selection, and evaluation protocol matched.
+
+    \item \textbf{Check whether the short proxy ranks longer runs well.}
+    Train several promising prior configurations beyond
+    \(1{,}000\) steps and compare their development trajectories.
+    This tests whether the current search favors fast early
+    learning at the expense of later performance.
+
+    \item \textbf{Test a categorical treatment of method.}
+    Compare the current integer column with one-hot encoding
+    or a representation learned specifically for categories.
+    First, a diagnostic can consistently relabel methods in
+    both context and queries to measure sensitivity to
+    arbitrary code values.
+    A replacement encoding requires compatible synthetic
+    training and evaluation; changing only the final-test
+    input format is not a complete alternative model.
+
+    \item \textbf{Locate the remaining prediction errors.}
+    Report errors by alloy family, source study, method,
+    and environmental range, together with subgroup sizes.
+    If predictive intervals are needed, also test their
+    empirical coverage and width on independent queries.
+    These checks would show where an overall good score
+    conceals weak coverage or unreliable uncertainty.
+
+    \item \textbf{Save a complete record of the next final evaluation.}
+    Use the frozen evaluation entry point and retain its
+    completion manifest, predictions, and all effective
+    inference settings, including normalization views.
+    This addresses the execution-record gap identified in
+    Section~\ref{sec:final-result-provenance} and makes the
+    next comparison easier to reproduce.
+\end{notes}
+
+\section{Optional Magpie-Style Composition Descriptors}
+\label{sec:magpie-descriptors}
+
+\subsection{Purpose and Status in This Report}
+\label{sec:magpie-purpose}
+
+\begin{notes}
+    \item \textbf{This is an optional extension.}
+    The reported v7 search and selected CorrPFN model use
+    \(21\) inputs with Magpie descriptors disabled.
+    This section documents the implemented extension
+    introduced briefly in
+    Section~\ref{sec:synthetic-task-handoff}.
+
+    \item \textbf{What a composition descriptor is.}
+    A descriptor is an additional number calculated from
+    the element amounts and a table of elemental properties.
+    For example, it can summarize how different the
+    constituent elements are in electronegativity.
+    The aim is to give the transformer useful summaries
+    that it would otherwise have to construct from the
+    individual composition columns.
+
+    \item \textbf{The original composition stays available.}
+    The ten descriptors supplement the existing inputs:
+    \[
+    \begin{aligned}
+        \text{Original inputs}&=17+3+1=21,\\
+        \text{With descriptors}&=21+10=31.
+    \end{aligned}
+    \]
+    The \(17\) element amounts remain separate columns.
+    They are not replaced by an aggregate alloy score.
+
+    \item \textbf{These are fixed calculations.}
+    The same composition and lookup table always produce
+    the same descriptors. Their calculation uses no EPIT
+    labels and contains no separately learned material
+    embedding or fitted corrosion model.
+    \emph{Magpie-style} here refers to this specific
+    ten-feature bundle.
+\end{notes}
+
+\subsection{From Weight Percentages to Atomic Fractions}
+\label{sec:magpie-atomic-fractions}
+
+\begin{notes}
+    \item \textbf{Start from the raw composition.}
+    Let \(c_{ij}\) be the weight percentage of element
+    \(j\) in row \(i\), and let \(M_j\) be its atomic weight
+    from the fixed lookup table.
+    Descriptor calculation uses the raw element amounts,
+    before feature standardization.
+
+    \item \textbf{Calculate the fraction of atoms of each element.}
+    Divide each weight percentage by its atomic weight,
+    then normalize:
+    \begin{equation}
+        a_{ij}
+        =
+        \frac{c_{ij}/M_j}
+             {\displaystyle\sum_{e=1}^{17}c_{ie}/M_e}.
+        \label{eq:magpie-atomic-fractions}
+    \end{equation}
+    Here, \(a_{ij}\) is an atomic fraction, and
+    \(\sum_{j=1}^{17}a_{ij}=1\).
+    Equal weight percentages need not correspond to equal
+    numbers of atoms because atomic weights differ.
+
+    \item \textbf{The fractions describe the retained elements.}
+    The sum includes only the \(17\) model-visible elements.
+    Elements outside that subset do not contribute to the
+    descriptors, even if they were present in the full
+    source composition.
+    The normalization therefore describes the retained
+    composition subset.
+
+    \item \textbf{The conversion uses a copy.}
+    Atomic fractions are used only for descriptor calculation.
+    The original composition columns retain their
+    weight-percentage representation.
+    The descriptor functions require finite, nonnegative
+    amounts and a positive total amount in each row.
+\end{notes}
+
+\subsection{Descriptor Formulas and Their Meaning}
+\label{sec:magpie-statistics}
+
+\begin{notes}
+    \item \textbf{Notation for an elemental property.}
+    Let \(q_j\) be a tabulated property of element \(j\),
+    such as electronegativity or melting temperature.
+    Different descriptors apply the following statistics
+    to different property tables.
+
+    \item \textbf{Weighted mean: the average property per atom.}
+    \begin{equation}
+        \mu_q^{(i)}
+        =
+        \sum_{j=1}^{17}a_{ij}q_j.
+        \label{eq:magpie-mean}
+    \end{equation}
+    Elements with larger atomic fractions contribute more.
+
+    \item \textbf{Average absolute deviation: how spread out the properties are.}
+    \begin{equation}
+        \delta_q^{(i)}
+        =
+        \sum_{j=1}^{17}a_{ij}
+        \left|q_j-\mu_q^{(i)}\right|.
+        \label{eq:magpie-deviation}
+    \end{equation}
+    This measures the weighted average distance from the
+    mean. It is an absolute deviation, not a variance or
+    standard deviation.
+
+    \item \textbf{Range: the difference between the largest and smallest properties.}
+    \begin{equation}
+        R_q^{(i)}
+        =
+        \max_{j:\,a_{ij}\geq0.01}q_j
+        -
+        \min_{j:\,a_{ij}\geq0.01}q_j.
+        \label{eq:magpie-range}
+    \end{equation}
+    Only elements with at least \(1\%\) atomic fraction
+    enter the range. This prevents a tiny trace of an
+    element from determining an extreme.
+    Means and deviations still include every element with
+    a positive fraction; the cutoff does not change the
+    composition itself.
+
+    \item \textbf{A simple numerical example.}
+    Suppose two elements have atomic fractions \(0.75\)
+    and \(0.25\), and property values \(4\) and \(8\).
+    Then
+    \[
+    \begin{aligned}
+        \mu_q&=0.75(4)+0.25(8)=5,\\
+        \delta_q&=0.75|4-5|+0.25|8-5|=1.5,\\
+        R_q&=8-4=4.
+    \end{aligned}
+    \]
+    These illustrative numbers show that the three
+    statistics describe different aspects of the same
+    composition.
+\end{notes}
+
+\subsection{The Ten Appended Features in Their Exact Order}
+\label{sec:magpie-feature-order}
+
+\begin{notes}
+    \item \textbf{Columns \(22\)--\(24\): electronegativity.}
+    Append its mean, range, and average absolute deviation,
+    in that order.
+    These summarize the tabulated electron-attracting
+    tendencies of the constituent elements and their
+    differences.
+
+    \item \textbf{Columns \(25\)--\(26\): covalent radius.}
+    Append its mean and average absolute deviation.
+    These summarize the tabulated atomic sizes and their
+    variation.
+
+    \item \textbf{Columns \(27\)--\(28\): elemental melting temperature.}
+    Append its mean and range.
+    The mean is a weighted average of the elements'
+    tabulated melting temperatures; it is not a prediction
+    of the alloy's actual melting temperature.
+
+    \item \textbf{Column \(29\): \(d\)-valence electrons.}
+    Append the mean of the Magpie table's
+    \(d\)-valence-electron counts.
+
+    \item \textbf{Column \(30\): total valence electrons.}
+    Append the mean of the table's total
+    valence-electron counts.
+
+    \item \textbf{Column \(31\): unfilled valence states.}
+    Append the mean of the table's unfilled-valence-state
+    counts. Like the other electron descriptors, this is
+    a composition summary of fixed elemental values,
+    not a calculation of the alloy's electronic structure.
+\end{notes}
+
+\subsection{Where the Descriptors Enter Synthetic Training}
+\label{sec:magpie-synthetic-integration}
+
+\begin{notes}
+    \item \textbf{First construct the physical task and target.}
+    Generate the \(21\) raw physical columns and calculate
+    the SCM--EPIT response as described in
+    Section~\ref{sec:informed-prior}.
+    The SCM uses standardized physical inputs; the
+    analytical rule uses their raw values.
+
+    \item \textbf{Then append the composition summaries.}
+    Calculate the ten descriptors from the raw composition:
+    \[
+        X_{\mathrm{raw}}^{31}
+        =
+        [X_{\mathrm{raw}}^{21},
+         X_{\mathrm{Magpie}}^{10}].
+    \]
+    The superscripts indicate column counts.
+    The target mechanisms still use only the original
+    physical inputs, so adding the descriptors does not
+    change the synthetic target for an otherwise identical
+    generated task.
+
+    \item \textbf{Standardize the full table column by column.}
+    The transformer receives the standardized
+    \(31\)-column table. With the procedure from
+    Section~\ref{sec:feature-standardization},
+    \[
+        X_{\mathrm{transformer},1:21}^{31}
+        =
+        X_{\mathrm{std}}^{21}.
+    \]
+    Its first \(21\) columns therefore remain numerically
+    identical to the standardized physical columns used
+    by the SCM.
+
+    \item \textbf{The descriptor columns have no separate random generator.}
+    They receive no independent noise, SCM draw, shared
+    block coupling, categorical conversion, or random
+    marginal transformation.
+    Their relationship with the target comes through the
+    composition from which both are calculated.
+
+    \item \textbf{Generic tasks receive no material descriptors.}
+    The generic branch retains its own preprocessing.
+    When mixed tasks need a common tensor width, unused
+    positions can be filled with zeros for batching.
+    Those padded positions are not active Magpie features.
+\end{notes}
+
+\subsection{Applying the Same Descriptors to Real Data}
+\label{sec:magpie-real-data}
+
+\begin{notes}
+    \item \textbf{Prepare each evaluation split separately.}
+    Fit mean imputation for the \(17\) composition columns
+    using only the labeled context rows.
+    Apply those fitted means to missing composition values
+    in both context and query rows.
+
+    \item \textbf{Use the same formulas and lookup values.}
+    Convert the imputed weight percentages to atomic
+    fractions and calculate the same ten descriptors
+    in the order listed in
+    Section~\ref{sec:magpie-feature-order}.
+    Query EPIT labels are not needed for this calculation.
+
+    \item \textbf{Keep the physical columns first.}
+    Append the descriptors after the original \(21\)
+    columns, then use the estimator's usual context-fitted
+    preprocessing.
+    Observed composition values are preserved; missing
+    values have been replaced by the fitted means.
+    The environment and method columns remain in their
+    existing positions.
+
+    \item \textbf{Match the model's trained representation.}
+    A model trained with descriptors must receive the same
+    augmentation during evaluation.
+    The current \(21\)-input CorrPFN result is not an
+    evaluation of this \(31\)-input extension.
+\end{notes}
+
+\subsection{Implementation, Validation, and Experimental Scope}
+\label{sec:magpie-implementation}
+
+\begin{notes}
+    \item \textbf{Fixed source of elemental values.}
+    The atomic weights and property values were extracted
+    once from Matminer~0.10.0 and stored under the version
+    identifier
+    \path{epit_magpie_v1_matminer_0_10_0}.
+    The calculation is implemented in
+    \path{src/tabicl/prior/magpie_features.py}.
+    It uses Torch during synthetic generation and NumPy
+    during real-data evaluation; Matminer is not a runtime
+    dependency.
+
+    \item \textbf{How the optional configuration is recorded.}
+    The training setting is
+    \texttt{pitting\_magpie\_features}.
+    The final-training workflow supports a recorded
+    \texttt{--override-use-magpie} option.
+    Such an override changes the effective training
+    configuration; it does not mean that the original
+    Optuna trial selected descriptors.
+
+    \item \textbf{What the recorded checks cover.}
+    Earlier validation in \texttt{main2.tex} reports
+    agreement with Matminer reference values.
+    The repository also contains checks for Torch/NumPy
+    agreement, preserved base columns, context-fitted
+    imputation, descriptor order, and \(31\)-feature
+    informed generation.
+    These checks concern correct calculation and integration.
+
+    \item \textbf{Predictive benefit remains a separate comparison.}
+    Correct descriptor values do not establish improved
+    EPIT prediction. Historical descriptor experiments
+    changed other parts of the generator and evaluation.
+    Establishing the benefit for the final v7 construction
+    requires a matched comparison with descriptors enabled
+    and disabled, following the evaluation principles in
+    Section~\ref{sec:next-experiments}.
+\end{notes}
+
+\end{document}

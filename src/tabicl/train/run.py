@@ -4,6 +4,7 @@ import os
 import timeit
 import warnings
 import functools
+import random
 from contextlib import nullcontext
 
 import math
@@ -138,6 +139,8 @@ class Trainer:
         seed_offset = self.ddp_rank if self.ddp else 0
         np.random.seed(self.config.np_seed + seed_offset)
         torch.manual_seed(self.config.torch_seed + seed_offset)
+        if getattr(self.config, "python_seed", None) is not None:
+            random.seed(self.config.python_seed + seed_offset)
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.allow_tf32 = True
 
@@ -228,8 +231,24 @@ class Trainer:
     def configure_prior(self):
         """Set up a tabular dataset generator for synthetic data during training."""
 
+        variation = float(getattr(self.config, "pitting_coefficient_variation", 0.0))
+        if not math.isfinite(variation) or not 0.0 <= variation < 1.0:
+            raise ValueError("pitting_coefficient_variation must be in [0, 1).")
+        if variation and (
+            self.config.prior_dir is not None
+            or self.config.prior_n_jobs != 1
+        ):
+            raise ValueError(
+                "Coefficient variation requires an on-the-fly prior and one prior job."
+            )
         if self.config.prior_dir is None:
             scm_fixed_hp = dict(DEFAULT_FIXED_HP)
+            if variation:
+                scm_fixed_hp.update({
+                    "pitting_coefficient_variation": variation,
+                    "pitting_coefficient_variation_seed": self.config.pitting_coefficient_variation_seed + self.ddp_rank,
+                    "pitting_coefficient_upper_bounds": self.config.pitting_coefficient_upper_bounds,
+                })
 
             # Optional CLI overrides for informed and mixed SCM behavior.
             if self.config.mix_probs is not None:

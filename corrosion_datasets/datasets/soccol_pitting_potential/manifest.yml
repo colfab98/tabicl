@@ -1,0 +1,82 @@
+dataset_id: soccol_pitting_potential
+title: Pitting Potential Database
+author: Dimitri Soccol
+documented_at: 2026-09-27
+retrieved_at: 2026-09-26
+status: downloaded_audited_processed_composition_split_v1
+
+sources:
+  repository_url: https://github.com/SoccolD/Pitting_potential_database
+  repository_commit: 50f2df0918116e12026f8ea18c32704a5f6822e5
+  primary_workbook_url: https://raw.githubusercontent.com/SoccolD/Pitting_potential_database/50f2df0918116e12026f8ea18c32704a5f6822e5/Pitting_potential_dataset_2024.xlsx
+  paper_url: https://www.sciencedirect.com/science/article/pii/S0013468624015913
+  paper_doi: 10.1016/j.electacta.2024.145355
+  author_manuscript_url: https://lirias.kuleuven.be/retrieve/f69750dc-fb1a-4962-8e5c-8982608a4efb
+  institutional_record: https://lirias.kuleuven.be/4204498
+  institutional_record_id: LIRIAS4204498
+
+raw_files:
+  - path: raw/Pitting_potential_dataset_2024.xlsx
+    role: primary_workbook
+    size_bytes: 687176
+    sha256: cb255c5a94d90bd207248f6e25727f965d587c29a73b2ffcef6b8c0ced6da1da
+  - path: raw/Pitting_database_update_231002.xlsx
+    role: upstream_2023_snapshot
+    size_bytes: 1014431
+    sha256: 1cc46d31f42fd73600e9cc21e4dfd21ee4731383d7e38a91f71c8ecc3b4c8915
+  - path: raw/Pitting_database_2023_extended.xlsx
+    role: upstream_2023_snapshot
+    size_bytes: 402894
+    sha256: a032d583ccdb647df5b44a456117a1bcf348c0750cba982c42c9d236fe375ab8
+  - path: raw/UPSTREAM_README.md
+    role: upstream_repository_readme
+    size_bytes: 313
+    sha256: ab12cda3c1a50348611dad61ec92ae1b9453127fcf5737863bfb1075a62f6e42
+  - path: raw/Soccol_updated_PREN_author_manuscript.pdf
+    role: collection_paper_author_manuscript
+    size_bytes: 2060535
+    sha256: fe4dcd0008c9801831c62c098244f791e7453a44fc865701f9f9217b85eefe94
+
+license:
+  repository_license_detected: false
+  note: No explicit license was present in the inspected GitHub repository. The manuscript is preserved from the KU Leuven institutional record; dataset and manuscript reuse terms must be checked separately before public redistribution.
+
+audits:
+  source_conventions: ../../analysis/soccol_source_conventions/source_conventions.csv
+  source_conventions_summary: ../../analysis/soccol_source_conventions/source_conventions_summary.json
+  source_conventions_builder: ../../analysis/soccol_source_conventions/build_source_conventions.py
+  composition_missingness: ../../analysis/epit_candidate_research_20260926/soccol_source_composition_audit.csv
+  preprocessing_manifest: processed/preprocessing_manifest.json
+  feature_manifest: processed/feature_manifest.json
+  split_manifest: processed/splits_v1/split_manifest.json
+  split_lock: processed/splits_v1/split_lock.json
+
+notes:
+  - Raw files were copied without modification.
+  - The workbook contains 4460 rows and 154 source identifiers; the paper describes approximately 4500 measurements from 155 studies.
+  - The author manuscript confirms wt% composition, missing/unreported covariates, a common Ag/AgCl reference convention, and the event/censoring definition.
+  - The source registry identifies mixed material families, incomplete composition representations, and one confirmed misfiled field in 2000Russell.
+  - Benchmark v1 repairs the derived Russell Ti field, zero-fills composition with missingness indicators, and adds row-level material-family flags.
+  - Split v1 follows the previous EPIT composition-separated 80/20 plus five-fold method; the unavailable test-method balance block is omitted by user decision.
+  - No preprocessing or correction has been applied to the primary workbook; all derived files are under processed/.
+
+processed_files:
+  preprocessing_generator: prepare_benchmark.py
+  split_generator: prepare_composition_split.py
+  manifest: processed/preprocessing_manifest.json
+  split_manifest: processed/splits_v1/split_manifest.json
+  outputs:
+    - path: processed/soccol_processed_all_rows.csv
+      rows: 4460
+      role: all_processed_rows
+    - path: processed/soccol_regression_event1.csv
+      rows: 4027
+      role: uncensored_event1_regression
+    - path: processed/soccol_breakdown_survival.csv
+      rows: 4384
+      role: censor_aware_breakdown
+    - path: processed/splits_v1/split_assignments.csv
+      rows: 4027
+      role: frozen_composition_group_split_assignments
+    - path: processed/splits_v1/split_lock.json
+      role: frozen_split_hash_lock
