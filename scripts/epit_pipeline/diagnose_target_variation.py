@@ -36,7 +36,7 @@ from tabicl.train.train_config import build_parser
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_ROOT = search.PIPELINE_ROOT / "target_variation"
 DEFAULT_MANIFEST = (
-    search.PIPELINE_ROOT / "final_v1" / search.DEFAULT_STUDY_NAME / "final_model_manifest.json"
+    search.PIPELINE_ROOT / "final_v1" / search.LEGACY_STUDY_NAME / "final_model_manifest.json"
 )
 SCM_TYPES = {"mlp_scm": MLPSCM, "tree_scm": TreeSCM}
 
@@ -130,7 +130,10 @@ def load_settings(manifest_path, summary_path, split_path):
     if manifest["split"]["manifest_sha256"] != rules.split_manifest_sha256:
         raise ValueError("Split does not match the saved model manifest.")
     fixed_prior = manifest["study"]["pipeline_fingerprint"]["fixed_prior"]
-    for key, value in search.empirical_feature_profile_identity().items():
+    composition_profile = str(fixed_prior["composition_profile"])
+    for key, value in search.empirical_feature_profile_identity(
+        composition_profile
+    ).items():
         if fixed_prior.get(key) != value:
             raise ValueError(f"Current empirical feature profile differs: {key}")
     command = manifest["training"]["train_command"]
@@ -141,6 +144,10 @@ def load_settings(manifest_path, summary_path, split_path):
         value = getattr(config, key, None)
         if value is not None:
             fixed[key] = value
+    # The historical v7 command predates an explicit composition-profile CLI
+    # option. Restore its profile from the fingerprint instead of inheriting
+    # the current v8 default.
+    fixed["pitting_composition_profile"] = composition_profile
     if fixed["pitting_composition_mode"] != "empirical_features_scm_target":
         raise ValueError("This diagnostic requires empirical_features_scm_target.")
     if not fixed["pitting_fixed_epit_schema"] or fixed["pitting_magpie_features"]:
@@ -370,7 +377,11 @@ th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left;white-space:nowra
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
-    parser.add_argument("--target-rule-summary", type=Path, default=search.DEFAULT_TARGET_RULE_SUMMARY)
+    parser.add_argument(
+        "--target-rule-summary",
+        type=Path,
+        default=search.LEGACY_TARGET_RULE_SUMMARY,
+    )
     parser.add_argument("--split-manifest", type=Path, default=search.DEFAULT_SPLIT_MANIFEST)
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--tables-per-cell", type=int, default=8, help="Tables per formula family / SCM type (14 cells).")

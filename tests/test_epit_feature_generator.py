@@ -14,7 +14,7 @@ def test_epit_feature_row_sampling_is_deterministic_complete_and_paired():
     second = sample_epit_feature_rows(512, perturb_strength=0.05, random_state=123)
 
     assert first.profile_name == EPIT_FEATURE_PROFILE
-    assert first.features.shape == (512, 21)
+    assert first.features.shape == (512, 28)
     assert np.isfinite(first.features).all()
     assert np.array_equal(first.features, second.features)
     assert np.array_equal(first.environment_indices, second.environment_indices)
@@ -29,8 +29,8 @@ def test_epit_feature_row_sampling_is_deterministic_complete_and_paired():
         first.test_method_codes,
         profile.test_method_codes[first.environment_indices],
     )
-    assert np.array_equal(first.features[:, 17:20], first.environment_values)
-    assert np.array_equal(first.features[:, 20], first.test_method_codes)
+    assert np.array_equal(first.features[:, 24:27], first.environment_values)
+    assert np.array_equal(first.features[:, 27], first.test_method_codes)
 
 
 def test_epit_feature_row_sampling_uses_only_requested_family():
@@ -64,8 +64,8 @@ def _empirical_feature_fixed_hp() -> dict:
             "informed_physical_marginal_profile": "pitting_potential_v1",
             "informed_physical_marginal_prob": 1.0,
             "informed_task_family_probs": (1.0, 0.0),
-            "informed_normal_block_allocation": (17, 3, 1, 0, 0, 0, 0, 0, 0),
-            "informed_normal_block_allocation_min_counts": (17, 3, 1, 0, 0, 0, 0, 0, 0),
+            "informed_normal_block_allocation": (24, 3, 1, 0, 0, 0, 0, 0, 0),
+            "informed_normal_block_allocation_min_counts": (24, 3, 1, 0, 0, 0, 0, 0, 0),
             "pitting_process_role": "test_method_category",
             "pitting_process_category_count": 52,
             "pitting_composition_perturb_strength": 0.05,
@@ -74,17 +74,17 @@ def _empirical_feature_fixed_hp() -> dict:
     return fixed_hp
 
 
-def test_empirical_feature_mode_replaces_all_21_columns_before_epit_only_target_logic():
+def test_empirical_feature_mode_replaces_all_28_columns_before_epit_only_target_logic():
     fixed_hp = _empirical_feature_fixed_hp()
     prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
-    X = torch.randn(256, 21)
+    X = torch.randn(256, 28)
     y = torch.randn(256)
 
-    X_out, y_out = prior.apply_informed_structure(X, y, {"num_features": 21})
+    X_out, y_out = prior.apply_informed_structure(X, y, {"num_features": 28})
     batch = prior.last_pitting_feature_batch
 
     assert batch is not None
-    assert X_out.shape == (256, 21)
+    assert X_out.shape == (256, 28)
     assert torch.allclose(X_out, torch.as_tensor(batch.features.copy(), dtype=X_out.dtype))
     assert torch.isfinite(X_out).all()
     assert torch.isfinite(y_out).all()
@@ -110,7 +110,7 @@ def test_empirical_feature_mode_replaces_all_21_columns_before_epit_only_target_
 def test_empirical_feature_target_is_independent_of_generic_scm_target():
     fixed_hp = _empirical_feature_fixed_hp()
     fixed_hp["informed_target_mix_weight"] = 0.0
-    X = torch.randn(256, 21)
+    X = torch.randn(256, 28)
     generic_y_a = torch.linspace(-2.0, 2.0, 256)
     generic_y_b = torch.linspace(30.0, -10.0, 256)
 
@@ -126,7 +126,7 @@ def test_empirical_feature_target_is_independent_of_generic_scm_target():
             device="cpu",
         )
         X_out, y_out = prior.apply_informed_structure(
-            X.clone(), generic_y.clone(), {"num_features": 21}
+            X.clone(), generic_y.clone(), {"num_features": 28}
         )
         expected = SCMPrior.evaluate_fixed_epit_target_rule_numpy(
             X_out.numpy(),
@@ -157,9 +157,9 @@ def test_empirical_fe_ni_threshold_numpy_uses_sampled_family_ids():
     )
 
     X_out, y_out = prior.apply_informed_structure(
-        torch.randn(4096, 21),
+        torch.randn(4096, 28),
         torch.randn(4096),
-        {"num_features": 21},
+        {"num_features": 28},
     )
     rule = prior.last_pitting_target_rule
     expected = SCMPrior.evaluate_fixed_epit_target_rule_numpy(
@@ -188,8 +188,8 @@ def test_empirical_feature_mode_preserves_fixed_schema_through_batch_generation(
     prior = SCMPrior(
         batch_size=1,
         batch_size_per_gp=1,
-        min_features=21,
-        max_features=21,
+        min_features=28,
+        max_features=28,
         max_classes=0,
         max_seq_len=128,
         min_train_size=0.5,
@@ -205,10 +205,10 @@ def test_empirical_feature_mode_preserves_fixed_schema_through_batch_generation(
     batch = prior.last_pitting_feature_batch
 
     assert batch is not None
-    assert X.shape == (1, 128, 21)
+    assert X.shape == (1, 128, 28)
     assert y.shape == (1, 128)
-    assert d.tolist() == [21]
-    assert torch.unique(X[0, :, 20]).numel() > 1
+    assert d.tolist() == [28]
+    assert torch.unique(X[0, :, 27]).numel() > 1
 
 
 def test_empirical_feature_mode_is_available_from_training_cli():

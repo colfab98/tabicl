@@ -30,7 +30,7 @@ def args(tmp_path):
 @pytest.fixture(scope="module")
 def settings():
     return diagnostic.load_settings(
-        diagnostic.DEFAULT_MANIFEST, diagnostic.search.DEFAULT_TARGET_RULE_SUMMARY,
+        diagnostic.DEFAULT_MANIFEST, diagnostic.search.LEGACY_TARGET_RULE_SUMMARY,
         diagnostic.search.DEFAULT_SPLIT_MANIFEST,
     )
 

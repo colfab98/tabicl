@@ -64,13 +64,21 @@ def test_all_registered_rule_terms_are_finite_on_eligible_rows() -> None:
         "current_pren": 608,
         "current_pren_fe_ni": 452,
         "pren_linear": 452,
+        "pren_n_linear": 452,
         "cr_mow_synergy": 452,
+        "cr_mow_n_synergy": 452,
         "threshold_saturation": 452,
         "improved_environment": 452,
+        "pren_n_improved_environment": 452,
+        "mo_n_acid_repassivation": 452,
+        "mns_inclusion_penalty": 452,
         "coupled_breakdown": 452,
         "fe_ni_cr_threshold": 452,
         "method_aware": 452,
+        "method_aware_pren_n": 452,
         "al_chloride_temperature": 94,
+        "al_amphoteric_environment": 94,
+        "al_composition_environment": 94,
     }
 
     families = get_rule_families()
@@ -125,6 +133,10 @@ def test_method_aware_transform_does_not_read_held_out_targets() -> None:
         rows=dataset.rows,
         target=masked_target,
         composition_columns=dataset.composition_columns,
+        composition_reported_sums=dataset.composition_reported_sums,
+        composition_missing_counts=dataset.composition_missing_counts,
+        composition_structural_zero_counts=dataset.composition_structural_zero_counts,
+        pretraining_template_eligible=dataset.pretraining_template_eligible,
     )
     original = family.transform_terms(dataset, validation, prepared.state)
     masked = family.transform_terms(masked_dataset, validation, prepared.state)

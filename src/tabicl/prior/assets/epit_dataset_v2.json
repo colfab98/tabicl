@@ -1,0 +1,70 @@
+{
+  "profile_name": "epit_dataset_v2",
+  "profile_version": 2,
+  "description": "The v1 EPIT 24-element template bank exposed without dropping sparse elemental columns; target values are not stored.",
+  "source_dataset": "electrochemical_metrics_alloys",
+  "source_sheet": "Pitting Potential",
+  "source_workbook_sha256": "d0ce5e9c4b42e0b5a20dbd5c4896791703c5f433ae19bc032674d5848d9d1438",
+  "row_filter": "finite Epit, mV (SCE) Avg.; target used only to reproduce evaluated rows",
+  "source_rows": 810,
+  "usable_rows": 760,
+  "distinct_templates": 403,
+  "deduplication": "reuse epit_dataset_v1.csv: first occurrence of exact numeric 24-element vector rounded to 6 decimals; missing values remain missing",
+  "missing_value_encoding": "empty CSV field",
+  "elements": [
+    "Fe", "Cr", "Ni", "Mo", "W", "N", "Nb", "C", "Si", "Mn", "Cu", "P", "S", "Al", "V", "Ta", "Re", "Ce", "Ti", "Co", "B", "Mg", "Y", "Gd"
+  ],
+  "observed_elements": [
+    "Fe", "Cr", "Ni", "Mo", "W", "N", "Nb", "C", "Si", "Mn", "Cu", "P", "S", "Al", "V", "Ta", "Re", "Ce", "Ti", "Co", "B", "Mg", "Y", "Gd"
+  ],
+  "omitted_elements": [],
+  "families": [
+    "fe_alloy", "al_alloy", "hea", "nicrmo_alloy", "other"
+  ],
+  "family_display_names": {
+    "fe_alloy": "Fe Alloy",
+    "al_alloy": "Al Alloy",
+    "hea": "HEA",
+    "nicrmo_alloy": "NiCrMo Alloy",
+    "other": "Other"
+  },
+  "family_template_counts": {
+    "fe_alloy": 298,
+    "al_alloy": 56,
+    "hea": 19,
+    "nicrmo_alloy": 17,
+    "other": 13
+  },
+  "pretraining_template_policy": {
+    "closure_target_wt_percent": 100.0,
+    "closure_tolerance_wt_percent": 0.1,
+    "missing_values_for_eligible_templates": "structural zero before perturbation and closure",
+    "evaluation_rows_removed": 0,
+    "eligible_templates": 400,
+    "excluded_template_ids": ["epit_0314", "epit_0326", "epit_0390"],
+    "excluded_reported_sums_wt_percent": [100.52, 99.8679, 99.5],
+    "excluded_family_template_counts": {
+      "fe_alloy": 0,
+      "al_alloy": 1,
+      "hea": 2,
+      "nicrmo_alloy": 0,
+      "other": 0
+    },
+    "eligible_family_template_counts": {
+      "fe_alloy": 298,
+      "al_alloy": 55,
+      "hea": 17,
+      "nicrmo_alloy": 17,
+      "other": 13
+    }
+  },
+  "default_family_probabilities": {
+    "fe_alloy": 0.745,
+    "al_alloy": 0.1375,
+    "hea": 0.0425,
+    "nicrmo_alloy": 0.0425,
+    "other": 0.0325
+  },
+  "csv_file": "epit_dataset_v1.csv",
+  "csv_sha256": "deac07b3f5c60d86f53b14df59c7c5143484e89023466e91f8f7778011e740eb"
+}

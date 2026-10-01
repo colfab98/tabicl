@@ -42,10 +42,15 @@ from scripts.epit_pipeline.split_data import (
     load_epit_dataset,
 )
 from scripts.epit_pipeline.target_rules import TargetRuleFamily, get_rule_families
+from tabicl.prior.epit_schema import (
+    EPIT_COMPOSITION_COLUMNS,
+    EPIT_LEGACY_COMPOSITION_COLUMNS,
+    EPIT_SCHEMA_VERSION,
+)
 
 
 DEFAULT_OUTPUT_DIR = (
-    REPO_ROOT / "corrosion_datasets" / "analysis" / "epit_pipeline" / "target_rules_v2"
+    REPO_ROOT / "corrosion_datasets" / "analysis" / "epit_pipeline" / "target_rules_v3"
 )
 SUMMARY_NAME = "calibration_summary.json"
 PREDICTIONS_NAME = "direct_evaluation_predictions.csv"
@@ -102,8 +107,14 @@ def _load_manifest(
     metadata = manifest.get("dataset", {})
     if int(metadata.get("usable_rows", -1)) != dataset.n_rows:
         raise RuntimeError("Split manifest row count does not match the EPIT dataset.")
-    if metadata.get("model_visible_composition_columns") != dataset.composition_columns:
-        raise RuntimeError("Split manifest composition columns do not match the dataset.")
+    manifest_columns = tuple(metadata.get("model_visible_composition_columns", ()))
+    current_columns = tuple(dataset.composition_columns)
+    compatible_legacy_schema = (
+        manifest_columns == EPIT_LEGACY_COMPOSITION_COLUMNS
+        and current_columns == EPIT_COMPOSITION_COLUMNS
+    )
+    if manifest_columns != current_columns and not compatible_legacy_schema:
+        raise RuntimeError("Split manifest composition columns are neither the current schema nor the frozen legacy schema.")
     if str(metadata.get("source_sha256", "")) != sha256_file(SOURCE_FILE):
         raise RuntimeError("EPIT source file changed after the split was created.")
 
@@ -371,7 +382,7 @@ def calibrate_family(
         dtype=float,
     )
     result = {
-        "schema_version": "epit_target_rule_v2",
+        "schema_version": "epit_target_rule_v3",
         "rule_family": family.name,
         "description": family.description,
         "evaluation_role": family.evaluation_role,
@@ -715,6 +726,10 @@ def main() -> None:
         rows=dataset.rows,
         target=masked_target,
         composition_columns=dataset.composition_columns,
+        composition_reported_sums=dataset.composition_reported_sums,
+        composition_missing_counts=dataset.composition_missing_counts,
+        composition_structural_zero_counts=dataset.composition_structural_zero_counts,
+        pretraining_template_eligible=dataset.pretraining_template_eligible,
     )
 
     results: list[dict[str, Any]] = []
@@ -733,6 +748,23 @@ def main() -> None:
                 "split_lock": str(frozen_split.lock_path),
                 "split_lock_sha256": frozen_split.lock_sha256,
                 "source_sha256": manifest["dataset"]["source_sha256"],
+                "epit_schema_version": EPIT_SCHEMA_VERSION,
+                "current_model_visible_composition_columns": dataset.composition_columns,
+                "split_manifest_model_visible_composition_columns": manifest[
+                    "dataset"
+                ]["model_visible_composition_columns"],
+                "split_assignments_reused": True,
+                "split_grouping_note": (
+                    "Frozen row and fold assignments from the legacy 17-element "
+                    "grouping are reused without resplitting."
+                ),
+                "evaluation_rows_retained": dataset.n_rows,
+                "pretraining_template_eligible_rows": int(
+                    dataset.pretraining_template_eligible.sum()
+                ),
+                "pretraining_template_ineligible_rows": int(
+                    (~dataset.pretraining_template_eligible).sum()
+                ),
             }
         )
         rule_path.write_text(
@@ -747,7 +779,7 @@ def main() -> None:
         for result, rule_path in zip(results, rule_paths, strict=True)
     }
     summary = {
-        "schema_version": "epit_target_rule_calibration_summary_v2",
+        "schema_version": "epit_target_rule_calibration_summary_v3",
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "split_manifest": str(frozen_split.manifest_path),
         "split_manifest_schema": manifest["schema_version"],
@@ -755,6 +787,14 @@ def main() -> None:
         "split_lock": str(frozen_split.lock_path),
         "split_lock_sha256": frozen_split.lock_sha256,
         "source_sha256": manifest["dataset"]["source_sha256"],
+        "epit_schema_version": EPIT_SCHEMA_VERSION,
+        "current_model_visible_composition_columns": dataset.composition_columns,
+        "split_manifest_model_visible_composition_columns": manifest["dataset"]["model_visible_composition_columns"],
+        "split_assignments_reused": True,
+        "split_grouping_note": "Frozen row and fold assignments from the legacy 17-element grouping are reused without resplitting.",
+        "evaluation_rows_retained": dataset.n_rows,
+        "pretraining_template_eligible_rows": int(dataset.pretraining_template_eligible.sum()),
+        "pretraining_template_ineligible_rows": int((~dataset.pretraining_template_eligible).sum()),
         "development_rows": int(len(rows.development)),
         "final_test_rows_excluded": int(len(rows.final_test)),
         "final_test_targets_masked_before_calibration": True,

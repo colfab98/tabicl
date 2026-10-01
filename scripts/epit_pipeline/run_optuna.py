@@ -27,11 +27,15 @@ from tabicl.prior.dataset import (
     EPIT_FE_NI_FAMILY_PROBS,
     EPIT_TARGET_RULE_COEFFICIENTS,
 )
-from tabicl.prior.epit_composition_profile import EPIT_COMPOSITION_FAMILY_PROBS
+from tabicl.prior.epit_composition_profile import (
+    EPIT_COMPOSITION_FAMILY_PROBS,
+    EPIT_COMPOSITION_PROFILE,
+)
 from tabicl.prior.epit_feature_profile import (
     EPIT_FEATURE_PROFILE,
     load_epit_feature_profile,
 )
+from tabicl.prior.epit_schema import EPIT_MATERIAL_FEATURE_COUNT
 from tabicl.prior.magpie_features import (
     EPIT_BASE_FEATURE_COUNT,
     EPIT_MAGPIE_DESCRIPTOR_NAMES,
@@ -45,13 +49,17 @@ PIPELINE_ROOT = (
     REPO_ROOT / "corrosion_datasets" / "analysis" / "epit_pipeline"
 )
 DEFAULT_SPLIT_MANIFEST = PIPELINE_ROOT / "splits_v2" / "split_manifest.json"
-DEFAULT_TARGET_RULE_SUMMARY = (
+LEGACY_TARGET_RULE_SUMMARY = (
     PIPELINE_ROOT / "target_rules_v2" / "calibration_summary.json"
 )
-DEFAULT_OPTUNA_ROOT = PIPELINE_ROOT / "optuna_v2"
-DEFAULT_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v7"
+DEFAULT_TARGET_RULE_SUMMARY = (
+    PIPELINE_ROOT / "target_rules_v3" / "calibration_summary.json"
+)
+DEFAULT_OPTUNA_ROOT = PIPELINE_ROOT / "optuna_v3"
+DEFAULT_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v8"
 FIXED_VALIDATION_FOLDS = (1, 2, 3, 4, 5)
 PIPELINE_FINGERPRINT_SCHEMA = "epit_pipeline_stage3_fingerprint_v2"
+LEGACY_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v7"
 STUDY_FINGERPRINT_ATTR = "epit_pipeline_fingerprint"
 STUDY_FINGERPRINT_SHA256_ATTR = "epit_pipeline_fingerprint_sha256"
 PITTING_COMPOSITION_MODES = (
@@ -66,6 +74,38 @@ EMPIRICAL_FEATURE_MODES = {
 }
 EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE = (0.0, 0.15)
 GENERIC_SCM_MIX_PROBS = (0.7, 0.3)
+FIXED_BLOCK_ALLOCATION = (EPIT_MATERIAL_FEATURE_COUNT, 3, 1, 0, 0, 0, 0, 0, 0)
+
+
+PITTING_COEFFICIENT_VARIATION = 0.8
+PITTING_COEFFICIENT_VARIATION_SEED = 42
+PROMOTED_TARGET_RULE_FAMILIES = (
+    "pren_n_linear",
+    "cr_mow_n_synergy",
+    "threshold_saturation",
+    "pren_n_improved_environment",
+    "mo_n_acid_repassivation",
+    "mns_inclusion_penalty",
+    "coupled_breakdown",
+    "fe_ni_cr_threshold",
+    "method_aware_pren_n",
+)
+LEGACY_TARGET_RULE_FAMILIES = (
+    "pren_linear",
+    "cr_mow_synergy",
+    "threshold_saturation",
+    "improved_environment",
+    "coupled_breakdown",
+    "fe_ni_cr_threshold",
+    "method_aware",
+)
+
+
+def coefficient_variation_for_mode(composition_mode: str) -> float:
+    """Enable coefficient augmentation only on the supported SCM-target path."""
+    if composition_mode == "empirical_features_scm_target":
+        return PITTING_COEFFICIENT_VARIATION
+    return 0.0
 
 
 @dataclass(frozen=True)
@@ -86,6 +126,7 @@ class TargetRuleConfig:
     scores: dict[str, float]
     probabilities: dict[str, float]
     coefficients: dict[str, dict[str, float]]
+    upper_bounds: dict[str, dict[str, float]]
     artifacts: dict[str, str]
     artifact_sha256s: dict[str, str]
     summary_path: str
@@ -165,12 +206,18 @@ def pipeline_artifact_identity(rules: TargetRuleConfig) -> dict[str, Any]:
         "target_rule_scores": rules.scores,
         "target_rule_probabilities": rules.probabilities,
         "target_rule_coefficients": rules.coefficients,
+        "target_rule_coefficient_upper_bounds": rules.upper_bounds,
     }
 
 
-def empirical_feature_profile_identity() -> dict[str, Any]:
-    """Return the current immutable identity of the v5 physical-feature prior."""
-    feature_profile = load_epit_feature_profile(EPIT_FEATURE_PROFILE)
+def empirical_feature_profile_identity(
+    composition_profile_name: str = EPIT_COMPOSITION_PROFILE,
+) -> dict[str, Any]:
+    """Return one immutable physical-feature identity, including legacy v1."""
+    feature_profile = load_epit_feature_profile(
+        EPIT_FEATURE_PROFILE,
+        composition_profile_name=composition_profile_name,
+    )
     feature_family_counts = [
         int((feature_profile.composition_family_indices == index).sum())
         for index in range(len(feature_profile.families))
@@ -186,7 +233,9 @@ def empirical_feature_profile_identity() -> dict[str, Any]:
         ),
         "feature_profile_csv_sha256": feature_profile.metadata["csv_sha256"],
         "composition_profile": feature_profile.composition_profile.name,
-        "composition_family_probabilities": list(EPIT_COMPOSITION_FAMILY_PROBS),
+        "composition_family_probabilities": list(
+            feature_profile.composition_profile.family_probabilities
+        ),
         "synthetic_material_families": list(feature_profile.families),
         "synthetic_material_family_probabilities": feature_family_probabilities,
     }
@@ -205,11 +254,15 @@ def build_pipeline_fingerprint(
     fixed_prior: dict[str, Any] = {
         "reference_workflow": "pitting_magpie_full_v1",
         "prior_type": "hybrid_scm",
-        "block_allocation": list(original.FIXED_BLOCK_ALLOCATION),
+        "block_allocation": list(FIXED_BLOCK_ALLOCATION),
         "material_style": "composition_like",
         "composition_mode": composition_mode,
         "physical_marginal_probability": 1.0,
         "feature_permutation": False,
+        "pitting_coefficient_variation": coefficient_variation_for_mode(
+            composition_mode
+        ),
+        "pitting_coefficient_variation_seed": PITTING_COEFFICIENT_VARIATION_SEED,
     }
     if composition_mode in EMPIRICAL_FEATURE_MODES:
         feature_profile_identity = empirical_feature_profile_identity()
@@ -437,8 +490,14 @@ def load_target_rule_config(
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     frozen_split = load_frozen_split(split_manifest_path)
     manifest = frozen_split.manifest
-    if summary.get("schema_version") != "epit_target_rule_calibration_summary_v2":
+    summary_schema = str(summary.get("schema_version", ""))
+    artifact_schema_by_summary = {
+        "epit_target_rule_calibration_summary_v2": "epit_target_rule_v2",
+        "epit_target_rule_calibration_summary_v3": "epit_target_rule_v3",
+    }
+    if summary_schema not in artifact_schema_by_summary:
         raise RuntimeError("Unsupported target-rule calibration summary.")
+    expected_artifact_schema = artifact_schema_by_summary[summary_schema]
     if summary.get("split_manifest_sha256") != frozen_split.manifest_sha256:
         raise RuntimeError("Target-rule calibration used a different split manifest.")
     if summary.get("split_lock_sha256") != frozen_split.lock_sha256:
@@ -461,11 +520,17 @@ def load_target_rule_config(
     probabilities: dict[str, float] = {}
     coefficients: dict[str, dict[str, float]] = {}
     artifacts: dict[str, str] = {}
+    upper_bounds: dict[str, dict[str, float]] = {}
     artifact_sha256s: dict[str, str] = {}
     for record in summary.get("rules", []):
         if record.get("evaluation_role") != "candidate":
             continue
         family = str(record.get("rule_family", ""))
+        if (
+            summary_schema == "epit_target_rule_calibration_summary_v3"
+            and family not in PROMOTED_TARGET_RULE_FAMILIES
+        ):
+            continue
         if family not in EPIT_TARGET_RULE_COEFFICIENTS:
             raise RuntimeError(
                 f"Calibrated rule {family!r} is not implemented by the prior."
@@ -480,7 +545,7 @@ def load_target_rule_config(
         if artifact_sha256 != record.get("artifact_sha256"):
             raise RuntimeError(f"Target-rule artifact changed for {family!r}.")
         artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
-        if artifact.get("schema_version") != "epit_target_rule_v2":
+        if artifact.get("schema_version") != expected_artifact_schema:
             raise RuntimeError(f"Unsupported target-rule artifact for {family!r}.")
         if artifact.get("rule_family") != family:
             raise RuntimeError(f"Target-rule artifact mismatch for {family!r}.")
@@ -510,12 +575,48 @@ def load_target_rule_config(
                 f"Calibrated coefficients for {family!r} do not sum to one."
             )
         scores[family] = score
+        raw_bounds = artifact.get("coefficient_upper_bounds")
+        bounds = (
+            {term: 1.0 for term in values}
+            if raw_bounds is None
+            else {
+                str(term): float(value)
+                for term, value in raw_bounds.items()
+            }
+        )
+        if set(bounds) != expected_terms:
+            raise RuntimeError(
+                f"Coefficient bounds for {family!r} do not match the prior."
+            )
+        if any(
+            not math.isfinite(value) or not 0.0 <= value <= 1.0
+            for value in bounds.values()
+        ):
+            raise RuntimeError(f"Coefficient bounds for {family!r} are invalid.")
+        if any(values[term] > bounds[term] + 1e-12 for term in values):
+            raise RuntimeError(
+                f"Calibrated coefficients for {family!r} exceed their bounds."
+            )
+        if sum(bounds.values()) < 1.0:
+            raise RuntimeError(
+                f"Coefficient bounds for {family!r} cannot satisfy the simplex."
+            )
         coefficients[family] = values
+        upper_bounds[family] = bounds
         artifacts[family] = str(artifact_path.resolve())
         artifact_sha256s[family] = artifact_sha256
 
     if not scores:
         raise RuntimeError("No candidate target rules were found.")
+    if summary_schema == "epit_target_rule_calibration_summary_v3":
+        selected = tuple(scores)
+        if selected != PROMOTED_TARGET_RULE_FAMILIES:
+            missing = sorted(set(PROMOTED_TARGET_RULE_FAMILIES) - set(selected))
+            unexpected = sorted(set(selected) - set(PROMOTED_TARGET_RULE_FAMILIES))
+            raise RuntimeError(
+                "Promoted target-rule set is incomplete or reordered; "
+                f"missing={missing}, unexpected={unexpected}."
+            )
     score_sum = sum(scores.values())
     probabilities = {
         family: score / score_sum for family, score in scores.items()
@@ -524,6 +625,7 @@ def load_target_rule_config(
         scores=scores,
         probabilities=probabilities,
         coefficients=coefficients,
+        upper_bounds=upper_bounds,
         artifacts=artifacts,
         artifact_sha256s=artifact_sha256s,
         summary_path=str(summary_path),
@@ -801,6 +903,21 @@ def training_command(
                 "strength."
             )
     _replace_option(command, "--pitting_composition_mode", composition_mode)
+    for option in (
+        "--informed_normal_block_allocation",
+        "--informed_normal_block_allocation_min_counts",
+    ):
+        option_index = command.index(option)
+        command[option_index + 1 : option_index + 10] = [
+            str(value) for value in FIXED_BLOCK_ALLOCATION
+        ]
+    feature_count = (
+        EPIT_MAGPIE_TOTAL_FEATURE_COUNT
+        if params.use_magpie
+        else EPIT_BASE_FEATURE_COUNT
+    )
+    _replace_option(command, "--min_features", str(feature_count))
+    _replace_option(command, "--max_features", str(feature_count))
     if composition_mode == "empirical_features_scm_target":
         mix_index = command.index("--mix_probs")
         command[mix_index + 1 : mix_index + 3] = [
@@ -840,6 +957,14 @@ def training_command(
             *score_cli_values,
             "--pitting_target_rule_coefficients",
             *coefficient_cli_values,
+            "--pitting_coefficient_variation",
+            format_float(coefficient_variation_for_mode(composition_mode)),
+            "--pitting_coefficient_variation_seed",
+            str(PITTING_COEFFICIENT_VARIATION_SEED),
+            "--pitting_coefficient_upper_bounds",
+            json.dumps(
+                rules.upper_bounds, sort_keys=True, separators=(",", ":")
+            ),
         ]
     )
     return command
@@ -981,7 +1106,7 @@ def run_trial(
             if params.use_magpie
             else EPIT_BASE_FEATURE_COUNT
         ),
-        "fixed_block_allocation": original.FIXED_BLOCK_ALLOCATION,
+        "fixed_block_allocation": FIXED_BLOCK_ALLOCATION,
         "fixed_material_style": fixed_prior["material_style"],
         "fixed_composition_mode": args.pitting_composition_mode,
         "fixed_physical_marginal_prob": 1.0,
@@ -1010,6 +1135,11 @@ def run_trial(
         "target_rule_scores": rules.scores,
         "target_rule_probabilities": rules.probabilities,
         "target_rule_coefficients": rules.coefficients,
+        "target_rule_coefficient_upper_bounds": rules.upper_bounds,
+        "pitting_coefficient_variation": coefficient_variation_for_mode(
+            args.pitting_composition_mode
+        ),
+        "pitting_coefficient_variation_seed": PITTING_COEFFICIENT_VARIATION_SEED,
         "target_rule_artifacts": rules.artifacts,
         "target_rule_artifact_sha256s": rules.artifact_sha256s,
         "checkpoint_path": str(checkpoint_path),

@@ -6,7 +6,8 @@ training calls these calculations for every generated dataset, so the small
 fixed table is kept locally and evaluated with vectorized NumPy or Torch
 operations.
 
-The 17 EPIT material inputs are weight percentages.  Descriptor calculations
+The legacy 17-element descriptor inputs are weight percentages. Descriptor
+calculations
 therefore convert a copy of those values to atomic fractions using the lookup
 atomic weights.  The original material inputs are never modified.
 """
@@ -18,6 +19,12 @@ from typing import Final
 import numpy as np
 import torch
 from torch import Tensor
+
+from tabicl.prior.epit_schema import (
+    EPIT_BASE_FEATURE_COUNT,
+    EPIT_COMPOSITION_ELEMENTS,
+    EPIT_MATERIAL_FEATURE_COUNT,
+)
 
 
 EPIT_MAGPIE_ELEMENTS: Final[tuple[str, ...]] = (
@@ -42,6 +49,9 @@ EPIT_MAGPIE_ELEMENTS: Final[tuple[str, ...]] = (
 EPIT_MAGPIE_MATERIAL_COLUMNS: Final[tuple[str, ...]] = tuple(
     f"Composition, wt.% {element}" for element in EPIT_MAGPIE_ELEMENTS
 )
+EPIT_MAGPIE_ELEMENT_INDICES: Final[tuple[int, ...]] = tuple(
+    EPIT_COMPOSITION_ELEMENTS.index(element) for element in EPIT_MAGPIE_ELEMENTS
+)
 EPIT_MAGPIE_DESCRIPTOR_NAMES: Final[tuple[str, ...]] = (
     "magpie_mean_electronegativity",
     "magpie_range_electronegativity",
@@ -54,8 +64,7 @@ EPIT_MAGPIE_DESCRIPTOR_NAMES: Final[tuple[str, ...]] = (
     "magpie_mean_total_valence_electrons",
     "magpie_mean_unfilled_valence_states",
 )
-EPIT_BASE_FEATURE_COUNT: Final[int] = 21
-EPIT_MATERIAL_FEATURE_COUNT: Final[int] = len(EPIT_MAGPIE_ELEMENTS)
+EPIT_MAGPIE_SOURCE_FEATURE_COUNT: Final[int] = len(EPIT_MAGPIE_ELEMENTS)
 EPIT_MAGPIE_FEATURE_COUNT: Final[int] = len(EPIT_MAGPIE_DESCRIPTOR_NAMES)
 EPIT_MAGPIE_TOTAL_FEATURE_COUNT: Final[int] = EPIT_BASE_FEATURE_COUNT + EPIT_MAGPIE_FEATURE_COUNT
 EPIT_MAGPIE_VERSION: Final[str] = "epit_magpie_v1_matminer_0_10_0"
@@ -138,9 +147,9 @@ _ELEMENTAL_PROPERTIES: Final[tuple[tuple[float, ...], ...]] = (
 
 def _validate_numpy_compositions(compositions: np.ndarray) -> np.ndarray:
     values = np.asarray(compositions, dtype=np.float64)
-    if values.ndim < 1 or values.shape[-1] != EPIT_MATERIAL_FEATURE_COUNT:
+    if values.ndim < 1 or values.shape[-1] != EPIT_MAGPIE_SOURCE_FEATURE_COUNT:
         raise ValueError(
-            f"Expected compositions with {EPIT_MATERIAL_FEATURE_COUNT} material columns, "
+            f"Expected compositions with {EPIT_MAGPIE_SOURCE_FEATURE_COUNT} material columns, "
             f"got shape {values.shape}."
         )
     if not np.isfinite(values).all():
@@ -159,7 +168,7 @@ def _atomic_fractions_numpy(compositions: np.ndarray) -> np.ndarray:
 
 
 def magpie_descriptors_numpy(compositions: np.ndarray) -> np.ndarray:
-    """Calculate the fixed ten descriptors from 17 EPIT weight percentages."""
+    """Calculate the fixed ten descriptors from the legacy 17-element subset."""
 
     fractions = _atomic_fractions_numpy(compositions)
     properties = np.asarray(_ELEMENTAL_PROPERTIES, dtype=np.float64)
@@ -192,9 +201,9 @@ def magpie_descriptors_numpy(compositions: np.ndarray) -> np.ndarray:
 
 
 def _validate_torch_compositions(compositions: Tensor) -> None:
-    if compositions.ndim < 1 or compositions.shape[-1] != EPIT_MATERIAL_FEATURE_COUNT:
+    if compositions.ndim < 1 or compositions.shape[-1] != EPIT_MAGPIE_SOURCE_FEATURE_COUNT:
         raise ValueError(
-            f"Expected compositions with {EPIT_MATERIAL_FEATURE_COUNT} material columns, "
+            f"Expected compositions with {EPIT_MAGPIE_SOURCE_FEATURE_COUNT} material columns, "
             f"got shape {tuple(compositions.shape)}."
         )
     if not torch.isfinite(compositions).all():
@@ -259,5 +268,16 @@ def append_magpie_descriptors_torch(
     """Append descriptors calculated from a copy of the selected material columns."""
 
     material = X[..., material_slice]
+    if material.shape[-1] != EPIT_MATERIAL_FEATURE_COUNT:
+        raise ValueError(
+            f"Expected {EPIT_MATERIAL_FEATURE_COUNT} EPIT material columns, "
+            f"got shape {tuple(material.shape)}."
+        )
+    magpie_indices = torch.tensor(
+        EPIT_MAGPIE_ELEMENT_INDICES,
+        dtype=torch.long,
+        device=material.device,
+    )
+    material = torch.index_select(material, -1, magpie_indices)
     descriptors = magpie_descriptors_torch(material)
     return torch.cat((X, descriptors), dim=-1)

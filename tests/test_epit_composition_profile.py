@@ -17,18 +17,31 @@ from tabicl.prior.prior_config import DEFAULT_FIXED_HP
 from tabicl.train.train_config import build_parser
 
 
-def test_epit_dataset_v1_profile_loads_expected_static_asset():
+def test_epit_dataset_v2_profile_exposes_all_elements_and_filters_templates():
     profile = load_epit_composition_profile()
 
     assert profile.name == EPIT_COMPOSITION_PROFILE
     assert profile.template_values.shape == (403, 24)
-    assert profile.observed_template_values.shape == (403, 17)
+    assert profile.observed_template_values.shape == (403, 24)
     assert profile.template_missing_mask.shape == (403, 24)
-    assert tuple(np.bincount(profile.template_family_indices)) == EPIT_COMPOSITION_FAMILY_COUNTS
+    assert profile.n_eligible_templates == 400
+    assert {
+        profile.template_ids[index]
+        for index in np.flatnonzero(~profile.template_eligible_mask)
+    } == {"epit_0314", "epit_0326", "epit_0390"}
+    assert tuple(np.bincount(profile.template_family_indices[profile.template_eligible_mask], minlength=len(profile.families))) == EPIT_COMPOSITION_FAMILY_COUNTS
     assert np.isclose(sum(profile.family_probabilities), 1.0)
     assert np.allclose(profile.family_probabilities, EPIT_COMPOSITION_FAMILY_PROBS)
     assert np.all((np.nansum(profile.template_values, axis=1) >= 99.0))
     assert np.all((np.nansum(profile.template_values, axis=1) <= 101.0))
+
+
+def test_epit_dataset_v1_remains_an_explicit_historical_profile():
+    profile = load_epit_composition_profile("epit_dataset_v1")
+
+    assert profile.observed_template_values.shape == (403, 17)
+    assert profile.n_eligible_templates == 403
+    assert profile.template_eligible_mask.all()
 
 
 def test_epit_composition_sampling_is_deterministic_and_closed():
@@ -40,9 +53,10 @@ def test_epit_composition_sampling_is_deterministic_and_closed():
     assert np.array_equal(first.family_indices, second.family_indices)
     assert first.template_ids == second.template_ids
     assert first.full_compositions.shape == (128, 24)
-    assert first.observed_compositions.shape == (128, 17)
+    assert first.observed_compositions.shape == (128, 24)
     assert np.all(first.full_compositions >= 0.0)
     assert np.allclose(first.full_compositions.sum(axis=1), 100.0)
+    assert not ({"epit_0314", "epit_0326", "epit_0390"} & set(first.template_ids))
 
 
 def test_epit_composition_family_probabilities_are_tunable():
@@ -87,8 +101,8 @@ def _empirical_epit_fixed_hp() -> dict:
             "informed_physical_marginal_profile": "pitting_potential_v1",
             "informed_physical_marginal_prob": 1.0,
             "informed_task_family_probs": (1.0, 0.0),
-            "informed_normal_block_allocation": (17, 3, 1, 0, 0, 0, 0, 0, 0),
-            "informed_normal_block_allocation_min_counts": (17, 3, 1, 0, 0, 0, 0, 0, 0),
+            "informed_normal_block_allocation": (24, 3, 1, 0, 0, 0, 0, 0, 0),
+            "informed_normal_block_allocation_min_counts": (24, 3, 1, 0, 0, 0, 0, 0, 0),
             "pitting_process_role": "test_method_category",
             "pitting_process_category_count": 3,
         }
@@ -99,7 +113,7 @@ def _empirical_epit_fixed_hp() -> dict:
 def test_empirical_epit_mode_reduces_scm_to_six_features_then_expands_material_only():
     fixed_hp = _empirical_epit_fixed_hp()
     prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
-    context = prior._prepare_epit_latent_scm_context(21)
+    context = prior._prepare_epit_latent_scm_context(28)
 
     assert context.scm_num_features == 6
     assert context.latent_blocks == {
@@ -108,9 +122,9 @@ def test_empirical_epit_mode_reduces_scm_to_six_features_then_expands_material_o
         "process_history": slice(5, 6),
     }
     assert context.output_blocks == {
-        "material": slice(0, 17),
-        "environment": slice(17, 20),
-        "process_history": slice(20, 21),
+        "material": slice(0, 24),
+        "environment": slice(24, 27),
+        "process_history": slice(27, 28),
     }
 
     torch.manual_seed(7)
@@ -120,35 +134,35 @@ def test_empirical_epit_mode_reduces_scm_to_six_features_then_expands_material_o
     expanded = prior._expand_epit_material_latents(latent_X, context)
     batch = prior.last_pitting_composition_batch
 
-    assert expanded.shape == (256, 21)
-    assert torch.equal(expanded[:, 17:], non_material)
+    assert expanded.shape == (256, 28)
+    assert torch.equal(expanded[:, 24:], non_material)
     assert batch is not None
-    assert np.allclose(expanded[:, :17].numpy(), batch.observed_compositions, atol=1e-5)
+    assert np.allclose(expanded[:, :24].numpy(), batch.observed_compositions, atol=1e-5)
     assert np.allclose(batch.full_compositions.sum(axis=1), 100.0)
 
 
 def test_empirical_epit_expansion_integrates_with_existing_profile_and_target():
     fixed_hp = _empirical_epit_fixed_hp()
     prior = SCMPrior(batch_size=1, fixed_hp=fixed_hp, sampled_hp={}, n_jobs=1, device="cpu")
-    context = prior._prepare_epit_latent_scm_context(21)
+    context = prior._prepare_epit_latent_scm_context(28)
     X = torch.randn(128, context.scm_num_features)
     y = torch.randn(128)
 
     X_out, y_out = prior.apply_informed_structure(
         X,
         y,
-        {"num_features": 21},
+        {"num_features": 28},
         epit_latent_context=context,
     )
 
-    assert X_out.shape == (128, 21)
+    assert X_out.shape == (128, 28)
     assert y_out.shape == (128,)
     assert torch.isfinite(X_out).all()
     assert torch.isfinite(y_out).all()
     assert prior.last_pitting_composition_batch is not None
-    assert prior.last_pitting_target_rule["material_cols"] == list(range(17))
-    assert prior.last_pitting_target_rule["temperature_col"] == 17
-    assert prior.last_pitting_target_rule["process_col"] == 20
+    assert prior.last_pitting_target_rule["material_cols"] == list(range(24))
+    assert prior.last_pitting_target_rule["temperature_col"] == 24
+    assert prior.last_pitting_target_rule["process_col"] == 27
 
 
 def test_empirical_epit_mode_passes_reduced_width_to_mlp_scm(monkeypatch):
@@ -173,8 +187,8 @@ def test_empirical_epit_mode_passes_reduced_width_to_mlp_scm(monkeypatch):
     prior = SCMPrior(
         batch_size=1,
         batch_size_per_gp=1,
-        min_features=21,
-        max_features=21,
+        min_features=28,
+        max_features=28,
         max_classes=0,
         max_seq_len=256,
         min_train_size=0.5,
@@ -189,7 +203,7 @@ def test_empirical_epit_mode_passes_reduced_width_to_mlp_scm(monkeypatch):
     X, y, _, _, _ = prior.get_batch()
 
     assert seen_widths and set(seen_widths) == {6}
-    assert X.shape == (1, 256, 21)
+    assert X.shape == (1, 256, 28)
     assert y.shape == (1, 256)
     assert prior.last_pitting_composition_batch is not None
 
@@ -236,17 +250,17 @@ def test_epit_target_rule_scores_are_normalized_directly():
 @pytest.mark.parametrize("family", tuple(EPIT_TARGET_RULE_COEFFICIENTS))
 def test_weighted_epit_rule_tensor_and_numpy_formulas_match(family):
     rng = np.random.default_rng(17)
-    X = np.zeros((160, 21), dtype=np.float32)
+    X = np.zeros((160, 28), dtype=np.float32)
     X[:, 0] = rng.uniform(25.0, 75.0, len(X))
     X[:, 1] = rng.uniform(8.0, 32.0, len(X))
     X[:, 2] = rng.uniform(2.0, 60.0, len(X))
     X[:, 3] = rng.uniform(0.0, 12.0, len(X))
     X[:, 4] = rng.uniform(0.0, 4.0, len(X))
-    X[:, 5:17] = rng.uniform(0.0, 2.0, (len(X), 12))
-    X[:, 17] = rng.uniform(-5.0, 120.0, len(X))
-    X[:, 18] = 10.0 ** rng.uniform(-4.0, 0.7, len(X))
-    X[:, 19] = rng.uniform(1.5, 12.0, len(X))
-    X[:, 20] = np.arange(len(X)) % 4
+    X[:, 5:24] = rng.uniform(0.0, 2.0, (len(X), 19))
+    X[:, 24] = rng.uniform(-5.0, 120.0, len(X))
+    X[:, 25] = 10.0 ** rng.uniform(-4.0, 0.7, len(X))
+    X[:, 26] = rng.uniform(1.5, 12.0, len(X))
+    X[:, 27] = np.arange(len(X)) % 4
 
     fixed_hp = dict(DEFAULT_FIXED_HP)
     fixed_hp.update(
@@ -264,9 +278,9 @@ def test_weighted_epit_rule_tensor_and_numpy_formulas_match(family):
         device="cpu",
     )
     blocks = {
-        "material": slice(0, 17),
-        "environment": slice(17, 20),
-        "process_history": slice(20, 21),
+        "material": slice(0, 24),
+        "environment": slice(24, 27),
+        "process_history": slice(27, 28),
     }
     np.random.seed(19)
     torch.manual_seed(19)

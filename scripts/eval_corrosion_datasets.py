@@ -49,6 +49,10 @@ from tabicl.prior.magpie_features import (
     EPIT_MAGPIE_VERSION,
     magpie_descriptors_numpy,
 )
+from tabicl.prior.epit_schema import (
+    EPIT_COMPOSITION_CLOSURE_TOLERANCE_WT_PERCENT,
+    EPIT_COMPOSITION_COLUMNS,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -500,7 +504,7 @@ def parse_args() -> argparse.Namespace:
         default=[],
         help=(
             "Apply the EPIT Magpie augmentation only to this model label. Can be passed "
-            "multiple times to mix native 21- and 31-feature models in one evaluation."
+            "multiple times to mix native 28- and 38-feature models in one evaluation."
         ),
     )
     parser.add_argument("--compare-pretrained-tabicl", dest="compare_pretrained_tabicl", action="store_true", default=True)
@@ -1036,6 +1040,23 @@ def feature_value_series(
     return None, "empty_or_constant", "empty_or_constant"
 
 
+def epit_completed_composition_series(
+    table: Table,
+    column: str,
+    rows: list[dict[str, Any]],
+) -> pd.Series:
+    """Keep all EPIT rows while zero-filling only closure-supported blanks."""
+
+    matrix = np.asarray(
+        [[eval_to_float(row.get(name), column=name, group="material") for name in EPIT_COMPOSITION_COLUMNS] for row in rows],
+        dtype=float,
+    )
+    closes = np.abs(np.nansum(matrix, axis=1) - 100.0) <= EPIT_COMPOSITION_CLOSURE_TOLERANCE_WT_PERCENT + 1e-12
+    selected = matrix[:, EPIT_COMPOSITION_COLUMNS.index(column)]
+    completed = np.where(np.isfinite(selected), selected, np.where(closes, 0.0, np.nan))
+    return pd.Series(completed, name=column)
+
+
 def assess_task_quality(table: Table, X: pd.DataFrame, y: pd.Series) -> list[str]:
     flags: list[str] = []
     n_samples, n_features = X.shape
@@ -1357,7 +1378,15 @@ def build_task(
 
     features: dict[str, pd.Series] = {}
     dropped: list[str] = []
+    is_epit_task = (
+        table.dataset == "electrochemical_metrics_alloys"
+        and table.table == "Pitting Potential"
+        and target_col == "Epit, mV (SCE) Avg."
+    )
     candidate_columns = DATACORTECH_AUTHOR_FEATURES if use_datacortech_author_simple else tuple(table.columns)
+    if is_epit_task:
+        remaining = tuple(column for column in candidate_columns if column not in EPIT_COMPOSITION_COLUMNS)
+        candidate_columns = (*EPIT_COMPOSITION_COLUMNS, *remaining)
     for col in candidate_columns:
         if col == "pH_2_neutral" and use_datacortech_author_simple:
             features[col] = datacortech_neutral_ph_series(rows)
@@ -1370,13 +1399,17 @@ def build_task(
         group = table.groups.get(col, "metadata")
         if col == target_col or (not use_datacortech_author_simple and group not in feature_groups):
             continue
-        series, kind, drop_reason = feature_value_series(
-            table,
-            col,
-            rows=rows,
-            min_numeric_finite_ratio=min_numeric_finite_ratio,
-            min_categorical_nonmissing_ratio=min_categorical_nonmissing_ratio,
-        )
+        if is_epit_task and col in EPIT_COMPOSITION_COLUMNS:
+            series = epit_completed_composition_series(table, col, rows)
+            kind, drop_reason = "numeric", ""
+        else:
+            series, kind, drop_reason = feature_value_series(
+                table,
+                col,
+                rows=rows,
+                min_numeric_finite_ratio=min_numeric_finite_ratio,
+                min_categorical_nonmissing_ratio=min_categorical_nonmissing_ratio,
+            )
         if series is None:
             dropped.append(f"{col}:{drop_reason or kind}")
             continue
@@ -2158,8 +2191,8 @@ def augment_pitting_magpie_split(
     missing_columns = [column for column in material_columns if column not in X_train.columns]
     if missing_columns:
         raise ValueError(f"EPIT Magpie composition columns are missing: {missing_columns}")
-    if list(X_train.columns[: len(material_columns)]) != material_columns:
-        raise ValueError("EPIT Magpie material columns must be the first 17 model inputs in fixed order.")
+    if list(X_train.columns[: len(EPIT_COMPOSITION_COLUMNS)]) != list(EPIT_COMPOSITION_COLUMNS):
+        raise ValueError("All 24 EPIT composition columns must be the first model inputs in fixed order.")
     if list(X_test.columns) != list(X_train.columns):
         raise ValueError("Training and test feature columns do not match for EPIT Magpie augmentation.")
 

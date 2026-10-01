@@ -97,7 +97,11 @@ def validate_frozen_model(frozen: FrozenFinalModel) -> dict[str, Any]:
         raise RuntimeError("Unexpected uncertainty setting in final configuration.")
     if int(config.get("n_estimators", 0)) <= 0:
         raise RuntimeError("Frozen n_estimators must be positive.")
-    expected_n_features = 31 if config.get("pitting_magpie_features") else 21
+    expected_n_features = (
+        search.EPIT_MAGPIE_TOTAL_FEATURE_COUNT
+        if config.get("pitting_magpie_features")
+        else search.EPIT_BASE_FEATURE_COUNT
+    )
     if int(config.get("expected_n_features", -1)) != expected_n_features:
         raise RuntimeError("Frozen EPIT feature count is inconsistent.")
     if int(config.get("max_samples_per_task", -1)) != 0:

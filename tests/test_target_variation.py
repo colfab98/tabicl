@@ -98,12 +98,14 @@ def test_correlation_handles_constant_targets_without_fake_zero():
 def saved_settings():
     return diagnostic.load_settings(
         diagnostic.DEFAULT_MANIFEST,
-        diagnostic.search.DEFAULT_TARGET_RULE_SUMMARY,
+        diagnostic.search.LEGACY_TARGET_RULE_SUMMARY,
         diagnostic.search.DEFAULT_SPLIT_MANIFEST,
     )
 
 
-@pytest.mark.parametrize("family", sorted(EPIT_TARGET_RULE_COEFFICIENTS))
+@pytest.mark.parametrize(
+    "family", diagnostic.search.LEGACY_TARGET_RULE_FAMILIES
+)
 def test_paired_diagnostic_reuses_real_rule_and_mixer(monkeypatch, saved_settings, family):
     fixed, bounds, _, rules = saved_settings
     hp = copy.deepcopy(fixed)

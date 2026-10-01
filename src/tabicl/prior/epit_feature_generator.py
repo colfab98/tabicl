@@ -19,7 +19,7 @@ from tabicl.prior.epit_feature_profile import (
 
 @dataclass(frozen=True)
 class EpitFeatureBatch:
-    """A complete physical 21-column EPIT feature batch."""
+    """A complete physical 28-column EPIT feature batch."""
 
     profile_name: str
     compositions: EpitCompositionBatch
@@ -126,7 +126,8 @@ def sample_epit_feature_rows(
             test_method_codes.astype(np.float64),
         )
     ).astype(np.float64, copy=False)
-    if features.shape != (int(n_samples), 21) or not np.isfinite(features).all():
+    expected_feature_count = len(profile.composition_profile.observed_elements) + 4
+    if features.shape != (int(n_samples), expected_feature_count) or not np.isfinite(features).all():
         raise ValueError(f"Sampled EPIT feature rows have invalid shape or values: {features.shape}")
 
     return EpitFeatureBatch(

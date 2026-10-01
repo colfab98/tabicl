@@ -1,7 +1,6 @@
 # Supplement to main4.tex: target mixing and coefficient variation
 
-Recorded: 2026-09-26; updated with completed training results on 2026-10-01.
-Working notes for a later merge into [main4.tex](main4.tex).
+Recorded: 2026-09-26. Working notes for a later merge into [main4.tex](main4.tex).
 Sources: the Codex conversation **“Review main4 and presentation.md”**
 (2026-09-23–25, thread `01a0cde2-bea1-7b32-81c2-2ac6045ae94f`), the subsequent
 launch/concurrency discussion, and the repository artifacts linked below.
@@ -18,17 +17,16 @@ in main4; reconcile them during the merge instead of adding duplicate sections.
 | Review of target standardization and the meaning of λ | Completed; retain the existing mixing design. |
 | Coefficient-variation diagnostic | Implemented and run, including 50% and 80% variation. |
 | Optional coefficient sampling during training | Implemented; default strength is zero. |
-| Separate 2,000-step Optuna experiment | Completed: 12 unique strength/seed cells, plus one retained failed historical trial. |
-| Predictive result | The 80% setting has the highest mean at 2,000 steps, but its small and seed-dependent gain does not establish a reliable improvement over fixed coefficients. |
+| Separate 2,000-step Optuna experiment | Implemented, tested, and dry-run plan generated. |
+| Predictive results from the new GPU study | None recorded in the reviewed chat or local experiment outputs. |
 | Several nodes running the same new study concurrently | **Not supported by the current runner.** Shared journal storage exists, but the runner permits only one active process. |
 | Failed/constant SCM component rejection | Discussed, but not implemented by this experiment. |
 | Adaptive λ, grouped bootstrap, joint λ/variation tuning | Discussed only. |
 
 The earlier chat reports **64 passing tests** and tiny CPU training checks with
 zero and four DataLoader workers. These are historical verification results,
-not tests rerun while writing this document. A 12-run dry-run plan was verified
-before GPU submission. The completed grid was checked directly from the shared
-Optuna journal on 2026-10-01.
+not tests rerun while writing this document. The subsequent launch check also
+successfully generated a 12-run dry-run plan without starting training.
 
 ## 2. What target mixing means
 
@@ -261,7 +259,7 @@ Saved evidence:
 - [Extended measurements](corrosion_datasets/analysis/epit_pipeline/target_variation/run_20260925T161921_148867Z/measurements.csv).
 - [Realized coefficient spread and drift](corrosion_datasets/analysis/epit_pipeline/target_variation/run_20260925T161921_148867Z/coefficient_summary.csv).
 
-## 7. Completed Optuna training experiment
+## 7. New Optuna training experiment
 
 | Setting | Implemented value |
 | --- | --- |
@@ -290,56 +288,6 @@ Provenance checks bind the study to its grid, source hashes, calibration/split
 artifacts, feature profile, training template, and output paths. Changed settings
 or relevant source code require a new study name. Frozen v7 artifacts and the
 original launchers remain separate.
-
-### Completed results
-
-The shared journal contains 12 completed unique grid cells and the one failed
-historical trial described below. The failed trial has no value and is excluded
-from every result. The predefined objective is the mean Spearman correlation
-across the five development folds at step 2,000.
-
-| Coefficient variation | Mean Spearman at 1,000 | Mean Spearman at 2,000 | SD across seeds at 2,000 | Mean paired change from fixed at 2,000 |
-| ---: | ---: | ---: | ---: | ---: |
-| 0% | **0.6612** | 0.6917 | 0.0143 | — |
-| 30% | 0.6435 | 0.6855 | 0.0065 | −0.0062 |
-| 50% | 0.6553 | 0.6760 | 0.0055 | −0.0157 |
-| 80% | 0.6589 | **0.6967** | 0.0095 | +0.0050 |
-
-The paired step-2,000 scores expose the interaction with training seed:
-
-| Seed | Fixed | 30% | 50% | 80% | 80% minus fixed |
-| ---: | ---: | ---: | ---: | ---: | ---: |
-| 42 | 0.6879 | 0.6794 | 0.6792 | **0.7055** | +0.0177 |
-| 43 | 0.6797 | **0.6924** | 0.6696 | 0.6867 | +0.0070 |
-| 44 | **0.7076** | 0.6847 | 0.6791 | 0.6978 | −0.0097 |
-
-The 50% setting is worse than the paired fixed baseline for all three seeds.
-The 30% setting improves only seed 43 and is worse on average. The 80% setting
-has the largest mean, but it improves seeds 42 and 43 and harms seed 44. Its
-mean gain of 0.0050 is small relative to its paired-difference standard deviation
-of 0.0138. With only three seeds, this does not demonstrate a reliable benefit.
-There is also no monotonic relationship in which increasing variation steadily
-improves performance.
-
-At step 1,000, fixed coefficients still have the best mean. The nominal advantage
-of 80% variation appears only at the later checkpoint, so any follow-up must use
-the intended longer training duration rather than infer a general improvement
-from the 2,000-step result.
-
-Seed effects are material. Averaged across strengths, the step-2,000 means are
-0.6880, 0.6821, and 0.6923 for seeds 42, 43, and 44, respectively. The best seed
-also changes with strength: seed 44 is best for fixed coefficients, seed 43 for
-30%, and seed 42 for 50% and 80%. Seeds are therefore replicates for estimating
-uncertainty, not another hyperparameter to select.
-
-The current conclusion is to retain fixed coefficients as the supported method.
-If this extension is pursued, the only setting justified for a follow-up is an
-80%-versus-0% paired comparison with more seeds and the full training duration.
-The present conclusion applies to Trial 56's fixed λ of approximately 0.205 and
-this 2,000-step development-fold experiment; no final-test rows were used.
-
-Primary result source:
-`/home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna/epit_coefficient_variation_2k_v1/study_journal.log`.
 
 ### Files added or integrated
 
@@ -383,7 +331,7 @@ Preview commands without training or creating Optuna trials:
 
 The dry run does write the experiment fingerprint and plan. The recorded
 [12-run plan](corrosion_datasets/analysis/epit_pipeline/coefficient_variation_search/epit_coefficient_variation_2k_v1/dry_run_plan.json)
-records the intended grid; completion is established by the shared journal.
+exists, but is not evidence that those runs completed.
 
 Results are stored under
 `corrosion_datasets/analysis/epit_pipeline/coefficient_variation_search/<study>/`;
@@ -452,20 +400,14 @@ one retained failed historical trial (13 trial records in total). No failed
 trial directory or study history is deleted, and the frozen fingerprint is not
 rewritten.
 
-Recovery completed successfully on 2026-10-01. Trials 3–12 filled every missing
-cell, producing the 12 unique completed combinations analyzed above. Trial 2
-remains in the journal as a failed historical record and is not treated as an
-additional replicate.
+## 8. What would count as improvement, and later merge points
 
-## 8. Verdict and later merge points
-
-The experiment does not show a consistent predictive improvement from coefficient
-variation. The generator diagnostic establishes that the sampler changes the
-formula targets as intended, while the training grid shows that this added
-diversity is not automatically beneficial. The 80% setting is a candidate for
-confirmation, not a replacement for the fixed-coefficient method. Selecting a
-higher λ later, or merely producing more diverse targets, would likewise not be
-evidence of improvement without paired predictive results.
+The immediate question is whether variation improves step-2,000 development
+performance consistently across paired seeds. Selecting a higher λ later, or
+merely producing more diverse targets now, would not establish improvement.
+If variation helps, a subsequent comparison can tune λ with equal budgets for
+fixed and variable coefficients, then confirm results at the intended longer
+training duration and under a stronger evaluation design.
 
 | main4 destination | Material to incorporate later |
 | --- | --- |
@@ -473,146 +415,10 @@ evidence of improvement without paired predictive results.
 | `sec:coefficient-objective`, `sec:final-rule-refit` | Clarify calibration ordering; introduce optional coefficient sampling as a later extension. |
 | `sec:selected-prior-configuration`, `sec:final-training-and-selection` | Historical λ trend and training-duration evidence, clearly marked as development analysis. |
 | `sec:physical-limitations`, `sec:next-experiments` | Diagnostic findings, possible prior mismatch, sampling assumptions, pending SCM handling and longer-budget checks. |
-| New experimental subsection | The completed 12-run design, aggregate and paired-seed results, verdict, and exact journal provenance. |
+| New experimental subsection | The 12-run design, paired-seed results when available, and exact artifact provenance. |
 | Implementation/reproducibility notes | Entry points, default-off behavior, test evidence, and current single-runner limitation. |
 
 Before merging, retain the distinction between frozen v7's fixed coefficients
-and this optional extension; archive the temporary λ analysis; and update
-concurrency/test status if the implementation changes. Keep the generator-target
-similarity evidence separate from predictive performance, and keep measured
-outcomes separate from proposed mechanisms.
-
-## 9. 24-element Al-only rule extension (2026-10-01)
-
-### Scope and leakage controls
-
-The deferred v8 work was restored after the v7 coefficient study completed. The
-model-visible composition schema now contains 24 elements. A blank composition
-cell is treated as a structural zero only when the other reported elements close
-to 100 wt.% within 0.1; otherwise the real row remains available for evaluation
-but is not eligible as an empirical pretraining template. This leaves all 760
-real rows in evaluation and 757 eligible as empirical templates.
-
-The frozen v7 row and fold assignments were reused without resplitting. The
-Al-only direct evaluation uses 94 development rows. The 24 final-test Al rows
-remain masked and unused. Existing Fe/Ni-Cr-Mo rules and synthetic routing were
-not changed.
-
-### Fixed candidate formulas
-
-All terms are standardized using each fold's context rows. Their calibrated
-coefficients are constrained to be nonnegative and sum to one.
-
-The retained matched Al baseline, `al_chloride_temperature`, uses:
-
-- `r_Cl = -log10(max([Cl-], 1e-12))`;
-- `r_T = -max(T_C - 30, 0)`.
-
-The new `al_amphoteric_environment` candidate adds:
-
-- `r_acid = -max(5 - pH, 0)`;
-- `r_alkaline = -max(pH - 9, 0)`.
-
-Its coefficient anchor is `[0.55, 0.15, 0.15, 0.15]` for chloride,
-temperature, acidic pH, and alkaline pH, respectively. The temperature
-coefficient is capped at 0.50 and each pH coefficient at 0.30. The two pH
-thresholds are fixed exploratory choices, not fitted breakpoints.
-
-The new `al_composition_environment` candidate retains the baseline
-environment terms and adds:
-
-- `r_CuMn = log1p(max(Cu,0) + max(Mn,0))`;
-- `r_MgSi = -log1p(max(Mg,0) + max(Si,0))`.
-
-Its anchor is `[0.50, 0.15, 0.20, 0.15]`; the Cu-Mn and Mg-Si coefficients
-are capped at 0.30 and 0.20. These are deliberately limited bulk-composition
-proxies. The dataset cannot distinguish solid solution from precipitates or
-heat-treatment state. Cu/Mn is nonzero in only 24 of the 94 development rows,
-and Mg/Si in 12, so this rule must remain exploratory.
-
-### Development-fold results
-
-Mean fold Spearman is the primary comparison because every score is first
-computed inside its held-out fold. Pooled OOF Spearman concatenates
-fold-standardized predictions and is reported only as a secondary diagnostic;
-it can disagree with the mean when fold composition and difficulty differ.
-
-| Al-only rule | Rows | Mean fold Spearman | Pooled OOF Spearman | Fold Spearman values |
-| --- | ---: | ---: | ---: | --- |
-| `al_chloride_temperature` | 94 | 0.1869 | 0.1083 | 0.0000, 0.7628, -0.0635, 0.1044, 0.1306 |
-| `al_amphoteric_environment` | 94 | 0.0870 | 0.3739 | -0.2920, 0.0398, 0.0088, 0.5427, 0.1355 |
-| `al_composition_environment` | 94 | **0.2368** | 0.4052 | 0.0000, 0.7478, 0.2227, 0.1044, 0.1091 |
-
-The baseline scores exactly reproduce the archived pre-extension artifact. On
-all 94 development rows, the final coefficient centers are:
-
-| Rule | Full-development coefficient center |
-| --- | --- |
-| `al_chloride_temperature` | chloride 0.4712; temperature 0.5288 |
-| `al_amphoteric_environment` | chloride 0.2264; temperature 0.3237; acidic pH 0.3000; alkaline pH 0.1499 |
-| `al_composition_environment` | chloride 0.2922; temperature 0.3513; Cu-Mn 0.1565; Mg-Si 0.2000 |
-
-The pH rule is worse than the baseline by 0.0999 mean fold Spearman and is not
-supported. The composition rule improves the mean by 0.0499, but the gain comes
-mainly from one fold: it improves one fold, ties two, and is slightly worse in
-two. This is not sufficiently stable evidence to add Al synthetic routing or to
-use either new rule in Optuna. The existing synthetic generator therefore
-remains Fe/Ni-Cr-Mo only.
-
-### Literature basis and artifacts
-
-The fixed signs follow published Al corrosion mechanisms: log-chloride and pH
-kinetics ([McCafferty 1995](https://doi.org/10.1016/0010-938X(94)00150-5)),
-the temperature transition near 30 C
-([Corrosion Science 2011](https://doi.org/10.1016/j.corsci.2010.09.046)), and
-potential-pH-chloride passivation behavior
-([Corrosion Science 1978](https://doi.org/10.1016/0010-938X(78)90054-9)).
-The composition hypotheses use evidence for Cu state
-([Al-Cu study](https://doi.org/10.1016/0010-938X(77)90044-0)), Mn in solid
-solution ([Al-Mn study](https://doi.org/10.1016/j.corsci.2020.108749)), and
-Mg-Si/Si-rich constituent effects
-([Al-Mg-Si study](https://doi.org/10.1016/j.corsci.2013.06.035);
-[AlSi10Mg study](https://doi.org/10.1016/j.corsci.2019.03.010)). These sources
-do not make bulk wt.% a phase-state measurement, which is why the composition
-terms are capped and not promoted.
-
-Complete JSON results, OOF predictions, and the HTML report are under
-`corrosion_datasets/analysis/epit_pipeline/target_rules_v3/`. The implementation
-is in `scripts/epit_pipeline/target_rules.py`; the final-test masking and
-calibration protocol remain in `calibrate_target_rules.py`.
-
-## 10. V8 Optuna protocol: promoted rules and coefficient variation (2026-10-01)
-
-The new study uses the 24-element input schema and a deliberately fixed subset
-of nine Fe/Ni target-rule families. Four historical formulas are replaced by
-their nitrogen-aware versions: `pren_linear` by `pren_n_linear`,
-`cr_mow_synergy` by `cr_mow_n_synergy`, `improved_environment` by
-`pren_n_improved_environment`, and `method_aware` by `method_aware_pren_n`.
-`threshold_saturation`, `coupled_breakdown`, and `fe_ni_cr_threshold` are
-retained. `mo_n_acid_repassivation` and `mns_inclusion_penalty` are added as the
-two new Fe/Ni rules. The three Al rules remain excluded from synthetic training.
-
-The calibrated coefficients are centers rather than constants. For each
-synthetic task and each nonzero coefficient `w_i`, the generator independently
-draws `u_i ~ Uniform(0.2, 1.8)` and computes
-`w'_i = w_i u_i / sum_j(w_j u_j)`. Draws that violate the calibrated
-rule-specific upper bounds are rejected, with at most 100 attempts; exhausted
-draws fall back to the original calibrated vector and record that fallback.
-Zero coefficients remain zero. Consequently, "80% variation" denotes a
-relative multiplier range around each coefficient, not statistical variance or
-an absolute 80-percentage-point change. A dedicated RNG stream uses seed 42 and
-worker-derived seeds so this augmentation is reproducible.
-
-The choice of 0.8 follows the completed three-seed development experiment. Its
-mean Spearman was 0.6967 versus 0.6917 for fixed coefficients, with paired seed
-differences of +0.0177, +0.0070, and -0.0097. This is promising but not
-conclusive evidence; the purpose in v8 is to expose the model to plausible
-within-rule coefficient changes and test whether that improves transfer. One
-important implementation detail is that the calibrated Mo-N-acid interaction
-coefficient is zero, so multiplicative variation leaves that term at zero.
-
-The new Optuna study is isolated under
-`epit_pipeline_optuna_empirical_features_scm_target_v8` and `optuna_v3`. It runs
-50 trials at 1,000 steps each. The study fingerprint includes the 24-element
-profile, promoted rule order, coefficient centers and bounds, variation strength
-0.8, and seed 42, preventing accidental resume with a different configuration.
+and this optional extension; add actual training results only when available;
+archive the temporary λ analysis; and update concurrency/test status if the
+implementation changes. Keep measured outcomes separate from proposed mechanisms.

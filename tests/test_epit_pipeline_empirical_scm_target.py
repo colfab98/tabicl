@@ -43,9 +43,9 @@ def _fixed_hp() -> dict:
             "informed_physical_marginal_profile": "pitting_potential_v1",
             "informed_physical_marginal_prob": 1.0,
             "informed_task_family_probs": (1.0, 0.0),
-            "informed_normal_block_allocation": (17, 3, 1, 0, 0, 0, 0, 0, 0),
+            "informed_normal_block_allocation": (24, 3, 1, 0, 0, 0, 0, 0, 0),
             "informed_normal_block_allocation_min_counts": (
-                17,
+                24,
                 3,
                 1,
                 0,
@@ -229,8 +229,8 @@ def _generated_dataset(prior_type: str):
         **fixed_hp,
         "seq_len": 128,
         "train_size": 80,
-        "max_features": 21,
-        "num_features": 21,
+        "max_features": 28,
+        "num_features": 28,
         "num_classes": 0,
         "num_layers": 2,
         "hidden_dim": 12,
@@ -250,7 +250,7 @@ def test_mlp_and_tree_target_heads_start_from_the_same_physical_features():
     (tree_X, tree_y, tree_d), tree_prior = _generated_dataset("tree_scm")
 
     assert torch.equal(mlp_X, tree_X)
-    assert mlp_d.item() == tree_d.item() == 21
+    assert mlp_d.item() == tree_d.item() == 28
     assert mlp_y.shape == tree_y.shape == (128,)
     assert torch.isfinite(mlp_y).all()
     assert torch.isfinite(tree_y).all()
@@ -301,9 +301,9 @@ def test_informed_scm_epit_path_does_not_call_reg2cls(monkeypatch):
     monkeypatch.setattr(dataset_module, "Reg2Cls", ForbiddenReg2Cls)
     (X, y, d), _ = _generated_dataset("mlp_scm")
 
-    assert X.shape == (128, 21)
+    assert X.shape == (128, 28)
     assert y.shape == (128,)
-    assert d.item() == 21
+    assert d.item() == 28
 
 
 def test_informed_scm_epit_path_requires_calibrated_rule_scores(monkeypatch):
@@ -412,8 +412,8 @@ def _generated_generic_dataset(composition_mode: str):
         **fixed_hp,
         "seq_len": 128,
         "train_size": 80,
-        "max_features": 21,
-        "num_features": 21,
+        "max_features": 28,
+        "num_features": 28,
         "num_classes": 0,
         "num_layers": 2,
         "hidden_dim": 12,
@@ -436,7 +436,7 @@ def test_new_mode_does_not_change_generic_dataset_generation():
         assert torch.equal(old_value, new_value)
 
 
-def test_v7_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_path: Path):
+def test_v8_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_path: Path):
     args = _search_args()
     rules = search.load_target_rule_config(
         summary_path=args.target_rule_summary,
@@ -501,9 +501,11 @@ def test_v7_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_pa
     assert command[score_index + 1 : coefficient_index] == (
         rules.exact_score_cli_values()
     )
-    assert command[coefficient_index + 1 :] == (
+    variation_index = command.index("--pitting_coefficient_variation")
+    assert command[coefficient_index + 1 : variation_index] == (
         rules.exact_coefficient_cli_values()
     )
+    assert _value_after(command, "--pitting_coefficient_variation") == "0.8"
     parsed_scores = {
         entry.split("=", 1)[0]: float(entry.split("=", 1)[1])
         for entry in rules.exact_score_cli_values()
@@ -544,13 +546,14 @@ def test_v7_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_pa
         / "train_final.sbatch"
     ).read_text(encoding="utf-8")
     for launcher in (optuna_launcher, final_launcher):
-        assert "epit_pipeline_optuna_empirical_features_scm_target_v7" in launcher
+        assert "epit_pipeline_optuna_empirical_features_scm_target_v8" in launcher
         assert 'NP_SEED="${NP_SEED:-42}"' in launcher
         assert 'TORCH_SEED="${TORCH_SEED:-42}"' in launcher
         assert 'PRIOR_N_JOBS="${PRIOR_N_JOBS:-1}"' in launcher
     assert "--pitting-composition-mode empirical_features_scm_target" in optuna_launcher
-    assert 'SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-56}"' in final_launcher
-    assert '--selected-trial-number "$SELECTED_TRIAL_NUMBER"' in final_launcher
+    assert 'SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-}"' in final_launcher
+    assert 'if [[ -n "$SELECTED_TRIAL_NUMBER" ]]' in final_launcher
+    assert "target_rules_v3/calibration_summary.json" in final_launcher
     assert "--allow-missing-selected-trial-artifacts" in final_launcher
     for override in (
         "OVERRIDE_INFORMED_PRIOR_RATIO",
@@ -562,7 +565,7 @@ def test_v7_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_pa
         assert override in final_launcher
 
 
-def test_v7_final_overrides_change_effective_config_not_selected_trial(
+def test_v8_final_overrides_change_effective_config_not_selected_trial(
     tmp_path: Path,
 ):
     args = train_final.parse_args(
@@ -635,8 +638,8 @@ def test_v7_final_overrides_change_effective_config_not_selected_trial(
     )
 
     assert _value_after(command, "--pitting_magpie_features") == "True"
-    assert _value_after(command, "--min_features") == "31"
-    assert _value_after(command, "--max_features") == "31"
+    assert _value_after(command, "--min_features") == "38"
+    assert _value_after(command, "--max_features") == "38"
     style_index = command.index("--pitting_material_style_probs")
     assert command[style_index + 1 : style_index + 6] == [
         "1",
@@ -657,7 +660,7 @@ def test_v7_final_overrides_change_effective_config_not_selected_trial(
     assert "--pitting_target_rule_coefficients" in command
 
 
-def test_v7_fixed_magpie_override_generates_31_features():
+def test_v8_fixed_magpie_override_generates_38_features():
     fixed_hp = _fixed_hp()
     fixed_hp.update(
         {
@@ -671,8 +674,8 @@ def test_v7_fixed_magpie_override_generates_31_features():
         **fixed_hp,
         "seq_len": 64,
         "train_size": 40,
-        "max_features": 31,
-        "num_features": 31,
+        "max_features": 38,
+        "num_features": 38,
         "num_classes": 0,
         "num_layers": 2,
         "hidden_dim": 12,
@@ -693,13 +696,13 @@ def test_v7_fixed_magpie_override_generates_31_features():
 
     X, y, d = prior.generate_dataset(params)
 
-    assert X.shape == (64, 31)
+    assert X.shape == (64, 38)
     assert y.shape == (64,)
-    assert d.item() == 31
+    assert d.item() == 38
     assert torch.isfinite(X).all()
     assert torch.isfinite(y).all()
-    assert prior.last_pitting_scm_target_input.shape == (64, 21)
-    assert torch.equal(X[:, :21], prior.last_pitting_scm_target_input)
+    assert prior.last_pitting_scm_target_input.shape == (64, 28)
+    assert torch.allclose(X[:, :28], prior.last_pitting_scm_target_input, atol=1e-6)
     assert prior.last_pitting_scm_target_metadata["reg2cls_applied"] is False
 
 
@@ -707,7 +710,7 @@ def test_final_override_runs_use_isolated_default_output_directory():
     args = train_final.parse_args(
         [
             "--study-name",
-            "epit_pipeline_optuna_empirical_features_scm_target_v7",
+            "epit_pipeline_optuna_empirical_features_scm_target_v8",
             "--storage",
             "journal:///unused.log",
         ]

@@ -27,10 +27,8 @@ try:
 except ImportError:
     import optuna_pitting_fixed_pren_prior_search as search_utils
 from tabicl.prior.magpie_features import (
-    EPIT_BASE_FEATURE_COUNT,
     EPIT_MAGPIE_DESCRIPTOR_NAMES,
     EPIT_MAGPIE_RANGE_MIN_ATOMIC_FRACTION,
-    EPIT_MAGPIE_TOTAL_FEATURE_COUNT,
     EPIT_MAGPIE_VERSION,
 )
 
@@ -38,6 +36,8 @@ from tabicl.prior.magpie_features import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SPLIT_SEEDS = (1001, 1002, 1003, 1004, 1005)
 FIXED_BLOCK_ALLOCATION = (17, 3, 1, 0, 0, 0, 0, 0, 0)
+EPIT_BASE_FEATURE_COUNT = 21
+EPIT_MAGPIE_TOTAL_FEATURE_COUNT = 31
 DEFAULT_INHIBITOR_ALLOCATION = (0.05, 0.08, 0.02, 0.02, 0.0, 0.05, 0.78, 0.0, 0.0)
 INFORMED_PRIOR_RATIO_GRID = (0.25, 0.50, 0.75, 1.00)
 MLP_PROB_GRID = (0.0, 0.25, 0.50, 0.70, 0.75, 1.0)

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=epit_final_empirical_scm_v7
+#SBATCH --job-name=epit_final_empirical_scm_v8
 #SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
@@ -11,13 +11,13 @@ set -euo pipefail
 cd /home/fcolanto/projects/tabicl
 source .venv/bin/activate
 
-STUDY_NAME="${STUDY_NAME:-epit_pipeline_optuna_empirical_features_scm_target_v7}"
+STUDY_NAME="${STUDY_NAME:-epit_pipeline_optuna_empirical_features_scm_target_v8}"
 OPTUNA_STORAGE_ROOT="${OPTUNA_STORAGE_ROOT:-/home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna}"
 STUDY_DIR="${OPTUNA_STORAGE_ROOT}/${STUDY_NAME}"
 STORAGE="${STORAGE:-journal://${STUDY_DIR}/study_journal_v1.log}"
 SPLIT_MANIFEST="${SPLIT_MANIFEST:-corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json}"
-TARGET_RULE_SUMMARY="${TARGET_RULE_SUMMARY:-corrosion_datasets/analysis/epit_pipeline/target_rules_v2/calibration_summary.json}"
-SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-56}"
+TARGET_RULE_SUMMARY="${TARGET_RULE_SUMMARY:-corrosion_datasets/analysis/epit_pipeline/target_rules_v3/calibration_summary.json}"
+SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-}"
 NPROC_PER_NODE="${NPROC_PER_NODE:-1}"
 MAX_STEPS="${MAX_STEPS:-10000}"
 SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-10000}"
@@ -40,6 +40,12 @@ OVERRIDE_USE_MAGPIE="${OVERRIDE_USE_MAGPIE:-}"
 OVERRIDE_PITTING_COMPOSITION_FAMILY_PROBS="${OVERRIDE_PITTING_COMPOSITION_FAMILY_PROBS:-}"
 
 EXTRA_ARGS=()
+if [[ -n "$SELECTED_TRIAL_NUMBER" ]]; then
+  EXTRA_ARGS+=(
+    --selected-trial-number "$SELECTED_TRIAL_NUMBER"
+    --allow-missing-selected-trial-artifacts
+  )
+fi
 if [[ -n "$FINAL_RUN_NAME" ]]; then
   EXTRA_ARGS+=(--final-run-name "$FINAL_RUN_NAME")
 fi
@@ -71,8 +77,6 @@ fi
 
 python -m scripts.epit_pipeline.train_final \
   --study-name "$STUDY_NAME" \
-  --selected-trial-number "$SELECTED_TRIAL_NUMBER" \
-  --allow-missing-selected-trial-artifacts \
   --storage "$STORAGE" \
   --split-manifest "$SPLIT_MANIFEST" \
   --target-rule-summary "$TARGET_RULE_SUMMARY" \

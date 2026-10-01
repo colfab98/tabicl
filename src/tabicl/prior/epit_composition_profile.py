@@ -12,7 +12,7 @@ from typing import Sequence
 import numpy as np
 
 
-EPIT_COMPOSITION_PROFILE = "epit_dataset_v1"
+EPIT_COMPOSITION_PROFILE = "epit_dataset_v2"
 EPIT_COMPOSITION_FAMILIES = (
     "fe_alloy",
     "al_alloy",
@@ -20,7 +20,7 @@ EPIT_COMPOSITION_FAMILIES = (
     "nicrmo_alloy",
     "other",
 )
-EPIT_COMPOSITION_FAMILY_COUNTS = (298, 56, 19, 17, 13)
+EPIT_COMPOSITION_FAMILY_COUNTS = (298, 55, 17, 17, 13)
 EPIT_COMPOSITION_FAMILY_PROBS = tuple(
     count / sum(EPIT_COMPOSITION_FAMILY_COUNTS) for count in EPIT_COMPOSITION_FAMILY_COUNTS
 )
@@ -39,6 +39,7 @@ class EpitCompositionProfile:
     template_ids: tuple[str, ...]
     template_families: tuple[str, ...]
     template_family_indices: np.ndarray
+    template_eligible_mask: np.ndarray
     template_values: np.ndarray
     template_missing_mask: np.ndarray
     observed_element_indices: np.ndarray
@@ -47,6 +48,10 @@ class EpitCompositionProfile:
     @property
     def n_templates(self) -> int:
         return int(self.template_values.shape[0])
+
+    @property
+    def n_eligible_templates(self) -> int:
+        return int(self.template_eligible_mask.sum())
 
     @property
     def observed_template_values(self) -> np.ndarray:
@@ -69,19 +74,23 @@ def _readonly(values: np.ndarray) -> np.ndarray:
 
 
 def _asset_files(profile_name: str, asset_dir: str | None):
-    if profile_name != EPIT_COMPOSITION_PROFILE:
+    if profile_name not in {"epit_dataset_v1", "epit_dataset_v2"}:
         raise ValueError(f"Unknown EPIT composition profile: {profile_name!r}")
     if asset_dir is None:
         root = resources.files("tabicl.prior.assets")
     else:
         root = Path(asset_dir)
-    return root / f"{profile_name}.json", root / f"{profile_name}.csv"
+    metadata_path = root / f"{profile_name}.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    csv_path = root / str(metadata.get("csv_file", f"{profile_name}.csv"))
+    return metadata_path, csv_path, metadata
 
 
 @lru_cache(maxsize=None)
 def _load_epit_composition_profile(profile_name: str, asset_dir: str | None) -> EpitCompositionProfile:
-    metadata_path, csv_path = _asset_files(profile_name, asset_dir)
-    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata_path, csv_path, metadata = _asset_files(profile_name, asset_dir)
+    if metadata.get("profile_name") != profile_name:
+        raise ValueError(f"Unexpected EPIT composition profile name in {metadata_path}")
     csv_bytes = csv_path.read_bytes()
     csv_sha256 = hashlib.sha256(csv_bytes).hexdigest()
     if csv_sha256 != metadata.get("csv_sha256"):
@@ -125,12 +134,56 @@ def _load_epit_composition_profile(profile_name: str, asset_dir: str | None) -> 
     except KeyError as error:
         raise ValueError(f"Unknown family in EPIT composition templates: {error.args[0]!r}") from error
     family_counts = tuple(int(np.sum(family_indices == index)) for index in range(len(families)))
-    if family_counts != EPIT_COMPOSITION_FAMILY_COUNTS:
+    recorded_family_counts = tuple(
+        int(metadata["family_template_counts"][family]) for family in families
+    )
+    if family_counts != recorded_family_counts:
         raise ValueError(f"Unexpected EPIT composition family counts: {family_counts}")
 
     filled_sums = np.nansum(template_values, axis=1)
     if np.any(filled_sums < 99.0) or np.any(filled_sums > 101.0):
         raise ValueError("EPIT composition templates do not close near 100 wt.% across all 24 elements.")
+
+    policy = metadata.get("pretraining_template_policy")
+    if policy:
+        tolerance = float(policy["closure_tolerance_wt_percent"])
+        eligible_mask = (
+            np.abs(filled_sums - float(policy["closure_target_wt_percent"]))
+            <= tolerance + 1e-12
+        )
+        recorded_excluded = {
+            str(value)
+            for value in policy["excluded_template_ids"]
+        }
+        calculated_excluded = {
+            template_ids[index]
+            for index in range(len(template_ids))
+            if not eligible_mask[index]
+        }
+        if recorded_excluded != calculated_excluded:
+            raise ValueError("EPIT pretraining-template exclusions do not match closure policy.")
+        expected_eligible_counts = tuple(
+            int(policy["eligible_family_template_counts"][family])
+            for family in families
+        )
+    else:
+        eligible_mask = np.ones(len(template_ids), dtype=bool)
+        expected_eligible_counts = family_counts
+    eligible_family_counts = tuple(
+        int(np.sum((family_indices == index) & eligible_mask))
+        for index in range(len(families))
+    )
+    if eligible_family_counts != expected_eligible_counts:
+        raise ValueError(
+            "Unexpected eligible EPIT composition family counts: "
+            f"{eligible_family_counts}"
+        )
+    if profile_name == EPIT_COMPOSITION_PROFILE and expected_eligible_counts != EPIT_COMPOSITION_FAMILY_COUNTS:
+        raise ValueError("Default EPIT composition-family constants do not match its asset.")
+    family_probabilities = tuple(
+        count / sum(expected_eligible_counts)
+        for count in expected_eligible_counts
+    )
 
     observed_indices = np.asarray([elements.index(element) for element in observed_elements], dtype=np.int64)
     return EpitCompositionProfile(
@@ -139,10 +192,11 @@ def _load_epit_composition_profile(profile_name: str, asset_dir: str | None) -> 
         observed_elements=observed_elements,
         omitted_elements=omitted_elements,
         families=families,
-        family_probabilities=EPIT_COMPOSITION_FAMILY_PROBS,
+        family_probabilities=family_probabilities,
         template_ids=tuple(template_ids),
         template_families=tuple(template_families),
         template_family_indices=_readonly(family_indices),
+        template_eligible_mask=_readonly(eligible_mask),
         template_values=_readonly(template_values),
         template_missing_mask=_readonly(np.isnan(template_values)),
         observed_element_indices=_readonly(observed_indices),
@@ -241,7 +295,7 @@ def map_epit_latents_to_compositions(
     probabilities. The remaining latents jointly select a real template within
     that family. With one latent, its position inside the selected family band
     selects the template as well. This preserves relationships learned by the
-    SCM while replacing abstract material columns with the 17 observed elements.
+    SCM while replacing abstract material columns with the observed elements.
     """
 
     latent_values = np.asarray(latents, dtype=np.float64)
@@ -249,7 +303,7 @@ def map_epit_latents_to_compositions(
         raise ValueError("latents must have shape (n_samples, n_latents) with both dimensions positive.")
     profile = load_epit_composition_profile() if profile is None else profile
     probabilities = normalize_epit_family_probabilities(
-        family_probabilities,
+        profile.family_probabilities if family_probabilities is None else family_probabilities,
         n_families=len(profile.families),
     )
     rng = random_state if isinstance(random_state, np.random.Generator) else np.random.default_rng(random_state)
@@ -280,7 +334,10 @@ def map_epit_latents_to_compositions(
         positions = np.flatnonzero(family_indices == family_index)
         if positions.size == 0:
             continue
-        candidates = np.flatnonzero(profile.template_family_indices == family_index)
+        candidates = np.flatnonzero(
+            (profile.template_family_indices == family_index)
+            & profile.template_eligible_mask
+        )
         candidate_offsets = np.floor(template_u[positions] * candidates.size).astype(np.int64)
         candidate_offsets = np.clip(candidate_offsets, 0, candidates.size - 1)
         template_indices[positions] = candidates[candidate_offsets]
@@ -306,14 +363,14 @@ def sample_epit_compositions(
 
     Positive template entries receive multiplicative log-normal perturbations;
     zero and unreported entries remain zero. Full 24-element compositions are
-    then closed to 100 wt.% before the evaluated 17 columns are selected.
+    then closed to 100 wt.% before the evaluated columns are selected.
     """
 
     if int(n_samples) != n_samples or int(n_samples) <= 0:
         raise ValueError("n_samples must be a positive integer.")
     profile = load_epit_composition_profile() if profile is None else profile
     probabilities = normalize_epit_family_probabilities(
-        family_probabilities,
+        profile.family_probabilities if family_probabilities is None else family_probabilities,
         n_families=len(profile.families),
     )
     rng = random_state if isinstance(random_state, np.random.Generator) else np.random.default_rng(random_state)
@@ -324,7 +381,10 @@ def sample_epit_compositions(
         positions = np.flatnonzero(family_indices == family_index)
         if positions.size == 0:
             continue
-        candidates = np.flatnonzero(profile.template_family_indices == family_index)
+        candidates = np.flatnonzero(
+            (profile.template_family_indices == family_index)
+            & profile.template_eligible_mask
+        )
         template_indices[positions] = rng.choice(candidates, size=positions.size, replace=True)
 
     return _composition_batch_from_indices(

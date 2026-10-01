@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 
 from tabicl.prior.epit_composition_profile import (
+    EPIT_COMPOSITION_PROFILE,
     EpitCompositionProfile,
     load_epit_composition_profile,
 )
@@ -93,7 +94,11 @@ def _normalized_method(value: str) -> str:
 
 
 @lru_cache(maxsize=None)
-def _load_epit_feature_profile(profile_name: str, asset_dir: str | None) -> EpitFeatureProfile:
+def _load_epit_feature_profile(
+    profile_name: str,
+    composition_profile_name: str,
+    asset_dir: str | None,
+) -> EpitFeatureProfile:
     metadata_path, csv_path = _asset_files(profile_name, asset_dir)
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     if metadata.get("profile_name") != profile_name:
@@ -109,13 +114,13 @@ def _load_epit_feature_profile(profile_name: str, asset_dir: str | None) -> Epit
         raise ValueError(f"Unexpected EPIT feature families: {families}")
 
     composition_metadata = metadata["composition_profile"]
-    composition_name = str(composition_metadata["name"])
+    source_composition_name = str(composition_metadata["name"])
     composition_root = (
         resources.files("tabicl.prior.assets")
         if asset_dir is None
         else Path(asset_dir)
     )
-    composition_metadata_path = composition_root / f"{composition_name}.json"
+    composition_metadata_path = composition_root / f"{source_composition_name}.json"
     composition_metadata_sha256 = hashlib.sha256(
         composition_metadata_path.read_bytes()
     ).hexdigest()
@@ -123,7 +128,7 @@ def _load_epit_feature_profile(profile_name: str, asset_dir: str | None) -> Epit
         raise ValueError("Referenced EPIT composition-profile metadata checksum changed.")
 
     composition = load_epit_composition_profile(
-        composition_name,
+        composition_profile_name,
         asset_dir=asset_dir,
     )
     if composition.metadata.get("csv_sha256") != composition_metadata.get("csv_sha256"):
@@ -135,6 +140,7 @@ def _load_epit_feature_profile(profile_name: str, asset_dir: str | None) -> Epit
             index
             for index, family in enumerate(composition.template_families)
             if family in family_to_index
+            and composition.template_eligible_mask[index]
         ],
         dtype=np.int64,
     )
@@ -262,6 +268,7 @@ def _load_epit_feature_profile(profile_name: str, asset_dir: str | None) -> Epit
 def load_epit_feature_profile(
     profile_name: str = EPIT_FEATURE_PROFILE,
     *,
+    composition_profile_name: str = EPIT_COMPOSITION_PROFILE,
     asset_dir: str | Path | None = None,
 ) -> EpitFeatureProfile:
     """Load and validate the static target-free Fe/Ni--Cr--Mo feature profile.
@@ -271,4 +278,8 @@ def load_epit_feature_profile(
     """
 
     normalized_asset_dir = None if asset_dir is None else str(Path(asset_dir).resolve())
-    return _load_epit_feature_profile(str(profile_name), normalized_asset_dir)
+    return _load_epit_feature_profile(
+        str(profile_name),
+        str(composition_profile_name),
+        normalized_asset_dir,
+    )

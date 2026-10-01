@@ -40,12 +40,14 @@ from .reg2cls import Reg2Cls
 from .prior_config import DEFAULT_FIXED_HP, DEFAULT_SAMPLED_HP
 from .target_variation import sample_coefficients
 from .epit_composition_profile import (
+    EPIT_COMPOSITION_PROFILE,
     EpitCompositionBatch,
     load_epit_composition_profile,
     map_epit_latents_to_compositions,
 )
 from .epit_feature_generator import EpitFeatureBatch, sample_epit_feature_rows
 from .epit_feature_profile import EPIT_FEATURE_PROFILE, load_epit_feature_profile
+from .epit_schema import EPIT_COMPOSITION_INDEX, epit_feature_slices
 from .magpie_features import (
     EPIT_BASE_FEATURE_COUNT,
     EPIT_MATERIAL_FEATURE_COUNT,
@@ -65,11 +67,22 @@ EPIT_TARGET_RULE_COEFFICIENTS: Dict[str, Dict[str, float]] = {
         "environment_aggressiveness": 0.43466897496169377,
         "material_chloride_interaction": 0.0,
     },
+    "pren_n_linear": {
+        "material_passivity": 0.5438937333906528,
+        "environment_aggressiveness": 0.41071994366836606,
+        "material_chloride_interaction": 0.04538632294098119,
+    },
     "cr_mow_synergy": {
         "material_passivity": 0.45956446149953445,
         "environment_aggressiveness": 0.11151119774870306,
         "material_chloride_interaction": 0.13912063464595828,
         "temperature_chloride_interaction": 0.2898037061058043,
+    },
+    "cr_mow_n_synergy": {
+        "material_passivity": 0.423067182379293,
+        "environment_aggressiveness": 0.09665358288402365,
+        "material_chloride_interaction": 0.2020826768492571,
+        "temperature_chloride_interaction": 0.27819655788742637,
     },
     "threshold_saturation": {
         "material_passivity": 0.45702896469586524,
@@ -83,6 +96,29 @@ EPIT_TARGET_RULE_COEFFICIENTS: Dict[str, Dict[str, float]] = {
         "high_temperature_aggressiveness": 0.07250485977655058,
         "temperature_chloride_interaction": 0.16267280772810647,
         "acidic_ph_aggressiveness": 0.0,
+    },
+    "pren_n_improved_environment": {
+        "material_passivity": 0.5277938373202484,
+        "log_chloride_aggressiveness": 0.2672109390584261,
+        "high_temperature_aggressiveness": 0.07677643748386755,
+        "temperature_chloride_interaction": 0.12821878613745802,
+        "acidic_ph_aggressiveness": 0.0,
+    },
+    "mo_n_acid_repassivation": {
+        "material_passivity": 0.5268888746809476,
+        "log_chloride_aggressiveness": 0.26718850352680173,
+        "high_temperature_aggressiveness": 0.07727454965055508,
+        "temperature_chloride_interaction": 0.1286480721416956,
+        "acidic_ph_aggressiveness": 0.0,
+        "mo_n_acid_repassivation": 0.0,
+    },
+    "mns_inclusion_penalty": {
+        "material_passivity": 0.48231879667482064,
+        "log_chloride_aggressiveness": 0.24929992873283968,
+        "high_temperature_aggressiveness": 0.051031583544245966,
+        "temperature_chloride_interaction": 0.132749333962213,
+        "acidic_ph_aggressiveness": 0.0,
+        "mns_inclusion_susceptibility": 0.08460035708588069,
     },
     "coupled_breakdown": {
         "material_passivity": 0.400022445097356,
@@ -102,6 +138,13 @@ EPIT_TARGET_RULE_COEFFICIENTS: Dict[str, Dict[str, float]] = {
         "material_chloride_interaction": 0.2683200863035855,
         "temperature_chloride_interaction": 0.22199285038776748,
         "test_method_correction": 0.17434262007116513,
+    },
+    "method_aware_pren_n": {
+        "material_passivity": 0.2772908294173189,
+        "environment_aggressiveness": 0.0,
+        "material_chloride_interaction": 0.3245827329211744,
+        "temperature_chloride_interaction": 0.20218563158231842,
+        "test_method_correction": 0.1959408060791884,
     },
 }
 
@@ -873,7 +916,7 @@ class SCMPrior(Prior):
         return bool(self.fixed_hp.get("pitting_magpie_features", False))
 
     def _pitting_magpie_base_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Use 21 generated features before optional informed-task descriptors."""
+        """Use the fixed physical features before optional informed-task descriptors."""
 
         if not self._pitting_magpie_features_enabled():
             return params
@@ -1152,7 +1195,15 @@ class SCMPrior(Prior):
             feature_profile_name = str(
                 self.fixed_hp.get("pitting_feature_profile", EPIT_FEATURE_PROFILE)
             )
-            feature_profile = load_epit_feature_profile(feature_profile_name)
+            feature_profile = load_epit_feature_profile(
+                feature_profile_name,
+                composition_profile_name=str(
+                    self.fixed_hp.get(
+                        "pitting_composition_profile",
+                        EPIT_COMPOSITION_PROFILE,
+                    )
+                ),
+            )
             process_count = int(feature_profile.metadata["evaluator_preprocessing"]["category_count"])
         elif process_count is None:
             process_values = X[:, process_slice.start].detach()
@@ -1325,14 +1376,28 @@ class SCMPrior(Prior):
         material = torch.nan_to_num(
             X[:, material_cols], nan=0.0, posinf=0.0, neginf=0.0
         )
-        iron = material[:, 0].clamp_min(0.0)
-        chromium = material[:, 1].clamp_min(0.0)
-        nickel = material[:, 2].clamp_min(0.0)
-        molybdenum = material[:, 3].clamp_min(0.0)
-        tungsten = material[:, 4].clamp_min(0.0)
+        def element(name: str) -> Tensor:
+            index = EPIT_COMPOSITION_INDEX[name]
+            if index >= material.shape[1]:
+                raise ValueError(
+                    f"Weighted EPIT rule {family!r} requires element {name}."
+                )
+            return material[:, index].clamp_min(0.0)
+
+        iron = element("Fe")
+        chromium = element("Cr")
+        nickel = element("Ni")
+        molybdenum = element("Mo")
+        tungsten = element("W")
+        nitrogen = element("N")
+        manganese = element("Mn")
+        sulfur = element("S")
         mow = molybdenum + 0.55 * tungsten
+        mow_n = molybdenum + 0.5 * tungsten
         linear_material = chromium + 3.25 * mow
+        pren_n_material = chromium + 3.3 * mow_n + 16.0 * nitrogen
         synergy_material = linear_material + torch.sqrt(chromium * mow)
+        synergy_n_material = pren_n_material + torch.sqrt(chromium * mow_n)
         threshold_material = torch.sigmoid((chromium - 12.0) / 2.0) + torch.log1p(mow)
         synthetic_family_ids = rule.get("synthetic_material_family_ids")
         if synthetic_family_ids is None:
@@ -1383,6 +1448,15 @@ class SCMPrior(Prior):
             material_score = linear_material
         elif family in {"cr_mow_synergy", "method_aware"}:
             material_score = synergy_material
+        elif family in {
+            "pren_n_linear",
+            "pren_n_improved_environment",
+            "mo_n_acid_repassivation",
+            "mns_inclusion_penalty",
+        }:
+            material_score = pren_n_material
+        elif family in {"cr_mow_n_synergy", "method_aware_pren_n"}:
+            material_score = synergy_n_material
         elif family == "threshold_saturation":
             material_score = threshold_material
         elif family == "fe_ni_cr_threshold":
@@ -1404,6 +1478,9 @@ class SCMPrior(Prior):
             "cr_mow_synergy",
             "threshold_saturation",
             "method_aware",
+            "pren_n_linear",
+            "cr_mow_n_synergy",
+            "method_aware_pren_n",
         }:
             epit_drive = epit_drive - coefficients["environment_aggressiveness"] * standardized(environment)
             epit_drive = epit_drive - coefficients["material_chloride_interaction"] * standardized(
@@ -1413,7 +1490,13 @@ class SCMPrior(Prior):
                 epit_drive = epit_drive - coefficients["temperature_chloride_interaction"] * standardized(
                     classic_temperature_chloride
                 )
-        elif family in {"improved_environment", "fe_ni_cr_threshold"}:
+        elif family in {
+            "improved_environment",
+            "pren_n_improved_environment",
+            "mo_n_acid_repassivation",
+            "mns_inclusion_penalty",
+            "fe_ni_cr_threshold",
+        }:
             epit_drive = epit_drive - coefficients["log_chloride_aggressiveness"] * standardized(
                 chloride_drive
             )
@@ -1426,6 +1509,16 @@ class SCMPrior(Prior):
             epit_drive = epit_drive - coefficients["acidic_ph_aggressiveness"] * standardized(
                 acidic_ph
             )
+            if family == "mo_n_acid_repassivation":
+                repassivation = torch.sqrt(mow_n * nitrogen) * acidic_ph
+                epit_drive = epit_drive + coefficients["mo_n_acid_repassivation"] * standardized(
+                    repassivation
+                )
+            elif family == "mns_inclusion_penalty":
+                inclusion = torch.sqrt(manganese * sulfur)
+                epit_drive = epit_drive - coefficients["mns_inclusion_susceptibility"] * standardized(
+                    inclusion
+                )
         else:
             aggressiveness = (
                 0.65 * chloride_z
@@ -1440,7 +1533,7 @@ class SCMPrior(Prior):
                 acidic_ph
             )
 
-        if family == "method_aware":
+        if family in {"method_aware", "method_aware_pren_n"}:
             process_col = int(rule["process_col"])
             offsets = torch.as_tensor(
                 rule["process_offsets"], device=X.device, dtype=X.dtype
@@ -1518,14 +1611,28 @@ class SCMPrior(Prior):
         material = np.nan_to_num(
             X[:, material_cols], nan=0.0, posinf=0.0, neginf=0.0
         )
-        iron = np.clip(material[:, 0], 0.0, None)
-        chromium = np.clip(material[:, 1], 0.0, None)
-        nickel = np.clip(material[:, 2], 0.0, None)
-        molybdenum = np.clip(material[:, 3], 0.0, None)
-        tungsten = np.clip(material[:, 4], 0.0, None)
+        def element(name: str) -> np.ndarray:
+            index = EPIT_COMPOSITION_INDEX[name]
+            if index >= material.shape[1]:
+                raise ValueError(
+                    f"Weighted EPIT rule {family!r} requires element {name}."
+                )
+            return np.clip(material[:, index], 0.0, None)
+
+        iron = element("Fe")
+        chromium = element("Cr")
+        nickel = element("Ni")
+        molybdenum = element("Mo")
+        tungsten = element("W")
+        nitrogen = element("N")
+        manganese = element("Mn")
+        sulfur = element("S")
         mow = molybdenum + 0.55 * tungsten
+        mow_n = molybdenum + 0.5 * tungsten
         linear_material = chromium + 3.25 * mow
+        pren_n_material = chromium + 3.3 * mow_n + 16.0 * nitrogen
         synergy_material = linear_material + np.sqrt(chromium * mow)
+        synergy_n_material = pren_n_material + np.sqrt(chromium * mow_n)
         threshold_material = 1.0 / (1.0 + np.exp(-(chromium - 12.0) / 2.0)) + np.log1p(mow)
         synthetic_family_ids = rule.get("synthetic_material_family_ids")
         if synthetic_family_ids is None:
@@ -1590,6 +1697,15 @@ class SCMPrior(Prior):
             material_score = linear_material
         elif family in {"cr_mow_synergy", "method_aware"}:
             material_score = synergy_material
+        elif family in {
+            "pren_n_linear",
+            "pren_n_improved_environment",
+            "mo_n_acid_repassivation",
+            "mns_inclusion_penalty",
+        }:
+            material_score = pren_n_material
+        elif family in {"cr_mow_n_synergy", "method_aware_pren_n"}:
+            material_score = synergy_n_material
         elif family == "threshold_saturation":
             material_score = threshold_material
         elif family == "fe_ni_cr_threshold":
@@ -1610,6 +1726,9 @@ class SCMPrior(Prior):
             "cr_mow_synergy",
             "threshold_saturation",
             "method_aware",
+            "pren_n_linear",
+            "cr_mow_n_synergy",
+            "method_aware_pren_n",
         }:
             epit_drive -= coefficients["environment_aggressiveness"] * standardized(environment)
             epit_drive -= coefficients["material_chloride_interaction"] * standardized(
@@ -1619,7 +1738,13 @@ class SCMPrior(Prior):
                 epit_drive -= coefficients["temperature_chloride_interaction"] * standardized(
                     classic_temperature_chloride
                 )
-        elif family in {"improved_environment", "fe_ni_cr_threshold"}:
+        elif family in {
+            "improved_environment",
+            "pren_n_improved_environment",
+            "mo_n_acid_repassivation",
+            "mns_inclusion_penalty",
+            "fe_ni_cr_threshold",
+        }:
             epit_drive -= coefficients["log_chloride_aggressiveness"] * standardized(
                 chloride_drive
             )
@@ -1632,6 +1757,16 @@ class SCMPrior(Prior):
             epit_drive -= coefficients["acidic_ph_aggressiveness"] * standardized(
                 acidic_ph
             )
+            if family == "mo_n_acid_repassivation":
+                repassivation = np.sqrt(mow_n * nitrogen) * acidic_ph
+                epit_drive += coefficients["mo_n_acid_repassivation"] * standardized(
+                    repassivation
+                )
+            elif family == "mns_inclusion_penalty":
+                inclusion = np.sqrt(manganese * sulfur)
+                epit_drive -= coefficients["mns_inclusion_susceptibility"] * standardized(
+                    inclusion
+                )
         else:
             aggressiveness = (
                 0.65 * chloride_z
@@ -1646,7 +1781,7 @@ class SCMPrior(Prior):
                 acidic_ph
             )
 
-        if family == "method_aware":
+        if family in {"method_aware", "method_aware_pren_n"}:
             offsets = np.asarray(rule["process_offsets"], dtype=float).reshape(-1)
             labels = np.rint(
                 np.nan_to_num(
@@ -1845,7 +1980,7 @@ class SCMPrior(Prior):
     ) -> Tensor:
         if composition.shape[1] != EPIT_MATERIAL_FEATURE_COUNT:
             raise ValueError(
-                "fe_ni_softmax requires the fixed 17-column EPIT material schema."
+                "fe_ni_softmax requires the fixed 24-column EPIT material schema."
             )
         sampled_ids = np.random.choice(
             len(EPIT_FE_NI_FAMILY_NAMES),
@@ -1907,7 +2042,7 @@ class SCMPrior(Prior):
             return
 
         if self._empirical_pitting_composition_enabled():
-            profile_name = str(self.fixed_hp.get("pitting_composition_profile", "epit_dataset_v1"))
+            profile_name = str(self.fixed_hp.get("pitting_composition_profile", EPIT_COMPOSITION_PROFILE))
             profile = load_epit_composition_profile(profile_name)
             if width != len(profile.observed_elements):
                 raise ValueError(
@@ -2665,7 +2800,7 @@ class SCMPrior(Prior):
         if material_slice is None or material_slice.stop <= material_slice.start:
             raise ValueError("Empirical EPIT composition requires a material block.")
 
-        profile_name = str(self.fixed_hp.get("pitting_composition_profile", "epit_dataset_v1"))
+        profile_name = str(self.fixed_hp.get("pitting_composition_profile", EPIT_COMPOSITION_PROFILE))
         profile = load_epit_composition_profile(profile_name)
         output_material_width = material_slice.stop - material_slice.start
         if output_material_width != len(profile.observed_elements):
@@ -2723,7 +2858,7 @@ class SCMPrior(Prior):
                 f"Expected {context.scm_num_features} latent SCM features, got {X.shape[-1]}."
             )
 
-        profile_name = str(self.fixed_hp.get("pitting_composition_profile", "epit_dataset_v1"))
+        profile_name = str(self.fixed_hp.get("pitting_composition_profile", EPIT_COMPOSITION_PROFILE))
         profile = load_epit_composition_profile(profile_name)
         latents = X[:, latent_slice].detach().cpu().numpy()
         random_seed = int(np.random.randint(0, np.iinfo(np.int32).max))
@@ -2755,15 +2890,24 @@ class SCMPrior(Prior):
             raise ValueError("empirical_features requires the normal_corrosion task family.")
         if self._informed_target_family() != "pitting_potential":
             raise ValueError("empirical_features requires informed_target_family='pitting_potential'.")
-        if X.ndim != 2 or X.shape[1] != EPIT_BASE_FEATURE_COUNT:
-            raise ValueError(
-                f"empirical_features requires exactly {EPIT_BASE_FEATURE_COUNT} generated columns."
-            )
-
         profile_name = str(
             self.fixed_hp.get("pitting_feature_profile", EPIT_FEATURE_PROFILE)
         )
-        profile = load_epit_feature_profile(profile_name)
+        profile = load_epit_feature_profile(
+            profile_name,
+            composition_profile_name=str(
+                self.fixed_hp.get(
+                    "pitting_composition_profile",
+                    EPIT_COMPOSITION_PROFILE,
+                )
+            ),
+        )
+        expected_feature_count = len(profile.composition_profile.observed_elements) + 4
+        if X.ndim != 2 or X.shape[1] != expected_feature_count:
+            raise ValueError(
+                "empirical_features requires exactly "
+                f"{expected_feature_count} generated columns."
+            )
         material_slice = blocks.get("material")
         environment_slice = blocks.get("environment")
         process_slice = blocks.get("process_history")
@@ -2771,7 +2915,7 @@ class SCMPrior(Prior):
             material_slice.stop - material_slice.start
             != len(profile.composition_profile.observed_elements)
         ):
-            raise ValueError("empirical_features requires the fixed 17-column material block.")
+            raise ValueError("empirical_features requires the fixed 24-column material block.")
         if environment_slice is None or environment_slice.stop - environment_slice.start != 3:
             raise ValueError("empirical_features requires temperature, chloride, and pH columns.")
         if process_slice is None or process_slice.stop - process_slice.start != 1:
@@ -2838,9 +2982,12 @@ class SCMPrior(Prior):
         )
         sampled = torch.as_tensor(batch.features.copy(), device=X.device, dtype=X.dtype)
         X = X.clone()
-        X[:, material_slice] = sampled[:, :17]
-        X[:, environment_slice] = sampled[:, 17:20]
-        X[:, process_slice] = sampled[:, 20:21]
+        sample_slices = epit_feature_slices(
+            len(profile.composition_profile.observed_elements)
+        )
+        X[:, material_slice] = sampled[:, sample_slices["material"]]
+        X[:, environment_slice] = sampled[:, sample_slices["environment"]]
+        X[:, process_slice] = sampled[:, sample_slices["process_history"]]
 
         info = PittingProfileInfo(
             applied=True,
@@ -2934,10 +3081,17 @@ class SCMPrior(Prior):
         prior_cls: type[MLPSCM] | type[TreeSCM],
     ) -> Tensor:
         """Combine a direct SCM target with a calibrated raw-feature EPIT rule."""
-        if X.ndim != 2 or X.shape[1] != EPIT_BASE_FEATURE_COUNT:
+        feature_batch = self.last_pitting_feature_batch
+        material_feature_count = (
+            EPIT_MATERIAL_FEATURE_COUNT
+            if feature_batch is None
+            else feature_batch.compositions.observed_compositions.shape[1]
+        )
+        expected_feature_count = material_feature_count + 4
+        if X.ndim != 2 or X.shape[1] != expected_feature_count:
             raise ValueError(
                 "The empirical SCM+EPIT target requires exactly "
-                f"{EPIT_BASE_FEATURE_COUNT} raw physical features."
+                f"{expected_feature_count} raw physical features."
             )
         target_mix_weight = float(
             self.fixed_hp.get("informed_target_mix_weight", 0.35)
@@ -2967,11 +3121,7 @@ class SCMPrior(Prior):
             physical_profile_applied=True,
             material_family_ids=family_ids.to(device=X.device),
         )
-        blocks = {
-            "material": slice(0, 17),
-            "environment": slice(17, 20),
-            "process_history": slice(20, 21),
-        }
+        blocks = epit_feature_slices(material_feature_count)
         rule = self._sample_fixed_epit_target_rule(
             X,
             blocks,

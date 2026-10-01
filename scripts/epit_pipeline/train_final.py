@@ -27,8 +27,8 @@ from scripts.epit_pipeline.artifact_hashes import (
 )
 
 
-DEFAULT_FINAL_ROOT = search.PIPELINE_ROOT / "final_v1"
-DEFAULT_CHECKPOINT_ROOT = REPO_ROOT / "checkpoints" / "epit_pipeline_final_v1"
+DEFAULT_FINAL_ROOT = search.PIPELINE_ROOT / "final_v2"
+DEFAULT_CHECKPOINT_ROOT = REPO_ROOT / "checkpoints" / "epit_pipeline_final_v2"
 FINAL_MODEL_MANIFEST_NAME = "final_model_manifest.json"
 CHECKPOINT_RE = re.compile(r"^step-(\d+)\.ckpt$")
 PITTING_TASK_ID = "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg"
@@ -929,7 +929,11 @@ def run(args: argparse.Namespace) -> Path:
         "regression_output": "median",
         "regression_uncertainty": False,
         "pitting_magpie_features": bool(params.use_magpie),
-        "expected_n_features": 31 if params.use_magpie else 21,
+        "expected_n_features": (
+            search.EPIT_MAGPIE_TOTAL_FEATURE_COUNT
+            if params.use_magpie
+            else search.EPIT_BASE_FEATURE_COUNT
+        ),
         "max_samples_per_task": 0,
     }
     manifest = {

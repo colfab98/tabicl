@@ -26,7 +26,7 @@ def test_epit_fe_nicrmo_feature_profile_loads_and_reuses_compositions():
     assert tuple(np.bincount(profile.composition_family_indices)) == EPIT_FEATURE_FAMILY_TEMPLATE_COUNTS
     assert profile.n_composition_templates == 315
     assert profile.composition_profile.template_values.shape == (403, 24)
-    assert profile.composition_profile.observed_template_values.shape == (403, 17)
+    assert profile.composition_profile.observed_template_values.shape == (403, 24)
 
 
 def test_epit_feature_profile_preserves_missingness_and_evaluator_categories():
@@ -75,6 +75,7 @@ def test_epit_feature_profile_rejects_modified_csv(tmp_path):
     for filename in (
         "epit_dataset_v1.csv",
         "epit_dataset_v1.json",
+        "epit_dataset_v2.json",
         f"{EPIT_FEATURE_PROFILE}.csv",
         f"{EPIT_FEATURE_PROFILE}.json",
     ):
@@ -91,6 +92,7 @@ def test_epit_feature_profile_rejects_modified_composition_metadata(tmp_path):
     for filename in (
         "epit_dataset_v1.csv",
         "epit_dataset_v1.json",
+        "epit_dataset_v2.json",
         f"{EPIT_FEATURE_PROFILE}.csv",
         f"{EPIT_FEATURE_PROFILE}.json",
     ):

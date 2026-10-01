@@ -35,7 +35,11 @@ def parse_args(argv=None):
     parser.add_argument("--study-name", default=DEFAULT_STUDY)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--split-manifest", type=Path, default=search.DEFAULT_SPLIT_MANIFEST)
-    parser.add_argument("--target-rule-summary", type=Path, default=search.DEFAULT_TARGET_RULE_SUMMARY)
+    parser.add_argument(
+        "--target-rule-summary",
+        type=Path,
+        default=search.LEGACY_TARGET_RULE_SUMMARY,
+    )
     parser.add_argument("--work-root", type=Path, default=WORK_ROOT)
     parser.add_argument("--checkpoint-root", type=Path, default=CHECKPOINT_ROOT)
     parser.add_argument("--storage", help="Optuna storage; defaults to a new journal inside this experiment directory.")

@@ -1,0 +1,379 @@
+{
+  "anchor_strength": 0.1,
+  "applicability": "Al Alloy",
+  "calibration_target": "standardized EPIT ranks",
+  "coefficient_anchor": {
+    "cu_mn_solid_solution_proxy": 0.2,
+    "high_temperature_aggressiveness": 0.15,
+    "log_chloride_aggressiveness": 0.5,
+    "mg_si_particle_proxy_penalty": 0.15
+  },
+  "coefficient_constraints": "nonnegative; sum to one",
+  "coefficient_upper_bounds": {
+    "cu_mn_solid_solution_proxy": 0.3,
+    "high_temperature_aggressiveness": 0.5,
+    "log_chloride_aggressiveness": 1.0,
+    "mg_si_particle_proxy_penalty": 0.2
+  },
+  "current_model_visible_composition_columns": [
+    "Composition, wt.% Fe",
+    "Composition, wt.% Cr",
+    "Composition, wt.% Ni",
+    "Composition, wt.% Mo",
+    "Composition, wt.% W",
+    "Composition, wt.% N",
+    "Composition, wt.% Nb",
+    "Composition, wt.% C",
+    "Composition, wt.% Si",
+    "Composition, wt.% Mn",
+    "Composition, wt.% Cu",
+    "Composition, wt.% P",
+    "Composition, wt.% S",
+    "Composition, wt.% Al",
+    "Composition, wt.% V",
+    "Composition, wt.% Ta",
+    "Composition, wt.% Re",
+    "Composition, wt.% Ce",
+    "Composition, wt.% Ti",
+    "Composition, wt.% Co",
+    "Composition, wt.% B",
+    "Composition, wt.% Mg",
+    "Composition, wt.% Y",
+    "Composition, wt.% Gd"
+  ],
+  "description": "Al-only chloride and temperature rule with sparse Cu-Mn and Mg-Si proxies",
+  "direct_evaluation": {
+    "maximum_fold_spearman": 0.7478163657867941,
+    "mean_fold_spearman": 0.23680025711070324,
+    "minimum_fold_spearman": 0.0,
+    "minimum_validation_rows": 10,
+    "pooled_out_of_fold_spearman": 0.40517042416767657,
+    "rows": 94,
+    "scope": "out-of-fold eligible development rows only; applicability=Al Alloy",
+    "small_sample_warning": false,
+    "standard_deviation_fold_spearman": 0.26504599645872357
+  },
+  "epit_schema_version": "epit_24_element_v2",
+  "evaluation_role": "experimental Al-only candidate",
+  "evaluation_rows_retained": 760,
+  "final_development_calibration": {
+    "coefficients": {
+      "cu_mn_solid_solution_proxy": 0.15647842501954992,
+      "high_temperature_aggressiveness": 0.35127792201328106,
+      "log_chloride_aggressiveness": 0.2922436529671691,
+      "mg_si_particle_proxy_penalty": 0.19999999999999998
+    },
+    "feature_state": {
+      "imputation_means": {
+        "Composition, wt.% Cu": 0.3417322580645162,
+        "Composition, wt.% Mg": 0.025851063829787236,
+        "Composition, wt.% Mn": 0.014236559139784947,
+        "Composition, wt.% Si": 0.0018967741935483871,
+        "Test Temp. oC": 24.606382978723403,
+        "[Cl-] M": 0.3918085106382979
+      },
+      "term_scaling": {
+        "cu_mn_solid_solution_proxy": {
+          "mean": 0.1584706248455742,
+          "std": 0.44139901357951444
+        },
+        "high_temperature_aggressiveness": {
+          "mean": -0.1276595744680851,
+          "std": 1.0440718422455573
+        },
+        "log_chloride_aggressiveness": {
+          "mean": 0.9208714226482492,
+          "std": 1.707277784557994
+        },
+        "mg_si_particle_proxy_penalty": {
+          "mean": -0.014370835650411742,
+          "std": 0.12895291303514497
+        }
+      }
+    },
+    "in_sample_spearman_diagnostic": 0.15167503148445177,
+    "objective": 1.182218275096005,
+    "purpose": "coefficient center for final training; not final evaluation",
+    "rows": 94
+  },
+  "final_test_targets_used": false,
+  "fold_calibrations": [
+    {
+      "coefficients": {
+        "cu_mn_solid_solution_proxy": 0.19181077192861085,
+        "high_temperature_aggressiveness": 0.3274574026339014,
+        "log_chloride_aggressiveness": 0.28073182543748776,
+        "mg_si_particle_proxy_penalty": 0.2
+      },
+      "context_rows": 82,
+      "feature_state": {
+        "imputation_means": {
+          "Composition, wt.% Cu": 0.3923592592592592,
+          "Composition, wt.% Mg": 0.029634146341463417,
+          "Composition, wt.% Mn": 0.01634567901234568,
+          "Composition, wt.% Si": 0.0021777777777777776,
+          "Test Temp. oC": 24.548780487804876,
+          "[Cl-] M": 0.4345121951219513
+        },
+        "term_scaling": {
+          "cu_mn_solid_solution_proxy": {
+            "mean": 0.18212674806368956,
+            "std": 0.4682565915700162
+          },
+          "high_temperature_aggressiveness": {
+            "mean": -0.14634146341463414,
+            "std": 1.1166364041228876
+          },
+          "log_chloride_aggressiveness": {
+            "mean": 0.9092916308406759,
+            "std": 1.8276495210001424
+          },
+          "mg_si_particle_proxy_penalty": {
+            "mean": -0.016477304675693284,
+            "std": 0.1379405684303145
+          }
+        }
+      },
+      "fold": 1,
+      "objective": 1.1664806959774108,
+      "spearman": 0.0,
+      "standardized_mae": 0.8315017678618121,
+      "standardized_rmse": 1.0,
+      "validation_rows": 12
+    },
+    {
+      "coefficients": {
+        "cu_mn_solid_solution_proxy": 0.1754861789566985,
+        "high_temperature_aggressiveness": 0.33202266553782156,
+        "log_chloride_aggressiveness": 0.2924911555054799,
+        "mg_si_particle_proxy_penalty": 0.2
+      },
+      "context_rows": 80,
+      "feature_state": {
+        "imputation_means": {
+          "Composition, wt.% Cu": 0.39726374999999997,
+          "Composition, wt.% Mg": 0.030375000000000003,
+          "Composition, wt.% Mn": 0.016550000000000002,
+          "Composition, wt.% Si": 0.002205,
+          "Test Temp. oC": 24.5375,
+          "[Cl-] M": 0.39912500000000006
+        },
+        "term_scaling": {
+          "cu_mn_solid_solution_proxy": {
+            "mean": 0.1823965317799026,
+            "std": 0.4732958502319395
+          },
+          "high_temperature_aggressiveness": {
+            "mean": -0.15,
+            "std": 1.1302654555457314
+          },
+          "log_chloride_aggressiveness": {
+            "mean": 0.9751121560202616,
+            "std": 1.8381081850164267
+          },
+          "mg_si_particle_proxy_penalty": {
+            "mean": -0.016862044669373112,
+            "std": 0.13963234522283058
+          }
+        }
+      },
+      "fold": 2,
+      "objective": 1.16294542910711,
+      "spearman": 0.7478163657867941,
+      "standardized_mae": 0.6591222727396923,
+      "standardized_rmse": 0.8929752435184722,
+      "validation_rows": 14
+    },
+    {
+      "coefficients": {
+        "cu_mn_solid_solution_proxy": 0.17774929172088327,
+        "high_temperature_aggressiveness": 0.3262218627441104,
+        "log_chloride_aggressiveness": 0.2960288455350064,
+        "mg_si_particle_proxy_penalty": 0.19999999999999993
+      },
+      "context_rows": 81,
+      "feature_state": {
+        "imputation_means": {
+          "Composition, wt.% Cu": 0.39676374999999997,
+          "Composition, wt.% Mg": 0.0,
+          "Composition, wt.% Mn": 0.016300000000000002,
+          "Composition, wt.% Si": 0.0012050000000000001,
+          "Test Temp. oC": 24.54320987654321,
+          "[Cl-] M": 0.4077777777777778
+        },
+        "term_scaling": {
+          "cu_mn_solid_solution_proxy": {
+            "mean": 0.1836939981941446,
+            "std": 0.4709476801574143
+          },
+          "high_temperature_aggressiveness": {
+            "mean": -0.14814814814814814,
+            "std": 1.1233889546743037
+          },
+          "log_chloride_aggressiveness": {
+            "mean": 0.956205802232761,
+            "std": 1.8304575918239154
+          },
+          "mg_si_particle_proxy_penalty": {
+            "mean": -0.0011673063042256554,
+            "std": 0.00849188167865567
+          }
+        }
+      },
+      "fold": 3,
+      "objective": 1.155046457908402,
+      "spearman": 0.22268088570756167,
+      "standardized_mae": 0.8582048375091355,
+      "standardized_rmse": 1.0235507790359126,
+      "validation_rows": 13
+    },
+    {
+      "coefficients": {
+        "cu_mn_solid_solution_proxy": 0.17001138702390292,
+        "high_temperature_aggressiveness": 0.3370075276672768,
+        "log_chloride_aggressiveness": 0.29298108530882033,
+        "mg_si_particle_proxy_penalty": 0.20000000000000004
+      },
+      "context_rows": 84,
+      "feature_state": {
+        "imputation_means": {
+          "Composition, wt.% Cu": 0.38290481927710845,
+          "Composition, wt.% Mg": 0.028928571428571432,
+          "Composition, wt.% Mn": 0.015951807228915663,
+          "Composition, wt.% Si": 0.002125301204819277,
+          "Test Temp. oC": 24.55952380952381,
+          "[Cl-] M": 0.39678571428571435
+        },
+        "term_scaling": {
+          "cu_mn_solid_solution_proxy": {
+            "mean": 0.17770687797599097,
+            "std": 0.4634518937155196
+          },
+          "high_temperature_aggressiveness": {
+            "mean": -0.14285714285714285,
+            "std": 1.1034885929768063
+          },
+          "log_chloride_aggressiveness": {
+            "mean": 0.9577698807244481,
+            "std": 1.797492045599051
+          },
+          "mg_si_particle_proxy_penalty": {
+            "mean": -0.016084364517820224,
+            "std": 0.1363117386671051
+          }
+        }
+      },
+      "fold": 4,
+      "objective": 1.1641337805911136,
+      "spearman": 0.10444659357341869,
+      "standardized_mae": 1.0145620157512079,
+      "standardized_rmse": 1.1997258846338712,
+      "validation_rows": 10
+    },
+    {
+      "coefficients": {
+        "cu_mn_solid_solution_proxy": 0.0,
+        "high_temperature_aggressiveness": 0.4047846178610076,
+        "log_chloride_aggressiveness": 0.39521538213899243,
+        "mg_si_particle_proxy_penalty": 0.19999999999999998
+      },
+      "context_rows": 49,
+      "feature_state": {
+        "imputation_means": {
+          "Composition, wt.% Cu": 0.0008333333333333334,
+          "Composition, wt.% Mg": 0.04959183673469388,
+          "Composition, wt.% Mn": 0.0004166666666666667,
+          "Composition, wt.% Si": 0.0016666666666666668,
+          "Test Temp. oC": 25.0,
+          "[Cl-] M": 0.27346938775510204
+        },
+        "term_scaling": {
+          "cu_mn_solid_solution_proxy": {
+            "mean": 0.0012146556637634225,
+            "std": 0.008236965178670182
+          },
+          "high_temperature_aggressiveness": {
+            "mean": 0.0,
+            "std": 1.0
+          },
+          "log_chloride_aggressiveness": {
+            "mean": 0.7300291580301643,
+            "std": 0.37039693942046914
+          },
+          "mg_si_particle_proxy_penalty": {
+            "mean": -0.025658802383608893,
+            "std": 0.1775291912689811
+          }
+        }
+      },
+      "fold": 5,
+      "objective": 0.8383352693341609,
+      "spearman": 0.10905744048574177,
+      "standardized_mae": 0.9764788650158797,
+      "standardized_rmse": 1.3554658943370594,
+      "validation_rows": 45
+    }
+  ],
+  "formula": {
+    "applicability": "Al Alloy",
+    "composition_coefficient_caps": {
+      "combined_maximum": 0.5,
+      "cu_mn_solid_solution_proxy": 0.3,
+      "mg_si_particle_proxy_penalty": 0.2
+    },
+    "composition_formula": "+log1p(max(Cu,0) + max(Mn,0)); -log1p(max(Mg,0) + max(Si,0))",
+    "environment_formula": "-log10(max(chloride, 1e-12)); -max(temperature_C - 30, 0)",
+    "hypothesis_limit": "These are bulk-composition proxies only: the dataset does not identify solid solution, precipitates, or heat treatment. In the 94 development rows, Cu/Mn is nonzero in 24 rows and Mg/Si in 12, so the fitted composition weights are capped.",
+    "literature_basis": [
+      {
+        "claim": "Cu in solution can increase Al pitting potential, while precipitation state can reverse the effect.",
+        "doi": "10.1016/0010-938X(77)90044-0"
+      },
+      {
+        "claim": "Mn in Al solid solution can enhance passivity.",
+        "doi": "10.1016/j.corsci.2020.108749"
+      },
+      {
+        "claim": "Mg-Si intermetallic state and Si-rich particles can influence localized corrosion.",
+        "doi": "10.1016/j.corsci.2013.06.035; 10.1016/j.corsci.2019.03.010"
+      }
+    ],
+    "synthetic_use": "direct-evaluation candidate only; no Al synthetic routing"
+  },
+  "pretraining_template_eligible_rows": 757,
+  "pretraining_template_ineligible_rows": 3,
+  "rule_family": "al_composition_environment",
+  "schema_version": "epit_target_rule_v3",
+  "source_sha256": "d0ce5e9c4b42e0b5a20dbd5c4896791703c5f433ae19bc032674d5848d9d1438",
+  "split_assignments_reused": true,
+  "split_grouping_note": "Frozen row and fold assignments from the legacy 17-element grouping are reused without resplitting.",
+  "split_lock": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/splits_v2/split_lock.json",
+  "split_lock_sha256": "8683f5cb0aa0fca121c66718dbd1d358959b71952e61ada7cd628eda1e9d55b6",
+  "split_manifest": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json",
+  "split_manifest_model_visible_composition_columns": [
+    "Composition, wt.% Fe",
+    "Composition, wt.% Cr",
+    "Composition, wt.% Ni",
+    "Composition, wt.% Mo",
+    "Composition, wt.% W",
+    "Composition, wt.% Nb",
+    "Composition, wt.% Al",
+    "Composition, wt.% V",
+    "Composition, wt.% Ta",
+    "Composition, wt.% Re",
+    "Composition, wt.% Ce",
+    "Composition, wt.% Ti",
+    "Composition, wt.% Co",
+    "Composition, wt.% B",
+    "Composition, wt.% Mg",
+    "Composition, wt.% Y",
+    "Composition, wt.% Gd"
+  ],
+  "split_manifest_sha256": "b151505356908814729ae6027660b89739c11dc463ed3b1f10630b001d1b837c",
+  "term_names": [
+    "log_chloride_aggressiveness",
+    "high_temperature_aggressiveness",
+    "cu_mn_solid_solution_proxy",
+    "mg_si_particle_proxy_penalty"
+  ]
+}

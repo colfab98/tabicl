@@ -1,74 +1,140 @@
 # CorrPFN EPIT pipeline
 
-This directory implements the final v7 workflow described in
-[main3.tex](../../main3.tex). The study is
-`epit_pipeline_optuna_empirical_features_scm_target_v7`; its selected
-configuration is Trial 56, with development-selected checkpoint `step-2500.ckpt`.
-The current launchers are `run_optuna.sbatch` and `train_final.sbatch`.
+This directory now contains two deliberately separated workflows.
 
-## Workflow and retained implementation
+| Workflow | Status | Composition schema | Base/with-Magpie width | Rule artifacts |
+| --- | --- | --- | --- | --- |
+| v7 (`epit_pipeline_optuna_empirical_features_scm_target_v7`) | Frozen historical model and results | `epit_dataset_v1`, 17 elements | 21/31 | `target_rules_v2` |
+| v8 (`epit_pipeline_optuna_empirical_features_scm_target_v8`) | Current Optuna study; no selected final model yet | `epit_dataset_v2`, 24 elements | 28/38 | promoted subset of `target_rules_v3` |
+
+The v7 split, model, and result artifacts are not overwritten. Current launchers
+use new `optuna_v3`, `final_v2`, and `epit_pipeline_final_v2` paths. The legacy
+coefficient-variation diagnostic explicitly pins v7 and `epit_dataset_v1`.
+
+## Current 24-element policy
+
+The fixed material order is:
+
+`Fe, Cr, Ni, Mo, W, N, Nb, C, Si, Mn, Cu, P, S, Al, V, Ta, Re, Ce, Ti, Co, B, Mg, Y, Gd`.
+
+A column's coverage is merely its populated-cell fraction; it cannot distinguish
+a truly absent element from incomplete reporting. Missing elemental values are
+therefore set to zero only when all reported components sum to 100 ± 0.1 wt.%.
+All 760 real rows remain available for evaluation. Three non-closing composition
+templates (source Nos. 581, 601, and 773) remain in evaluation but are excluded
+from empirical pretraining sampling. The current template bank has 400 eligible
+distinct compositions.
+
+The direct evaluator exposes the 24 composition columns first, followed by
+temperature, chloride, pH, and test method. Optional Magpie descriptors continue
+to use the historical 17-element descriptor subset and are appended after all 28
+base features.
+
+## Frozen split policy
+
+The existing 608-development/152-final split and its five development folds are
+reused exactly. They were constructed with the legacy 17-element grouping. Adding
+columns does not add rows and is not a reason to spend a new outer split. The v3
+calibrator accepts this exact frozen legacy schema only when the current dataset
+is the exact 24-element schema and records that compatibility in every artifact.
+Do not regenerate `splits_v2` for a like-for-like comparison.
+
+## Target-rule evaluation
+
+`target_rules_v2` remains the frozen rule set used by v7. `target_rules_v3`
+contains the 24-element direct comparison and the coefficient centers used by
+v8. It contains all historical baselines plus:
+
+- `pren_n_linear`: `Cr + 3.3*(Mo + 0.5*W) + 16*N`.
+- `cr_mow_n_synergy`: PREN-N plus `sqrt(Cr*(Mo + 0.5*W))`.
+- `pren_n_improved_environment`: PREN-N with separate chloride, temperature,
+  temperature–chloride, and acidic-pH terms.
+- `mo_n_acid_repassivation`: an exploratory positive Mo/W–N–acid interaction.
+- `mns_inclusion_penalty`: an exploratory negative `sqrt(Mn*S)` bulk-composition
+  proxy; it is not a measured inclusion descriptor.
+- `method_aware_pren_n`: the N-aware synergy rule plus context-fitted,
+  shrinkage-regularized method offsets.
+
+The v8 runtime uses these nine Fe/Ni rules, in this fixed order:
+
+1. `pren_n_linear` (replaces `pren_linear`)
+2. `cr_mow_n_synergy` (replaces `cr_mow_synergy`)
+3. `threshold_saturation` (retained)
+4. `pren_n_improved_environment` (replaces `improved_environment`)
+5. `mo_n_acid_repassivation` (new)
+6. `mns_inclusion_penalty` (new)
+7. `coupled_breakdown` (retained)
+8. `fe_ni_cr_threshold` (retained)
+9. `method_aware_pren_n` (replaces `method_aware`)
+
+The loader filters `target_rules_v3` to exactly this set and fails if a rule is
+missing or reordered. The three Al rules remain evaluation-only because the
+synthetic generator has no Al-family routing.
+
+V8 also enables coefficient variation with strength 0.8. For every synthetic
+task, each nonzero calibrated coefficient is multiplied independently by
+`U(0.2, 1.8)`. The resulting vector is renormalized to sum to one and redrawn if
+it violates a rule-specific upper bound. A zero coefficient stays zero. Thus,
+0.8 is a relative multiplier range, not a statistical variance and not an
+80-percentage-point change. The dedicated coefficient RNG is seeded with 42;
+the run fingerprint records the strength, seed, coefficient centers, and bounds.
+
+The v3 comparison reused the saved folds, masked all 152 final-test targets, and
+kept applicability matched. Leading Fe/Ni results were:
+
+| Rule | Mean fold Spearman | Pooled OOF Spearman |
+| --- | ---: | ---: |
+| `method_aware_pren_n` | 0.5904 | 0.5842 |
+| `method_aware` | 0.5833 | 0.5791 |
+| `mns_inclusion_penalty` | 0.5695 | 0.5516 |
+| `improved_environment` | 0.5675 | 0.5540 |
+| `pren_n_improved_environment` | 0.5517 | 0.5433 |
+| `mo_n_acid_repassivation` | 0.5514 | 0.5433 |
+
+The small improvements are exploratory development evidence, not a final-test
+claim. See `target_rules_v3/calibration_summary.json` and
+`target_rules_v3/direct_evaluation_report.html` for all 16 rules and fold details.
+
+## Workflow stages
 
 | Stage | Files | Role |
 | --- | --- | --- |
-| Split construction | `prepare_splits.py`, `split_data.py`, `split_refinement.py`, `split_report.py` | Group the 17 model-visible composition values and construct/audit the fixed 608 development / 152 final-test partition and five development folds. |
-| Rule calibration | `target_rules.py`, `calibrate_target_rules.py` | Fit rules on eligible context rows for direct development-fold evaluation, then fit the final candidate coefficients on the 452 eligible Fe/Ni–Cr–Mo development rows. |
-| Prior search | `run_optuna.py`, `evaluate_optuna_folds.py` | Train proxy models on synthetic tasks and compare them on the saved development folds. |
-| Final training | `train_final.py` | Train the selected configuration, compare permanent checkpoints on development folds, and freeze the selected checkpoint and evaluation configuration. |
-| Final evaluation | `evaluate_final.py` | Load the frozen model, use all 608 development rows as context, and evaluate the 152 final-test rows. |
-| Supporting comparisons | `evaluate_baseline_folds.py`, `summarize_checkpoint_comparison.py` | Evaluate baselines on development folds and aggregate all-checkpoint fold outputs into tables and plots. |
-| Artifact verification | `artifact_hashes.py` | Verify the frozen split, final-model manifest, checkpoint, and associated provenance hashes. |
+| Frozen split | `prepare_splits.py`, `split_data.py`, `split_refinement.py` | Load/audit rows; historical split construction remains reproducible but is not rerun for v8 comparison. |
+| Rule evaluation | `target_rules.py`, `calibrate_target_rules.py` | Fit context-only preprocessing and coefficients, then score held-out development folds. |
+| Prior search | `run_optuna.py`, `evaluate_optuna_folds.py` | Train v8 proxy models and compare them on saved development folds. |
+| Final training | `train_final.py` | Train the selected v8 configuration and freeze a development-selected checkpoint. |
+| Final evaluation | `evaluate_final.py` | Use all development rows as context and evaluate the untouched final-test rows once. |
+| Historical variation | `diagnose_target_variation.py`, `run_coefficient_variation.py` | Explicitly v7-only coefficient sensitivity experiment. |
 
-Composition grouping uses unnormalized composition values rounded to 0.01 wt.%,
-with complete-linkage groups bounded by 1.0 wt.% total difference. No composition
-group crosses the development/final-test boundary or a development-fold boundary.
-Transformer evaluation includes all alloy classes; the Fe/Ni restriction applies
-to the informed feature generator and candidate rule calibration.
+## Artifact layout
 
-The v7 search has four active dimensions:
+- `splits_v2/`: frozen split manifest, lock, assignments, and report.
+- `target_rules_v2/`: frozen v7 calibration and training rules.
+- `target_rules_v3/`: 24-element direct comparison and v8 training coefficients;
+  Optuna loads only the explicit nine-rule promoted subset.
+- `optuna_v2/` and `final_v1/...v7/`: retained v7 studies and model.
+- `optuna_v3/` and `final_v2/...v8/`: reserved current workflow outputs.
+- `checkpoints/epit_pipeline_final_v1/...v7.../`: retained v7 checkpoints.
+- `checkpoints/epit_pipeline_final_v2/...v8.../`: current final-training destination.
 
-- Informed-task probability (`informed_prior_ratio`).
-- Informed MLP probability (`mlp_prob`).
-- SCM–EPIT target mixture weight (`informed_target_mix_weight`).
-- Composition perturbation (`pitting_composition_perturb_strength`).
+The v3 comparison contains the retained `al_chloride_temperature` baseline and
+the new `al_amphoteric_environment` and `al_composition_environment`
+candidates. All three are evaluated only on the 94 Al development rows. The new
+rules are direct-evaluation hypotheses and are not available to the synthetic
+generator or Optuna.
 
-Informed tasks use empirical physical features and a standardized mixture of an
-SCM target and a calibrated EPIT-rule target. Candidate rules are sampled using
-their direct development-fold scores normalized as `score / sum(scores)`.
-Magpie descriptors and feature permutation are disabled; feature-block coupling
-and Dirichlet sampling are fixed to zero. The generic SCM MLP/tree mixture is
-fixed at 0.7/0.3. NumPy/Torch seeds are 42 and prior generation uses one worker.
+## Commands
 
-The seven candidate rules are `pren_linear`, `cr_mow_synergy`,
-`threshold_saturation`, `improved_environment`, `coupled_breakdown`,
-`fe_ni_cr_threshold`, and `method_aware`. The direct reference rules
-`current_pren` and `current_pren_fe_ni` remain useful comparisons; they are not
-sampled as candidate target families.
+Run the direct rule comparison without replacing v2:
 
-## Current artifacts
+```bash
+.venv/bin/python -m scripts.epit_pipeline.calibrate_target_rules
+```
 
-Paths are relative to the repository root:
+The command defaults to `target_rules_v3` and refuses to overwrite existing
+artifacts unless `--force` is supplied intentionally.
 
-- `corrosion_datasets/analysis/epit_pipeline/splits_v2/`: frozen manifest, lock,
-  row assignments, and split report.
-- `corrosion_datasets/analysis/epit_pipeline/target_rules_v2/`: calibration
-  summary, rule coefficients, and direct development evaluation outputs.
-- `corrosion_datasets/analysis/epit_pipeline/optuna_v2/`: retained v7 trial
-  records and development evaluations.
-- `corrosion_datasets/analysis/epit_pipeline/final_v1/epit_pipeline_optuna_empirical_features_scm_target_v7/`:
-  final training log, development checkpoint evaluations, and model manifest/lock.
-- `checkpoints/epit_pipeline_final_v1/final_epit_pipeline_optuna_empirical_features_scm_target_v7_trial_0056/`:
-  final-training checkpoints, including the selected `step-2500.ckpt`.
-
-The exact final training command and effective parameters are recorded under
-`training` in `final_model_manifest.json`. This pipeline does not create the
-older separate `model_params/` records. See the
-[analysis artifact index](../../corrosion_datasets/analysis/README.md) for the
-retained baseline comparisons and historical archive.
-
-## Launch commands
-
-Run from `/home/fcolanto/projects/tabicl` on a host with Slurm access, the project
-environment, source dataset, and shared Optuna journal available:
+Run the current staged workflow on a Slurm host:
 
 ```bash
 sbatch scripts/epit_pipeline/run_optuna.sbatch
@@ -76,93 +142,12 @@ sbatch scripts/epit_pipeline/train_final.sbatch
 sbatch scripts/epit_pipeline/evaluate_final.sbatch
 ```
 
-These are separate stages, submitted in order after the preceding stage finishes.
-The search defaults to v7, one GPU, 1,000 proxy steps, and a 10,000-step scheduler
-horizon. Final training pins Trial 56, trains to 10,000 steps, and evaluates
-permanent checkpoints every 500 steps. Mean development-fold Spearman determines
-the selected checkpoint. Final evaluation uses the v7 manifest's locked settings.
+The Optuna launcher defaults to 50 trials, 1,000 training steps per trial,
+`target_rules_v3`, the promoted nine-rule subset, and 80% coefficient variation.
+The final-training launcher automatically selects the best completed v8 trial
+unless `SELECTED_TRIAL_NUMBER` is set explicitly.
 
-Final training verifies that a pinned trial is the best completed trial in the
-study. Active trials currently do not block that check; finish the search before
-treating its winner as final. The launcher permits verified Optuna-journal
-provenance when selected proxy files are absent, recording which original files
-could not be verified locally.
-
-The saved v7 study and trained model already exist. These commands document their
-entry points: training refuses to overwrite a frozen model or a nonempty
-checkpoint directory. Use a new study name for a new search; the search checks
-the study fingerprint before appending trials. Explicit final-training overrides
-are recorded and isolated from the selected model's output directory.
-
-Standalone Python defaults now use the v7 study and one prior worker. Search
-defaults to `empirical_features_scm_target`. Standalone final training selects
-the best completed trial unless `--selected-trial-number` is supplied; the
-Slurm launcher supplies 56. Shared Python APIs retain explicit historical modes
-for compatibility.
-
-## Supporting evaluations
-
-Run baseline development evaluation through its Python entry point:
-
-```bash
-python -m scripts.epit_pipeline.evaluate_baseline_folds --auto-output-dir
-```
-
-It compares the retained generic baseline (step 1000 by default), pretrained
-TabICL v2, and CatBoost across five development folds. Use `--generic-checkpoint`
-to choose another baseline checkpoint.
-
-Regenerate summaries and plots from retained all-checkpoint fold results with:
-
-```bash
-python -m scripts.epit_pipeline.summarize_checkpoint_comparison \
-  --output-root corrosion_datasets/analysis/epit_pipeline/trial56_checkpoint_folds_66378
-```
-
-`evaluate_checkpoint_comparison.sbatch` currently runs all-checkpoint final-test
-comparisons for Trial 56 and the baselines. Its outputs are post-selection
-diagnostics. The confirmatory CorrPFN result remains development-selected step
-2500; final-test checkpoint rankings must not replace that selection.
-
-## Building new split and rule artifacts
-
-Reuse the existing frozen artifacts for the recorded model. To exercise the
-construction stages in separate output directories:
-
-```bash
-python -m scripts.epit_pipeline.prepare_splits \
-  --output-dir corrosion_datasets/analysis/epit_pipeline/splits_rebuild
-
-python -m scripts.epit_pipeline.calibrate_target_rules \
-  --split-manifest corrosion_datasets/analysis/epit_pipeline/splits_rebuild/split_manifest.json \
-  --output-dir corrosion_datasets/analysis/epit_pipeline/target_rules_rebuild
-```
-
-Split construction writes a manifest, assignments CSV, HTML report, and lock.
-Calibration writes `calibration_summary.json`, each rule's fold-local and final
-development coefficients, `direct_evaluation_predictions.csv`, and
-`direct_evaluation_report.html`. Rebuilt artifacts have their own hashes and
-must not be substituted into the frozen v7 experiment.
-
-## Data use and dependencies
-
-Final-test targets are masked before rule calibration and excluded from v7
-configuration/checkpoint selection. EPIT inference explicitly disables power
-normalization with `norm_methods=["none"]`. The full corpus influenced earlier
-exploration and empirical profiles include final-test feature information. See
-the [data-use guidance](../../corrosion_datasets/analysis/leakage_policy.md) and
-`main3.tex` for the scope of this internal composition-separated evaluation.
-
-Keep these shared dependencies even though some filenames describe older work:
-
-- `scripts/optuna_pitting_magpie_prior_search.py`: training-command construction,
-  search constants, and parameter helpers imported by `run_optuna.py`.
-- `scripts/optuna_pitting_fixed_pren_prior_search.py`: storage, subprocess, and
-  evaluation utilities imported by that module.
-- `scripts/eval_corrosion_datasets.py` and
-  `corrosion_datasets/analysis/scripts/analyze_structure.py`: evaluation and
-  dataset-loading dependencies.
-
-The six older v3/v4/v5 launchers are archived under
-`/home/fcolanto/old_tabicl/scripts/epit_pipeline/`. Their old generic filenames
-now name the v7 launchers in this directory.
+Historical supporting evaluation remains available through
+`evaluate_baseline_folds.py`, `summarize_checkpoint_comparison.py`, and
+`evaluate_checkpoint_comparison.sbatch`. The latter remains pinned to v7 by
+design. See `corrosion_datasets/analysis/leakage_policy.md` for data-use limits.

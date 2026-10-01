@@ -14,6 +14,11 @@ from scipy.optimize import Bounds, LinearConstraint, milp
 from scipy.sparse import coo_matrix
 from scipy.spatial.distance import pdist, squareform
 
+from tabicl.prior.epit_schema import (
+    EPIT_COMPOSITION_CLOSURE_TOLERANCE_WT_PERCENT,
+    EPIT_COMPOSITION_COLUMNS,
+)
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ANALYSIS_SCRIPT_DIR = REPO_ROOT / "corrosion_datasets" / "analysis" / "scripts"
@@ -42,16 +47,6 @@ INNER_FOLD_COUNT = 5
 COMPOSITION_ROUND_DECIMALS = 2
 COMPOSITION_DISTANCE_THRESHOLD = 1.0
 
-OMITTED_COMPOSITION_COLUMNS = {
-    "Composition, wt.% N",
-    "Composition, wt.% C",
-    "Composition, wt.% Si",
-    "Composition, wt.% Mn",
-    "Composition, wt.% Cu",
-    "Composition, wt.% P",
-    "Composition, wt.% S",
-}
-
 BALANCE_BLOCK_WEIGHTS = {
     "target_decile": 3.0,
     "material_class": 2.0,
@@ -70,6 +65,10 @@ class EpitDataset:
     rows: list[dict[str, Any]]
     target: np.ndarray
     composition_columns: list[str]
+    composition_reported_sums: np.ndarray
+    composition_missing_counts: np.ndarray
+    composition_structural_zero_counts: np.ndarray
+    pretraining_template_eligible: np.ndarray
 
     @property
     def n_rows(self) -> int:
@@ -145,26 +144,61 @@ def load_epit_dataset() -> EpitDataset:
     if len(tables) != 1:
         raise RuntimeError(f"Expected one {TABLE_NAME!r} table, found {len(tables)}.")
     table = tables[0]
-    rows = [
+    source_rows = [
         row
         for row in table.rows
         if math.isfinite(_numeric(table, row, TARGET_COLUMN))
     ]
-    if len(rows) != EXPECTED_ROW_COUNT:
+    if len(source_rows) != EXPECTED_ROW_COUNT:
         raise RuntimeError(
-            f"Expected {EXPECTED_ROW_COUNT} usable EPIT rows, found {len(rows)}."
+            f"Expected {EXPECTED_ROW_COUNT} usable EPIT rows, found {len(source_rows)}."
         )
 
-    composition_columns = [
-        column
-        for column in table.columns
-        if table.groups.get(column) == "material"
-        and column not in OMITTED_COMPOSITION_COLUMNS
+    composition_columns = list(EPIT_COMPOSITION_COLUMNS)
+    missing_columns = [
+        column for column in composition_columns if column not in table.columns
     ]
-    if len(composition_columns) != 17:
+    wrong_group = [
+        column
+        for column in composition_columns
+        if table.groups.get(column) != "material"
+    ]
+    if missing_columns or wrong_group:
         raise RuntimeError(
-            f"Expected 17 model-visible composition columns, found {len(composition_columns)}."
+            "The EPIT 24-element schema does not match the source table: "
+            f"missing={missing_columns}, non_material={wrong_group}."
         )
+
+    rows: list[dict[str, Any]] = []
+    reported_sums: list[float] = []
+    missing_counts: list[int] = []
+    structural_zero_counts: list[int] = []
+    template_eligible: list[bool] = []
+    for source_row in source_rows:
+        row = dict(source_row)
+        values = np.asarray(
+            [_numeric(table, source_row, column) for column in composition_columns],
+            dtype=float,
+        )
+        finite = np.isfinite(values)
+        reported_sum = float(values[finite].sum())
+        missing = [
+            column
+            for column, present in zip(composition_columns, finite, strict=True)
+            if not present
+        ]
+        closes = (
+            abs(reported_sum - 100.0)
+            <= EPIT_COMPOSITION_CLOSURE_TOLERANCE_WT_PERCENT + 1e-12
+        )
+        if closes:
+            for column in missing:
+                row[column] = 0.0
+        rows.append(row)
+        reported_sums.append(reported_sum)
+        missing_counts.append(len(missing))
+        structural_zero_counts.append(len(missing) if closes else 0)
+        template_eligible.append(bool(closes and np.all(values[finite] >= 0.0)))
 
     target = np.asarray(
         [_numeric(table, row, TARGET_COLUMN) for row in rows],
@@ -177,6 +211,16 @@ def load_epit_dataset() -> EpitDataset:
         rows=rows,
         target=target,
         composition_columns=composition_columns,
+        composition_reported_sums=np.asarray(reported_sums, dtype=float),
+        composition_missing_counts=np.asarray(missing_counts, dtype=int),
+        composition_structural_zero_counts=np.asarray(
+            structural_zero_counts,
+            dtype=int,
+        ),
+        pretraining_template_eligible=np.asarray(
+            template_eligible,
+            dtype=bool,
+        ),
     )
 
 

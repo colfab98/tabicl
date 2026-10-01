@@ -360,6 +360,38 @@ class LinearPrenRule(CurrentPrenRule):
         return metadata
 
 
+class PrenNLinearRule(LinearPrenRule):
+    """Conventional nitrogen-aware PREN for Fe and Ni-Cr-Mo alloys."""
+
+    name = "pren_n_linear"
+    description = "Conventional Cr-Mo-W-N PREN rule"
+    material_columns = (
+        "Composition, wt.% Cr",
+        "Composition, wt.% Ni",
+        "Composition, wt.% Mo",
+        "Composition, wt.% W",
+        "Composition, wt.% N",
+    )
+    material_weights = np.asarray([1.0, 0.0, 3.3, 1.65, 16.0])
+    a_m = 3.3
+    eta_w = 0.5
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        metadata = super().metadata
+        metadata.update(
+            {
+                "material_formula": "Cr + 3.3*(Mo + 0.5*W) + 16*N",
+                "nitrogen_missing_policy": (
+                    "zero only where the complete reported composition closes "
+                    "to 100 wt.% within 0.1; otherwise context-only mean imputation"
+                ),
+                "evaluation_status": "promoted to v8 synthetic training",
+            }
+        )
+        return metadata
+
+
 class CrMoWSynergyRule(LinearPrenRule):
     """Linear PREN plus a cooperative Cr-Mo/W contribution."""
 
@@ -396,6 +428,41 @@ class CrMoWSynergyRule(LinearPrenRule):
                     "-sigmoid(z(temperature))*sigmoid(z(log10(chloride)))"
                 ),
                 "applicability": self.applicability,
+            }
+        )
+        return metadata
+
+
+class CrMoWNSynergyRule(PrenNLinearRule):
+    """Nitrogen-aware PREN plus a cooperative Cr-Mo/W contribution."""
+
+    name = "cr_mow_n_synergy"
+    description = "Cr-Mo/W-N PREN with cooperative Cr-Mo/W passivity"
+    term_names = CrMoWSynergyRule.term_names
+    coefficient_anchor = CrMoWSynergyRule.coefficient_anchor.copy()
+    include_temperature_chloride_interaction = True
+    synergy_strength = 1.0
+
+    def _material_score(self, material: np.ndarray) -> np.ndarray:
+        chromium = np.clip(material[:, 0], 0.0, None)
+        q = np.clip(material[:, 2] + self.eta_w * material[:, 3], 0.0, None)
+        nitrogen = np.clip(material[:, 4], 0.0, None)
+        linear = chromium + self.a_m * q + 16.0 * nitrogen
+        return linear + self.synergy_strength * np.sqrt(chromium * q)
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        metadata = super().metadata
+        metadata.update(
+            {
+                "material_formula": (
+                    "Cr + 3.3*(Mo + 0.5*W) + 16*N + "
+                    "sqrt(Cr*(Mo + 0.5*W))"
+                ),
+                "fixed_direct_evaluation_synergy_strength": self.synergy_strength,
+                "additional_interaction": (
+                    "-sigmoid(z(temperature))*sigmoid(z(log10(chloride)))"
+                ),
             }
         )
         return metadata
@@ -607,6 +674,130 @@ class ImprovedEnvironmentRule(LinearPrenRule):
         }
 
 
+class PrenNImprovedEnvironmentRule(ImprovedEnvironmentRule):
+    """Nitrogen-aware PREN with separately calibrated environment penalties."""
+
+    name = "pren_n_improved_environment"
+    description = "Cr-Mo-W-N PREN with log-chloride, temperature and acidic-pH terms"
+    material_columns = PrenNLinearRule.material_columns
+    material_weights = PrenNLinearRule.material_weights
+    a_m = PrenNLinearRule.a_m
+    eta_w = PrenNLinearRule.eta_w
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        metadata = super().metadata
+        metadata.update(
+            {
+                "material_formula": "Cr + 3.3*(Mo + 0.5*W) + 16*N",
+                "nitrogen_missing_policy": (
+                    "zero only for closure-supported blanks; unresolved blanks "
+                    "use context-only mean imputation"
+                ),
+                "evaluation_status": "promoted to v8 synthetic training",
+            }
+        )
+        return metadata
+
+
+class MoNAcidRepassivationRule(PrenNImprovedEnvironmentRule):
+    """Test whether Mo/W-N protection is most useful in acidic environments."""
+
+    name = "mo_n_acid_repassivation"
+    description = "N-aware PREN plus an Mo/W-N acidic-repassivation interaction"
+    term_names = PrenNImprovedEnvironmentRule.term_names + (
+        "mo_n_acid_repassivation",
+    )
+    coefficient_anchor = np.concatenate(
+        [PrenNImprovedEnvironmentRule.coefficient_anchor * 0.90, np.asarray([0.10])]
+    )
+    coefficient_upper_bounds = np.concatenate(
+        [PrenNImprovedEnvironmentRule.coefficient_upper_bounds, np.asarray([0.30])]
+    )
+
+    def _unscaled_signed_terms(
+        self,
+        dataset: EpitDataset,
+        row_indices: np.ndarray,
+        state: dict[str, Any],
+    ) -> np.ndarray:
+        base_terms = super()._unscaled_signed_terms(dataset, row_indices, state)
+        material, _, _, ph = self._raw_inputs(
+            dataset, row_indices, state["imputation_means"]
+        )
+        q = np.clip(material[:, 2] + self.eta_w * material[:, 3], 0.0, None)
+        nitrogen = np.clip(material[:, 4], 0.0, None)
+        acidic_signal = _sigmoid(
+            (self.acidic_ph_threshold - ph) / self.acidic_ph_slope
+        )
+        repassivation = np.sqrt(q * nitrogen) * acidic_signal
+        return np.column_stack([base_terms, repassivation])
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        metadata = super().metadata
+        metadata.update(
+            {
+                "additional_material_environment_formula": (
+                    "+sqrt((Mo + 0.5*W)*N)*sigmoid((6.5-pH)/1.0)"
+                ),
+                "hypothesis": (
+                    "Mo/W-N synergy may support repassivation under acidic stress"
+                ),
+            }
+        )
+        return metadata
+
+
+class MnSInclusionPenaltyRule(PrenNImprovedEnvironmentRule):
+    """Test a conservative Mn-S inclusion susceptibility penalty."""
+
+    name = "mns_inclusion_penalty"
+    description = "N-aware PREN and environment terms with an Mn-S inclusion penalty"
+    material_columns = PrenNLinearRule.material_columns + (
+        "Composition, wt.% Mn",
+        "Composition, wt.% S",
+    )
+    material_weights = np.asarray([1.0, 0.0, 3.3, 1.65, 16.0, 0.0, 0.0])
+    term_names = PrenNImprovedEnvironmentRule.term_names + (
+        "mns_inclusion_susceptibility",
+    )
+    coefficient_anchor = np.concatenate(
+        [PrenNImprovedEnvironmentRule.coefficient_anchor * 0.92, np.asarray([0.08])]
+    )
+    coefficient_upper_bounds = np.concatenate(
+        [PrenNImprovedEnvironmentRule.coefficient_upper_bounds, np.asarray([0.25])]
+    )
+
+    def _unscaled_signed_terms(
+        self,
+        dataset: EpitDataset,
+        row_indices: np.ndarray,
+        state: dict[str, Any],
+    ) -> np.ndarray:
+        base_terms = super()._unscaled_signed_terms(dataset, row_indices, state)
+        material, _, _, _ = self._raw_inputs(
+            dataset, row_indices, state["imputation_means"]
+        )
+        manganese = np.clip(material[:, 5], 0.0, None)
+        sulfur = np.clip(material[:, 6], 0.0, None)
+        inclusion_susceptibility = np.sqrt(manganese * sulfur)
+        return np.column_stack([base_terms, -inclusion_susceptibility])
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        metadata = super().metadata
+        metadata.update(
+            {
+                "additional_material_formula": "-sqrt(Mn*S)",
+                "interpretation_limit": (
+                    "bulk Mn and S are only a proxy for MnS inclusion susceptibility"
+                ),
+            }
+        )
+        return metadata
+
+
 class CoupledBreakdownRule(ImprovedEnvironmentRule):
     """Environmental breakdown becomes stronger as material protection falls."""
 
@@ -749,6 +940,7 @@ class MethodAwareRule(TargetRuleFamily):
     name = "method_aware"
     description = "Cr-Mo/W synergy plus test-method correction"
     applicable_material_classes = ("Fe Alloy", "NiCrMo Alloy")
+    base_family_type = CrMoWSynergyRule
     term_names = CrMoWSynergyRule.term_names + ("test_method_correction",)
     coefficient_anchor = np.concatenate(
         [CrMoWSynergyRule.coefficient_anchor * 0.90, np.asarray([0.10])]
@@ -785,7 +977,7 @@ class MethodAwareRule(TargetRuleFamily):
             raise RuntimeError(
                 f"{self.name} requires finite targets on context rows only."
             )
-        base_prediction = base_values @ CrMoWSynergyRule.coefficient_anchor
+        base_prediction = base_values @ self.base_family_type.coefficient_anchor
         residual = self._rank_standardize(target) - _apply_scale(
             base_prediction, _fit_scale(base_prediction)
         )
@@ -808,7 +1000,7 @@ class MethodAwareRule(TargetRuleFamily):
         row_indices: np.ndarray,
     ) -> RuleTermData:
         row_indices = np.asarray(row_indices, dtype=int)
-        base_family = CrMoWSynergyRule()
+        base_family = self.base_family_type()
         base_prepared = base_family.fit_terms(dataset, row_indices)
         method_offsets, method_counts = self._fit_method_offsets(
             dataset, row_indices, base_prepared.values
@@ -841,7 +1033,7 @@ class MethodAwareRule(TargetRuleFamily):
         state: dict[str, Any],
     ) -> np.ndarray:
         row_indices = np.asarray(row_indices, dtype=int)
-        base_values = CrMoWSynergyRule().transform_terms(
+        base_values = self.base_family_type().transform_terms(
             dataset, row_indices, state["base_rule_state"]
         )
         method_values = np.asarray(
@@ -864,9 +1056,9 @@ class MethodAwareRule(TargetRuleFamily):
     @property
     def metadata(self) -> dict[str, Any]:
         return {
-            "base_rule": CrMoWSynergyRule.name,
+            "base_rule": self.base_family_type.name,
             "scan_rate_excluded": (
-                "scan rate is not present in the fixed 21-feature model schema"
+                "scan rate is not present in the fixed 28-feature model schema"
             ),
             "test_method_families": [
                 "potentiodynamic",
@@ -887,6 +1079,25 @@ class MethodAwareRule(TargetRuleFamily):
         }
 
 
+class MethodAwarePrenNRule(MethodAwareRule):
+    """Nitrogen-aware material rule with context-learned method offsets."""
+
+    name = "method_aware_pren_n"
+    description = "Cr-Mo/W-N synergy plus test-method correction"
+    base_family_type = CrMoWNSynergyRule
+    term_names = CrMoWNSynergyRule.term_names + ("test_method_correction",)
+    coefficient_anchor = np.concatenate(
+        [CrMoWNSynergyRule.coefficient_anchor * 0.90, np.asarray([0.10])]
+    )
+    coefficient_upper_bounds = np.asarray([1.0, 1.0, 1.0, 1.0, 0.25])
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        metadata = super().metadata
+        metadata["evaluation_status"] = "promoted to v8 synthetic training"
+        return metadata
+
+
 class AlChlorideTemperatureRule(TargetRuleFamily):
     """Al-only chloride and high-temperature breakdown hypothesis."""
 
@@ -902,6 +1113,22 @@ class AlChlorideTemperatureRule(TargetRuleFamily):
     temperature_threshold = 30.0
     chloride_floor = 1e-12
     environment_columns = ("Test Temp. oC", "[Cl-] M")
+
+    @staticmethod
+    def _column_values(
+        dataset: EpitDataset,
+        row_indices: np.ndarray,
+        column: str,
+        imputation: dict[str, Any],
+    ) -> np.ndarray:
+        values = np.asarray(
+            [
+                _numeric(dataset.table, dataset.rows[int(index)], column)
+                for index in row_indices
+            ],
+            dtype=float,
+        )
+        return np.where(np.isfinite(values), values, float(imputation[column]))
 
     def _fit_imputation(
         self,
@@ -931,22 +1158,10 @@ class AlChlorideTemperatureRule(TargetRuleFamily):
         row_indices: np.ndarray,
         imputation: dict[str, float],
     ) -> tuple[np.ndarray, np.ndarray]:
-        values: list[np.ndarray] = []
-        for column in self.environment_columns:
-            column_values = np.asarray(
-                [
-                    _numeric(dataset.table, dataset.rows[int(index)], column)
-                    for index in row_indices
-                ],
-                dtype=float,
-            )
-            values.append(
-                np.where(
-                    np.isfinite(column_values),
-                    column_values,
-                    imputation[column],
-                )
-            )
+        values = [
+            self._column_values(dataset, row_indices, column, imputation)
+            for column in self.environment_columns
+        ]
         temperature, chloride = values
         return temperature, chloride
 
@@ -1034,6 +1249,189 @@ class AlChlorideTemperatureRule(TargetRuleFamily):
         }
 
 
+class AlAmphotericEnvironmentRule(AlChlorideTemperatureRule):
+    """Al-only chloride, temperature, and two-sided pH hypothesis."""
+
+    name = "al_amphoteric_environment"
+    description = "Al-only chloride, temperature, acidic-pH, and alkaline-pH rule"
+    term_names = (
+        "log_chloride_aggressiveness",
+        "high_temperature_aggressiveness",
+        "acidic_ph_aggressiveness",
+        "alkaline_ph_aggressiveness",
+    )
+    coefficient_anchor = np.asarray([0.55, 0.15, 0.15, 0.15], dtype=float)
+    coefficient_upper_bounds = np.asarray([1.0, 0.50, 0.30, 0.30], dtype=float)
+    acidic_ph_threshold = 5.0
+    alkaline_ph_threshold = 9.0
+    environment_columns = ("Test Temp. oC", "[Cl-] M", "[Cl-] pH")
+
+    def _unscaled_signed_terms(
+        self,
+        dataset: EpitDataset,
+        row_indices: np.ndarray,
+        state: dict[str, Any],
+    ) -> np.ndarray:
+        imputation = state["imputation_means"]
+        temperature, chloride, ph = [
+            self._column_values(dataset, row_indices, column, imputation)
+            for column in self.environment_columns
+        ]
+        return np.column_stack(
+            [
+                -np.log10(np.clip(chloride, self.chloride_floor, None)),
+                -np.maximum(temperature - self.temperature_threshold, 0.0),
+                -np.maximum(self.acidic_ph_threshold - ph, 0.0),
+                -np.maximum(ph - self.alkaline_ph_threshold, 0.0),
+            ]
+        )
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        return {
+            "environment_formula": (
+                "-log10(max(chloride, 1e-12)); "
+                "-max(temperature_C - 30, 0); "
+                "-max(5 - pH, 0); -max(pH - 9, 0)"
+            ),
+            "fixed_direct_evaluation_parameters": {
+                "chloride_floor_M": self.chloride_floor,
+                "temperature_threshold_C": self.temperature_threshold,
+                "acidic_ph_threshold": self.acidic_ph_threshold,
+                "alkaline_ph_threshold": self.alkaline_ph_threshold,
+            },
+            "literature_basis": [
+                {
+                    "claim": (
+                        "Al pitting potential varies approximately linearly "
+                        "with log chloride at fixed pH."
+                    ),
+                    "doi": "10.1016/0010-938X(94)00150-5",
+                },
+                {
+                    "claim": (
+                        "Al pitting potential decreases with temperature, "
+                        "with a stronger change above about 30 C."
+                    ),
+                    "doi": "10.1016/j.corsci.2010.09.046",
+                },
+                {
+                    "claim": (
+                        "Al activation/passivation depends jointly on "
+                        "potential, pH, and chloride."
+                    ),
+                    "doi": "10.1016/0010-938X(78)90054-9",
+                },
+            ],
+            "hypothesis_limit": (
+                "The separate acidic and alkaline penalties are exploratory. "
+                "Published pH effects depend on the solution regime, and one "
+                "kinetic study found pH-independent pitting potential at fixed "
+                "chloride over its studied range."
+            ),
+            "synthetic_use": (
+                "direct-evaluation candidate only; no Al synthetic routing"
+            ),
+            "applicability": self.applicability,
+        }
+
+
+class AlCompositionEnvironmentRule(AlChlorideTemperatureRule):
+    """Al-only environment rule with capped bulk-composition proxies."""
+
+    name = "al_composition_environment"
+    description = (
+        "Al-only chloride and temperature rule with sparse Cu-Mn and Mg-Si proxies"
+    )
+    term_names = (
+        "log_chloride_aggressiveness",
+        "high_temperature_aggressiveness",
+        "cu_mn_solid_solution_proxy",
+        "mg_si_particle_proxy_penalty",
+    )
+    coefficient_anchor = np.asarray([0.50, 0.15, 0.20, 0.15], dtype=float)
+    coefficient_upper_bounds = np.asarray([1.0, 0.50, 0.30, 0.20], dtype=float)
+    environment_columns = (
+        "Test Temp. oC",
+        "[Cl-] M",
+        "Composition, wt.% Cu",
+        "Composition, wt.% Mn",
+        "Composition, wt.% Mg",
+        "Composition, wt.% Si",
+    )
+
+    def _unscaled_signed_terms(
+        self,
+        dataset: EpitDataset,
+        row_indices: np.ndarray,
+        state: dict[str, Any],
+    ) -> np.ndarray:
+        imputation = state["imputation_means"]
+        temperature, chloride, copper, manganese, magnesium, silicon = [
+            self._column_values(dataset, row_indices, column, imputation)
+            for column in self.environment_columns
+        ]
+        return np.column_stack(
+            [
+                -np.log10(np.clip(chloride, self.chloride_floor, None)),
+                -np.maximum(temperature - self.temperature_threshold, 0.0),
+                np.log1p(np.maximum(copper, 0.0) + np.maximum(manganese, 0.0)),
+                -np.log1p(np.maximum(magnesium, 0.0) + np.maximum(silicon, 0.0)),
+            ]
+        )
+
+    @property
+    def metadata(self) -> dict[str, Any]:
+        return {
+            "environment_formula": (
+                "-log10(max(chloride, 1e-12)); "
+                "-max(temperature_C - 30, 0)"
+            ),
+            "composition_formula": (
+                "+log1p(max(Cu,0) + max(Mn,0)); "
+                "-log1p(max(Mg,0) + max(Si,0))"
+            ),
+            "composition_coefficient_caps": {
+                "cu_mn_solid_solution_proxy": 0.30,
+                "mg_si_particle_proxy_penalty": 0.20,
+                "combined_maximum": 0.50,
+            },
+            "literature_basis": [
+                {
+                    "claim": (
+                        "Cu in solution can increase Al pitting potential, "
+                        "while precipitation state can reverse the effect."
+                    ),
+                    "doi": "10.1016/0010-938X(77)90044-0",
+                },
+                {
+                    "claim": "Mn in Al solid solution can enhance passivity.",
+                    "doi": "10.1016/j.corsci.2020.108749",
+                },
+                {
+                    "claim": (
+                        "Mg-Si intermetallic state and Si-rich particles can "
+                        "influence localized corrosion."
+                    ),
+                    "doi": (
+                        "10.1016/j.corsci.2013.06.035; "
+                        "10.1016/j.corsci.2019.03.010"
+                    ),
+                },
+            ],
+            "hypothesis_limit": (
+                "These are bulk-composition proxies only: the dataset does not "
+                "identify solid solution, precipitates, or heat treatment. In "
+                "the 94 development rows, Cu/Mn is nonzero in 24 rows and "
+                "Mg/Si in 12, so the fitted composition weights are capped."
+            ),
+            "synthetic_use": (
+                "direct-evaluation candidate only; no Al synthetic routing"
+            ),
+            "applicability": self.applicability,
+        }
+
+
 class CurrentPrenFeNiBaseline(CurrentPrenRule):
     name = "current_pren_fe_ni"
     description = "Current PREN rule restricted to the Fe/Ni comparison rows"
@@ -1045,13 +1443,21 @@ RULE_FAMILIES: dict[str, TargetRuleFamily] = {
     CurrentPrenRule.name: CurrentPrenRule(),
     CurrentPrenFeNiBaseline.name: CurrentPrenFeNiBaseline(),
     LinearPrenRule.name: LinearPrenRule(),
+    PrenNLinearRule.name: PrenNLinearRule(),
     CrMoWSynergyRule.name: CrMoWSynergyRule(),
+    CrMoWNSynergyRule.name: CrMoWNSynergyRule(),
     ThresholdSaturationRule.name: ThresholdSaturationRule(),
     ImprovedEnvironmentRule.name: ImprovedEnvironmentRule(),
+    PrenNImprovedEnvironmentRule.name: PrenNImprovedEnvironmentRule(),
+    MoNAcidRepassivationRule.name: MoNAcidRepassivationRule(),
+    MnSInclusionPenaltyRule.name: MnSInclusionPenaltyRule(),
     CoupledBreakdownRule.name: CoupledBreakdownRule(),
     FeNiCrThresholdRule.name: FeNiCrThresholdRule(),
     MethodAwareRule.name: MethodAwareRule(),
+    MethodAwarePrenNRule.name: MethodAwarePrenNRule(),
     AlChlorideTemperatureRule.name: AlChlorideTemperatureRule(),
+    AlAmphotericEnvironmentRule.name: AlAmphotericEnvironmentRule(),
+    AlCompositionEnvironmentRule.name: AlCompositionEnvironmentRule(),
 }
 
 

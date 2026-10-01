@@ -1,0 +1,478 @@
+{
+  "anchor_strength": 0.1,
+  "applicability": "Fe Alloy, NiCrMo Alloy",
+  "calibration_target": "standardized EPIT ranks",
+  "coefficient_anchor": {
+    "environment_aggressiveness": 0.27027027027027023,
+    "material_chloride_interaction": 0.4189189189189189,
+    "material_passivity": 0.31081081081081074
+  },
+  "coefficient_constraints": "nonnegative; sum to one",
+  "coefficient_upper_bounds": null,
+  "current_model_visible_composition_columns": [
+    "Composition, wt.% Fe",
+    "Composition, wt.% Cr",
+    "Composition, wt.% Ni",
+    "Composition, wt.% Mo",
+    "Composition, wt.% W",
+    "Composition, wt.% N",
+    "Composition, wt.% Nb",
+    "Composition, wt.% C",
+    "Composition, wt.% Si",
+    "Composition, wt.% Mn",
+    "Composition, wt.% Cu",
+    "Composition, wt.% P",
+    "Composition, wt.% S",
+    "Composition, wt.% Al",
+    "Composition, wt.% V",
+    "Composition, wt.% Ta",
+    "Composition, wt.% Re",
+    "Composition, wt.% Ce",
+    "Composition, wt.% Ti",
+    "Composition, wt.% Co",
+    "Composition, wt.% B",
+    "Composition, wt.% Mg",
+    "Composition, wt.% Y",
+    "Composition, wt.% Gd"
+  ],
+  "description": "Current PREN rule restricted to the Fe/Ni comparison rows",
+  "direct_evaluation": {
+    "maximum_fold_spearman": 0.65660808750809,
+    "mean_fold_spearman": 0.4912565245864019,
+    "minimum_fold_spearman": 0.3609840445614324,
+    "minimum_validation_rows": 74,
+    "pooled_out_of_fold_spearman": 0.4811349132253628,
+    "rows": 452,
+    "scope": "out-of-fold eligible development rows only; applicability=Fe Alloy, NiCrMo Alloy",
+    "small_sample_warning": false,
+    "standard_deviation_fold_spearman": 0.11449314398116915
+  },
+  "epit_schema_version": "epit_24_element_v2",
+  "evaluation_role": "matched-scope baseline",
+  "evaluation_rows_retained": 760,
+  "final_development_calibration": {
+    "coefficients": {
+      "environment_aggressiveness": 0.42242227752765843,
+      "material_chloride_interaction": 0.014108526304862234,
+      "material_passivity": 0.5634691961674794
+    },
+    "feature_state": {
+      "imputation_means": {
+        "Composition, wt.% Cr": 18.810862831858408,
+        "Composition, wt.% Mo": 3.313993362831858,
+        "Composition, wt.% Ni": 15.344048672566371,
+        "Composition, wt.% W": 0.23878761061946904,
+        "Test Temp. oC": 48.334939759036146,
+        "[Cl-] M": 0.6270467685849802,
+        "[Cl-] pH": 5.6058961352657
+      },
+      "signal_scaling": {
+        "chloride_log10": {
+          "mean": -1.1282507435558777,
+          "std": 2.51512270854955
+        },
+        "environment_score": {
+          "mean": -3.3404940563942766e-17,
+          "std": 0.9190368180123789
+        },
+        "material_score": {
+          "mean": 33.97705265486726,
+          "std": 18.872229624309043
+        },
+        "ph_distance": {
+          "mean": 1.9033959001325294,
+          "std": 2.5886534853971677
+        },
+        "temperature": {
+          "mean": 48.334939759036146,
+          "std": 24.03220752685705
+        }
+      },
+      "term_scaling": {
+        "environment_aggressiveness": {
+          "mean": -0.5262994565090844,
+          "std": 0.1399548125904948
+        },
+        "material_chloride_interaction": {
+          "mean": -0.2690618679915501,
+          "std": 0.11221499638906039
+        },
+        "material_passivity": {
+          "mean": -0.09751697423522526,
+          "std": 0.529549491225482
+        }
+      }
+    },
+    "in_sample_spearman_diagnostic": 0.495576702843298,
+    "objective": 0.783784135893387,
+    "purpose": "coefficient center for final training; not final evaluation",
+    "rows": 452
+  },
+  "final_test_targets_used": false,
+  "fold_calibrations": [
+    {
+      "coefficients": {
+        "environment_aggressiveness": 0.4440954884957248,
+        "material_chloride_interaction": 0.0,
+        "material_passivity": 0.5559045115042753
+      },
+      "context_rows": 357,
+      "feature_state": {
+        "imputation_means": {
+          "Composition, wt.% Cr": 18.650504201680672,
+          "Composition, wt.% Mo": 3.1749943977591033,
+          "Composition, wt.% Ni": 14.592240896358545,
+          "Composition, wt.% W": 0.3021316526610644,
+          "Test Temp. oC": 48.32515337423313,
+          "[Cl-] M": 0.6332928897284912,
+          "[Cl-] pH": 5.575217791411042
+        },
+        "signal_scaling": {
+          "chloride_log10": {
+            "mean": -1.2442158188266954,
+            "std": 2.729354758174839
+          },
+          "environment_score": {
+            "mean": 6.468526305939288e-17,
+            "std": 0.9181811338959782
+          },
+          "material_score": {
+            "mean": 33.2745631652661,
+            "std": 18.27619895900667
+          },
+          "ph_distance": {
+            "mean": 1.9252583990651477,
+            "std": 2.6162760662634637
+          },
+          "temperature": {
+            "mean": 48.325153374233125,
+            "std": 24.1212119850056
+          }
+        },
+        "term_scaling": {
+          "environment_aggressiveness": {
+            "mean": -0.5266227555713072,
+            "std": 0.14672716188427312
+          },
+          "material_chloride_interaction": {
+            "mean": -0.26905574551714617,
+            "std": 0.11256970468584467
+          },
+          "material_passivity": {
+            "mean": -0.09410509724314207,
+            "std": 0.5167295254860429
+          }
+        }
+      },
+      "fold": 1,
+      "objective": 0.8182634239075741,
+      "spearman": 0.5903855266723219,
+      "standardized_mae": 0.6942433743637892,
+      "standardized_rmse": 0.9020403705164082,
+      "validation_rows": 95
+    },
+    {
+      "coefficients": {
+        "environment_aggressiveness": 0.4055584691554788,
+        "material_chloride_interaction": 0.0032307611658798233,
+        "material_passivity": 0.5912107696786415
+      },
+      "context_rows": 356,
+      "feature_state": {
+        "imputation_means": {
+          "Composition, wt.% Cr": 18.761067415730338,
+          "Composition, wt.% Mo": 3.267589887640449,
+          "Composition, wt.% Ni": 15.399859550561796,
+          "Composition, wt.% W": 0.27961235955056185,
+          "Test Temp. oC": 47.63444108761329,
+          "[Cl-] M": 0.6307275156117946,
+          "[Cl-] pH": 5.625814241486068
+        },
+        "signal_scaling": {
+          "chloride_log10": {
+            "mean": -1.10293114510748,
+            "std": 2.441703505775724
+          },
+          "environment_score": {
+            "mean": -7.609393764284781e-17,
+            "std": 0.9283119335204362
+          },
+          "material_score": {
+            "mean": 33.855439325842696,
+            "std": 17.399050172209247
+          },
+          "ph_distance": {
+            "mean": 1.902444185480224,
+            "std": 2.578916896924516
+          },
+          "temperature": {
+            "mean": 47.63444108761329,
+            "std": 24.563467859628748
+          }
+        },
+        "term_scaling": {
+          "environment_aggressiveness": {
+            "mean": -0.5260950600706481,
+            "std": 0.13690436543157172
+          },
+          "material_chloride_interaction": {
+            "mean": -0.2677728820296272,
+            "std": 0.1162002545781535
+          },
+          "material_passivity": {
+            "mean": -0.08873906970254525,
+            "std": 0.5570491545856597
+          }
+        }
+      },
+      "fold": 2,
+      "objective": 0.7570036083556348,
+      "spearman": 0.38951956719423503,
+      "standardized_mae": 0.7512463439718925,
+      "standardized_rmse": 1.050724653405895,
+      "validation_rows": 96
+    },
+    {
+      "coefficients": {
+        "environment_aggressiveness": 0.3983890380623308,
+        "material_chloride_interaction": 0.007051795620975193,
+        "material_passivity": 0.594559166316694
+      },
+      "context_rows": 360,
+      "feature_state": {
+        "imputation_means": {
+          "Composition, wt.% Cr": 18.799194444444446,
+          "Composition, wt.% Mo": 3.3789305555555553,
+          "Composition, wt.% Ni": 15.201277777777776,
+          "Composition, wt.% W": 0.17861666666666665,
+          "Test Temp. oC": 48.67030303030303,
+          "[Cl-] M": 0.6272626656474204,
+          "[Cl-] pH": 5.612329305135952
+        },
+        "signal_scaling": {
+          "chloride_log10": {
+            "mean": -1.1750126959941019,
+            "std": 2.638687339282015
+          },
+          "environment_score": {
+            "mean": -2.7138785046392715e-17,
+            "std": 0.9241803662961773
+          },
+          "material_score": {
+            "mean": 34.04470222222222,
+            "std": 19.377959291938424
+          },
+          "ph_distance": {
+            "mean": 1.8942818059751598,
+            "std": 2.580872925688244
+          },
+          "temperature": {
+            "mean": 48.670303030303025,
+            "std": 24.20920675244217
+          }
+        },
+        "term_scaling": {
+          "environment_aggressiveness": {
+            "mean": -0.5266684984046879,
+            "std": 0.14242165014281002
+          },
+          "material_chloride_interaction": {
+            "mean": -0.2699213687120185,
+            "std": 0.11161154406657411
+          },
+          "material_passivity": {
+            "mean": -0.10494773437028052,
+            "std": 0.5240009318253298
+          }
+        }
+      },
+      "fold": 3,
+      "objective": 0.7824262273009115,
+      "spearman": 0.45878539699593013,
+      "standardized_mae": 0.8041880093540987,
+      "standardized_rmse": 1.0392911720251068,
+      "validation_rows": 92
+    },
+    {
+      "coefficients": {
+        "environment_aggressiveness": 0.41753554840319973,
+        "material_chloride_interaction": 0.10153224628594504,
+        "material_passivity": 0.48093220531085534
+      },
+      "context_rows": 357,
+      "feature_state": {
+        "imputation_means": {
+          "Composition, wt.% Cr": 18.780084033613445,
+          "Composition, wt.% Mo": 3.4832072829131655,
+          "Composition, wt.% Ni": 15.343809523809524,
+          "Composition, wt.% W": 0.2575686274509804,
+          "Test Temp. oC": 49.71901840490798,
+          "[Cl-] M": 0.6329748456270343,
+          "[Cl-] pH": 5.537838414634146
+        },
+        "signal_scaling": {
+          "chloride_log10": {
+            "mean": -1.0559830633734992,
+            "std": 2.3968245977858413
+          },
+          "environment_score": {
+            "mean": -3.9806315728857154e-17,
+            "std": 0.9032536933999408
+          },
+          "material_score": {
+            "mean": 34.535608683473384,
+            "std": 20.013800604722306
+          },
+          "ph_distance": {
+            "mean": 1.970480913096946,
+            "std": 2.633171663952504
+          },
+          "temperature": {
+            "mean": 49.71901840490797,
+            "std": 23.36945396007035
+          }
+        },
+        "term_scaling": {
+          "environment_aggressiveness": {
+            "mean": -0.5259733189047747,
+            "std": 0.1375547767786077
+          },
+          "material_chloride_interaction": {
+            "mean": -0.2701479165961531,
+            "std": 0.11033516918494739
+          },
+          "material_passivity": {
+            "mean": -0.09911013078748811,
+            "std": 0.5234248090104398
+          }
+        }
+      },
+      "fold": 4,
+      "objective": 0.7311232240238,
+      "spearman": 0.3609840445614324,
+      "standardized_mae": 0.8899135290141402,
+      "standardized_rmse": 1.138964413912923,
+      "validation_rows": 95
+    },
+    {
+      "coefficients": {
+        "environment_aggressiveness": 0.43243820981179487,
+        "material_chloride_interaction": 0.0,
+        "material_passivity": 0.5675617901882051
+      },
+      "context_rows": 378,
+      "feature_state": {
+        "imputation_means": {
+          "Composition, wt.% Cr": 19.049391534391535,
+          "Composition, wt.% Mo": 3.2673148148148146,
+          "Composition, wt.% Ni": 16.137724867724867,
+          "Composition, wt.% W": 0.18008201058201057,
+          "Test Temp. oC": 47.39308357348703,
+          "[Cl-] M": 0.6118767748382308,
+          "[Cl-] pH": 5.674175287356321
+        },
+        "signal_scaling": {
+          "chloride_log10": {
+            "mean": -1.0662917597550738,
+            "std": 2.3506597511695855
+          },
+          "environment_score": {
+            "mean": -1.879742687196032e-17,
+            "std": 0.9204407542479669
+          },
+          "material_score": {
+            "mean": 34.16309695767196,
+            "std": 19.137268127305934
+          },
+          "ph_distance": {
+            "mean": 1.8290522258711914,
+            "std": 2.5341604224999554
+          },
+          "temperature": {
+            "mean": 47.393083573487026,
+            "std": 23.827056749310394
+          }
+        },
+        "term_scaling": {
+          "environment_aggressiveness": {
+            "mean": -0.525748292838556,
+            "std": 0.13675091786978072
+          },
+          "material_chloride_interaction": {
+            "mean": -0.2680390496582512,
+            "std": 0.1113168289374111
+          },
+          "material_passivity": {
+            "mean": -0.0992312986206147,
+            "std": 0.5297708356151636
+          }
+        }
+      },
+      "fold": 5,
+      "objective": 0.8172659129443629,
+      "spearman": 0.65660808750809,
+      "standardized_mae": 0.5543590468066489,
+      "standardized_rmse": 0.7984179191241778,
+      "validation_rows": 74
+    }
+  ],
+  "formula": {
+    "applicability": "Fe Alloy, NiCrMo Alloy",
+    "environment_formula": "standardize(0.075*z(temperature) + 0.925*z(log10(chloride)) + 0.115*z(abs(pH-7.25)))",
+    "fixed_internal_environment_weights": [
+      0.075,
+      0.925,
+      0.115
+    ],
+    "fixed_internal_material_weights": [
+      1.0,
+      0.25,
+      3.3,
+      1.65
+    ],
+    "fixed_ph_neutral": 7.25,
+    "interaction_formula": "sigmoid(-z(material))*sigmoid(z(log10(chloride)))",
+    "material_formula": "Cr + 0.25*Ni + 3.3*Mo + 1.65*W",
+    "process_effect": "excluded from calibration because the current synthetic rule samples random method offsets for every task",
+    "signed_terms": [
+      "+material_passivity",
+      "-environment_aggressiveness",
+      "-material_chloride_interaction"
+    ]
+  },
+  "pretraining_template_eligible_rows": 757,
+  "pretraining_template_ineligible_rows": 3,
+  "rule_family": "current_pren_fe_ni",
+  "schema_version": "epit_target_rule_v3",
+  "source_sha256": "d0ce5e9c4b42e0b5a20dbd5c4896791703c5f433ae19bc032674d5848d9d1438",
+  "split_assignments_reused": true,
+  "split_grouping_note": "Frozen row and fold assignments from the legacy 17-element grouping are reused without resplitting.",
+  "split_lock": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/splits_v2/split_lock.json",
+  "split_lock_sha256": "8683f5cb0aa0fca121c66718dbd1d358959b71952e61ada7cd628eda1e9d55b6",
+  "split_manifest": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json",
+  "split_manifest_model_visible_composition_columns": [
+    "Composition, wt.% Fe",
+    "Composition, wt.% Cr",
+    "Composition, wt.% Ni",
+    "Composition, wt.% Mo",
+    "Composition, wt.% W",
+    "Composition, wt.% Nb",
+    "Composition, wt.% Al",
+    "Composition, wt.% V",
+    "Composition, wt.% Ta",
+    "Composition, wt.% Re",
+    "Composition, wt.% Ce",
+    "Composition, wt.% Ti",
+    "Composition, wt.% Co",
+    "Composition, wt.% B",
+    "Composition, wt.% Mg",
+    "Composition, wt.% Y",
+    "Composition, wt.% Gd"
+  ],
+  "split_manifest_sha256": "b151505356908814729ae6027660b89739c11dc463ed3b1f10630b001d1b837c",
+  "term_names": [
+    "material_passivity",
+    "environment_aggressiveness",
+    "material_chloride_interaction"
+  ]
+}
