@@ -153,5 +153,6 @@ smoke_test_run/
 # Local EPIT direct-prior run outputs.
 /corrosion_datasets/analysis/epit_direct_prior/
 
-# Local Soccol Optuna trial and evaluation outputs.
+# Local Soccol trial and evaluation outputs.
 /corrosion_datasets/analysis/soccol_pipeline/optuna_v1/
+/corrosion_datasets/analysis/soccol_pipeline/baseline_folds_v1*/

@@ -43,6 +43,11 @@ DEFAULT_GENERIC_CHECKPOINT = (
     / "step-1000.ckpt"
 )
 VALIDATION_FOLDS = (1, 2, 3, 4, 5)
+DEVELOPMENT_ROWS = 608
+CONTEXT_ROW_COUNTS = frozenset({486, 487})
+VALIDATION_ROW_COUNTS = frozenset({121, 122})
+BASELINE_SCHEMA_VERSION = "epit_development_baselines_v2"
+CATBOOST_CATEGORICAL_COLUMNS: tuple[str, ...] = ()
 EXPECTED_MODELS = (
     "generic_baseline",
     "pretrained_tabicl_v2",
@@ -108,7 +113,7 @@ def fold_command(
     fold: int,
     fold_dir: Path,
 ) -> list[str]:
-    return [
+    command = [
         sys.executable,
         str(REPO_ROOT / "scripts" / "eval_corrosion_datasets.py"),
         "--local-ckpt-path",
@@ -163,6 +168,9 @@ def fold_command(
         "--output-summary-csv",
         str(fold_dir / "summary.csv"),
     ]
+    for column in CATBOOST_CATEGORICAL_COLUMNS:
+        command.extend(["--catboost-categorical-column", column])
+    return command
 
 
 def validate_fold_rows(rows: pd.DataFrame, *, fold: int) -> None:
@@ -175,21 +183,19 @@ def validate_fold_rows(rows: pd.DataFrame, *, fold: int) -> None:
     expected_strategy = f"epit_pipeline_development_fold_{fold}"
     if set(rows["split_strategy"].astype(str)) != {expected_strategy}:
         raise RuntimeError(f"Fold {fold} did not use the frozen development split.")
-    if set(pd.to_numeric(rows["n_train"], errors="raise")) not in (
-        {486},
-        {487},
-    ):
+    context_counts = set(pd.to_numeric(rows["n_train"], errors="raise"))
+    if len(context_counts) != 1 or not context_counts <= CONTEXT_ROW_COUNTS:
         raise RuntimeError(f"Fold {fold} has an unexpected context size.")
-    if set(pd.to_numeric(rows["n_test"], errors="raise")) not in (
-        {121},
-        {122},
-    ):
+    validation_counts = set(pd.to_numeric(rows["n_test"], errors="raise"))
+    if len(validation_counts) != 1 or not validation_counts <= VALIDATION_ROW_COUNTS:
         raise RuntimeError(f"Fold {fold} has an unexpected validation size.")
     if not all(
-        int(train) + int(test) == 608
+        int(train) + int(test) == DEVELOPMENT_ROWS
         for train, test in zip(rows["n_train"], rows["n_test"])
     ):
-        raise RuntimeError(f"Fold {fold} did not use all 608 development rows.")
+        raise RuntimeError(
+            f"Fold {fold} did not use all {DEVELOPMENT_ROWS} development rows."
+        )
     if "pitting_magpie_features" in rows:
         magpie_values = {
             str(value).strip().lower()
@@ -207,7 +213,7 @@ def validate_fold_rows(rows: pd.DataFrame, *, fold: int) -> None:
 
 def prepare_output_dir(requested: Path, *, auto_output_dir: bool) -> Path:
     output_dir = requested.expanduser().resolve()
-    if output_dir == LEGACY_OUTPUT_DIR.resolve():
+    if LEGACY_OUTPUT_DIR is not None and output_dir == LEGACY_OUTPUT_DIR.resolve():
         output_dir = DEFAULT_OUTPUT_DIR.resolve()
         auto_output_dir = True
         print(
@@ -284,7 +290,7 @@ def run(args: argparse.Namespace) -> Path:
     combined.to_csv(rows_path, index=False)
     summary.to_csv(summary_path, index=False)
     payload: dict[str, Any] = {
-        "schema_version": "epit_development_baselines_v2",
+        "schema_version": BASELINE_SCHEMA_VERSION,
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "task_id": PITTING_TASK_ID,
         "development_rows_only": True,
@@ -316,6 +322,10 @@ def run(args: argparse.Namespace) -> Path:
             "catboost_learning_rate": args.catboost_learning_rate,
             "catboost_l2_leaf_reg": args.catboost_l2_leaf_reg,
             "catboost_thread_count": args.catboost_thread_count,
+            "catboost_categorical_columns": list(CATBOOST_CATEGORICAL_COLUMNS),
+            "catboost_hyperparameter_policy": (
+                "fixed_predeclared_no_dataset_specific_tuning"
+            ),
         },
         "commands": commands,
         "rows_csv": str(rows_path),

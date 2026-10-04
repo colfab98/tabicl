@@ -547,6 +547,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--catboost-learning-rate", type=float, default=0.03)
     parser.add_argument("--catboost-l2-leaf-reg", type=float, default=3.0)
     parser.add_argument("--catboost-thread-count", type=int, default=-1)
+    parser.add_argument(
+        "--catboost-categorical-column",
+        action="append",
+        default=[],
+        metavar="COLUMN",
+        help=(
+            "Column to pass to CatBoost as categorical after shared split-local "
+            "preprocessing. Repeat for multiple columns."
+        ),
+    )
     parser.add_argument("--output-json", type=Path, default=None)
     parser.add_argument("--output-csv", type=Path, default=None, help="Row-wise CSV with one row per task/model result.")
     parser.add_argument("--output-wide-csv", type=Path, default=None, help="Wide comparison CSV with one row per task.")
@@ -627,6 +637,12 @@ def validate_args(args: argparse.Namespace) -> None:
             raise ValueError("--catboost-l2-leaf-reg must be >= 0.")
         if args.catboost_thread_count == 0:
             raise ValueError("--catboost-thread-count must not be 0.")
+        if len(args.catboost_categorical_column) != len(
+            set(args.catboost_categorical_column)
+        ):
+            raise ValueError(
+                "--catboost-categorical-column must not contain duplicates."
+            )
     if args.target_binning == "continuous":
         return
     if args.target_binning == "median_binary" and args.target_bins != 2:
@@ -1914,8 +1930,10 @@ class CatBoostRegressorAdapter:
         l2_leaf_reg: float,
         random_state: int,
         thread_count: int,
+        categorical_columns: tuple[str, ...] = (),
     ) -> None:
         self._regressor_class = regressor_class
+        self._requested_categorical_columns = categorical_columns
         self._model_kwargs = {
             "allow_writing_files": False,
             "depth": depth,
@@ -1932,15 +1950,23 @@ class CatBoostRegressorAdapter:
         self.model_source_ = (
             f"catboost=={version};iterations={iterations};depth={depth};"
             f"learning_rate={learning_rate:g};l2_leaf_reg={l2_leaf_reg:g};"
-            f"thread_count={thread_count}"
+            f"thread_count={thread_count};categorical_columns="
+            f"{','.join(categorical_columns) or 'inferred'}"
         )
 
-    @staticmethod
-    def _categorical_columns(frame: pd.DataFrame) -> list[str]:
+    def _categorical_columns(self, frame: pd.DataFrame) -> list[str]:
+        missing = sorted(set(self._requested_categorical_columns) - set(frame.columns))
+        if missing:
+            raise ValueError(
+                "Explicit CatBoost categorical columns are missing: "
+                f"{missing}"
+            )
+        requested = set(self._requested_categorical_columns)
         return [
             column
             for column in frame.columns
-            if not pd.api.types.is_numeric_dtype(frame[column].dtype)
+            if column in requested
+            or not pd.api.types.is_numeric_dtype(frame[column].dtype)
         ]
 
     @staticmethod
@@ -1987,6 +2013,7 @@ def make_catboost_regressor(
     l2_leaf_reg: float,
     random_state: int,
     thread_count: int,
+    categorical_columns: tuple[str, ...] = (),
 ) -> CatBoostRegressorAdapter:
     try:
         import catboost
@@ -2004,6 +2031,7 @@ def make_catboost_regressor(
         l2_leaf_reg=l2_leaf_reg,
         random_state=random_state,
         thread_count=thread_count,
+        categorical_columns=categorical_columns,
     )
 
 
@@ -3420,6 +3448,7 @@ def run_repeated_split_eval(args: argparse.Namespace) -> None:
             "learning_rate": args.catboost_learning_rate,
             "l2_leaf_reg": args.catboost_l2_leaf_reg,
             "thread_count": args.catboost_thread_count,
+            "categorical_columns": list(args.catboost_categorical_column),
         } if args.compare_catboost or args.compare_catboost_magpie else None,
         "rows": all_rows,
         "errors": all_errors,
@@ -3676,6 +3705,7 @@ def main() -> None:
                 l2_leaf_reg=args.catboost_l2_leaf_reg,
                 random_state=args.random_state,
                 thread_count=args.catboost_thread_count,
+                categorical_columns=tuple(args.catboost_categorical_column),
             )
             jobs.append(
                 {
@@ -3695,6 +3725,7 @@ def main() -> None:
                 l2_leaf_reg=args.catboost_l2_leaf_reg,
                 random_state=args.random_state,
                 thread_count=args.catboost_thread_count,
+                categorical_columns=tuple(args.catboost_categorical_column),
             )
             jobs.append(
                 {
@@ -3918,6 +3949,7 @@ def main() -> None:
             "learning_rate": args.catboost_learning_rate,
             "l2_leaf_reg": args.catboost_l2_leaf_reg,
             "thread_count": args.catboost_thread_count,
+            "categorical_columns": list(args.catboost_categorical_column),
         } if args.compare_catboost or args.compare_catboost_magpie else None,
         "feature_groups_default": list(DEFAULT_FEATURE_GROUPS),
         "pitting_magpie_features": bool(args.pitting_magpie_features),

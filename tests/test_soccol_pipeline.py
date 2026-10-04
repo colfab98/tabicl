@@ -243,6 +243,79 @@ print(json.dumps({
     }
 
 
+def test_soccol_baseline_wrapper_uses_development_folds_and_fair_catboost():
+    script = """
+import json
+from pathlib import Path
+
+from scripts.soccol_pipeline import evaluate_baseline_folds
+
+evaluate_baseline_folds.configure()
+base = evaluate_baseline_folds.base
+args = base.parse_args(["--device", "cpu"])
+split = base.load_frozen_split(args.split_manifest)
+command = base.fold_command(args, fold=3, fold_dir=Path("fold_3").resolve())
+categorical_columns = [
+    command[index + 1]
+    for index, token in enumerate(command)
+    if token == "--catboost-categorical-column"
+]
+print(json.dumps({
+    "task_id": base.PITTING_TASK_ID,
+    "split_schema": split.manifest["schema_version"],
+    "development_rows": base.DEVELOPMENT_ROWS,
+    "context_rows": sorted(base.CONTEXT_ROW_COUNTS),
+    "validation_rows": sorted(base.VALIDATION_ROW_COUNTS),
+    "output_dir": str(args.output_dir),
+    "uses_validation_fold": "--epit-validation-fold" in command,
+    "uses_final_test": "--epit-final-test" in command,
+    "compares_pretrained": "--compare-pretrained-tabicl" in command,
+    "compares_catboost": "--compare-catboost" in command,
+    "categorical_columns": categorical_columns,
+    "catboost_iterations": command[command.index("--catboost-iterations") + 1],
+    "catboost_depth": command[command.index("--catboost-depth") + 1],
+    "catboost_learning_rate": command[
+        command.index("--catboost-learning-rate") + 1
+    ],
+    "catboost_l2_leaf_reg": command[
+        command.index("--catboost-l2-leaf-reg") + 1
+    ],
+}))
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+
+    assert payload == {
+        "task_id": corrosion_eval.SOCCOL_PIPELINE_TASK_ID,
+        "split_schema": "soccol_composition_split_manifest_v1",
+        "development_rows": 3222,
+        "context_rows": [2577, 2578],
+        "validation_rows": [644, 645],
+        "output_dir": str(
+            REPO_ROOT
+            / "corrosion_datasets"
+            / "analysis"
+            / "soccol_pipeline"
+            / "baseline_folds_v1"
+        ),
+        "uses_validation_fold": True,
+        "uses_final_test": False,
+        "compares_pretrained": True,
+        "compares_catboost": True,
+        "categorical_columns": list(SOCCOL_CATEGORICAL_COLUMNS),
+        "catboost_iterations": "1000",
+        "catboost_depth": "6",
+        "catboost_learning_rate": "0.03",
+        "catboost_l2_leaf_reg": "3.0",
+    }
+
+
 def test_soccol_empirical_scm_target_generates_finite_dataset():
     artifact = json.loads(
         (RULE_ROOT / "pren_n_coupled_mns_weak_anions.json").read_text(encoding="utf-8")

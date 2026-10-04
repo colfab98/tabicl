@@ -2,7 +2,7 @@
 #SBATCH --job-name=epit_final_empirical_scm_v8
 #SBATCH --gpus=1
 #SBATCH --mem=32G
-#SBATCH --time=48:00:00
+#SBATCH --time=96:00:00
 #SBATCH --output=/home/%u/tmp/%x.%j.out
 #SBATCH --error=/home/%u/tmp/%x.%j.err
 

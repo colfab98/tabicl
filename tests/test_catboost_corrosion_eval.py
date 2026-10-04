@@ -85,6 +85,47 @@ def test_catboost_adapter_preserves_numeric_missing_values_and_prepares_categori
     assert model.predict_frame.loc[0, "test_method"] == corrosion_eval.CATBOOST_MISSING_CATEGORY
 
 
+def test_catboost_adapter_honors_explicit_encoded_categorical_columns(monkeypatch):
+    RecordingCatBoostRegressor.instances.clear()
+    fake_catboost = SimpleNamespace(
+        CatBoostRegressor=RecordingCatBoostRegressor,
+        __version__="test-version",
+    )
+    monkeypatch.setitem(sys.modules, "catboost", fake_catboost)
+
+    estimator = corrosion_eval.make_catboost_regressor(
+        iterations=25,
+        depth=4,
+        learning_rate=0.05,
+        l2_leaf_reg=2.0,
+        random_state=1001,
+        thread_count=3,
+        categorical_columns=("encoded_category",),
+    )
+    train = pd.DataFrame(
+        {
+            "numeric": [1.0, 2.0, 3.0],
+            "encoded_category": [0.0, 1.0, -1.0],
+        }
+    )
+    estimator.fit(train, pd.Series([10.0, 20.0, 30.0]))
+
+    model = RecordingCatBoostRegressor.instances[-1]
+    assert model.cat_features == ["encoded_category"]
+    assert model.fit_frame["encoded_category"].tolist() == ["0.0", "1.0", "-1.0"]
+    assert "categorical_columns=encoded_category" in estimator.model_source_
+
+    estimator.predict(
+        pd.DataFrame(
+            {
+                "numeric": [4.0],
+                "encoded_category": [-1.0],
+            }
+        )
+    )
+    assert model.predict_frame["encoded_category"].tolist() == ["-1.0"]
+
+
 def test_repeated_split_wrapper_forwards_catboost_settings(monkeypatch, tmp_path):
     monkeypatch.setattr(
         sys,
