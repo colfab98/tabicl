@@ -90,6 +90,7 @@ PROMOTED_TARGET_RULE_FAMILIES = (
     "fe_ni_cr_threshold",
     "method_aware_pren_n",
 )
+TARGET_RULE_COEFFICIENTS = EPIT_TARGET_RULE_COEFFICIENTS
 LEGACY_TARGET_RULE_FAMILIES = (
     "pren_linear",
     "cr_mow_synergy",
@@ -531,7 +532,7 @@ def load_target_rule_config(
             and family not in PROMOTED_TARGET_RULE_FAMILIES
         ):
             continue
-        if family not in EPIT_TARGET_RULE_COEFFICIENTS:
+        if family not in TARGET_RULE_COEFFICIENTS:
             raise RuntimeError(
                 f"Calibrated rule {family!r} is not implemented by the prior."
             )
@@ -561,7 +562,7 @@ def load_target_rule_config(
                 "coefficients"
             ].items()
         }
-        expected_terms = set(EPIT_TARGET_RULE_COEFFICIENTS[family])
+        expected_terms = set(TARGET_RULE_COEFFICIENTS[family])
         if set(values) != expected_terms:
             raise RuntimeError(
                 f"Calibrated coefficients for {family!r} do not match the prior."

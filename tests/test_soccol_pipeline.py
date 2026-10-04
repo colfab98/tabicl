@@ -1,14 +1,21 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import torch
 
+from scripts import eval_corrosion_datasets as corrosion_eval
 from scripts.eval_corrosion_datasets import preprocess_soccol_split
-from tabicl.prior.dataset import SCMPrior
+from tabicl.prior.dataset import (
+    EPIT_TARGET_RULE_COEFFICIENTS,
+    SOCCOL_TARGET_RULE_COEFFICIENTS,
+    SCMPrior,
+)
 from tabicl.prior.prior_config import DEFAULT_FIXED_HP
 from tabicl.prior.soccol_feature_generator import sample_soccol_feature_rows
 from tabicl.prior.soccol_feature_profile import load_soccol_feature_profile
@@ -25,6 +32,25 @@ from tabicl.prior.soccol_schema import (
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RULE_ROOT = REPO_ROOT / "corrosion_datasets" / "analysis" / "soccol_pipeline" / "target_rules_v1"
+SPLIT_MANIFEST = (
+    REPO_ROOT
+    / "corrosion_datasets"
+    / "datasets"
+    / "soccol_pitting_potential"
+    / "processed"
+    / "splits_v1"
+    / "split_manifest.json"
+)
+
+
+def test_soccol_only_rules_are_not_exposed_to_legacy_epit_schema():
+    soccol_only = {
+        "pren_n_coupled_mns",
+        "pren_n_coupled_mns_weak_anions",
+    }
+
+    assert soccol_only.isdisjoint(EPIT_TARGET_RULE_COEFFICIENTS)
+    assert soccol_only <= SOCCOL_TARGET_RULE_COEFFICIENTS.keys()
 
 
 def test_soccol_feature_profile_samples_finite_37_column_rows():
@@ -57,6 +83,164 @@ def test_soccol_real_preprocessing_uses_context_only_state():
     for column in SOCCOL_CATEGORICAL_COLUMNS:
         assert encoded_train.loc[1, column] == -1.0
         assert encoded_test.loc[1, column] == -1.0
+
+
+def test_soccol_final_split_uses_3222_context_and_805_untouched_rows():
+    task = corrosion_eval._make_soccol_pipeline_task(SPLIT_MANIFEST)
+    corrosion_eval.apply_epit_pipeline_final_test(
+        [task],
+        manifest_path=SPLIT_MANIFEST,
+    )
+
+    split = task.fixed_split
+    assert split is not None
+    assert len(task.X) == 4027
+    assert len(split.train_index) == 3222
+    assert len(split.test_index) == 805
+    assert not set(split.train_index) & set(split.test_index)
+    assert split.split_strategy == "epit_pipeline_final_test"
+
+
+def test_soccol_final_wrappers_reuse_epit_workflow_with_soccol_configuration():
+    script = """
+import json
+from pathlib import Path
+
+from scripts.epit_pipeline.artifact_hashes import FrozenFinalModel
+from scripts.soccol_pipeline import evaluate_final, train_final
+
+evaluate_final.configure()
+train_base = train_final.base
+eval_base = evaluate_final.base
+args = train_base.parse_args(["--storage", "journal:///unused.log"])
+split = train_base.load_frozen_split(args.split_manifest)
+rules = train_base.search.load_target_rule_config(
+    summary_path=args.target_rule_summary,
+    split_manifest_path=args.split_manifest,
+)
+args.pitting_composition_mode = "empirical_features_scm_target"
+params = train_base.search.TrialParams(
+    use_magpie=False,
+    informed_prior_ratio=0.5,
+    mlp_prob=0.5,
+    informed_feature_block_strength=0.0,
+    informed_target_mix_weight=0.5,
+    pitting_material_dirichlet_prob=0.0,
+    pitting_material_dirichlet_concentration=None,
+    pitting_material_dirichlet_active_prob=None,
+    pitting_composition_perturb_strength=0.05,
+)
+train_command = train_base.search.training_command(
+    args,
+    params,
+    Path("soccol_final_checkpoints").resolve(),
+    rules,
+)
+fold_command = train_base.search.eval_command(
+    args,
+    params,
+    Path("step-1000.ckpt").resolve(),
+    "soccol_final_check",
+    Path("soccol_fold_evaluation").resolve(),
+)
+configuration = {
+    "task_id": eval_base.PITTING_TASK_ID,
+    "device": "cpu",
+    "random_state": 42,
+    "n_estimators": 8,
+    "tabicl_feat_shuffle_method": "none",
+    "tabicl_norm_methods": ["none"],
+    "regression_output": "median",
+    "regression_uncertainty": False,
+    "pitting_magpie_features": False,
+    "expected_n_features": 37,
+    "max_samples_per_task": 0,
+}
+frozen = FrozenFinalModel(
+    manifest={
+        "split": {
+            "manifest": str(split.manifest_path),
+            "manifest_sha256": split.manifest_sha256,
+            "lock_sha256": split.lock_sha256,
+        },
+        "evaluation_configuration": configuration,
+    },
+    lock={},
+    manifest_path=Path("final_model_manifest.json").resolve(),
+    lock_path=Path("final_model_lock.json").resolve(),
+    checkpoint_path=Path("step-10000.ckpt").resolve(),
+    manifest_sha256="unused",
+    lock_sha256="unused",
+    checkpoint_sha256="unused",
+)
+command = eval_base.final_evaluation_command(
+    frozen,
+    output_dir=Path("final_test_evaluation").resolve(),
+)
+print(json.dumps({
+    "study_name": args.study_name,
+    "split_schema": split.manifest["schema_version"],
+    "rule_count": len(rules.coefficients),
+    "final_root": str(train_base.DEFAULT_FINAL_ROOT),
+    "checkpoint_root": str(args.checkpoint_root),
+    "train_task_id": train_base.PITTING_TASK_ID,
+    "eval_task_id": eval_base.PITTING_TASK_ID,
+    "development_rows": eval_base.DEVELOPMENT_ROWS,
+    "final_test_rows": eval_base.FINAL_TEST_ROWS,
+    "model_label": eval_base.FINAL_MODEL_LABEL,
+    "expected_n_features": eval_base.validate_frozen_model(frozen)["expected_n_features"],
+    "command_task": command[command.index("--task") + 1],
+    "uses_final_test": "--epit-final-test" in command,
+    "uses_validation_fold": "--epit-validation-fold" in command,
+    "training_profile": train_command[
+        train_command.index("--pitting_feature_profile") + 1
+    ],
+    "training_features": train_command[train_command.index("--min_features") + 1],
+    "coefficient_variation": train_command[
+        train_command.index("--pitting_coefficient_variation") + 1
+    ],
+    "soccol_fold_evaluator": (
+        "scripts/soccol_pipeline/evaluate_optuna_folds.py" in " ".join(fold_command)
+    ),
+}))
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+
+    assert payload == {
+        "study_name": "soccol_pipeline_optuna_empirical_features_scm_target_v1",
+        "split_schema": "soccol_composition_split_manifest_v1",
+        "rule_count": 9,
+        "final_root": str(
+            REPO_ROOT
+            / "corrosion_datasets"
+            / "analysis"
+            / "soccol_pipeline"
+            / "final_v1"
+        ),
+        "checkpoint_root": str(
+            REPO_ROOT / "checkpoints" / "soccol_pipeline_final_v1"
+        ),
+        "train_task_id": corrosion_eval.SOCCOL_PIPELINE_TASK_ID,
+        "eval_task_id": corrosion_eval.SOCCOL_PIPELINE_TASK_ID,
+        "development_rows": 3222,
+        "final_test_rows": 805,
+        "model_label": "final_soccol_model",
+        "expected_n_features": 37,
+        "command_task": corrosion_eval.SOCCOL_PIPELINE_TASK_ID,
+        "uses_final_test": True,
+        "uses_validation_fold": False,
+        "training_profile": "soccol_pitting_features_v1",
+        "training_features": "37",
+        "coefficient_variation": "0.8",
+        "soccol_fold_evaluator": True,
+    }
 
 
 def test_soccol_empirical_scm_target_generates_finite_dataset():

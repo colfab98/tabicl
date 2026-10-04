@@ -135,19 +135,6 @@ EPIT_TARGET_RULE_COEFFICIENTS: Dict[str, Dict[str, float]] = {
         "coupled_environment_breakdown": 0.502545401041832,
         "acidic_ph_aggressiveness": 0.09743215386081203,
     },
-    "pren_n_coupled_mns": {
-        "material_passivity": 0.15,
-        "coupled_environment_breakdown": 0.45,
-        "acidic_ph_aggressiveness": 0.15,
-        "mns_inclusion_susceptibility": 0.25,
-    },
-    "pren_n_coupled_mns_weak_anions": {
-        "material_passivity": 0.15,
-        "coupled_environment_breakdown": 0.35,
-        "acidic_ph_aggressiveness": 0.15,
-        "mns_inclusion_susceptibility": 0.20,
-        "weak_inhibitor_ratio": 0.15,
-    },
     "fe_ni_cr_threshold": {
         "material_passivity": 0.5110080270672297,
         "log_chloride_aggressiveness": 0.2653108305738243,
@@ -168,6 +155,24 @@ EPIT_TARGET_RULE_COEFFICIENTS: Dict[str, Dict[str, float]] = {
         "material_chloride_interaction": 0.3245827329211744,
         "temperature_chloride_interaction": 0.20218563158231842,
         "test_method_correction": 0.1959408060791884,
+    },
+}
+
+
+SOCCOL_TARGET_RULE_COEFFICIENTS: Dict[str, Dict[str, float]] = {
+    **EPIT_TARGET_RULE_COEFFICIENTS,
+    "pren_n_coupled_mns": {
+        "material_passivity": 0.15,
+        "coupled_environment_breakdown": 0.45,
+        "acidic_ph_aggressiveness": 0.15,
+        "mns_inclusion_susceptibility": 0.25,
+    },
+    "pren_n_coupled_mns_weak_anions": {
+        "material_passivity": 0.15,
+        "coupled_environment_breakdown": 0.35,
+        "acidic_ph_aggressiveness": 0.15,
+        "mns_inclusion_susceptibility": 0.20,
+        "weak_inhibitor_ratio": 0.15,
     },
 }
 
@@ -1092,11 +1097,12 @@ class SCMPrior(Prior):
                     )
                 score_items.append((name.strip(), value.strip()))
 
+        available_rules = self._pitting_target_rule_coefficients()
         scores: Dict[str, float] = {}
         for raw_name, raw_value in score_items:
             name = str(raw_name).strip()
-            if name not in EPIT_TARGET_RULE_COEFFICIENTS:
-                choices = ", ".join(EPIT_TARGET_RULE_COEFFICIENTS)
+            if name not in available_rules:
+                choices = ", ".join(available_rules)
                 raise ValueError(
                     f"Unknown pitting target rule {name!r}. Available: {choices}."
                 )
@@ -1116,6 +1122,14 @@ class SCMPrior(Prior):
             name: float(probability)
             for name, probability in zip(names, probabilities, strict=True)
         }
+
+    def _pitting_target_rule_coefficients(self) -> Dict[str, Dict[str, float]]:
+        if (
+            str(self.fixed_hp.get("pitting_feature_profile", ""))
+            == SOCCOL_FEATURE_PROFILE
+        ):
+            return SOCCOL_TARGET_RULE_COEFFICIENTS
+        return EPIT_TARGET_RULE_COEFFICIENTS
 
     def _sample_fixed_epit_target_rule_family(
         self,
@@ -1143,6 +1157,7 @@ class SCMPrior(Prior):
             if isinstance(raw_coefficients, str)
             else list(raw_coefficients)
         )
+        available_rules = self._pitting_target_rule_coefficients()
         overrides: Dict[str, Dict[str, float]] = {}
         for entry in entries:
             key, separator, raw_value = str(entry).partition("=")
@@ -1152,9 +1167,9 @@ class SCMPrior(Prior):
                     "Each pitting target-rule coefficient must use "
                     "FAMILY.TERM=VALUE."
                 )
-            if family not in EPIT_TARGET_RULE_COEFFICIENTS:
+            if family not in available_rules:
                 raise ValueError(f"Unknown pitting target rule {family!r}.")
-            if term not in EPIT_TARGET_RULE_COEFFICIENTS[family]:
+            if term not in available_rules[family]:
                 raise ValueError(
                     f"Unknown coefficient {term!r} for pitting target rule "
                     f"{family!r}."
@@ -1171,7 +1186,7 @@ class SCMPrior(Prior):
             family_values[term] = value
 
         for family, values in overrides.items():
-            expected_terms = set(EPIT_TARGET_RULE_COEFFICIENTS[family])
+            expected_terms = set(available_rules[family])
             if set(values) != expected_terms:
                 missing = sorted(expected_terms - set(values))
                 raise ValueError(
@@ -1293,13 +1308,14 @@ class SCMPrior(Prior):
                 "Weighted EPIT target rules require Fe, Cr, Ni, Mo, and W columns."
             )
         family, scores, probabilities = selection
+        available_rules = self._pitting_target_rule_coefficients()
         coefficient_overrides = (
             self._fixed_epit_target_rule_coefficient_overrides()
         )
         coefficients = dict(
             coefficient_overrides.get(
                 family,
-                EPIT_TARGET_RULE_COEFFICIENTS[family],
+                available_rules[family],
             )
         )
         if self.coefficient_variation:

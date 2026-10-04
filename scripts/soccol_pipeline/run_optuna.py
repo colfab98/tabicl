@@ -14,6 +14,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from scripts.epit_pipeline import run_optuna as base  # noqa: E402
 from scripts.epit_pipeline.artifact_hashes import load_frozen_split  # noqa: E402
+from tabicl.prior.dataset import SOCCOL_TARGET_RULE_COEFFICIENTS  # noqa: E402
 from tabicl.prior.soccol_feature_profile import load_soccol_feature_profile  # noqa: E402
 from tabicl.prior.soccol_schema import (  # noqa: E402
     SOCCOL_BASE_FEATURE_COUNT,
@@ -123,6 +124,7 @@ def configure() -> None:
     base.FIXED_BLOCK_ALLOCATION = SOCCOL_FIXED_BLOCK_ALLOCATION
     base.EPIT_BASE_FEATURE_COUNT = SOCCOL_BASE_FEATURE_COUNT
     base.EPIT_FEATURE_PROFILE = SOCCOL_FEATURE_PROFILE
+    base.TARGET_RULE_COEFFICIENTS = SOCCOL_TARGET_RULE_COEFFICIENTS
     # The shared training CLI retains five legacy family slots. The Soccol
     # generator uses one all-row bank and ignores this compatibility vector.
     base.EPIT_COMPOSITION_FAMILY_PROBS = (1.0, 0.0, 0.0, 0.0, 0.0)

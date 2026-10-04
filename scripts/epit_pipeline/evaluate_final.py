@@ -31,6 +31,8 @@ from scripts.epit_pipeline.train_final import (
 PITTING_TASK_ID = "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg"
 FINAL_MODEL_LABEL = "final_epit_model"
 FINAL_EVALUATION_MANIFEST_NAME = "final_evaluation_manifest.json"
+DEVELOPMENT_ROWS = 608
+FINAL_TEST_ROWS = 152
 REQUIRED_FINAL_METRICS = (
     "test_spearman",
     "test_mae",
@@ -79,10 +81,14 @@ def validate_frozen_model(frozen: FrozenFinalModel) -> dict[str, Any]:
     if frozen_split.lock_sha256 != split_meta.get("lock_sha256"):
         raise RuntimeError("Final model names a different frozen split lock.")
     split_design = frozen_split.manifest.get("split_design", {})
-    if int(split_design.get("development_rows", -1)) != 608:
-        raise RuntimeError("Final EPIT evaluation requires exactly 608 context rows.")
-    if int(split_design.get("final_test_rows", -1)) != 152:
-        raise RuntimeError("Final EPIT evaluation requires exactly 152 final-test rows.")
+    if int(split_design.get("development_rows", -1)) != DEVELOPMENT_ROWS:
+        raise RuntimeError(
+            f"Final EPIT evaluation requires exactly {DEVELOPMENT_ROWS} context rows."
+        )
+    if int(split_design.get("final_test_rows", -1)) != FINAL_TEST_ROWS:
+        raise RuntimeError(
+            f"Final EPIT evaluation requires exactly {FINAL_TEST_ROWS} final-test rows."
+        )
 
     config = manifest.get("evaluation_configuration", {})
     if config.get("task_id") != PITTING_TASK_ID:
@@ -192,8 +198,14 @@ def validate_final_results(
         raise RuntimeError("Final evaluation produced an unexpected task.")
     if row.get("split_strategy") != "epit_pipeline_final_test":
         raise RuntimeError("Final evaluation did not use the frozen outer split.")
-    if int(row.get("n_train", -1)) != 608 or int(row.get("n_test", -1)) != 152:
-        raise RuntimeError("Final evaluation row counts are not 608/152.")
+    if (
+        int(row.get("n_train", -1)) != DEVELOPMENT_ROWS
+        or int(row.get("n_test", -1)) != FINAL_TEST_ROWS
+    ):
+        raise RuntimeError(
+            "Final evaluation row counts are not "
+            f"{DEVELOPMENT_ROWS}/{FINAL_TEST_ROWS}."
+        )
     if int(row.get("n_features", -1)) != int(config["expected_n_features"]):
         raise RuntimeError("Final model received the wrong feature schema.")
     if bool(row.get("pitting_magpie_features")) != bool(
@@ -248,8 +260,8 @@ def run(args: argparse.Namespace) -> Path:
         "selected_checkpoint": str(frozen.checkpoint_path),
         "selected_checkpoint_sha256": frozen.checkpoint_sha256,
         "split_manifest": frozen.manifest["split"]["manifest"],
-        "development_context_rows": 608,
-        "final_test_rows": 152,
+        "development_context_rows": DEVELOPMENT_ROWS,
+        "final_test_rows": FINAL_TEST_ROWS,
         "selection_or_tuning_performed": False,
         "evaluation_configuration": config,
         "result": row,

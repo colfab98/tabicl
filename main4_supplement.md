@@ -1,6 +1,7 @@
 # Supplement to main4.tex: target mixing and coefficient variation
 
-Recorded: 2026-09-26; updated with completed training results on 2026-10-01.
+Recorded: 2026-09-26; updated with completed training results on 2026-10-01;
+Soccol extension added on 2026-10-04.
 Working notes for a later merge into [main4.tex](main4.tex).
 Sources: the Codex conversation **“Review main4 and presentation.md”**
 (2026-09-23–25, thread `01a0cde2-bea1-7b32-81c2-2ac6045ae94f`), the subsequent
@@ -616,3 +617,412 @@ The new Optuna study is isolated under
 50 trials at 1,000 steps each. The study fingerprint includes the 24-element
 profile, promoted rule order, coefficient centers and bounds, variation strength
 0.8, and seed 42, preventing accidental resume with a different configuration.
+
+## 11. Soccol dataset and second EPIT pipeline (2026-10-04)
+
+### Scope and relationship to the earlier EPIT work
+
+Soccol is the second pitting-potential prediction dataset. Its implementation
+reuses the later EPIT-v8 empirical-feature SCM-target workflow while replacing
+the 28-column EPIT runtime schema with a Soccol-specific 37-column schema. It
+does not recompute or replace the earlier 21-column v7 result described in
+`main4.tex`, and it does not replace the EPIT-v8 launchers or artifacts.
+
+The retained methodology is:
+
+- empirical-feature synthetic pretraining;
+- analytical corrosion rules for the informed synthetic target;
+- composition-grouped development folds;
+- Optuna configuration selection;
+- development-only checkpoint selection; and
+- a separate one-time evaluation on the untouched outer final-test targets.
+
+Soccol-specific entry points live under
+[`scripts/soccol_pipeline/`](scripts/soccol_pipeline/), while shared training
+and evaluation behavior is reused from `scripts/epit_pipeline/` through thin
+wrappers.
+
+### Dataset provenance and regression task
+
+The source is Dimitri Soccol's public
+[Pitting Potential Database](https://github.com/SoccolD/Pitting_potential_database),
+preserved at commit `50f2df0918116e12026f8ea18c32704a5f6822e5`. The primary
+input is the 2024 workbook; two earlier workbooks are retained as historical
+upstream snapshots. The associated paper is D. Soccol, “An updated Pitting
+Resistance Equivalent Number by proportional hazard survival models of
+reported pitting potentials,” *Electrochimica Acta* 511, 145355
+([DOI](https://doi.org/10.1016/j.electacta.2024.145355)). The paper uses
+censor-aware proportional-hazards models; the present ordinary-regression
+benchmark is a separate task.
+
+The `pitting_potentials` sheet contains 4,460 observations and 43 fields. The
+`references` sheet maps 154 source identifiers to publications. `E_pit` is the
+reported breakdown potential in mV versus Ag/AgCl (3 M KCl): `event=1` denotes
+actual pitting and `event=0` a competing non-pitting breakdown, right-censored
+for latent pitting potential in the collection paper.
+
+The primary regression subset requires numeric `E_pit` and `event=1`, leaving
+4,027 usable rows. A separate survival table retains 4,384 rows with numeric
+breakdown potential and a defined event indicator; it is not used by this
+regression pipeline. `E_corr`, `event`, identifiers, source, alloy designation,
+references, audit flags, and missingness indicators are excluded from model
+inputs. In particular, alloy names cannot circumvent the composition-group
+split.
+
+The original workbooks remain unchanged. Repairs and encodings occur only in
+generated processed tables. No explicit license was detected in the preserved
+repository, so redistribution terms remain separate from scientific
+provenance. See the [schema summary](corrosion_datasets/datasets/soccol_pitting_potential/schema_summary.md)
+and [literature record](corrosion_datasets/datasets/soccol_pitting_potential/literature.md).
+
+### Source audit, material families, and composition repair
+
+All 154 source identifiers were reviewed. The registry at
+[`source_conventions.csv`](corrosion_datasets/analysis/soccol_source_conventions/source_conventions.csv)
+records material family, composition coverage, balance-element convention,
+source-specific problems, evidence, confidence, and recommended row handling.
+
+| Audit category | Sources | Raw rows |
+| --- | ---: | ---: |
+| Usable Fe-based | 131 | 3,706 |
+| Usable with a composition caveat | 14 | 265 |
+| Material-taxonomy caveat | 3 | 204 |
+| Mixed material families | 4 | 169 |
+| Separate non-Fe family | 1 | 92 |
+| Repair required | 1 | 24 |
+
+No family is silently removed from the broad benchmark. Row-level include,
+review, and exclude flags remain available for sensitivity analysis.
+
+The confirmed `2000Russell` error affects all 24 titanium cells. Their values
+equal `Cr + 3.3*Mo + 20*N`, a PRE expression rather than Ti composition. The
+processed tables discard those values, encode `Ti=0` under the benchmark's
+missing-composition convention, and retain `Ti_missing=1` for audit. Eleven of
+the affected rows occur in the 4,027-row event-1 regression subset.
+
+A blank composition cell means missing or unreported, not a verified physical
+zero. The benchmark nevertheless uses a common zero encoding for composition
+blanks, while retaining the per-element missingness columns for audit only.
+
+Fe was added as a thirteenth composition feature only where the row-level
+material classification and reported major composition support an Fe balance:
+
+\[
+\mathrm{Fe}_{\mathrm{approx}}
+=100-\sum_{e\ne\mathrm{Fe}}x_e.
+\]
+
+Fe is not reconstructed when major composition is unreported, the remainder is
+materially negative, or the row belongs to an incompatible or uncertain
+high-Ni family. Unsupported rows receive `Fe=0, Fe_missing=1`. For example,
+the `2009Wong` Ni-Cr-Mo rows already close to approximately 100 wt.% in their
+three reported elements and receive no invented Fe. The derived Fe value is an
+approximation because the workbook can omit source-specific alloying elements.
+
+### Fixed 37-feature schema and fold-local preprocessing
+
+Every Soccol model receives exactly 37 columns, with informed-prior block
+allocation `(13,20,4,0,0,0,0,0,0)`. Magpie descriptors are disabled.
+
+| Block | Count | Fixed columns |
+| --- | ---: | --- |
+| Composition, wt.% | 13 | `Fe`, `C`, `N`, `Si`, `P`, `S`, `Ti`, `V`, `Cr`, `Mn`, `Ni`, `Nb`, `Mo` |
+| Continuous preparation/procedure | 10 | `Prep_grinding_grit`, `Prep_Ra_micron`, `Prep_pH`, `Prep_redox`, `Prep_time`, `CP_time`, `CP_temp`, `CP_pH`, `Test_area_cm2`, `scan_rate` |
+| Ion concentration, M | 10 | `CP_Cl`, `CP_Br`, `CP_OH`, `CP_SO4`, `CP_CO3`, `CP_NO3`, `CP_PO4`, `CP_MoO4`, `CP_CrO4`, `CP_ion_other` |
+| Categorical procedure | 4 | `Prep_medium`, `CP_aeration`, `CP_agitation`, `CP_anions_info` |
+
+Composition and ion blanks use the fixed zero encoding. For every development
+fold or final evaluation, means for the other continuous columns are fitted on
+the labeled context rows only and applied to both context and query rows.
+Category-to-integer mappings are likewise fitted on context rows only; missing
+context values and missing or unseen query categories become `-1`. The
+evaluator verifies that all 37 supplied values are finite.
+
+The real-data path adds no logarithmic ion transform, universal numeric
+sentinel, missingness-indicator predictor, or measured response feature.
+Negative values remain valid in fields such as preparation redox or pH. The
+exact contract is recorded in the
+[preprocessing plan](corrosion_datasets/datasets/soccol_pitting_potential/preprocessing_plan.md)
+and [feature manifest](corrosion_datasets/datasets/soccol_pitting_potential/processed/feature_manifest.json).
+
+### Composition-grouped outer split and development folds
+
+The split applies the previous EPIT grouping method to the 13 processed
+composition values. Values are rounded to 0.01 wt.%, and two rows are linked
+when
+
+\[
+d(i,j)=\sum_{e=1}^{13}|x_{i,e}-x_{j,e}|\leq1.0\ \mathrm{wt.\%}.
+\]
+
+Connected components are indivisible. The 4,027 rows form 339 groups from 474
+rounded composition keys. The largest connected-component diameter is 4.84
+wt.% because chains of close rows can span more than the direct-link threshold;
+the minimum distance between distinct components is 1.01 wt.%.
+
+| Partition | Rows | Role |
+| --- | ---: | --- |
+| Development | 3,222 | Rule development, Optuna selection, and checkpoint selection |
+| Final test | 805 | One final evaluation after model freezing |
+| Development validation folds | 645 / 645 / 644 / 644 / 644 | Five grouped rotations |
+
+No composition group crosses the outer boundary or a development fold. Every
+development row is a validation query once. Subject to group integrity and
+fixed row counts, the assignment balances pitting-potential deciles, material
+family, composition isolation, temperature, chloride, pH, and source. The old
+test-method balancing block is omitted because Soccol has no comparable single
+method field.
+
+Source is used for balance and audit, not as an atomic group: 101 sources are
+development-only, 14 final-only, and 37 occur on both sides. The result is a
+composition-held-out, mixed-source benchmark, not a source-held-out claim about
+unseen publications or laboratories.
+
+The [manifest](corrosion_datasets/datasets/soccol_pitting_potential/processed/splits_v1/split_manifest.json),
+[assignments](corrosion_datasets/datasets/soccol_pitting_potential/processed/splits_v1/split_assignments.csv),
+[report](corrosion_datasets/datasets/soccol_pitting_potential/processed/splits_v1/split_report.html),
+and [lock](corrosion_datasets/datasets/soccol_pitting_potential/processed/splits_v1/split_lock.json)
+are frozen together by hashes. The public assignments omit final-test target
+values.
+
+### Development-only rule investigation
+
+The later EPIT rule set was first replayed on the five frozen Soccol
+development folds. Eight formulas were directly evaluable. The method-aware
+formula was not carried over because Soccol has no field comparable to the old
+test-method category. Historical names remain for artifact compatibility; for
+example, `cr_mow_n_synergy` contains no W term because the Soccol schema has no
+W column.
+
+Every rule fold fits its preprocessing, scaling, and constrained coefficients
+on four development folds and evaluates the fifth. Final-test targets are
+replaced by missing values before the fitting code receives the table.
+
+The investigation additionally tested specimen area, grinding grit, roughness,
+scan rate, bromide, sulfate, nitrate, phosphate, molybdate, and chromate. Area,
+surface-finish, and scan-rate additions reduced the leading rule's mean fold
+Spearman and were rejected. The retained extension uses bromide and a
+sulfate-nitrate ratio. Phosphate, molybdate, and chromate were omitted because
+their fitted contribution was small and did not improve the compact rule.
+
+The first new rule combines
+
+\[
+M=\mathrm{Cr}+3.3\,\mathrm{Mo}+16\,\mathrm{N}
+\]
+
+with the existing coupled environmental-breakdown structure and a
+susceptibility penalty proportional to
+
+\[
+\sqrt{\max(\mathrm{Mn},0)\max(\mathrm{S},0)}.
+\]
+
+Bulk Mn and S are only a proxy for MnS inclusions. The second new rule replaces
+chloride by the heuristic effective halide
+
+\[
+H=\mathrm{Cl}+0.5\,\mathrm{Br}
+\]
+
+and adds
+
+\[
+\log_{10}\left(1+
+\frac{\mathrm{SO_4}+\mathrm{NO_3}}{H+10^{-5}}\right).
+\]
+
+The 0.5 bromide factor is a dataset-screening heuristic, not a universal
+chemical equivalence. Literature and limitations for all added terms are
+recorded in
+[`literature_basis.md`](corrosion_datasets/analysis/soccol_target_rules_v1/literature_basis.md).
+
+Seven adapted EPIT families and the two new Soccol families were promoted for
+synthetic target generation:
+
+| Promoted family | Mean fold Spearman | Pooled OOF Spearman |
+| --- | ---: | ---: |
+| `pren_n_linear` | 0.4633 | 0.4551 |
+| `cr_mow_n_synergy` | 0.4947 | 0.4885 |
+| `threshold_saturation` | 0.4596 | 0.4455 |
+| `pren_n_improved_environment` | 0.4597 | 0.4637 |
+| `mo_n_acid_repassivation` | 0.4599 | 0.4658 |
+| `mns_inclusion_penalty` | 0.4980 | 0.4972 |
+| `coupled_breakdown` | 0.5028 | 0.4923 |
+| `pren_n_coupled_mns` | 0.5542 | 0.5340 |
+| `pren_n_coupled_mns_weak_anions` | **0.5866** | **0.5712** |
+
+These are direct analytical-rule development scores, not trained-transformer
+or final-test results. `pren_n_coupled_mns` improves four of five folds over
+the best old rule. The weak-anion extension improves three of five folds over
+that core new rule.
+
+The full-development coefficient center for `pren_n_coupled_mns` is 0.0274
+material passivity, 0.5726 coupled breakdown, 0.1500 acidic-pH aggressiveness,
+and 0.2500 Mn-S susceptibility. For
+`pren_n_coupled_mns_weak_anions`, the corresponding weights are 0.0027,
+0.5468, 0.1500, 0.2080, and 0.0925 for the weak-inhibitor ratio. Each vector is
+nonnegative, respects recorded upper bounds, and sums to one.
+
+The comparison outputs are under
+[`soccol_target_rules_v1/`](corrosion_datasets/analysis/soccol_target_rules_v1/),
+and the nine production artifacts under
+[`soccol_pipeline/target_rules_v1/`](corrosion_datasets/analysis/soccol_pipeline/target_rules_v1/).
+The final paragraph of the comparison directory's `README.md` still says the
+production registry and generator were unchanged. That sentence describes the
+earlier screening snapshot and is now stale: the two new families have been
+promoted and the Soccol production registry is active. The frozen production
+artifacts and implementation are authoritative.
+
+### Target-free empirical feature profile and synthetic generation
+
+The immutable
+[`soccol_pitting_features_v1`](src/tabicl/prior/assets/soccol_pitting_features_v1.json)
+profile contains the 37 processed input columns for all 4,027 regression rows,
+stable row identifiers, preprocessing metadata, and hashes. It contains no
+`E_pit`, `event`, or other target column.
+
+For each synthetic row, the generator samples a composition-template row and
+an environment/procedure row independently with replacement. Positive
+composition entries receive multiplicative log-normal perturbations; exact
+zeros remain zero. The 13-component composition is then closed to 100 wt.%
+when its total is positive, and the independently sampled context supplies the
+remaining 24 columns.
+
+The complete target-free profile supplies synthetic continuous means and
+categorical mappings. Real fold and final-test evaluation does not reuse that
+state: it fits means and mappings from the current labeled context rows.
+
+The profile includes feature covariates from the 805 final-test rows. The
+holdout is therefore target-blind, not completely covariate-blind. Final-test
+targets do not enter rule fitting, coefficient calibration, rule probabilities,
+Optuna objectives, checkpoint selection, or the feature profile, but final-test
+feature values contribute to the empirical sampling distribution. This matches
+the earlier EPIT empirical generator and must be disclosed with any result.
+
+For each informed synthetic task, one of the nine families is sampled with
+probability proportional to its positive development score. The standardized
+analytical response is mixed with the generic MLP/tree SCM response using the
+searched `lambda`, followed by final standardization. Each nonzero rule
+coefficient receives the v8 multiplier variation `Uniform(0.2, 1.8)`, the
+vector is renormalized, rule-specific upper-bound violations are rejected, and
+zero coefficients remain zero. The dedicated coefficient seed is 42.
+
+### Soccol Optuna search
+
+The dedicated launcher preserves the previous search protocol:
+
+| Setting | Soccol value |
+| --- | --- |
+| Trials requested by one invocation | 50 |
+| Startup trials | 10 |
+| Training steps per trial | 1,000 |
+| Scheduler horizon | 10,000 |
+| Development validation folds | 5 |
+| Estimators per fold | 8 |
+| Coefficient variation | 0.8, seed 42 |
+| Objective | Mean development-fold Spearman |
+
+The four searched quantities are informed-task probability
+`rho ∈ {0.25, 0.50, 0.75, 1.00}`, MLP share within informed SCMs
+`{0, 0.25, 0.50, 0.70, 0.75, 1}`, analytical-target mixture
+`lambda ∈ [0,1]`, and composition perturbation strength `tau ∈ [0,0.15]`.
+Magpie is fixed off, direct feature-block coupling is zero, and the legacy
+Dirichlet material mixture is disabled.
+
+The pipeline fingerprint binds the processed-data hash, split manifest and
+lock, feature-profile hashes, nine rule artifacts, scores, coefficients,
+bounds, search space, and evaluation policy. Workers with a different identity
+cannot silently join the study.
+
+`--n-trials 50` is passed to Optuna per launcher invocation; it is not a global
+study cap. Two concurrent launchers would each request 50 trials. Workers must
+therefore be coordinated or given divided counts if the intended global total
+is exactly 50.
+
+Generated worker-local trial and development-evaluation directories below
+`corrosion_datasets/analysis/soccol_pipeline/optuna_v1/` are ignored by version
+control. Previously tracked examples were removed from the index without
+deleting the running jobs' files from disk. They are operational output, not
+frozen source artifacts.
+
+The study has produced partial development results, but the planned search and
+frozen final workflow are not complete. No interim trial is presented here as
+the selected configuration, and no final-test performance is reported.
+
+### Compatibility correction and final workflow
+
+The implementation audit found that the two Soccol-only rules had initially
+been inserted into the shared EPIT rule registry. That made the legacy EPIT
+evaluator capable of selecting formulas requiring Soccol-only ion columns.
+The registry was split as follows:
+
+- `EPIT_TARGET_RULE_COEFFICIENTS` contains only legacy-schema-compatible rules;
+- `SOCCOL_TARGET_RULE_COEFFICIENTS` extends it with the two Soccol families;
+- the EPIT launcher selects the EPIT registry; and
+- the Soccol launcher explicitly selects the Soccol registry.
+
+This restores legacy behavior while retaining all nine Soccol rules.
+
+The final workflow now has separate Soccol entry points:
+
+1. [`train_final.py`](scripts/soccol_pipeline/train_final.py) verifies the
+   study fingerprint and selected trial, reconstructs the effective settings,
+   trains for 10,000 steps, and evaluates permanent checkpoints from step 500
+   through 10,000 at 500-step intervals on the five development folds.
+2. The checkpoint with the highest mean development-fold Spearman is frozen
+   with its study, rule, split, command, checkpoint, and inference identities.
+3. [`evaluate_final.py`](scripts/soccol_pipeline/evaluate_final.py) uses all
+   3,222 development rows as labeled context and predicts the 805 final-test
+   rows once with 37 features, eight estimators, median output, no feature
+   shuffle, no power normalization, and no uncertainty inference.
+
+The associated Slurm entry points are
+[`train_final.sbatch`](scripts/soccol_pipeline/train_final.sbatch) and
+[`evaluate_final.sbatch`](scripts/soccol_pipeline/evaluate_final.sbatch).
+Soccol manifests and evaluation output use
+`corrosion_datasets/analysis/soccol_pipeline/final_v1/`; checkpoints use
+`checkpoints/soccol_pipeline_final_v1/`. These roots do not overwrite EPIT
+outputs.
+
+The only required change to the shared old final evaluator was to replace its
+embedded 608/152 EPIT row-count assertions with configurable constants. Their
+defaults remain 608/152, so the old pipeline behaves as before. The Soccol
+wrapper overrides them with 3,222/805 and sets the model label to
+`final_soccol_model`; the old inference policy was otherwise left unchanged.
+
+The final Soccol workflow is implemented and tested but has not been executed
+on the final-test labels. There is therefore no Soccol held-out result yet.
+
+### Reproducibility checks and limits
+
+The processed tables, split, rule comparison, target-free profile, and promoted
+rule artifacts have reproducible builders. Rebuilding the profile CSV and
+rule artifacts reproduced the frozen versions byte for byte. The NumPy
+calibration and Torch synthetic formulas were also compared for every promoted
+family on all development rows: correlations were 1.0 and maximum absolute
+differences were below `1.3e-7`.
+
+Tests cover the 37-column schema, finite synthetic sampling, context-only
+preprocessing, rule-registry separation, grouped final split, real rule
+artifact loading, the Soccol final wrappers, and unchanged legacy EPIT
+behavior. At this implementation checkpoint the complete repository suite
+passed 303 tests with two skips.
+
+The result must retain these qualifications:
+
+- zero-filled composition blanks and approximate Fe balances are benchmark
+  encodings, not recovered or certified alloy chemistry;
+- the 13-element representation omits source-specific elements for which the
+  workbook has no column;
+- ordinary regression conditions on actual-pitting events and does not model
+  `event=0` competing breakdowns as censored observations;
+- composition grouping prevents close-alloy leakage, but 37 publications occur
+  in both outer partitions;
+- final-test covariates, though not targets, contribute to the empirical
+  feature profile; and
+- possible overlap with the older Nyby collection must be removed or audited
+  before Soccol is called a fully independent external-validation dataset.
+
+Soccol is therefore a second grouped pitting-potential prediction task with an
+untouched target holdout, not yet a completed external-validation result.
