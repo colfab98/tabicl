@@ -1,0 +1,45 @@
+{
+  "coefficient_upper_bounds": {
+    "acidic_ph_aggressiveness": 0.15,
+    "coupled_environment_breakdown": 0.8,
+    "material_passivity": 1.0,
+    "mns_inclusion_susceptibility": 0.25
+  },
+  "development_rows": 3222,
+  "direct_evaluation": {
+    "maximum_fold_spearman": 0.7623111352966376,
+    "mean_fold_spearman": 0.554192823086048,
+    "mean_standardized_mae": 0.757920150152538,
+    "mean_standardized_rmse": 1.0066413105429999,
+    "minimum_fold_spearman": 0.4138195335842073,
+    "pooled_oof_spearman": 0.5340135834624404,
+    "rows": 3222,
+    "std_fold_spearman": 0.12997015772980047
+  },
+  "final_development_calibration": {
+    "coefficients": {
+      "acidic_ph_aggressiveness": 0.15,
+      "coupled_environment_breakdown": 0.5725880844501507,
+      "material_passivity": 0.027411915549849303,
+      "mns_inclusion_susceptibility": 0.25
+    },
+    "objective": 0.8244934371049291
+  },
+  "final_test_targets_used": false,
+  "formula": {
+    "halide": "CP_Cl",
+    "material": "Cr + 3.3*Mo + 16*N",
+    "terms": [
+      "material_passivity",
+      "coupled_environment_breakdown",
+      "acidic_ph_aggressiveness",
+      "mns_inclusion_susceptibility"
+    ]
+  },
+  "rule_family": "pren_n_coupled_mns",
+  "schema_version": "epit_target_rule_v3",
+  "source_rule_name": "new_pren_n_coupled_mns",
+  "source_sha256": "280f8ff3f89c5d47b22f46a483b9a67eb612a9cbbe0a3394685a0e3da3a0200c",
+  "split_lock_sha256": "f1b4c0662d67df46a38561e2b6393aae5b1811dd6f3dceebe7fc560b3a41bcf9",
+  "split_manifest_sha256": "bc06162ebb2009a92949522ac5e3d5d256837ddd65a08b2d347c5adf8355cdbb"
+}

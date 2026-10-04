@@ -240,14 +240,19 @@ def main() -> None:
     write_csv(survival_path, survival_rows, output_fields)
 
 
-    primary_numeric_features = composition_fields + missing_fields + [
+    continuous_features = [
         "Prep_grinding_grit", "Prep_Ra_micron", "Prep_pH", "Prep_redox",
-        "Prep_time", "CP_time", "CP_temp",
-        "CP_pH", "CP_Cl", "CP_Br", "CP_OH", "CP_SO4", "CP_CO3",
-        "CP_NO3", "CP_PO4", "CP_MoO4", "CP_CrO4", "CP_ion_other",
-        "Test_area_cm2", "scan_rate", "material_is_Fe_based",
-        "material_is_Ni_based", "material_scope_needs_review",
+        "Prep_time", "CP_time", "CP_temp", "CP_pH", "Test_area_cm2",
+        "scan_rate",
     ]
+    ion_features = [
+        "CP_Cl", "CP_Br", "CP_OH", "CP_SO4", "CP_CO3", "CP_NO3",
+        "CP_PO4", "CP_MoO4", "CP_CrO4", "CP_ion_other",
+    ]
+    categorical_features = [
+        "Prep_medium", "CP_aeration", "CP_agitation", "CP_anions_info",
+    ]
+    primary_numeric_features = composition_fields + continuous_features + ion_features
     feature_manifest = {
         "primary_regression_target": "E_pit",
         "target_unit": "mV_vs_AgAgCl_3M_KCl",
@@ -255,16 +260,16 @@ def main() -> None:
         "survival_time_or_threshold": "E_pit",
         "survival_event": "event",
         "composition_features_zero_filled": composition_fields,
-        "composition_missingness_features": missing_fields,
+        "composition_missingness_features": [],
+        "composition_missingness_columns_retained_for_audit": missing_fields,
         "primary_numeric_features": primary_numeric_features,
-        "primary_categorical_features": ["CP_aeration", "CP_agitation"],
-        "optional_categorical_features": ["row_material_family"],
-        "train_fold_numeric_imputation_required": [
-            feature for feature in primary_numeric_features
-            if feature not in composition_fields + missing_fields + [
-                "material_is_Fe_based", "material_is_Ni_based", "material_scope_needs_review"
-            ]
-        ],
+        "primary_categorical_features": categorical_features,
+        "model_input_columns": primary_numeric_features + categorical_features,
+        "model_input_count": len(primary_numeric_features) + len(categorical_features),
+        "train_fold_numeric_imputation_required": continuous_features,
+        "zero_fill_if_blank": composition_fields + ion_features,
+        "train_fold_categorical_encoding_required": categorical_features,
+        "categorical_missing_and_unseen_code": -1,
         "audit_only_not_predictors": [
             "label", "source", "ID", "alloy_designation", "raw_workbook_row",
             "source_review_status", "source_classification_confidence",
@@ -272,14 +277,16 @@ def main() -> None:
             "regression_eligible", "survival_eligible", "Ti_repair_applied",
             "composition_reported_count", "composition_sum_without_Fe_wt_pct",
             "Fe_is_approximate", "Fe_balance_basis", "Fe_is_largest_component",
+            "row_material_family", "material_is_Fe_based", "material_is_Ni_based",
+            "material_scope_needs_review", *missing_fields,
         ],
         "excluded_from_primary_predictors": {
             "E_corr": "same-experiment electrochemical response; exclude from primary ex-ante prediction task",
             "event": "target/censoring status",
-            "Prep_medium": "free text requiring a separately frozen encoding",
-            "CP_anions_info": "free text requiring a separately frozen encoding",
         },
-        "missing_environment_policy": "preserve blanks; fit numeric imputation and categorical missing-value handling/encoding on the training split only",
+        "missing_environment_policy": "zero-fill ion blanks; fit continuous means and categorical mappings on context rows only",
+        "real_compositions_renormalized": False,
+        "missingness_indicator_predictors": False,
     }
     feature_path.write_text(json.dumps(feature_manifest, indent=2) + "\n", encoding="utf-8")
 

@@ -53,6 +53,13 @@ from tabicl.prior.epit_schema import (
     EPIT_COMPOSITION_CLOSURE_TOLERANCE_WT_PERCENT,
     EPIT_COMPOSITION_COLUMNS,
 )
+from tabicl.prior.soccol_schema import (
+    SOCCOL_CATEGORICAL_COLUMNS,
+    SOCCOL_COMPOSITION_COLUMNS,
+    SOCCOL_CONTINUOUS_COLUMNS,
+    SOCCOL_FEATURE_COLUMNS,
+    SOCCOL_ION_COLUMNS,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -65,6 +72,7 @@ from analyze_structure import Table, clean_name, load_all_tables  # noqa: E402
 
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "corrosion_datasets" / "analysis" / "eval_results"
 EPIT_PIPELINE_TASK_ID = "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg"
+SOCCOL_PIPELINE_TASK_ID = "soccol_pitting_potential__event1__epit_mv_agagcl_3m_kcl"
 DEFAULT_FEATURE_GROUPS = (
     "material",
     "environment",
@@ -1517,6 +1525,56 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _make_soccol_pipeline_task(manifest_path: Path) -> EvalTask:
+    """Build the approved 37-feature Soccol task in frozen row order."""
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    dataset_meta = manifest.get("dataset", {})
+    source_path = REPO_ROOT / str(dataset_meta.get("source_file", ""))
+    if not source_path.is_file():
+        raise FileNotFoundError(f"Soccol source file not found: {source_path}")
+    if _sha256_file(source_path) != str(dataset_meta.get("source_sha256", "")):
+        raise RuntimeError("Soccol source file changed after the split was frozen.")
+    data = pd.read_csv(source_path)
+    expected_rows = int(dataset_meta.get("usable_rows", -1))
+    if len(data) != expected_rows:
+        raise RuntimeError("Soccol evaluator row count does not match the split manifest.")
+    missing = sorted(set(SOCCOL_FEATURE_COLUMNS) - set(data.columns))
+    if missing:
+        raise RuntimeError(f"Soccol model-input columns are missing: {missing}")
+    target = str(dataset_meta.get("target_column", ""))
+    y = pd.to_numeric(data[target], errors="coerce")
+    if y.isna().any():
+        raise RuntimeError("Soccol regression target contains missing values.")
+    return EvalTask(
+        task_id=SOCCOL_PIPELINE_TASK_ID,
+        dataset="soccol_pitting_potential",
+        table="soccol_regression_event1",
+        target=target,
+        threshold=math.nan,
+        target_binning="continuous",
+        target_bins=0,
+        bin_edges=[],
+        class_labels=[],
+        class_counts={},
+        X=data.loc[:, SOCCOL_FEATURE_COLUMNS].copy(),
+        y=y,
+        y_ordinal=pd.Series(np.zeros(len(data), dtype=int)),
+        task_family="normal_corrosion",
+        feature_groups_used=["material", "environment", "process_history"],
+        feature_group_counts={
+            "material": len(SOCCOL_COMPOSITION_COLUMNS),
+            "environment": len(SOCCOL_CONTINUOUS_COLUMNS) + len(SOCCOL_ION_COLUMNS),
+            "process_history": len(SOCCOL_CATEGORICAL_COLUMNS),
+        },
+        dropped_feature_columns=[],
+        quality_flags=[],
+        split_groups=None,
+        split_strategy="soccol_frozen_composition_group",
+        include_in_summary=True,
+        summary_exclusion_reason="",
+    )
+
+
 def _load_epit_pipeline_indices(
     tasks: list[EvalTask],
     *,
@@ -1526,7 +1584,7 @@ def _load_epit_pipeline_indices(
     manifest_path = manifest_path.expanduser().resolve()
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest_schema = manifest.get("schema_version")
-    if manifest_schema == "epit_split_manifest_v2":
+    if manifest_schema in {"epit_split_manifest_v2", "soccol_composition_split_manifest_v1"}:
         # Keep the general corrosion evaluator unchanged unless the frozen v2
         # EPIT path is explicitly requested. Module execution and direct
         # script execution expose the sibling package under different names.
@@ -1535,11 +1593,20 @@ def _load_epit_pipeline_indices(
         else:
             from epit_pipeline.artifact_hashes import load_frozen_split
 
-        manifest = load_frozen_split(manifest_path).manifest
+        manifest = load_frozen_split(
+            manifest_path,
+            expected_manifest_schema=str(manifest_schema),
+        ).manifest
     elif manifest_schema != "epit_split_manifest_v1":
         raise RuntimeError("Unsupported EPIT split manifest schema.")
     dataset_meta = manifest.get("dataset", {})
-    if dataset_meta.get("task_id") != EPIT_PIPELINE_TASK_ID:
+    expected_task_id = (
+        SOCCOL_PIPELINE_TASK_ID
+        if manifest_schema == "soccol_composition_split_manifest_v1"
+        else EPIT_PIPELINE_TASK_ID
+    )
+    manifest_task_id = dataset_meta.get("task_id", expected_task_id)
+    if manifest_task_id != expected_task_id:
         raise RuntimeError("EPIT split manifest task does not match the evaluator.")
     source_path = REPO_ROOT / str(dataset_meta.get("source_file", ""))
     if not source_path.is_file():
@@ -1547,7 +1614,7 @@ def _load_epit_pipeline_indices(
     if _sha256_file(source_path) != str(dataset_meta.get("source_sha256", "")):
         raise RuntimeError("EPIT source file changed after the split was created.")
 
-    matching = [task for task in tasks if task.task_id == EPIT_PIPELINE_TASK_ID]
+    matching = [task for task in tasks if task.task_id == expected_task_id]
     if len(matching) != 1:
         raise RuntimeError(
             f"Expected exactly one EPIT task, found {len(matching)}."
@@ -1610,11 +1677,16 @@ def apply_epit_pipeline_fold(
         int(record["task_row_index"]): record
         for record in manifest.get("rows", [])
     }
+    fold_field = (
+        "development_validation_fold"
+        if manifest.get("schema_version") == "soccol_composition_split_manifest_v1"
+        else "optuna_validation_fold"
+    )
     validation_global = np.asarray(
         [
             index
             for index in development_global
-            if int(by_index[int(index)]["optuna_validation_fold"])
+            if int(by_index[int(index)][fold_field])
             == int(validation_fold)
         ],
         dtype=int,
@@ -1677,6 +1749,16 @@ def slugify(text: str) -> str:
 
 
 def make_tasks(args: argparse.Namespace) -> list[EvalTask]:
+    if args.epit_split_manifest is not None:
+        manifest_path = args.epit_split_manifest.expanduser().resolve()
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if manifest.get("schema_version") == "soccol_composition_split_manifest_v1":
+            task = _make_soccol_pipeline_task(manifest_path)
+            if args.dataset and task.dataset not in set(args.dataset):
+                return []
+            if args.task and task.task_id not in set(args.task):
+                return []
+            return [task]
     tables = load_all_tables()
     feature_groups = list(DEFAULT_FEATURE_GROUPS)
     if args.include_electrochem_features:
@@ -2222,6 +2304,40 @@ def augment_pitting_magpie_split(
     )
 
 
+def preprocess_soccol_split(
+    X_train: pd.DataFrame,
+    X_test: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Apply the approved Soccol encodings using context rows only."""
+    train = X_train.loc[:, SOCCOL_FEATURE_COLUMNS].copy()
+    test = X_test.loc[:, SOCCOL_FEATURE_COLUMNS].copy()
+    for column in (*SOCCOL_COMPOSITION_COLUMNS, *SOCCOL_ION_COLUMNS):
+        train[column] = pd.to_numeric(train[column], errors="coerce").fillna(0.0)
+        test[column] = pd.to_numeric(test[column], errors="coerce").fillna(0.0)
+    for column in SOCCOL_CONTINUOUS_COLUMNS:
+        train_values = pd.to_numeric(train[column], errors="coerce")
+        test_values = pd.to_numeric(test[column], errors="coerce")
+        mean = float(train_values.mean())
+        if not math.isfinite(mean):
+            raise RuntimeError(
+                f"Soccol context rows cannot fit a finite mean for {column}."
+            )
+        train[column] = train_values.fillna(mean)
+        test[column] = test_values.fillna(mean)
+    for column in SOCCOL_CATEGORICAL_COLUMNS:
+        train_values = train[column].astype("string").str.strip()
+        test_values = test[column].astype("string").str.strip()
+        categories = sorted(str(value) for value in train_values.dropna().unique())
+        mapping = {value: index for index, value in enumerate(categories)}
+        train[column] = train_values.map(mapping).fillna(-1).astype(float)
+        test[column] = test_values.map(mapping).fillna(-1).astype(float)
+    train = train.astype(float)
+    test = test.astype(float)
+    if not np.isfinite(train.to_numpy()).all() or not np.isfinite(test.to_numpy()).all():
+        raise RuntimeError("Soccol preprocessing produced non-finite model inputs.")
+    return train, test
+
+
 def evaluate_estimator(
     *,
     model_label: str,
@@ -2253,6 +2369,8 @@ def evaluate_estimator(
         split_strategy = split.split_strategy
         X_train = task.X.iloc[train_index].reset_index(drop=True)
         X_test = task.X.iloc[test_index].reset_index(drop=True)
+        if task.task_id == SOCCOL_PIPELINE_TASK_ID:
+            X_train, X_test = preprocess_soccol_split(X_train, X_test)
         if pitting_magpie_features:
             X_train, X_test = augment_pitting_magpie_split(X_train, X_test)
         y_train = y_values.iloc[train_index].reset_index(drop=True)

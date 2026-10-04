@@ -74,9 +74,9 @@ Explicit zeros and blanks coexist for the same element in two sources:
 - `1994Carroll`: Mo has blanks, explicit zeros, and positive values.
 - `1995Malik`: N has blanks, explicit zeros, and positive values.
 
-Zero-filling is acceptable as a declared benchmark encoding for the current
-model comparison. It should be accompanied by missingness indicators and must
-not be described as recovered chemistry.
+Zero-filling is the declared benchmark encoding for the current model
+comparison and must not be described as recovered chemistry. The retained
+missingness columns are audit-only and are excluded from the model.
 
 ## Material scope and source review
 
@@ -145,6 +145,6 @@ The optimizer balances EPIT deciles, material family, composition isolation, tem
 
 The frozen artifacts are in `processed/splits_v1/`. `split_assignments.csv` hides final-test EPIT values, while `split_lock.json` binds the input table, manifest, assignments, and report by hash.
 
-The processed composition contains `Fe` plus the 12 workbook elements and one missingness indicator for every composition field. A computed `Fe` value is the remainder to 100 wt% after the reported/zero-filled fields; `Fe_is_approximate=1` records that assumption. It does not prove that Fe was measured or is the largest alloy component. Rows that do not support this calculation use `Fe=0, Fe_missing=1`.
+The model composition contains `Fe` plus the 12 workbook elements. The processed table also retains one audit-only missingness column for every composition field. A computed `Fe` value is the remainder to 100 wt% after the reported/zero-filled fields; `Fe_is_approximate=1` records that assumption. It does not prove that Fe was measured or is the largest alloy component. Rows that do not support this calculation use `Fe=0, Fe_missing=1`.
 
-`CP_aeration` and `CP_agitation` are categorical. The remaining recommended environmental/procedure predictors are numeric. Their blanks are preserved for context-only imputation. See `processed/feature_manifest.json` for the exact predictor and audit roles.
+`Prep_medium`, `CP_aeration`, `CP_agitation`, and `CP_anions_info` are categorical. Ten continuous environment/procedure columns use context-only mean imputation; ten ion columns use zero for blanks. See `processed/feature_manifest.json` for the exact 37 predictors and audit roles.

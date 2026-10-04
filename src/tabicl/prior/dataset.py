@@ -48,6 +48,16 @@ from .epit_composition_profile import (
 from .epit_feature_generator import EpitFeatureBatch, sample_epit_feature_rows
 from .epit_feature_profile import EPIT_FEATURE_PROFILE, load_epit_feature_profile
 from .epit_schema import EPIT_COMPOSITION_INDEX, epit_feature_slices
+from .soccol_feature_generator import SoccolFeatureBatch, sample_soccol_feature_rows
+from .soccol_feature_profile import load_soccol_feature_profile
+from .soccol_schema import (
+    SOCCOL_BASE_FEATURE_COUNT,
+    SOCCOL_CATEGORICAL_COLUMNS,
+    SOCCOL_COMPOSITION_COLUMNS,
+    SOCCOL_FEATURE_INDEX,
+    SOCCOL_FEATURE_PROFILE,
+    soccol_feature_slices,
+)
 from .magpie_features import (
     EPIT_BASE_FEATURE_COUNT,
     EPIT_MATERIAL_FEATURE_COUNT,
@@ -124,6 +134,19 @@ EPIT_TARGET_RULE_COEFFICIENTS: Dict[str, Dict[str, float]] = {
         "material_passivity": 0.400022445097356,
         "coupled_environment_breakdown": 0.502545401041832,
         "acidic_ph_aggressiveness": 0.09743215386081203,
+    },
+    "pren_n_coupled_mns": {
+        "material_passivity": 0.15,
+        "coupled_environment_breakdown": 0.45,
+        "acidic_ph_aggressiveness": 0.15,
+        "mns_inclusion_susceptibility": 0.25,
+    },
+    "pren_n_coupled_mns_weak_anions": {
+        "material_passivity": 0.15,
+        "coupled_environment_breakdown": 0.35,
+        "acidic_ph_aggressiveness": 0.15,
+        "mns_inclusion_susceptibility": 0.20,
+        "weak_inhibitor_ratio": 0.15,
     },
     "fe_ni_cr_threshold": {
         "material_passivity": 0.5110080270672297,
@@ -1195,16 +1218,20 @@ class SCMPrior(Prior):
             feature_profile_name = str(
                 self.fixed_hp.get("pitting_feature_profile", EPIT_FEATURE_PROFILE)
             )
-            feature_profile = load_epit_feature_profile(
-                feature_profile_name,
-                composition_profile_name=str(
-                    self.fixed_hp.get(
-                        "pitting_composition_profile",
-                        EPIT_COMPOSITION_PROFILE,
-                    )
-                ),
-            )
-            process_count = int(feature_profile.metadata["evaluator_preprocessing"]["category_count"])
+            if feature_profile_name == SOCCOL_FEATURE_PROFILE:
+                feature_profile = load_soccol_feature_profile(feature_profile_name)
+                process_count = int(feature_profile.metadata["max_process_category_count"])
+            else:
+                feature_profile = load_epit_feature_profile(
+                    feature_profile_name,
+                    composition_profile_name=str(
+                        self.fixed_hp.get(
+                            "pitting_composition_profile",
+                            EPIT_COMPOSITION_PROFILE,
+                        )
+                    ),
+                )
+                process_count = int(feature_profile.metadata["evaluator_preprocessing"]["category_count"])
         elif process_count is None:
             process_values = X[:, process_slice.start].detach()
             process_count = int(torch.nan_to_num(process_values, nan=0.0).long().clamp(min=0).max().item()) + 1
@@ -1316,6 +1343,15 @@ class SCMPrior(Prior):
                 ),
             }
         )
+        if str(self.fixed_hp.get("pitting_feature_profile", "")) == SOCCOL_FEATURE_PROFILE:
+            rule.update(
+                {
+                    "soccol_schema": True,
+                    "temperature_col": SOCCOL_FEATURE_INDEX["CP_temp"],
+                    "chloride_col": SOCCOL_FEATURE_INDEX["CP_Cl"],
+                    "ph_col": SOCCOL_FEATURE_INDEX["CP_pH"],
+                }
+            )
         return rule
 
     def _fixed_epit_environment_values_tensor(
@@ -1365,6 +1401,8 @@ class SCMPrior(Prior):
         rule: Dict[str, Any],
         environment_mode: str,
     ) -> Tuple[Tensor, Tensor]:
+        if bool(rule.get("soccol_schema", False)):
+            return self._evaluate_soccol_target_rule_tensor(X, rule)
         family = str(rule["target_rule_family"])
         coefficients = {
             str(name): float(value)
@@ -1550,6 +1588,157 @@ class SCMPrior(Prior):
         if torch.std(epit_drive.float(), unbiased=False) > 1e-6:
             mix_weight = float(rule.get("target_mix_weight", 0.0))
             target_component = mix_weight * standardized(epit_drive)
+        else:
+            target_component = torch.zeros_like(epit_drive)
+        return target_component, epit_drive
+
+    def _evaluate_soccol_target_rule_tensor(
+        self,
+        X: Tensor,
+        rule: Dict[str, Any],
+    ) -> Tuple[Tensor, Tensor]:
+        """Evaluate the nine Soccol-calibrated formulas on the 37 raw features."""
+        family = str(rule["target_rule_family"])
+        coefficients = {
+            str(name): float(value)
+            for name, value in rule["target_rule_coefficients"].items()
+        }
+
+        def value(name: str) -> Tensor:
+            return torch.nan_to_num(
+                X[:, SOCCOL_FEATURE_INDEX[name]],
+                nan=0.0,
+                posinf=0.0,
+                neginf=0.0,
+            )
+
+        chromium = value("Cr").clamp_min(0.0)
+        molybdenum = value("Mo").clamp_min(0.0)
+        nitrogen = value("N")
+        manganese = value("Mn").clamp_min(0.0)
+        sulfur = value("S").clamp_min(0.0)
+        temperature = value("CP_temp")
+        ph = value("CP_pH")
+        chloride = value("CP_Cl").clamp_min(0.0)
+        bromide = value("CP_Br").clamp_min(0.0)
+
+        if family == "coupled_breakdown":
+            material = chromium + 3.25 * molybdenum
+        elif family == "cr_mow_n_synergy":
+            material = (
+                chromium
+                + 3.3 * molybdenum
+                + 16.0 * nitrogen
+                + torch.sqrt(chromium * molybdenum)
+            )
+        elif family == "threshold_saturation":
+            material = torch.sigmoid((chromium - 12.0) / 2.0) + torch.log1p(molybdenum)
+        else:
+            material = chromium + 3.3 * molybdenum + 16.0 * nitrogen
+
+        effective_halide = (
+            chloride + 0.5 * bromide
+            if family == "pren_n_coupled_mns_weak_anions"
+            else chloride
+        )
+        material_z = self._standardize_signal(material)
+        halide_z = self._standardize_signal(
+            torch.log10(effective_halide.clamp_min(1e-12))
+        )
+        halide_signal = torch.sigmoid(halide_z)
+        temperature_signal = torch.sigmoid((temperature - 50.0) / 10.0)
+        acidic_ph = torch.sigmoid((6.5 - ph) / 1.0)
+
+        def standardized(values: Tensor) -> Tensor:
+            return self._standardize_signal(values)
+
+        terms: Dict[str, Tensor] = {
+            "material_passivity": standardized(torch.tanh(material_z)),
+        }
+        historical = {
+            "pren_n_linear",
+            "cr_mow_n_synergy",
+            "threshold_saturation",
+        }
+        separate_environment = {
+            "pren_n_improved_environment",
+            "mo_n_acid_repassivation",
+            "mns_inclusion_penalty",
+        }
+        coupled = {
+            "coupled_breakdown",
+            "pren_n_coupled_mns",
+            "pren_n_coupled_mns_weak_anions",
+        }
+        if family in historical:
+            temperature_z = standardized(temperature)
+            ph_distance_z = standardized(torch.abs(ph - 7.25))
+            environment_z = standardized(
+                0.075 * temperature_z
+                + 0.925 * halide_z
+                + 0.115 * ph_distance_z
+            )
+            terms.update(
+                {
+                    "environment_aggressiveness": standardized(-torch.sigmoid(environment_z)),
+                    "material_chloride_interaction": standardized(
+                        -torch.sigmoid(-material_z) * halide_signal
+                    ),
+                }
+            )
+            if "temperature_chloride_interaction" in coefficients:
+                terms["temperature_chloride_interaction"] = standardized(
+                    -torch.sigmoid(temperature_z) * halide_signal
+                )
+        elif family in separate_environment:
+            terms.update(
+                {
+                    "log_chloride_aggressiveness": standardized(-halide_signal),
+                    "high_temperature_aggressiveness": standardized(-temperature_signal),
+                    "temperature_chloride_interaction": standardized(
+                        -temperature_signal * halide_signal
+                    ),
+                    "acidic_ph_aggressiveness": standardized(-acidic_ph),
+                }
+            )
+            if family == "mo_n_acid_repassivation":
+                terms["mo_n_acid_repassivation"] = standardized(
+                    torch.sqrt((molybdenum * nitrogen).clamp_min(0.0)) * acidic_ph
+                )
+            if family == "mns_inclusion_penalty":
+                terms["mns_inclusion_susceptibility"] = standardized(
+                    -torch.sqrt((manganese * sulfur).clamp_min(0.0))
+                )
+        elif family in coupled:
+            temperature_z = standardized(temperature_signal)
+            joint_z = standardized(temperature_signal * halide_signal)
+            aggressiveness = 0.65 * halide_z + 0.25 * temperature_z + 0.10 * joint_z
+            breakdown = torch.sigmoid(aggressiveness - 0.75 * material_z)
+            terms.update(
+                {
+                    "coupled_environment_breakdown": standardized(-breakdown),
+                    "acidic_ph_aggressiveness": standardized(-acidic_ph),
+                }
+            )
+            if "mns_inclusion_susceptibility" in coefficients:
+                terms["mns_inclusion_susceptibility"] = standardized(
+                    -torch.sqrt((manganese * sulfur).clamp_min(0.0))
+                )
+            if "weak_inhibitor_ratio" in coefficients:
+                inhibitor = value("CP_SO4").clamp_min(0.0) + value("CP_NO3").clamp_min(0.0)
+                ratio = (inhibitor / (chloride + 0.5 * bromide + 1e-5)).clamp(0.0, 1e6)
+                terms["weak_inhibitor_ratio"] = standardized(torch.log10(1.0 + ratio))
+        else:
+            raise ValueError(f"Unsupported Soccol target rule {family!r}.")
+
+        missing = sorted(set(coefficients) - set(terms))
+        if missing:
+            raise ValueError(f"Soccol target rule {family!r} is missing terms: {missing}")
+        epit_drive = torch.zeros(X.shape[0], device=X.device, dtype=X.dtype)
+        for name, coefficient in coefficients.items():
+            epit_drive = epit_drive + coefficient * terms[name]
+        if torch.std(epit_drive.float(), unbiased=False) > 1e-6:
+            target_component = float(rule.get("target_mix_weight", 0.0)) * standardized(epit_drive)
         else:
             target_component = torch.zeros_like(epit_drive)
         return target_component, epit_drive
@@ -2893,6 +3082,10 @@ class SCMPrior(Prior):
         profile_name = str(
             self.fixed_hp.get("pitting_feature_profile", EPIT_FEATURE_PROFILE)
         )
+        if profile_name == SOCCOL_FEATURE_PROFILE:
+            return self._apply_soccol_pitting_feature_profile(
+                X, blocks, family, profile_name
+            )
         profile = load_epit_feature_profile(
             profile_name,
             composition_profile_name=str(
@@ -3014,6 +3207,74 @@ class SCMPrior(Prior):
         self.last_pitting_material_family_ids = family_ids.detach().cpu()
         return X, info
 
+    def _apply_soccol_pitting_feature_profile(
+        self,
+        X: Tensor,
+        blocks: Dict[str, slice],
+        family: str,
+        profile_name: str,
+    ) -> Tuple[Tensor, PittingProfileInfo]:
+        """Replace the fixed schema with target-free Soccol physical rows."""
+        if family != "normal_corrosion":
+            raise ValueError("The Soccol profile requires normal_corrosion.")
+        if X.ndim != 2 or X.shape[1] != SOCCOL_BASE_FEATURE_COUNT:
+            raise ValueError(
+                f"The Soccol profile requires exactly {SOCCOL_BASE_FEATURE_COUNT} columns."
+            )
+        expected = soccol_feature_slices()
+        for name, expected_slice in expected.items():
+            observed = blocks.get(name)
+            if observed is None or observed.stop - observed.start != expected_slice.stop - expected_slice.start:
+                raise ValueError(f"The Soccol profile has an invalid {name} block.")
+        nonempty = {
+            name for name, feature_slice in blocks.items()
+            if feature_slice.stop > feature_slice.start
+        }
+        if nonempty != set(expected):
+            raise ValueError(
+                "The Soccol profile permits only material, environment, and process blocks."
+            )
+        profile = load_soccol_feature_profile(profile_name)
+        random_seed = int(np.random.randint(0, np.iinfo(np.int32).max))
+        batch = sample_soccol_feature_rows(
+            X.shape[0],
+            profile=profile,
+            perturb_strength=float(
+                self.fixed_hp.get("pitting_composition_perturb_strength", 0.05)
+            ),
+            random_state=random_seed,
+        )
+        sampled = torch.as_tensor(batch.features.copy(), device=X.device, dtype=X.dtype)
+        X = X.clone()
+        for name, source_slice in expected.items():
+            X[:, blocks[name]] = sampled[:, source_slice]
+
+        info = PittingProfileInfo(
+            applied=True,
+            material_style="empirical_feature_profile",
+            physical_profile_applied=True,
+        )
+        for col in range(blocks["material"].start, blocks["material"].stop):
+            info.add_role("material_empirical_composition", col)
+        for name, col in zip(
+            tuple(SOCCOL_FEATURE_INDEX)[len(SOCCOL_COMPOSITION_COLUMNS):-len(SOCCOL_CATEGORICAL_COLUMNS)],
+            range(blocks["environment"].start, blocks["environment"].stop),
+            strict=True,
+        ):
+            info.add_role(f"soccol_{name}", col)
+        for name, col in zip(
+            SOCCOL_CATEGORICAL_COLUMNS,
+            range(blocks["process_history"].start, blocks["process_history"].stop),
+            strict=True,
+        ):
+            info.add_role(f"soccol_{name}", col, categorical=True)
+        family_ids = torch.zeros(X.shape[0], device=X.device, dtype=torch.long)
+        info.material_family_ids = family_ids
+        self.last_pitting_feature_batch = batch
+        self.last_pitting_composition_batch = batch.compositions
+        self.last_pitting_material_family_ids = family_ids.detach().cpu()
+        return X, info
+
     @staticmethod
     def _standardize_signal(values: Tensor) -> Tensor:
         values = torch.nan_to_num(values, nan=0.0, posinf=0.0, neginf=0.0)
@@ -3087,7 +3348,14 @@ class SCMPrior(Prior):
             if feature_batch is None
             else feature_batch.compositions.observed_compositions.shape[1]
         )
-        expected_feature_count = material_feature_count + 4
+        soccol_profile = str(
+            self.fixed_hp.get("pitting_feature_profile", "")
+        ) == SOCCOL_FEATURE_PROFILE
+        expected_feature_count = (
+            SOCCOL_BASE_FEATURE_COUNT
+            if soccol_profile
+            else material_feature_count + 4
+        )
         if X.ndim != 2 or X.shape[1] != expected_feature_count:
             raise ValueError(
                 "The empirical SCM+EPIT target requires exactly "
@@ -3121,7 +3389,11 @@ class SCMPrior(Prior):
             physical_profile_applied=True,
             material_family_ids=family_ids.to(device=X.device),
         )
-        blocks = epit_feature_slices(material_feature_count)
+        blocks = (
+            soccol_feature_slices()
+            if soccol_profile
+            else epit_feature_slices(material_feature_count)
+        )
         rule = self._sample_fixed_epit_target_rule(
             X,
             blocks,

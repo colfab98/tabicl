@@ -1,0 +1,51 @@
+{
+  "coefficient_upper_bounds": {
+    "acidic_ph_aggressiveness": 0.15,
+    "high_temperature_aggressiveness": 0.45,
+    "log_chloride_aggressiveness": 0.65,
+    "material_passivity": 1.0,
+    "mo_n_acid_repassivation": 0.3,
+    "temperature_chloride_interaction": 0.45
+  },
+  "development_rows": 3222,
+  "direct_evaluation": {
+    "maximum_fold_spearman": 0.6465381425118444,
+    "mean_fold_spearman": 0.45992350095335705,
+    "mean_standardized_mae": 0.8050335800842634,
+    "mean_standardized_rmse": 1.0521370727916792,
+    "minimum_fold_spearman": 0.3143879690993801,
+    "pooled_oof_spearman": 0.4658461065757803,
+    "rows": 3222,
+    "std_fold_spearman": 0.1400600262166607
+  },
+  "final_development_calibration": {
+    "coefficients": {
+      "acidic_ph_aggressiveness": 0.11412996729973068,
+      "high_temperature_aggressiveness": 0.024650145045465865,
+      "log_chloride_aggressiveness": 0.26947366711429727,
+      "material_passivity": 0.28001956655901517,
+      "mo_n_acid_repassivation": 0.0662580842301203,
+      "temperature_chloride_interaction": 0.24546856975137088
+    },
+    "objective": 0.7558470716797117
+  },
+  "final_test_targets_used": false,
+  "formula": {
+    "halide": "CP_Cl",
+    "material": "Cr + 3.3*Mo + 16*N",
+    "terms": [
+      "material_passivity",
+      "log_chloride_aggressiveness",
+      "high_temperature_aggressiveness",
+      "temperature_chloride_interaction",
+      "acidic_ph_aggressiveness",
+      "mo_n_acid_repassivation"
+    ]
+  },
+  "rule_family": "mo_n_acid_repassivation",
+  "schema_version": "epit_target_rule_v3",
+  "source_rule_name": "old_mo_n_acid_repassivation",
+  "source_sha256": "280f8ff3f89c5d47b22f46a483b9a67eb612a9cbbe0a3394685a0e3da3a0200c",
+  "split_lock_sha256": "f1b4c0662d67df46a38561e2b6393aae5b1811dd6f3dceebe7fc560b3a41bcf9",
+  "split_manifest_sha256": "bc06162ebb2009a92949522ac5e3d5d256837ddd65a08b2d347c5adf8355cdbb"
+}

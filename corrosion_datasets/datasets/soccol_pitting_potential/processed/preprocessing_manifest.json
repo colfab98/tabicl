@@ -5,7 +5,7 @@
   "source_registry": "corrosion_datasets/analysis/soccol_source_conventions/source_conventions.csv",
   "source_registry_sha256": "4de749294c24c9a5e442c23adcd660fe0cf9e5667e1c29c86a62c2ecff5298cb",
   "generator": "corrosion_datasets/datasets/soccol_pitting_potential/prepare_benchmark.py",
-  "generator_sha256": "25ddf15cabb69fbab4986ff008df031b13edc28bf658c77b622ff0beb11a7cce",
+  "generator_sha256": "822be9f672b031f8e85529919c1e6b72beac3b6acc982ee1b2359137afaf070d",
   "transformations": {
     "2000Russell_Ti": "24 PRE values removed, then zero-filled with Ti_missing=1",
     "composition": "C,N,Si,P,S,Ti,V,Cr,Mn,Ni,Nb,Mo blanks zero-filled with per-element missingness indicators",
@@ -52,8 +52,8 @@
     },
     "feature_manifest.json": {
       "role": "feature and target roles",
-      "size_bytes": 2986,
-      "sha256": "9c17c9f5e9d546dc2be588e98241f3557ab90954577be2429c7c0eaf63e88dbb"
+      "size_bytes": 3882,
+      "sha256": "bbb50e76e551e46f652e57657a5448f7d1c6d851e97dfcef3c7ef7737ceeea88"
     }
   }
 }

@@ -1,0 +1,42 @@
+{
+  "coefficient_upper_bounds": {
+    "acidic_ph_aggressiveness": 0.15,
+    "coupled_environment_breakdown": 0.8,
+    "material_passivity": 1.0
+  },
+  "development_rows": 3222,
+  "direct_evaluation": {
+    "maximum_fold_spearman": 0.7425667039543822,
+    "mean_fold_spearman": 0.5027933752549087,
+    "mean_standardized_mae": 0.7885963879806361,
+    "mean_standardized_rmse": 1.013193224472828,
+    "minimum_fold_spearman": 0.2738497332770341,
+    "pooled_oof_spearman": 0.49234387243217936,
+    "rows": 3222,
+    "std_fold_spearman": 0.1662572765995862
+  },
+  "final_development_calibration": {
+    "coefficients": {
+      "acidic_ph_aggressiveness": 0.15,
+      "coupled_environment_breakdown": 0.6793797403918982,
+      "material_passivity": 0.17062025960810176
+    },
+    "objective": 0.982246648961025
+  },
+  "final_test_targets_used": false,
+  "formula": {
+    "halide": "CP_Cl",
+    "material": "Cr + 3.25*Mo",
+    "terms": [
+      "material_passivity",
+      "coupled_environment_breakdown",
+      "acidic_ph_aggressiveness"
+    ]
+  },
+  "rule_family": "coupled_breakdown",
+  "schema_version": "epit_target_rule_v3",
+  "source_rule_name": "old_coupled_breakdown",
+  "source_sha256": "280f8ff3f89c5d47b22f46a483b9a67eb612a9cbbe0a3394685a0e3da3a0200c",
+  "split_lock_sha256": "f1b4c0662d67df46a38561e2b6393aae5b1811dd6f3dceebe7fc560b3a41bcf9",
+  "split_manifest_sha256": "bc06162ebb2009a92949522ac5e3d5d256837ddd65a08b2d347c5adf8355cdbb"
+}

@@ -1,0 +1,48 @@
+{
+  "coefficient_upper_bounds": {
+    "acidic_ph_aggressiveness": 0.15,
+    "high_temperature_aggressiveness": 0.45,
+    "log_chloride_aggressiveness": 0.65,
+    "material_passivity": 1.0,
+    "temperature_chloride_interaction": 0.45
+  },
+  "development_rows": 3222,
+  "direct_evaluation": {
+    "maximum_fold_spearman": 0.6508435450951601,
+    "mean_fold_spearman": 0.459676556540335,
+    "mean_standardized_mae": 0.8046796960684459,
+    "mean_standardized_rmse": 1.0542792790289515,
+    "minimum_fold_spearman": 0.321876304343299,
+    "pooled_oof_spearman": 0.4636999482339535,
+    "rows": 3222,
+    "std_fold_spearman": 0.13832899265995077
+  },
+  "final_development_calibration": {
+    "coefficients": {
+      "acidic_ph_aggressiveness": 0.11417825458943492,
+      "high_temperature_aggressiveness": 0.03293969768660722,
+      "log_chloride_aggressiveness": 0.2760952561675216,
+      "material_passivity": 0.3250392933770263,
+      "temperature_chloride_interaction": 0.25174749817941006
+    },
+    "objective": 0.7592454688789374
+  },
+  "final_test_targets_used": false,
+  "formula": {
+    "halide": "CP_Cl",
+    "material": "Cr + 3.3*Mo + 16*N",
+    "terms": [
+      "material_passivity",
+      "log_chloride_aggressiveness",
+      "high_temperature_aggressiveness",
+      "temperature_chloride_interaction",
+      "acidic_ph_aggressiveness"
+    ]
+  },
+  "rule_family": "pren_n_improved_environment",
+  "schema_version": "epit_target_rule_v3",
+  "source_rule_name": "old_pren_n_improved_environment",
+  "source_sha256": "280f8ff3f89c5d47b22f46a483b9a67eb612a9cbbe0a3394685a0e3da3a0200c",
+  "split_lock_sha256": "f1b4c0662d67df46a38561e2b6393aae5b1811dd6f3dceebe7fc560b3a41bcf9",
+  "split_manifest_sha256": "bc06162ebb2009a92949522ac5e3d5d256837ddd65a08b2d347c5adf8355cdbb"
+}

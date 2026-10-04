@@ -1,0 +1,45 @@
+{
+  "coefficient_upper_bounds": {
+    "environment_aggressiveness": 1.0,
+    "material_chloride_interaction": 1.0,
+    "material_passivity": 1.0,
+    "temperature_chloride_interaction": 1.0
+  },
+  "development_rows": 3222,
+  "direct_evaluation": {
+    "maximum_fold_spearman": 0.6451374783756356,
+    "mean_fold_spearman": 0.4596310178013689,
+    "mean_standardized_mae": 0.8124469706118859,
+    "mean_standardized_rmse": 1.0587960320800405,
+    "minimum_fold_spearman": 0.3007295729015801,
+    "pooled_oof_spearman": 0.44551664854285694,
+    "rows": 3222,
+    "std_fold_spearman": 0.11323111810243716
+  },
+  "final_development_calibration": {
+    "coefficients": {
+      "environment_aggressiveness": 0.23238429481445175,
+      "material_chloride_interaction": 0.11991001569155844,
+      "material_passivity": 0.2919593548901715,
+      "temperature_chloride_interaction": 0.35574633460381827
+    },
+    "objective": 0.8571643984751885
+  },
+  "final_test_targets_used": false,
+  "formula": {
+    "halide": "CP_Cl",
+    "material": "sigmoid((Cr-12)/2) + log1p(Mo)",
+    "terms": [
+      "material_passivity",
+      "environment_aggressiveness",
+      "material_chloride_interaction",
+      "temperature_chloride_interaction"
+    ]
+  },
+  "rule_family": "threshold_saturation",
+  "schema_version": "epit_target_rule_v3",
+  "source_rule_name": "old_threshold_saturation",
+  "source_sha256": "280f8ff3f89c5d47b22f46a483b9a67eb612a9cbbe0a3394685a0e3da3a0200c",
+  "split_lock_sha256": "f1b4c0662d67df46a38561e2b6393aae5b1811dd6f3dceebe7fc560b3a41bcf9",
+  "split_manifest_sha256": "bc06162ebb2009a92949522ac5e3d5d256837ddd65a08b2d347c5adf8355cdbb"
+}

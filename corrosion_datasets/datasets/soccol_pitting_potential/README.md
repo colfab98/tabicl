@@ -13,6 +13,8 @@ snapshots.
   `../../analysis/soccol_source_conventions/source_conventions.csv`
 - Reproducible preprocessing builder: `prepare_benchmark.py`
 - Previous-EPIT-compatible split builder: `prepare_composition_split.py`
+- Synthetic profile and calibrated-rule builder: `prepare_pipeline_assets.py`
+- Optuna launcher: `../../../scripts/soccol_pipeline/run_optuna.py`
 - Model-ready tables, frozen split, and feature roles: `processed/`
 
 The files under `raw/` are preserved copies. No composition blank has been

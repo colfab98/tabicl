@@ -1,0 +1,48 @@
+{
+  "coefficient_upper_bounds": {
+    "acidic_ph_aggressiveness": 0.15,
+    "coupled_environment_breakdown": 0.8,
+    "material_passivity": 1.0,
+    "mns_inclusion_susceptibility": 0.25,
+    "weak_inhibitor_ratio": 0.15
+  },
+  "development_rows": 3222,
+  "direct_evaluation": {
+    "maximum_fold_spearman": 0.7203216819865514,
+    "mean_fold_spearman": 0.5866180968947363,
+    "mean_standardized_mae": 0.7037282356352235,
+    "mean_standardized_rmse": 0.9431725864050078,
+    "minimum_fold_spearman": 0.3296964633142359,
+    "pooled_oof_spearman": 0.5711968179661203,
+    "rows": 3222,
+    "std_fold_spearman": 0.14572058831340184
+  },
+  "final_development_calibration": {
+    "coefficients": {
+      "acidic_ph_aggressiveness": 0.15,
+      "coupled_environment_breakdown": 0.5468432640038237,
+      "material_passivity": 0.0027206200934888377,
+      "mns_inclusion_susceptibility": 0.2079707946562579,
+      "weak_inhibitor_ratio": 0.09246532124642969
+    },
+    "objective": 0.7125503940373817
+  },
+  "final_test_targets_used": false,
+  "formula": {
+    "halide": "CP_Cl + 0.5*CP_Br",
+    "material": "Cr + 3.3*Mo + 16*N",
+    "terms": [
+      "material_passivity",
+      "coupled_environment_breakdown",
+      "acidic_ph_aggressiveness",
+      "mns_inclusion_susceptibility",
+      "weak_inhibitor_ratio"
+    ]
+  },
+  "rule_family": "pren_n_coupled_mns_weak_anions",
+  "schema_version": "epit_target_rule_v3",
+  "source_rule_name": "new_pren_n_coupled_mns_weak_anions",
+  "source_sha256": "280f8ff3f89c5d47b22f46a483b9a67eb612a9cbbe0a3394685a0e3da3a0200c",
+  "split_lock_sha256": "f1b4c0662d67df46a38561e2b6393aae5b1811dd6f3dceebe7fc560b3a41bcf9",
+  "split_manifest_sha256": "bc06162ebb2009a92949522ac5e3d5d256837ddd65a08b2d347c5adf8355cdbb"
+}

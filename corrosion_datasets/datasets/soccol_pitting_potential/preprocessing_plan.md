@@ -1,12 +1,10 @@
-# Planned Model-Input Preprocessing
+# Model-Input Preprocessing
 
 **Decision recorded:** 2026-09-28  
-**Status:** Approved plan; not yet implemented.
+**Status:** Implemented.
 
-This file records the agreed feature schema for rerunning the EPIT prediction
-pipeline with the Soccol pitting-potential dataset. The current preprocessing
-scripts, generated tables, and frozen split have not been changed to implement
-this plan.
+This file records the implemented feature schema for rerunning the EPIT
+prediction pipeline with the Soccol pitting-potential dataset.
 
 ## Prediction task
 
@@ -18,7 +16,7 @@ this plan.
 
 ## Column treatment
 
-| Raw or derived columns | Model role | Planned treatment |
+| Raw or derived columns | Model role | Treatment |
 |---|---|---|
 | `C`, `N`, `Si`, `P`, `S`, `Ti`, `V`, `Cr`, `Mn`, `Ni`, `Nb`, `Mo` | Numeric predictors | Keep every element and replace blanks with `0`. Do not add missingness-indicator columns. |
 | Derived `Fe` | Numeric predictor | For supported Fe-based rows, use the approximate balance `100 - sum(other recorded/zero-filled elements)`. Use `0` where Fe reconstruction is not supported. |
@@ -47,16 +45,16 @@ this plan.
 - Preserve raw categorical strings in the canonical processed table. Apply the
   fitted category mapping when constructing each model input matrix.
 
-## Implementation follow-up
+## Implementation
 
-When this plan is implemented:
-
-1. Update `prepare_benchmark.py` and its generated tables without modifying the
-   raw workbooks.
-2. Replace the current feature roles in `processed/feature_manifest.json` with
-   these rules.
-3. Update `processed/README.md`, `schema_summary.md`, and
-   `investigation_notes.md` so they distinguish the final model inputs from
-   audit-only columns.
-4. Verify all 37 input columns are present, no missingness indicators enter the
-   model, and TabICL receives no NaNs at inference.
+- `prepare_benchmark.py` and `processed/feature_manifest.json` define the 37
+  predictor roles while retaining missingness and material-family fields only
+  for audit.
+- `scripts/eval_corrosion_datasets.py` fits continuous means and categorical
+  mappings separately on each context partition and verifies that all 37 model
+  inputs are finite.
+- `src/tabicl/prior/assets/soccol_pitting_features_v1.*` stores the target-free
+  synthetic feature profile. `prepare_pipeline_assets.py` reproduces it and the
+  frozen nine-rule calibration artifacts.
+- `scripts/soccol_pipeline/run_optuna.py` reuses the previous search settings
+  with the frozen Soccol composition split.

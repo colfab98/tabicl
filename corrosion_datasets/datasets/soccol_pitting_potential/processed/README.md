@@ -11,6 +11,10 @@ Generated from the unchanged 2024 workbook.
 
 Run `../prepare_benchmark.py` to reproduce preprocessing. `../prepare_composition_split.py` reproduces the established EPIT split method, but refuses to overwrite the frozen `splits_v1` directory.
 
-Composition blanks are zero-filled and retain one missingness indicator per element. Environmental blanks remain blank. TabICL fits numeric imputation and categorical encoding on its context rows; other models must follow their declared missing-value procedure. `source` remains audit-only.
+The model uses 37 predictors: 13 composition columns, 20 other numeric columns,
+and 4 categorical columns. Composition and ion blanks are encoded as zero.
+Continuous means and categorical mappings are fitted on context rows only;
+missing or unseen categories become `-1`. The retained composition missingness
+columns and `source` are audit-only and never enter the model.
 
 `Fe` is an approximate remainder only where the source and row chemistry support that calculation. Rows without adequate major composition use `Fe=0` together with `Fe_missing=1`. No raw file was changed.
