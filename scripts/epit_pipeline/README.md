@@ -151,3 +151,49 @@ Historical supporting evaluation remains available through
 `evaluate_baseline_folds.py`, `summarize_checkpoint_comparison.py`, and
 `evaluate_checkpoint_comparison.sbatch`. The latter remains pinned to v7 by
 design. See `corrosion_datasets/analysis/leakage_policy.md` for data-use limits.
+
+## PySR symbolic-regression baseline
+
+The standalone CPU baseline uses only Fe, Cr, Ni, Mo, W, N, temperature,
+chloride, and pH. It reuses the frozen development folds, masks all 152
+final-test targets, and mean-imputes from each fold's context rows. Its
+exploratory grammar uses the raw features and allows `+`, `-`, `*`, `/`,
+`square`, `sqrt`, `log`, and `exp`. Unary functions cannot be nested within
+one another, and the existing size/depth caps remain active. Periodic operators
+are excluded because the selected EPIT variables have no periodic mechanism.
+
+Install the pinned analysis dependency and run the timed one-fold smoke test:
+
+```bash
+pip install -e '.[corrosion-eval]'
+python -m scripts.epit_pipeline.run_pysr --dry-run
+```
+
+The dry run defaults to fold 1, 100 iterations, and a ten-minute fit timeout.
+It writes the equations, validation predictions, measured runtime, and a rough
+five-fold/1,000-iteration projection under
+`corrosion_datasets/analysis/epit_pipeline/pysr_v1/`. PySR initializes Julia
+and its packages on first import, so an offline CPU server must have both the
+Python environment and Julia depot prepared beforehand.
+
+## PySR automatic formula discovery
+
+`run_pysr_discovery.py` is the repository source of truth for the matched
+comparison with the strongest Fe/Ni target rule. It evaluates the same 452
+Fe/Ni development rows while keeping all final-test rows absent from the
+bundle. Candidate physical inputs are all 24 elements plus temperature,
+chloride, and pH. PySR's random-forest selector is fitted independently inside
+each context fold; test method enters only through additive categorical
+offsets. No PREN score or hand-designed corrosion interaction is supplied.
+
+The deployable offline copy lives under `standalone/epit_pysr/`. Its large
+wheelhouse and Julia archives are intentionally ignored by Git, while the
+canonical runner, exporter, launchers, manifest, and documentation remain in
+the main project.
+
+Run the tracked version against an exported bundle with:
+
+```bash
+.venv/bin/python -m scripts.epit_pipeline.run_pysr_discovery \
+  --bundle-dir standalone/epit_pysr --dry-run
+```

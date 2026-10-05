@@ -1,0 +1,4 @@
+numpy<3
+pandas<3
+pysr==1.5.9
+scipy

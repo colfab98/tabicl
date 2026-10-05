@@ -29,14 +29,16 @@ Evaluate fixed development-fold references without touching the final test:
 sbatch scripts/soccol_pipeline/evaluate_baseline_folds.sbatch
 ```
 
-This evaluates the generic 1,000-step checkpoint, pretrained TabICL v2, and a
-fixed CatBoost configuration on the same five Soccol development folds. CatBoost
-is not tuned on those validation targets. It receives the same 37 context-only
+This follows the old EPIT development checkpoint comparison: it evaluates the
+generic run at 500-step intervals on all five frozen development folds and adds
+pretrained TabICL v2 and fixed CatBoost at every checkpoint step. The fair
+reference for the 1,000-step Soccol Optuna trials is the step-1,000 row. CatBoost
+is not tuned on the validation targets and receives the same 37 context-only
 encoded inputs, with the four schema-declared procedure columns marked as
-categorical so their integer codes are not treated as ordered measurements.
-Outputs are written under
-`corrosion_datasets/analysis/soccol_pipeline/baseline_folds_v1/`; a repeated run
-uses a fresh suffixed directory.
+categorical. The unchanged EPIT SVG trend writer produces per-fold and combined
+plots; missing plots fail the run. Outputs are written under
+`corrosion_datasets/analysis/soccol_pipeline/baseline_folds_v1/`, with a fresh
+suffix for repeated runs.
 
 The final stages reuse the EPIT implementation through Soccol-only wrappers.
 Their output roots are

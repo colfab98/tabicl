@@ -74,6 +74,7 @@ corrosion-eval = [
     "matplotlib",
     "openpyxl",
     "pandas",
+    "pysr==1.5.9",
 ]
 test = [
     "pandas",

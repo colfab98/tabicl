@@ -156,3 +156,13 @@ smoke_test_run/
 # Local Soccol trial and evaluation outputs.
 /corrosion_datasets/analysis/soccol_pipeline/optuna_v1/
 /corrosion_datasets/analysis/soccol_pipeline/baseline_folds_v1*/
+/corrosion_datasets/analysis/epit_pipeline/pysr_v1/
+
+# Large, generated offline deployment payloads. The PySR source, launchers,
+# manifest, and development-only CSV remain Git-visible.
+/standalone/epit_pysr/.venv/
+/standalone/epit_pysr/results/
+/standalone/epit_pysr/wheelhouse/
+/standalone/epit_pysr/runtime/*.tar.gz
+/standalone/epit_pysr/runtime/julia/
+/standalone/epit_pysr/runtime/julia_depot/

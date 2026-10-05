@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=soccol_baseline_folds
+#SBATCH --job-name=soccol_checkpoint_compare
 #SBATCH --gpus=1
+#SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --time=24:00:00
 #SBATCH --output=/home/%u/tmp/%x.%j.out
@@ -12,18 +13,21 @@ cd /home/fcolanto/projects/tabicl
 source .venv/bin/activate
 
 OUTPUT_DIR="${OUTPUT_DIR:-corrosion_datasets/analysis/soccol_pipeline/baseline_folds_v1}"
-GENERIC_CHECKPOINT="${GENERIC_CHECKPOINT:-checkpoints/tabicl_s1_regression_baseline/step-1000.ckpt}"
+GENERIC_RUN="${GENERIC_RUN:-checkpoints/tabicl_s1_regression_baseline}"
+DEVICE="${DEVICE:-cuda}"
 N_ESTIMATORS="${N_ESTIMATORS:-8}"
 RANDOM_STATE="${RANDOM_STATE:-42}"
-CATBOOST_THREAD_COUNT="${CATBOOST_THREAD_COUNT:-8}"
+CATBOOST_THREAD_COUNT="${CATBOOST_THREAD_COUNT:-${SLURM_CPUS_PER_TASK:-8}}"
 
 python -m scripts.soccol_pipeline.evaluate_baseline_folds \
   --output-dir "$OUTPUT_DIR" \
   --auto-output-dir \
-  --generic-checkpoint "$GENERIC_CHECKPOINT" \
-  --device cuda \
+  --generic-run "$GENERIC_RUN" \
+  --device "$DEVICE" \
   --n-estimators "$N_ESTIMATORS" \
   --random-state "$RANDOM_STATE" \
+  --min-checkpoint-step 500 \
+  --checkpoint-step-interval 500 \
   --catboost-iterations 1000 \
   --catboost-depth 6 \
   --catboost-learning-rate 0.03 \
