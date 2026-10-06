@@ -14,10 +14,20 @@ source .venv/bin/activate
 
 OUTPUT_DIR="${OUTPUT_DIR:-corrosion_datasets/analysis/soccol_pipeline/baseline_folds_v1}"
 GENERIC_RUN="${GENERIC_RUN:-checkpoints/tabicl_s1_regression_baseline}"
+CANDIDATE_RUN="${CANDIDATE_RUN:-}"
+CANDIDATE_LABEL="${CANDIDATE_LABEL:-soccol_epit}"
 DEVICE="${DEVICE:-cuda}"
 N_ESTIMATORS="${N_ESTIMATORS:-8}"
 RANDOM_STATE="${RANDOM_STATE:-42}"
 CATBOOST_THREAD_COUNT="${CATBOOST_THREAD_COUNT:-${SLURM_CPUS_PER_TASK:-8}}"
+
+EXTRA_ARGS=()
+if [[ -n "$CANDIDATE_RUN" ]]; then
+  EXTRA_ARGS+=(
+    --candidate-run "$CANDIDATE_RUN"
+    --candidate-label "$CANDIDATE_LABEL"
+  )
+fi
 
 python -m scripts.soccol_pipeline.evaluate_baseline_folds \
   --output-dir "$OUTPUT_DIR" \
@@ -32,4 +42,5 @@ python -m scripts.soccol_pipeline.evaluate_baseline_folds \
   --catboost-depth 6 \
   --catboost-learning-rate 0.03 \
   --catboost-l2-leaf-reg 3.0 \
-  --catboost-thread-count "$CATBOOST_THREAD_COUNT"
+  --catboost-thread-count "$CATBOOST_THREAD_COUNT" \
+  "${EXTRA_ARGS[@]}"

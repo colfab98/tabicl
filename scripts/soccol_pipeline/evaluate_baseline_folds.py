@@ -70,6 +70,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--split-manifest", type=Path, default=SOCCOL_SPLIT_MANIFEST)
     parser.add_argument("--generic-run", type=Path, default=DEFAULT_GENERIC_RUN)
+    parser.add_argument("--candidate-run", type=Path, default=None)
+    parser.add_argument("--candidate-label", default="soccol_epit")
     parser.add_argument(
         "--checkpoint-root",
         type=Path,
@@ -96,6 +98,8 @@ def validate_args(args: argparse.Namespace) -> None:
         raise FileNotFoundError(f"Split manifest not found: {args.split_manifest}")
     if not args.generic_run.expanduser().is_dir():
         raise FileNotFoundError(f"Generic run not found: {args.generic_run}")
+    if args.candidate_run is not None and not args.candidate_run.expanduser().is_dir():
+        raise FileNotFoundError(f"Candidate run not found: {args.candidate_run}")
     positive = {
         "--n-estimators": args.n_estimators,
         "--checkpoint-step-interval": args.checkpoint_step_interval,
@@ -123,13 +127,16 @@ def fold_command(
     fold: int,
     fold_dir: Path,
 ) -> list[str]:
+    run_args = ["--run", str(args.generic_run.expanduser().resolve())]
+    label_args = ["--local-model-label", "generic_baseline"]
+    if args.candidate_run is not None:
+        run_args.extend(["--run", str(args.candidate_run.expanduser().resolve())])
+        label_args.extend(["--local-model-label", args.candidate_label])
     command = [
         sys.executable,
         str(REPO_ROOT / "scripts" / "eval_corrosion_datasets.py"),
-        "--run",
-        str(args.generic_run.expanduser().resolve()),
-        "--local-model-label",
-        "generic_baseline",
+        *run_args,
+        *label_args,
         "--checkpoint",
         "all",
         "--checkpoint-root",
@@ -196,14 +203,22 @@ def fold_command(
     return command
 
 
-def validate_fold_output(fold_dir: Path, *, fold: int) -> None:
+def validate_fold_output(
+    fold_dir: Path,
+    *,
+    fold: int,
+    candidate_label: str | None = None,
+) -> None:
     result = json.loads((fold_dir / "results.json").read_text(encoding="utf-8"))
     if result.get("errors"):
         raise RuntimeError(f"Fold {fold} reported errors: {result['errors']}")
 
     rows = pd.read_csv(fold_dir / "rows.csv")
-    if set(rows["model"].astype(str)) != EXPECTED_MODELS:
-        raise RuntimeError(f"Fold {fold} did not produce the three reference models.")
+    expected_models = set(EXPECTED_MODELS)
+    if candidate_label is not None:
+        expected_models.add(candidate_label)
+    if set(rows["model"].astype(str)) != expected_models:
+        raise RuntimeError(f"Fold {fold} did not produce the expected models.")
     if rows["checkpoint_step"].nunique() < 2:
         raise RuntimeError(f"Fold {fold} did not evaluate a checkpoint series.")
     expected_strategy = f"epit_pipeline_development_fold_{fold}"
@@ -237,7 +252,13 @@ def run(args: argparse.Namespace) -> Path:
         if args.print_subcommands:
             print(" ".join(command), flush=True)
         subprocess.run(command, cwd=REPO_ROOT, check=True)
-        validate_fold_output(fold_dir, fold=fold)
+        validate_fold_output(
+            fold_dir,
+            fold=fold,
+            candidate_label=(
+                args.candidate_label if args.candidate_run is not None else None
+            ),
+        )
 
     summarize_checkpoint_comparison.run(argparse.Namespace(output_root=output_dir))
     observed_plots = {path.name for path in (output_dir / "plots").glob("*.svg")}
