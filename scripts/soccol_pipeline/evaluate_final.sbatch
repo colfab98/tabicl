@@ -2,7 +2,7 @@
 #SBATCH --job-name=soccol_eval_final
 #SBATCH --gpus=1
 #SBATCH --mem=32G
-#SBATCH --time=04:00:00
+#SBATCH --time=01:00:00
 #SBATCH --output=/home/%u/tmp/%x.%j.out
 #SBATCH --error=/home/%u/tmp/%x.%j.err
 

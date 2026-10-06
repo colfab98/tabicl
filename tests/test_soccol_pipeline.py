@@ -7,7 +7,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pytest
 import torch
 
 from scripts import eval_corrosion_datasets as corrosion_eval
@@ -244,117 +243,23 @@ print(json.dumps({
     }
 
 
-def test_soccol_baseline_wrapper_uses_development_folds_and_fair_catboost():
-    script = """
-import json
-from pathlib import Path
+def test_soccol_checkpoint_comparison_uses_final_test_and_requires_plots():
+    launcher = (
+        REPO_ROOT
+        / "scripts"
+        / "soccol_pipeline"
+        / "evaluate_checkpoint_comparison.sbatch"
+    ).read_text(encoding="utf-8")
 
-from scripts.soccol_pipeline import evaluate_baseline_folds
-
-args = evaluate_baseline_folds.parse_args(["--device", "cpu"])
-split = evaluate_baseline_folds.load_frozen_split(
-    args.split_manifest,
-    expected_manifest_schema="soccol_composition_split_manifest_v1",
-)
-command = evaluate_baseline_folds.fold_command(
-    args,
-    fold=3,
-    fold_dir=Path("fold_3").resolve(),
-)
-categorical_columns = [
-    command[index + 1]
-    for index, token in enumerate(command)
-    if token == "--catboost-categorical-column"
-]
-print(json.dumps({
-    "task_id": command[command.index("--task") + 1],
-    "split_schema": split.manifest["schema_version"],
-    "output_dir": str(args.output_dir),
-    "uses_run": "--run" in command,
-    "checkpoint": command[command.index("--checkpoint") + 1],
-    "minimum_step": command[command.index("--min-checkpoint-step") + 1],
-    "step_interval": command[command.index("--checkpoint-step-interval") + 1],
-    "uses_validation_fold": "--epit-validation-fold" in command,
-    "uses_final_test": "--epit-final-test" in command,
-    "compares_pretrained": "--compare-pretrained-tabicl" in command,
-    "compares_catboost": "--compare-catboost" in command,
-    "forces_plot_dir": "--output-plot-dir" in command,
-    "categorical_columns": categorical_columns,
-    "catboost_iterations": command[command.index("--catboost-iterations") + 1],
-    "catboost_depth": command[command.index("--catboost-depth") + 1],
-    "catboost_learning_rate": command[
-        command.index("--catboost-learning-rate") + 1
-    ],
-    "catboost_l2_leaf_reg": command[
-        command.index("--catboost-l2-leaf-reg") + 1
-    ],
-}))
-"""
-    completed = subprocess.run(
-        [sys.executable, "-c", script],
-        cwd=REPO_ROOT,
-        capture_output=True,
-        text=True,
-    )
-    assert completed.returncode == 0, completed.stderr
-    payload = json.loads(completed.stdout)
-
-    assert payload == {
-        "task_id": corrosion_eval.SOCCOL_PIPELINE_TASK_ID,
-        "split_schema": "soccol_composition_split_manifest_v1",
-        "output_dir": str(
-            REPO_ROOT
-            / "corrosion_datasets"
-            / "analysis"
-            / "soccol_pipeline"
-            / "baseline_folds_v1"
-        ),
-        "uses_run": True,
-        "checkpoint": "all",
-        "minimum_step": "500",
-        "step_interval": "500",
-        "uses_validation_fold": True,
-        "uses_final_test": False,
-        "compares_pretrained": True,
-        "compares_catboost": True,
-        "forces_plot_dir": True,
-        "categorical_columns": list(SOCCOL_CATEGORICAL_COLUMNS),
-        "catboost_iterations": "1000",
-        "catboost_depth": "6",
-        "catboost_learning_rate": "0.03",
-        "catboost_l2_leaf_reg": "3.0",
-    }
-
-
-def test_soccol_baseline_requires_the_old_epit_plot_set(tmp_path: Path) -> None:
-    from scripts.soccol_pipeline import evaluate_baseline_folds
-
-    fold_dir = tmp_path / "fold_1"
-    plot_dir = fold_dir / "plots"
-    plot_dir.mkdir(parents=True)
-    (fold_dir / "results.json").write_text('{"errors": []}\n', encoding="utf-8")
-    rows = []
-    for checkpoint_step in (500, 1000):
-        for model in evaluate_baseline_folds.EXPECTED_MODELS:
-            rows.append(
-                {
-                    "model": model,
-                    "checkpoint_step": checkpoint_step,
-                    "split_strategy": "epit_pipeline_development_fold_1",
-                    "n_train": 2577,
-                    "n_test": 645,
-                }
-            )
-    pd.DataFrame(rows).to_csv(fold_dir / "rows.csv", index=False)
-    for name in evaluate_baseline_folds.EXPECTED_FOLD_PLOTS:
-        (plot_dir / name).write_text("<svg/>\n", encoding="utf-8")
-
-    evaluate_baseline_folds.validate_fold_output(fold_dir, fold=1)
-
-    missing = next(iter(evaluate_baseline_folds.EXPECTED_FOLD_PLOTS))
-    (plot_dir / missing).unlink()
-    with pytest.raises(RuntimeError, match="omitted required old-format plots"):
-        evaluate_baseline_folds.validate_fold_output(fold_dir, fold=1)
+    assert "--epit-final-test" in launcher
+    assert "--epit-validation-fold" not in launcher
+    assert "--checkpoint all" in launcher
+    assert "--output-plot-dir" in launcher
+    assert "Required plot missing" in launcher
+    assert "--compare-pretrained-tabicl" in launcher
+    assert "--compare-catboost" in launcher
+    for column in SOCCOL_CATEGORICAL_COLUMNS:
+        assert f"--catboost-categorical-column {column}" in launcher
 
 
 def test_soccol_empirical_scm_target_generates_finite_dataset():

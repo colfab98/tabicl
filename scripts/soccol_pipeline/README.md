@@ -23,22 +23,18 @@ sbatch scripts/soccol_pipeline/train_final.sbatch
 sbatch scripts/soccol_pipeline/evaluate_final.sbatch
 ```
 
-Evaluate fixed development-fold references without touching the final test:
+Run the old-EPIT-style checkpoint comparison on the held-out final test:
 
 ```bash
-sbatch scripts/soccol_pipeline/evaluate_baseline_folds.sbatch
+sbatch scripts/soccol_pipeline/evaluate_checkpoint_comparison.sbatch
 ```
 
-This follows the old EPIT development checkpoint comparison: it evaluates the
-generic run at 500-step intervals on all five frozen development folds and adds
-pretrained TabICL v2 and fixed CatBoost at every checkpoint step. The fair
-reference for the 1,000-step Soccol Optuna trials is the step-1,000 row. CatBoost
-is not tuned on the validation targets and receives the same 37 context-only
-encoded inputs, with the four schema-declared procedure columns marked as
-categorical. The unchanged EPIT SVG trend writer produces per-fold and combined
-plots; missing plots fail the run. Outputs are written under
-`corrosion_datasets/analysis/soccol_pipeline/baseline_folds_v1/`, with a fresh
-suffix for repeated runs.
+This uses all 3,222 development rows as context and the 805 untouched rows as
+queries, with no development-fold cross-validation. It evaluates all checkpoint
+steps shared by the generic and Soccol runs, plus pretrained TabICL v2 and fixed
+CatBoost. The unchanged EPIT SVG trend writer is mandatory: missing plots fail
+the run. These all-checkpoint final-test results are diagnostics and must not be
+used to change the development-selected checkpoint.
 
 The final stages reuse the EPIT implementation through Soccol-only wrappers.
 Their output roots are
