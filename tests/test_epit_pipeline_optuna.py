@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
@@ -12,6 +13,7 @@ import torch
 
 from scripts import eval_corrosion_datasets as corrosion_eval
 from scripts.epit_pipeline import evaluate_baseline_folds
+from scripts.epit_pipeline import evaluate_checkpoint_comparison
 from scripts.epit_pipeline import evaluate_final
 from scripts.epit_pipeline import evaluate_optuna_folds
 from scripts.epit_pipeline import run_optuna as search
@@ -106,12 +108,51 @@ def test_pipeline_defaults_use_current_v8_workflow() -> None:
     assert final_args.study_name == args.study_name
     assert final_args.prior_n_jobs == 1
     assert final_args.nproc_per_node == 1
+    assert final_args.eval_device is None
+    assert final_args.resume_checkpoint_selection is False
     assert evaluate_final.default_final_model_manifest() == (
         train_final.DEFAULT_FINAL_ROOT / args.study_name / "final_model_manifest.json"
     )
     assert evaluate_optuna_folds.DEFAULT_OUTPUT_ROOT == (
         search.DEFAULT_OPTUNA_ROOT / "evaluations"
     )
+
+
+def test_stage4_resume_requires_matching_completed_training(tmp_path: Path) -> None:
+    args = train_final.parse_args(
+        [
+            "--storage",
+            "journal:///unused.log",
+            "--resume-checkpoint-selection",
+            "--eval-device",
+            "cpu",
+        ]
+    )
+    output_dir = tmp_path / "analysis"
+    checkpoint_dir = tmp_path / "checkpoints"
+    output_dir.mkdir()
+    checkpoint_dir.mkdir()
+    (checkpoint_dir / "step-10000.ckpt").write_bytes(b"checkpoint")
+    train_command = ["torchrun", "train.py", "--device", "cuda"]
+    (output_dir / "train.log").write_text(
+        " ".join(train_command) + "\ntraining output\n",
+        encoding="utf-8",
+    )
+
+    train_final.validate_resumable_training(
+        args,
+        output_dir=output_dir,
+        checkpoint_dir=checkpoint_dir,
+        train_command=train_command,
+    )
+
+    with pytest.raises(RuntimeError, match="does not match"):
+        train_final.validate_resumable_training(
+            args,
+            output_dir=output_dir,
+            checkpoint_dir=checkpoint_dir,
+            train_command=[*train_command, "--changed"],
+        )
 
 
 def test_optuna_study_fingerprint_rejects_mixed_pipeline() -> None:
@@ -709,6 +750,156 @@ def test_final_split_uses_608_context_and_152_untouched_rows() -> None:
     assert len(split.test_index) == 152
     assert not set(split.train_index) & set(split.test_index)
     assert split.split_strategy == "epit_pipeline_final_test"
+    assert np.array_equal(split.preprocessing_index, split.train_index)
+
+
+def test_epit_context_fold_reuses_full_development_preprocessing() -> None:
+    reference = pd.DataFrame(
+        {"numeric": [2.0, 8.0], "category": ["first", "second"]}
+    )
+    train = pd.DataFrame({"numeric": [np.nan], "category": ["first"]})
+    test = pd.DataFrame({"numeric": [np.nan], "category": ["second"]})
+
+    encoded_train, encoded_test = corrosion_eval.preprocess_epit_split(
+        train,
+        test,
+        X_preprocessing=reference,
+    )
+
+    assert encoded_train.loc[0, "numeric"] == 5.0
+    assert encoded_test.loc[0, "numeric"] == 5.0
+    assert encoded_train.loc[0, "category"] == 0.0
+    assert encoded_test.loc[0, "category"] == 1.0
+
+
+def test_final_split_can_reduce_context_without_changing_untouched_queries() -> None:
+    full_task = _fake_epit_task()
+    corrosion_eval.apply_epit_pipeline_final_test(
+        [full_task],
+        manifest_path=search.DEFAULT_SPLIT_MANIFEST,
+    )
+    reduced_task = _fake_epit_task()
+    corrosion_eval.apply_epit_pipeline_final_test(
+        [reduced_task],
+        manifest_path=search.DEFAULT_SPLIT_MANIFEST,
+        context_fold=3,
+    )
+
+    full_split = full_task.fixed_split
+    reduced_split = reduced_task.fixed_split
+    assert full_split is not None
+    assert reduced_split is not None
+    assert 0 < len(reduced_split.train_index) < len(full_split.train_index)
+    assert np.array_equal(reduced_split.test_index, full_split.test_index)
+    assert np.array_equal(
+        reduced_split.preprocessing_index,
+        full_split.train_index,
+    )
+    assert len(reduced_split.test_index) == 152
+    assert not set(reduced_split.train_index) & set(reduced_split.test_index)
+    assert (
+        reduced_split.split_strategy
+        == "epit_pipeline_final_test_context_fold_3"
+    )
+    assert corrosion_eval.should_preserve_feature_schema(
+        "local_tabicl_regressor", reduced_split, False
+    )
+    assert corrosion_eval.should_preserve_feature_schema(
+        "pretrained_tabicl_regressor", reduced_split, False
+    )
+    assert not corrosion_eval.should_preserve_feature_schema(
+        "catboost_regressor", reduced_split, False
+    )
+
+
+def test_context_fold_driver_cli_uses_all_saved_folds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "eval_corrosion_datasets.py",
+            "--epit-split-manifest",
+            str(search.DEFAULT_SPLIT_MANIFEST),
+            "--epit-final-test",
+            "--context-folds",
+            "5",
+        ],
+    )
+    args = corrosion_eval.parse_args()
+    corrosion_eval.validate_args(args)
+
+    assert args.epit_final_context_folds == 5
+    assert corrosion_eval.saved_epit_development_folds(
+        search.DEFAULT_SPLIT_MANIFEST
+    ) == [1, 2, 3, 4, 5]
+    assert corrosion_eval.strip_context_fold_driver_args(sys.argv[1:]) == [
+        "--epit-split-manifest",
+        str(search.DEFAULT_SPLIT_MANIFEST),
+        "--epit-final-test",
+    ]
+    final_args = evaluate_final.parse_args(["--context-folds", "5"])
+    assert final_args.context_folds == 5
+
+
+def test_epit_comparison_wrapper_needs_only_context_fold_count() -> None:
+    args = evaluate_checkpoint_comparison.parse_args(["--context-folds", "5"])
+    command = evaluate_checkpoint_comparison.evaluation_command(args)
+
+    assert _value_after(command, "--context-folds") == "5"
+    assert "--epit-final-test" in command
+    assert "--compare-pretrained-tabicl" in command
+    assert "--compare-catboost" in command
+    assert _value_after(command, "--device") == "cpu"
+    assert _value_after(command, "--fixed-schema-model") == "corrpfn_v8"
+
+
+def test_absolute_checkpoint_run_path_does_not_require_run_prefix(
+    tmp_path: Path,
+) -> None:
+    run_dir = tmp_path / "absolute_run"
+    run_dir.mkdir()
+    args = SimpleNamespace(
+        checkpoint_root=tmp_path / "unused",
+        run_prefix="tabicl_s1mini_generic_",
+    )
+
+    assert corrosion_eval.resolve_run_dir(str(run_dir), args) == run_dir.resolve()
+
+
+def test_context_fold_summary_averages_metrics_not_predictions() -> None:
+    rows = [
+        {
+            "checkpoint_name": "step-1000",
+            "checkpoint_step": 1000,
+            "model": "corrpfn_v8",
+            "model_kind": "local_tabicl_regressor",
+            "model_source": "step-1000.ckpt",
+            "task_id": corrosion_eval.EPIT_PIPELINE_TASK_ID,
+            "include_in_summary": True,
+            "n_samples": 760,
+            "context_fold": fold,
+            "test_spearman": value,
+            "test_mae": 10.0 * value,
+        }
+        for fold, value in enumerate((0.1, 0.2, 0.3, 0.4, 0.5), start=1)
+    ]
+    summary = corrosion_eval.make_summary_dataframe(rows, [])
+    summary = corrosion_eval.add_context_fold_stats_to_summary(summary, rows)
+
+    assert summary.loc[0, "n_context_folds"] == 5
+    assert summary.loc[0, "mean_test_spearman"] == pytest.approx(0.3)
+    assert summary.loc[0, "std_test_spearman"] == pytest.approx(
+        np.std((0.1, 0.2, 0.3, 0.4, 0.5), ddof=1)
+    )
+    corrosion_eval.require_complete_context_folds(rows, [], [1, 2, 3, 4, 5])
+    with pytest.raises(RuntimeError, match="every model to complete all 5 folds"):
+        corrosion_eval.require_complete_context_folds(
+            rows[:-1],
+            [],
+            [1, 2, 3, 4, 5],
+        )
 
 
 def test_trial_params_can_be_reconstructed_from_optuna_values() -> None:
@@ -798,7 +989,24 @@ def test_frozen_final_command_cannot_change_split_or_power(tmp_path: Path) -> No
     assert "--epit-validation-fold" not in command
     assert _value_after(command, "--tabicl-norm-methods") == "none"
     assert _value_after(command, "--tabicl-feat-shuffle-method") == "none"
+    assert _value_after(command, "--fixed-schema-model") == "final_epit_model"
     assert "--no-compare-pretrained-tabicl" in command
+
+
+def test_frozen_final_context_fold_command_keeps_outer_test_queries(
+    tmp_path: Path,
+) -> None:
+    frozen, _ = _write_frozen_final_model(tmp_path)
+
+    command = evaluate_final.final_evaluation_command(
+        frozen,
+        output_dir=tmp_path / "evaluation",
+        context_fold=4,
+    )
+
+    assert "--epit-final-test" in command
+    assert "--epit-validation-fold" not in command
+    assert _value_after(command, "--epit-final-context-fold") == "4"
 
 
 def test_final_model_lock_detects_checkpoint_changes(tmp_path: Path) -> None:

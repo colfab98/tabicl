@@ -1,12 +1,26 @@
 dataset_id: mpea_corrosion
 title: MPEA Corrosion Database
 documented_at: 2026-04-26
-status: downloaded_inspected
+status: evaluation_candidate_prepared_not_frozen
+processed_at: 2026-10-12
 
 sources:
   dataset_url: https://data.mendeley.com/datasets/nskb9khgsm/1
   paper_url: https://www.nature.com/articles/s41529-025-00700-9
   paper_doi: 10.1038/s41529-025-00700-9
+  dataset_license: CC BY 4.0
+
+preparation:
+  script: prepare_evaluation.py
+  rules: preprocessing_plan.md
+  manifest: processed/preprocessing_manifest.json
+  feature_manifest: processed/feature_manifest.json
+  candidate_table: processed/mpea_evaluation_candidates.csv
+  candidate_rows: 332
+  excluded_incomplete_composition_rows: 3
+  source_screened_table: processed/mpea_source_screened_candidates.csv
+  source_screened_rows: 267
+  split_status: not_created
 
 raw_files:
   - path: raw/Mendeley_MPEA_corrosion_database.xlsx
@@ -21,3 +35,7 @@ raw_files:
 notes:
   - Raw files were user-downloaded before documentation; exact download timestamp was not recorded.
   - Workbook was inspected without modifying the raw file.
+  - Candidate preparation preserves missing values and excludes response-derived predictors.
+  - The paper's 306 pitting entries differ from 335 numeric workbook entries; unresolved.
+  - Source DOI overlap is flagged, not treated as verified measurement overlap or independence.
+  - Excel rows 466-468 were excluded from candidate exports at user request; preserved in raw and audit.

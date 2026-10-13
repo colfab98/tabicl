@@ -23,9 +23,11 @@ from tqdm import tqdm
 import wandb
 
 from tabicl import TabICL
+from tabicl.prior.combined_corrosion import CombinedCorrosionPriorDataset
 from tabicl.prior.dataset import PriorDataset
 from tabicl.prior.genload import LoadPriorDataset
 from tabicl.prior.prior_config import DEFAULT_FIXED_HP
+from tabicl.train.missingness import MissingnessAugmenter
 from tabicl.train.optim import get_scheduler
 from tabicl.train.train_config import build_parser
 
@@ -86,6 +88,7 @@ class Trainer:
         self.configure_ddp()
         self.configure_wandb()
         self.build_model()
+        self.configure_missingness()
         self.configure_prior()
         self.configure_optimizer()
         self.configure_amp()
@@ -179,6 +182,8 @@ class Trainer:
             "col_num_blocks": self.config.col_num_blocks,
             "col_nhead": self.config.col_nhead,
             "col_num_inds": self.config.col_num_inds,
+            "col_feature_group": False if self.config.col_missing_value_embedding else "same",
+            "col_missing_value_embedding": self.config.col_missing_value_embedding,
             "row_num_blocks": self.config.row_num_blocks,
             "row_nhead": self.config.row_nhead,
             "row_num_cls": self.config.row_num_cls,
@@ -230,6 +235,32 @@ class Trainer:
 
     def configure_prior(self):
         """Set up a tabular dataset generator for synthetic data during training."""
+
+        self.prior_provenance = None
+        combined_config = getattr(self.config, "combined_corrosion_prior_config", None)
+        if combined_config is not None:
+            if self.config.prior_dir is not None:
+                raise ValueError(
+                    "--combined_corrosion_prior_config cannot be combined with --prior_dir."
+                )
+            if self.missingness_augmenter is None:
+                raise ValueError(
+                    "The combined corrosion prior requires --col_missing_value_embedding true "
+                    "and a missingness profile."
+                )
+            if self.config.max_classes != 0:
+                raise ValueError("The combined corrosion prior requires --max_classes 0.")
+            if self.config.min_features != 50 or self.config.max_features != 50:
+                raise ValueError(
+                    "The combined corrosion prior requires --min_features 50 --max_features 50."
+                )
+            if self.config.seq_len_per_gp or self.config.min_seq_len is not None:
+                raise ValueError(
+                    "The combined corrosion prior requires a fixed sequence length: leave "
+                    "--min_seq_len unset and use --seq_len_per_gp false."
+                )
+            if self.config.prior_n_jobs != 1:
+                raise ValueError("The combined corrosion prior requires --prior_n_jobs 1.")
 
         variation = float(getattr(self.config, "pitting_coefficient_variation", 0.0))
         if not math.isfinite(variation) or not 0.0 <= variation < 1.0:
@@ -411,26 +442,43 @@ class Trainer:
             if self.config.inhibitor_intervention_coef is not None:
                 scm_fixed_hp["inhibitor_intervention_coef"] = self.config.inhibitor_intervention_coef
 
-            # Generate prior data on the fly
-            dataset = PriorDataset(
-                batch_size=self.config.batch_size,
-                batch_size_per_gp=self.config.batch_size_per_gp,
-                min_features=self.config.min_features,
-                max_features=self.config.max_features,
-                max_classes=self.config.max_classes,
-                min_seq_len=self.config.min_seq_len,
-                max_seq_len=self.config.max_seq_len,
-                log_seq_len=self.config.log_seq_len,
-                seq_len_per_gp=self.config.seq_len_per_gp,
-                min_train_size=self.config.min_train_size,
-                max_train_size=self.config.max_train_size,
-                replay_small=self.config.replay_small,
-                prior_type=self.config.prior_type,
-                scm_fixed_hp=scm_fixed_hp,
-                device=self.config.prior_device,
-                n_jobs=self.config.prior_n_jobs,
-                informed_prior_ratio=self.config.informed_prior_ratio,
-            )
+            # Generate prior data on the fly.
+            if combined_config is not None:
+                dataset = CombinedCorrosionPriorDataset(
+                    config_path=combined_config,
+                    batch_size=self.config.batch_size,
+                    batch_size_per_gp=self.config.batch_size_per_gp,
+                    max_classes=self.config.max_classes,
+                    min_seq_len=self.config.min_seq_len,
+                    max_seq_len=self.config.max_seq_len,
+                    min_train_size=self.config.min_train_size,
+                    max_train_size=self.config.max_train_size,
+                    n_jobs=self.config.prior_n_jobs,
+                    device=self.config.prior_device,
+                    seed_offset=self.ddp_rank,
+                )
+                self.prior_provenance = dataset.provenance
+            else:
+                dataset = PriorDataset(
+                    batch_size=self.config.batch_size,
+                    batch_size_per_gp=self.config.batch_size_per_gp,
+                    min_features=self.config.min_features,
+                    max_features=self.config.max_features,
+                    max_classes=self.config.max_classes,
+                    min_seq_len=self.config.min_seq_len,
+                    max_seq_len=self.config.max_seq_len,
+                    log_seq_len=self.config.log_seq_len,
+                    seq_len_per_gp=self.config.seq_len_per_gp,
+                    min_train_size=self.config.min_train_size,
+                    max_train_size=self.config.max_train_size,
+                    replay_small=self.config.replay_small,
+                    prior_type=self.config.prior_type,
+                    scm_fixed_hp=scm_fixed_hp,
+                    device=self.config.prior_device,
+                    n_jobs=self.config.prior_n_jobs,
+                    informed_prior_ratio=self.config.informed_prior_ratio,
+                    return_source_ids=getattr(self, "missingness_augmenter", None) is not None,
+                )
         else:
             # Load pre-generated prior data from disk
             dataset = LoadPriorDataset(
@@ -460,6 +508,32 @@ class Trainer:
 
         # Create dataloader for efficient loading and prefetching
         self.dataloader = DataLoader(**dataloader_kwargs)
+
+    def configure_missingness(self):
+        """Configure empirical feature masking for missing-aware training."""
+
+        self.missingness_augmenter = None
+        if not bool(getattr(self.config, "col_missing_value_embedding", False)):
+            return
+
+        profile_path = getattr(self.config, "missingness_profile_path", None)
+        if not profile_path:
+            raise ValueError(
+                "--missingness_profile_path is required when "
+                "--col_missing_value_embedding is enabled."
+            )
+        if self.config.prior_dir is not None:
+            raise ValueError(
+                "Source-aware missingness augmentation requires an on-the-fly prior; "
+                "--prior_dir is not supported."
+            )
+
+        self.missingness_augmenter = MissingnessAugmenter(
+            profile_path,
+            augmentation_probability=self.config.missingness_augmentation_probability,
+            min_observed_composition=self.config.missingness_min_observed_composition,
+        )
+        self.missingness_augmenter.validate_max_features(self.config.max_features)
 
     def configure_optimizer(self):
         """Configure optimizer and scheduler."""
@@ -570,6 +644,12 @@ class Trainer:
         checkpoint_path = os.path.join(self.config.checkpoint_dir, name)
         checkpoint = {
             "config": self.model_config,
+            "combined_corrosion_prior": getattr(self, "prior_provenance", None),
+            "missingness_augmentation": (
+                self.missingness_augmenter.provenance
+                if getattr(self, "missingness_augmenter", None) is not None
+                else None
+            ),
             "state_dict": self.raw_model.state_dict(),
             "optimizer_state": self.optimizer.state_dict(),
             "scheduler_state": self.scheduler.state_dict(),
@@ -764,7 +844,11 @@ class Trainer:
         dict
             Result dictionary with 'ce' and 'accuracy' keys.
         """
-        micro_X, micro_y, micro_d, micro_seq_len, micro_train_size = micro_batch
+        if len(micro_batch) == 6:
+            micro_X, micro_y, micro_d, micro_seq_len, micro_train_size, micro_source_ids = micro_batch
+        else:
+            micro_X, micro_y, micro_d, micro_seq_len, micro_train_size = micro_batch
+            micro_source_ids = None
         seq_len, train_size = self.validate_micro_batch(micro_seq_len, micro_train_size)
         micro_X, micro_y = self.align_micro_batch(micro_X, micro_y, micro_d, seq_len)
 
@@ -776,8 +860,18 @@ class Trainer:
             micro_X = micro_X.to(self.config.device)
             micro_y = micro_y.to(self.config.device)
             micro_d = micro_d.to(self.config.device)
+            if micro_source_ids is not None:
+                micro_source_ids = micro_source_ids.to(self.config.device)
             self.sync_device()
         micro_times["h2d_time"] = h2d_timer.elapsed
+
+        missingness_results = {}
+        if self.missingness_augmenter is not None:
+            micro_X, missingness_results = self.missingness_augmenter.augment(
+                micro_X,
+                micro_d,
+                source_ids=micro_source_ids,
+            )
 
         y_train = micro_y[:, :train_size]
         y_test = micro_y[:, train_size:]
@@ -823,6 +917,8 @@ class Trainer:
                 micro_results["accuracy"] = accuracy.item() / num_micro_batches
             for key, value in micro_times.items():
                 micro_results[key] = value / num_micro_batches
+            for key, value in missingness_results.items():
+                micro_results[key] = value / num_micro_batches
 
         return micro_results
 
@@ -863,6 +959,14 @@ class Trainer:
             results.update({"crps": 0.0, "median_mae": 0.0, "median_rmse": 0.0})
         else:
             results.update({"ce": 0.0, "accuracy": 0.0})
+        if self.missingness_augmenter is not None:
+            results.update(
+                {
+                    "missing_mask_fraction": 0.0,
+                    "composition_missing_mask_fraction": 0.0,
+                    "other_missing_mask_fraction": 0.0,
+                }
+            )
 
         # Pad nested tensors to the same size
         with Timer() as pad_timer:

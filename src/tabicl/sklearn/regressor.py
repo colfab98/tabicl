@@ -188,6 +188,10 @@ class TabICLRegressor(RegressorMixin, TabICLBaseEstimator):
               from the class initialization are ignored
             - All settings must be explicitly defined in the provided InferenceConfig object
 
+    remove_constant_features : bool, default=True
+        Whether to remove columns that are constant in the labeled context.
+        Set to ``False`` for checkpoints trained on a fixed positional schema.
+
     Attributes
     ----------
     n_features_in_ : int
@@ -255,10 +259,12 @@ class TabICLRegressor(RegressorMixin, TabICLBaseEstimator):
         n_jobs: Optional[int] = None,
         verbose: bool = False,
         inference_config: Optional[InferenceConfig | Dict] = None,
+        remove_constant_features: bool = True,
     ):
         self.n_estimators = n_estimators
         self.norm_methods = norm_methods
         self.feat_shuffle_method = feat_shuffle_method
+        self.remove_constant_features = remove_constant_features
         self.outlier_threshold = outlier_threshold
         self.batch_size = batch_size
         self.kv_cache = kv_cache
@@ -417,7 +423,11 @@ class TabICLRegressor(RegressorMixin, TabICLBaseEstimator):
         y_scaled = self.y_scaler_.fit_transform(y.reshape(-1, 1)).flatten()
 
         # Transform input features
-        self.X_encoder_ = TransformToNumerical(verbose=self.verbose)
+        self.preserve_missing_values_ = bool(self.model_config_.get("col_missing_value_embedding", False))
+        self.X_encoder_ = TransformToNumerical(
+            verbose=self.verbose,
+            preserve_missing_values=self.preserve_missing_values_,
+        )
         X = self.X_encoder_.fit_transform(X)
 
         # Fit ensemble generator to create multiple dataset views
@@ -428,6 +438,7 @@ class TabICLRegressor(RegressorMixin, TabICLBaseEstimator):
             feat_shuffle_method=self.feat_shuffle_method,
             outlier_threshold=self.outlier_threshold,
             random_state=self.random_state,
+            remove_constant_features=self.remove_constant_features,
         )
         self.ensemble_generator_.fit(X, y_scaled)
 
@@ -700,22 +711,28 @@ class TabICLRegressor(RegressorMixin, TabICLBaseEstimator):
 
             torch.set_num_threads(n_threads)
 
+        X = self._align_missing_aware_dataframe(X)
+
         # Preserve DataFrame structure to retain column names and types for correct feature transformation
         X = validate_data(self, X, reset=False, dtype=None, skip_check_array=True)
 
-        # Detect all-NaN columns (used by SHAP's feature masking approach)
-        if hasattr(X, "columns"):  # check for dataframe without importing pandas
-            feature_mask = X.isna().all(axis=0).to_numpy()
-        else:
-            arr = np.asarray(X)
-            if np.issubdtype(arr.dtype, np.number):
-                feature_mask = np.isnan(arr).all(axis=0)
-            else:
-                # object dtype: v != v is True only for NaN in IEEE 754, safe for strings too
-                feature_mask = np.array([all(v != v for v in arr[:, i]) for i in range(arr.shape[1])])
-
-        if feature_mask is not None and not np.any(feature_mask):
+        # Legacy checkpoints drop all-NaN SHAP-mask columns. Missing-aware
+        # checkpoints keep them in place for the learned missing embedding.
+        if self.preserve_missing_values_:
             feature_mask = None
+        else:
+            if hasattr(X, "columns"):  # check for dataframe without importing pandas
+                feature_mask = X.isna().all(axis=0).to_numpy()
+            else:
+                arr = np.asarray(X)
+                if np.issubdtype(arr.dtype, np.number):
+                    feature_mask = np.isnan(arr).all(axis=0)
+                else:
+                    # object dtype: v != v is True only for NaN in IEEE 754, safe for strings too
+                    feature_mask = np.array([all(v != v for v in arr[:, i]) for i in range(arr.shape[1])])
+
+            if feature_mask is not None and not np.any(feature_mask):
+                feature_mask = None
 
         # Fill masked columns so that transformers don't choke on NaN
         if feature_mask is not None:

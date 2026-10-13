@@ -1,0 +1,73 @@
+{
+  "preparation_version": "combined_context_query_v2",
+  "source_files_modified": false,
+  "inputs": [
+    {
+      "path": "corrosion_datasets/datasets/electrochemical_metrics_alloys/raw/CRA_database_Scientific_Data_Publication_12102020.xlsx",
+      "sha256": "d0ce5e9c4b42e0b5a20dbd5c4896791703c5f433ae19bc032674d5848d9d1438"
+    },
+    {
+      "path": "corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_regression_event1.csv",
+      "sha256": "280f8ff3f89c5d47b22f46a483b9a67eb612a9cbbe0a3394685a0e3da3a0200c"
+    },
+    {
+      "path": "corrosion_datasets/datasets/mpea_corrosion/processed/mpea_source_screened_candidates.csv",
+      "sha256": "f902b4d53760895efaee6e8d24e9dc7ff08d1e6e5d5727d0531d16af5802d878"
+    },
+    {
+      "path": "corrosion_datasets/datasets/mpea_corrosion/processed/mpea_row_audit.csv",
+      "sha256": "31b92472a0a89bb59255e821ef9c9c9028b319e784b70e5ae1ee8235561d4e78"
+    }
+  ],
+  "processor": {
+    "path": "corrosion_datasets/datasets/combined_epit_soccol_mpea/prepare_shared_tables.py",
+    "sha256": "219e424a7604fbd31b052cdda2928c8319815330edb55734919379f4771e86fe"
+  },
+  "rows": {
+    "context_total": 4787,
+    "context_by_source": {
+      "Soccol": 4027,
+      "EPIT": 760
+    },
+    "context_by_reference_type": {
+      "SCE": 1325,
+      "AgAgCl": 112
+    },
+    "context_reference_type_missing": 3350,
+    "mpea_queries": 267,
+    "mpea_scoring_targets": 267
+  },
+  "target_handling": {
+    "context": "reported target retained; verified reference scale supplied as a categorical predictor and unresolved scale stored as feature NaN",
+    "mpea_query": "target column absent",
+    "mpea_scoring": "separate row-ID-aligned file; SCE only",
+    "electrode_conversion_applied": false
+  },
+  "known_preserved_source_issue": {
+    "2016Alar06": "Soccol stores 777; audited primary table reports 771 mV/SCE",
+    "2016Alar12": "Soccol stores 911; audited primary table reports 977 mV/SCE",
+    "policy": "preserved rather than silently altering an existing processed dataset"
+  },
+  "outputs": {
+    "epit_soccol_context.csv": {
+      "sha256": "3ac7fa8730bba6084ad8f81e05c216601c724641bb1c861b701d07ae1fec247e",
+      "size_bytes": 1646357
+    },
+    "mpea_queries.csv": {
+      "sha256": "8f57ef0653d9a638414c108608ce2ce2986b9b5e1247289601488b48950ea46a",
+      "size_bytes": 86544
+    },
+    "mpea_scoring_targets.csv": {
+      "sha256": "db0bb8f5948755158515c65a59886cdeb97e97cddcd369cbb02b4a0711b6b0d4",
+      "size_bytes": 6603
+    },
+    "shared_feature_registry.json": {
+      "sha256": "8181a068616112011c709d77ee04e3bdd54aa7bce5f0a698d9171c3976e2aed7",
+      "size_bytes": 9313
+    },
+    "context_missingness_profile.json": {
+      "sha256": "6cd30f6de454a7bf0c2c437fc31f974fd2df10bf1b8edbdd091e916b4115abe8",
+      "size_bytes": 34626
+    }
+  }
+}

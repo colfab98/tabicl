@@ -4,7 +4,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.utils.estimator_checks import parametrize_with_checks
 
 from tabicl import TabICLClassifier, TabICLRegressor
-from tabicl.sklearn.preprocessing import TransformToNumerical
+from tabicl.sklearn.preprocessing import EnsembleGenerator, TransformToNumerical
 
 
 
@@ -32,6 +32,24 @@ def test_transform_to_numerical_preserves_dataframe_column_order():
     np.testing.assert_allclose(train_out[[0, 2], 3], [7.1, 6.8])
     np.testing.assert_allclose(test_out[0, [0, 1, 3]], [68.5, 20.0, 7.0])
     assert test_out[0, 2] == -1.0
+
+
+def test_fixed_schema_ensemble_keeps_constant_columns():
+    generator = EnsembleGenerator(
+        classification=False,
+        n_estimators=1,
+        norm_methods="none",
+        feat_shuffle_method="none",
+        remove_constant_features=False,
+        random_state=42,
+    )
+    generator.fit(
+        np.asarray([[1.0, 2.0], [1.0, 3.0]]),
+        np.asarray([0.0, 1.0]),
+    )
+
+    assert generator.n_features_in_ == 2
+    assert generator.unique_filter_.features_to_keep_.tolist() == [True, True]
 
 
 # n_estimators=2 ensures the full preprocessing and ensembling pipeline is tested:

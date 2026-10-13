@@ -1,0 +1,20 @@
+id: combined_epit_soccol_mpea
+title: Combined EPIT and Soccol context with MPEA external queries
+status: derived_context_and_query_artifacts
+license: derived_from_source_datasets
+processor: prepare_shared_tables.py
+schema_aligner: schema_alignment.py
+prior_config_builder: prepare_prior_config.py
+outputs:
+  context: processed/epit_soccol_context.csv
+  queries: processed/mpea_queries.csv
+  scoring_targets: processed/mpea_scoring_targets.csv
+  feature_registry: processed/shared_feature_registry.json
+  missingness_profile: processed/context_missingness_profile.json
+  combined_prior_config: processed/combined_prior_config.json
+  preparation_manifest: processed/preparation_manifest.json
+notes:
+  - Existing EPIT, Soccol, and MPEA files are read only.
+  - MPEA targets are excluded from the query table and stored separately for scoring.
+  - Missing predictors remain NaN for the opt-in learned missing-value encoder.
+  - Training missingness patterns use EPIT/Soccol context only, never MPEA queries or targets.

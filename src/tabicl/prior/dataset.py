@@ -58,6 +58,11 @@ from .soccol_schema import (
     SOCCOL_FEATURE_PROFILE,
     soccol_feature_slices,
 )
+from .source_ids import (
+    MISSINGNESS_SOURCE_EPIT,
+    MISSINGNESS_SOURCE_GENERIC,
+    MISSINGNESS_SOURCE_SOCCOL,
+)
 from .magpie_features import (
     EPIT_BASE_FEATURE_COUNT,
     EPIT_MATERIAL_FEATURE_COUNT,
@@ -722,6 +727,7 @@ class SCMPrior(Prior):
         n_jobs: int = -1,
         num_threads_per_generate: int = 1,
         informed_prior_ratio: float = 0.5,
+        return_source_ids: bool = False,
         device: str = "cpu",
     ):
         super().__init__(
@@ -748,6 +754,7 @@ class SCMPrior(Prior):
         if not 0.0 <= informed_prior_ratio <= 1.0:
             raise ValueError("informed_prior_ratio must be in [0, 1].")
         self.informed_prior_ratio = informed_prior_ratio
+        self.return_source_ids = bool(return_source_ids)
         self.device = device
         self.last_pitting_target_rule: Optional[Dict[str, Any]] = None
         self.last_pitting_target_component: Optional[Tensor] = None
@@ -4262,7 +4269,23 @@ class SCMPrior(Prior):
             [params["train_size"] for params in param_list], device=self.device, dtype=torch.long
         )
 
+        if self.return_source_ids:
+            source_ids = torch.tensor(
+                [self._missingness_source_id(params) for params in param_list],
+                device=self.device,
+                dtype=torch.long,
+            )
+            return X, y, d, seq_lens, train_sizes, source_ids
         return X, y, d, seq_lens, train_sizes
+
+    @staticmethod
+    def _missingness_source_id(params: Dict[str, Any]) -> int:
+        """Map a synthetic table to generic, EPIT, or Soccol masking."""
+        if not bool(params.get("informed_mode", False)):
+            return MISSINGNESS_SOURCE_GENERIC
+        if str(params.get("pitting_feature_profile", "")) == SOCCOL_FEATURE_PROFILE:
+            return MISSINGNESS_SOURCE_SOCCOL
+        return MISSINGNESS_SOURCE_EPIT
 
     def get_prior(self) -> Tuple[str, bool]:
         """Determine which base prior to use and whether informed structure is enabled.
@@ -4335,6 +4358,7 @@ class DummyPrior(Prior):
         log_seq_len: bool = False,
         min_train_size: Union[int, float] = 0.1,
         max_train_size: Union[int, float] = 0.9,
+        return_source_ids: bool = False,
         device: str = "cpu",
     ):
         super().__init__(
@@ -4349,6 +4373,7 @@ class DummyPrior(Prior):
             max_train_size=max_train_size,
         )
         self.device = device
+        self.return_source_ids = bool(return_source_ids)
 
     @torch.no_grad()
     def get_batch(self, batch_size: Optional[int] = None) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
@@ -4398,6 +4423,14 @@ class DummyPrior(Prior):
         seq_lens = torch.full((batch_size,), seq_len, device=self.device)
         train_sizes = torch.full((batch_size,), train_size, device=self.device)
 
+        if self.return_source_ids:
+            source_ids = torch.full(
+                (batch_size,),
+                MISSINGNESS_SOURCE_GENERIC,
+                device=self.device,
+                dtype=torch.long,
+            )
+            return X, y, d, seq_lens, train_sizes, source_ids
         return X, y, d, seq_lens, train_sizes
 
 
@@ -4502,6 +4535,7 @@ class PriorDataset(IterableDataset):
         n_jobs: int = -1,
         num_threads_per_generate: int = 1,
         informed_prior_ratio: float = 0.5,
+        return_source_ids: bool = False,
         device: str = "cpu",
     ):
         super().__init__()
@@ -4516,6 +4550,7 @@ class PriorDataset(IterableDataset):
                 log_seq_len=log_seq_len,
                 min_train_size=min_train_size,
                 max_train_size=max_train_size,
+                return_source_ids=return_source_ids,
                 device=device,
             )
         elif prior_type in ["mlp_scm", "tree_scm", "mix_scm", "informed_scm", "hybrid_scm"]:
@@ -4539,6 +4574,7 @@ class PriorDataset(IterableDataset):
                 n_jobs=n_jobs,
                 num_threads_per_generate=num_threads_per_generate,
                 informed_prior_ratio=informed_prior_ratio,
+                return_source_ids=return_source_ids,
                 device=device,
             )
         else:
@@ -4562,6 +4598,7 @@ class PriorDataset(IterableDataset):
         self.max_train_size = max_train_size
         self.device = device
         self.prior_type = prior_type
+        self.return_source_ids = bool(return_source_ids)
 
     def get_batch(self, batch_size: Optional[int] = None) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
         """Generate a new batch of datasets.

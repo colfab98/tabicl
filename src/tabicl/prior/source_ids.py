@@ -1,0 +1,11 @@
+"""Stable source identifiers carried with synthetic corrosion tables."""
+
+MISSINGNESS_SOURCE_GENERIC = 0
+MISSINGNESS_SOURCE_EPIT = 1
+MISSINGNESS_SOURCE_SOCCOL = 2
+
+SOURCE_ID_BY_NAME = {
+    "EPIT": MISSINGNESS_SOURCE_EPIT,
+    "Soccol": MISSINGNESS_SOURCE_SOCCOL,
+}
+

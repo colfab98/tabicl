@@ -1,0 +1,742 @@
+{
+  "created_at": "2026-10-10T10:05:43",
+  "local_checkpoint": null,
+  "local_models": [],
+  "checkpoint_eval_specs": [
+    {
+      "checkpoint_name": "step-1000",
+      "checkpoint_step": 1000,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-1000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-1500",
+      "checkpoint_step": 1500,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-1500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-2000",
+      "checkpoint_step": 2000,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-2000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-2500",
+      "checkpoint_step": 2500,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-2500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-3000",
+      "checkpoint_step": 3000,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-3000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-3500",
+      "checkpoint_step": 3500,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-3500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-4000",
+      "checkpoint_step": 4000,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-4000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-4500",
+      "checkpoint_step": 4500,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-4500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-5000",
+      "checkpoint_step": 5000,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-5000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-5500",
+      "checkpoint_step": 5500,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-5500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-6000",
+      "checkpoint_step": 6000,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-6000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-6500",
+      "checkpoint_step": 6500,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-6500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-7000",
+      "checkpoint_step": 7000,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-7000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-7500",
+      "checkpoint_step": 7500,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-7500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-8000",
+      "checkpoint_step": 8000,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-8000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-8500",
+      "checkpoint_step": 8500,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-8500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-9000",
+      "checkpoint_step": 9000,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-9000.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-9400",
+      "checkpoint_step": 9400,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-9400.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-9500",
+      "checkpoint_step": 9500,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-9500.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-9600",
+      "checkpoint_step": 9600,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-9600.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-9700",
+      "checkpoint_step": 9700,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-9700.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-9800",
+      "checkpoint_step": 9800,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-9800.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-9900",
+      "checkpoint_step": 9900,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-9900.ckpt"
+        }
+      ]
+    },
+    {
+      "checkpoint_name": "step-10000",
+      "checkpoint_step": 10000,
+      "local_models": [
+        {
+          "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+          "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017/step-10000.ckpt"
+        }
+      ]
+    }
+  ],
+  "runs": [
+    "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017"
+  ],
+  "checkpoint": "all",
+  "min_checkpoint_step": 1000,
+  "checkpoint_step_interval": 0,
+  "include_latest_common_checkpoint": true,
+  "target_mode": "primary",
+  "target_binning": "continuous",
+  "target_bins": 2,
+  "regression_output": "median",
+  "regression_uncertainty": false,
+  "regression_quantile_alphas": [
+    0.05,
+    0.1,
+    0.2,
+    0.25,
+    0.3,
+    0.4,
+    0.5,
+    0.6,
+    0.7,
+    0.75,
+    0.8,
+    0.9,
+    0.95
+  ],
+  "pretrained_checkpoint_version": "tabicl-regressor-v2-20260212.ckpt",
+  "model_cache": true,
+  "primary_metric": "test_spearman",
+  "metric_sort_specs": [
+    [
+      "test_spearman",
+      false
+    ],
+    [
+      "test_nmae_iqr",
+      true
+    ],
+    [
+      "test_npinball_iqr",
+      true
+    ],
+    [
+      "test_interval_80_coverage_error",
+      true
+    ],
+    [
+      "test_mae",
+      true
+    ],
+    [
+      "test_rmse",
+      true
+    ]
+  ],
+  "test_size": 0.25,
+  "random_state": 42,
+  "datacortech_protocol": "author_simple",
+  "max_samples_per_task": 0,
+  "min_numeric_finite_ratio": 0.8,
+  "min_categorical_nonmissing_ratio": 0.8,
+  "default_excluded_datasets": [
+    "316l_pitting_passivity"
+  ],
+  "default_excluded_tasks": [
+    "nace_nist_corr_data__corr_data_database__rate_mm_yr_or_rating_numeric_rate_only",
+    "nace_nist_corr_data__corr_data_database__rate_mils_yr_or_rating_numeric_rate_only"
+  ],
+  "default_summary_excluded_datasets": [
+    "mooring_steel_seawater",
+    "am_mpea_corrosion",
+    "mg_az91_inhibitors",
+    "mg_ze41_inhibitors"
+  ],
+  "excluded_quality_flags": [],
+  "compare_catboost_magpie": false,
+  "pitting_magpie_models": [],
+  "n_estimators": 8,
+  "tabicl_feat_shuffle_method": "none",
+  "compare_catboost": false,
+  "catboost_settings": null,
+  "feature_groups_default": [
+    "material",
+    "environment",
+    "process_history",
+    "exposure_duration",
+    "temporal_history",
+    "direct_intervention",
+    "molecular_descriptor"
+  ],
+  "pitting_magpie_features": false,
+  "pitting_magpie_version": null,
+  "electrochem_feature_groups": [
+    "electrochem_control",
+    "electrochem_downstream"
+  ],
+  "include_electrochem_features": false,
+  "rows": [],
+  "errors": [
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-1000",
+      "checkpoint_step": 1000
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-1500",
+      "checkpoint_step": 1500
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-2000",
+      "checkpoint_step": 2000
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-2500",
+      "checkpoint_step": 2500
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-3000",
+      "checkpoint_step": 3000
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-3500",
+      "checkpoint_step": 3500
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-4000",
+      "checkpoint_step": 4000
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-4500",
+      "checkpoint_step": 4500
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-5000",
+      "checkpoint_step": 5000
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-5500",
+      "checkpoint_step": 5500
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-6000",
+      "checkpoint_step": 6000
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-6500",
+      "checkpoint_step": 6500
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-7000",
+      "checkpoint_step": 7000
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-7500",
+      "checkpoint_step": 7500
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-8000",
+      "checkpoint_step": 8000
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-8500",
+      "checkpoint_step": 8500
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-9000",
+      "checkpoint_step": 9000
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-9400",
+      "checkpoint_step": 9400
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-9500",
+      "checkpoint_step": 9500
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-9600",
+      "checkpoint_step": 9600
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-9700",
+      "checkpoint_step": 9700
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-9800",
+      "checkpoint_step": 9800
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-9900",
+      "checkpoint_step": 9900
+    },
+    {
+      "model": "home_fcolanto_projects_tabicl_checkpoints_epit_pipeline_final_v2_final_epit_pipeline_optuna_empi",
+      "model_kind": "local_tabicl_regressor",
+      "pitting_magpie_features": false,
+      "task_id": "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg",
+      "dataset": "electrochemical_metrics_alloys",
+      "table": "Pitting Potential",
+      "target": "Epit, mV (SCE) Avg.",
+      "task_quality_flags": "",
+      "split_strategy": "epit_pipeline_final_test",
+      "include_in_summary": true,
+      "summary_exclusion_reason": "",
+      "error": "TypeError(\"Encoders require their input argument must be uniformly strings or numbers. Got ['NAType', 'str']\")",
+      "checkpoint_name": "step-10000",
+      "checkpoint_step": 10000
+    }
+  ],
+  "output_files": {
+    "artifact_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/v8_final_test_cpu",
+    "json": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/v8_final_test_cpu/results.json",
+    "csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/v8_final_test_cpu/rows.csv",
+    "wide_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/v8_final_test_cpu/rows_wide.csv",
+    "summary_csv": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/v8_final_test_cpu/rows_summary.csv",
+    "plot_dir": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/v8_final_test_cpu/plots",
+    "plots": [],
+    "task_tables": []
+  }
+}

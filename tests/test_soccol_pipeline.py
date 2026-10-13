@@ -11,6 +11,7 @@ import torch
 
 from scripts import eval_corrosion_datasets as corrosion_eval
 from scripts.eval_corrosion_datasets import preprocess_soccol_split
+from scripts.soccol_pipeline import evaluate_checkpoint_comparison
 from tabicl.prior.dataset import (
     EPIT_TARGET_RULE_COEFFICIENTS,
     SOCCOL_TARGET_RULE_COEFFICIENTS,
@@ -85,6 +86,32 @@ def test_soccol_real_preprocessing_uses_context_only_state():
         assert encoded_test.loc[1, column] == -1.0
 
 
+def test_soccol_context_fold_reuses_full_development_preprocessing():
+    reference = pd.DataFrame(0.0, index=range(2), columns=SOCCOL_FEATURE_COLUMNS)
+    train = reference.iloc[[0]].copy()
+    test = reference.iloc[[1]].copy()
+    continuous = SOCCOL_CONTINUOUS_COLUMNS[0]
+    reference[continuous] = [2.0, 8.0]
+    train[continuous] = np.nan
+    test[continuous] = np.nan
+    for column in SOCCOL_CATEGORICAL_COLUMNS:
+        reference[column] = ["first", "second"]
+        train[column] = "first"
+        test[column] = "second"
+
+    encoded_train, encoded_test = preprocess_soccol_split(
+        train,
+        test,
+        X_preprocessing=reference,
+    )
+
+    assert encoded_train.loc[0, continuous] == 5.0
+    assert encoded_test.loc[1, continuous] == 5.0
+    for column in SOCCOL_CATEGORICAL_COLUMNS:
+        assert encoded_train.loc[0, column] == 0.0
+        assert encoded_test.loc[1, column] == 1.0
+
+
 def test_soccol_final_split_uses_3222_context_and_805_untouched_rows():
     task = corrosion_eval._make_soccol_pipeline_task(SPLIT_MANIFEST)
     corrosion_eval.apply_epit_pipeline_final_test(
@@ -99,6 +126,73 @@ def test_soccol_final_split_uses_3222_context_and_805_untouched_rows():
     assert len(split.test_index) == 805
     assert not set(split.train_index) & set(split.test_index)
     assert split.split_strategy == "epit_pipeline_final_test"
+    assert np.array_equal(split.preprocessing_index, split.train_index)
+
+
+def test_soccol_comparison_wrapper_defaults_to_full_development_context():
+    args = evaluate_checkpoint_comparison.parse_args([])
+    command = evaluate_checkpoint_comparison.evaluation_command(args)
+
+    assert args.context_folds is None
+    assert "--context-folds" not in command
+    assert "--epit-final-test" in command
+    assert "--compare-pretrained-tabicl" in command
+    assert "--compare-catboost" in command
+    assert command[command.index("--fixed-schema-model") + 1] == "soccol_trial19"
+    assert command[command.index("--device") + 1] == "cpu"
+    for column in evaluate_checkpoint_comparison.CATBOOST_CATEGORICAL_COLUMNS:
+        assert column in command
+
+
+def test_soccol_final_split_can_reduce_context_without_changing_queries():
+    full_task = corrosion_eval._make_soccol_pipeline_task(SPLIT_MANIFEST)
+    corrosion_eval.apply_epit_pipeline_final_test(
+        [full_task],
+        manifest_path=SPLIT_MANIFEST,
+    )
+    reduced_task = corrosion_eval._make_soccol_pipeline_task(SPLIT_MANIFEST)
+    corrosion_eval.apply_epit_pipeline_final_test(
+        [reduced_task],
+        manifest_path=SPLIT_MANIFEST,
+        context_fold=2,
+    )
+
+    full_split = full_task.fixed_split
+    reduced_split = reduced_task.fixed_split
+    assert full_split is not None
+    assert reduced_split is not None
+    assert len(reduced_split.train_index) in {644, 645}
+    assert np.array_equal(reduced_split.test_index, full_split.test_index)
+    assert np.array_equal(
+        reduced_split.preprocessing_index,
+        full_split.train_index,
+    )
+    assert len(reduced_split.test_index) == 805
+    assert not set(reduced_split.train_index) & set(reduced_split.test_index)
+    assert (
+        reduced_split.split_strategy
+        == "epit_pipeline_final_test_context_fold_2"
+    )
+
+
+def test_all_soccol_context_folds_use_the_full_development_preprocessor():
+    for fold in range(1, 6):
+        task = corrosion_eval._make_soccol_pipeline_task(SPLIT_MANIFEST)
+        corrosion_eval.apply_epit_pipeline_final_test(
+            [task],
+            manifest_path=SPLIT_MANIFEST,
+            context_fold=fold,
+        )
+        split = task.fixed_split
+        assert split is not None
+        train, test = preprocess_soccol_split(
+            task.X.iloc[split.train_index],
+            task.X.iloc[split.test_index],
+            X_preprocessing=task.X.iloc[split.preprocessing_index],
+        )
+        assert train.shape[1] == test.shape[1] == 37
+        assert np.isfinite(train.to_numpy()).all()
+        assert np.isfinite(test.to_numpy()).all()
 
 
 def test_soccol_final_wrappers_reuse_epit_workflow_with_soccol_configuration():

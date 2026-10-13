@@ -1,11 +1,16 @@
 # Supplement to main4.tex: target mixing and coefficient variation
 
 Recorded: 2026-09-26; updated with completed training results on 2026-10-01;
-Soccol extension added on 2026-10-04.
+Soccol extension added on 2026-10-04; frozen-query context-size diagnostic
+implementation and the corresponding checkpoint diagnostics added on
+2026-10-11; combined EPIT--Soccol training and frozen MPEA-query workflow
+added on 2026-10-13.
 Working notes for a later merge into [main4.tex](main4.tex).
 Sources: the Codex conversation **“Review main4 and presentation.md”**
 (2026-09-23–25, thread `01a0cde2-bea1-7b32-81c2-2ac6045ae94f`), the subsequent
-launch/concurrency discussion, and the repository artifacts linked below.
+launch/concurrency discussion, the linked combined EPIT--Soccol/MPEA design and
+implementation conversations continued on 2026-10-13, and the repository
+artifacts linked below.
 
 This document separates measured findings, implemented functionality, and proposed
 experiments. It does not replace the frozen v7 experiment or establish that the
@@ -24,6 +29,8 @@ in main4; reconcile them during the merge instead of adding duplicate sections.
 | Several nodes running the same new study concurrently | **Not supported by the current runner.** Shared journal storage exists, but the runner permits only one active process. |
 | Failed/constant SCM component rejection | Discussed, but not implemented by this experiment. |
 | Adaptive λ, grouped bootstrap, joint λ/variation tuning | Discussed only. |
+| Combined EPIT--Soccol context model | Implemented with a frozen 25% generic, 25% EPIT-informed, and 50% Soccol-informed prior; final training has not yet been submitted. |
+| MPEA evaluation | 267 fixed SCE query rows prepared with targets stored separately; no final-model result yet. |
 
 The earlier chat reports **64 passing tests** and tiny CPU training checks with
 zero and four DataLoader workers. These are historical verification results,
@@ -1026,3 +1033,331 @@ The result must retain these qualifications:
 
 Soccol is therefore a second grouped pitting-potential prediction task with an
 untouched target holdout, not yet a completed external-validation result.
+
+## 12. Frozen-query context-size diagnostic and fixed-schema inference (2026-10-11)
+
+### Purpose and evaluation boundary
+
+The earlier development/final-test comparison changed both the labeled context
+size and the query rows, so it could not isolate sensitivity to sample scarcity.
+The implemented diagnostic changes only which development rows are supplied as
+labeled context. The frozen outer final-test partition remains the query set in
+every run: 152 rows for EPIT and 805 rows for Soccol. A development fold is
+never substituted for the final-model query set.
+
+Each of the five saved development folds is used separately as labeled context.
+This gives 121--122 EPIT context rows or 644--645 Soccol context rows per run,
+while the corresponding outer query rows remain fixed. The complete frozen
+model is reused without retraining or checkpoint selection. The diagnostic is
+therefore a context-size sensitivity analysis, not a new cross-validation
+estimate and not an additional model-selection stage.
+
+Metrics are calculated independently for all five context runs and then
+summarized by their mean and sample standard deviation. Predictions are not
+averaged across context folds. Every requested fold must complete for every
+model; otherwise the aggregate comparison fails rather than silently averaging
+an incomplete set. Results from this diagnostic must not be used to replace a
+development-selected checkpoint or configuration.
+
+### Fixed preprocessing state
+
+For this diagnostic, preprocessing is fitted once on the covariates of the full
+development partition and reused for every reduced labeled-context fold. No
+development target outside the selected context fold enters inference. This
+keeps numeric imputation, categorical mappings, and the supplied feature order
+fixed, so the comparison changes labeled context availability rather than also
+changing the preprocessing state.
+
+For Soccol, the full-development reference supplies means for the non-composition
+continuous columns and mappings for the four categorical procedure columns.
+Composition and ion blanks retain the previously defined zero encoding. For
+EPIT, nullable categorical missing values are normalized before applying the
+fixed numerical encoding. Both context and query matrices are checked for a
+finite, unchanged feature count.
+
+### Preserving the trained feature schema
+
+Reduced context can make a feature constant even when it varied during training.
+The default TabICL preprocessing removes constant context columns, which would
+shift later columns and violate the positional meaning of the fixed physical
+schema. Fixed-schema inference therefore disables constant-feature removal for
+these evaluations. All trained columns are retained in their original order:
+28 for EPIT-v8 and 37 for Soccol.
+
+The evaluator records both the supplied and model-visible feature counts and
+fails if a fixed-schema model drops a column. This behavior is opt-in for named
+fixed-schema models in ordinary evaluations and is enforced for TabICL models
+in the frozen-query context-fold diagnostic. The generic estimator default
+remains unchanged outside this workflow.
+
+Implementation references are
+[`eval_corrosion_datasets.py`](scripts/eval_corrosion_datasets.py),
+[`preprocessing.py`](src/tabicl/sklearn/preprocessing.py), and
+[`regressor.py`](src/tabicl/sklearn/regressor.py). The EPIT and Soccol
+checkpoint-comparison wrappers expose the diagnostic through
+`--context-folds 5`.
+
+## 13. EPIT-v8 and Soccol frozen-query checkpoint diagnostics (2026-10-10--11)
+
+### Scope and selection status
+
+Four comparison runs evaluate the EPIT-v8 Trial 17 and Soccol Trial 19 final
+training trajectories. Each contains 25 saved checkpoints: steps 500 through
+9,000 at 500-step intervals, followed by steps 9,400 through 10,000 at 100-step
+intervals. The local generic baseline is compared at the same step. Pretrained
+TabICL V2 and fixed CatBoost do not change with checkpoint step.
+
+These runs inspect the frozen outer query labels at every checkpoint. They are
+therefore post-selection diagnostics, following the same restriction as the
+later-checkpoint analysis in `main4.tex`: an outer-test maximum cannot select or
+rename the final model. At this snapshot, the local EPIT-v8 and Soccol analysis
+roots do not contain completed `final_model_manifest.json` files. The
+best-looking checkpoints below are descriptive maxima from the recorded outer
+test sweeps, not development-selected checkpoints and not new final claims.
+
+The full-context evaluations use all 608 EPIT or 3,222 Soccol development rows
+as labeled context. The reduced-context evaluations use each saved development
+fold separately: 121--122 EPIT or 644--645 Soccol labeled rows. The query sets
+remain the same 152 EPIT or 805 Soccol outer final-test rows in every run.
+
+### EPIT-v8 results
+
+With all 608 development rows as context, the largest recorded outer-test
+Spearman value for CorrPFN-v8 occurs at step 6,500. Values in this table are
+single evaluations on the fixed 152-row query set.
+
+| Model at step 6,500 | Spearman | MAE (mV) | RMSE (mV) | R2 |
+| --- | ---: | ---: | ---: | ---: |
+| CorrPFN-v8 Trial 17 | **0.7082** | 204.5 | **302.3** | **0.4045** |
+| Generic local baseline | 0.5268 | 241.0 | 340.6 | 0.2440 |
+| Pretrained TabICL V2 | 0.6355 | **199.4** | 321.8 | 0.3249 |
+| CatBoost | 0.6008 | 224.4 | 326.7 | 0.3043 |
+
+The same CorrPFN-v8 model at its final step 10,000 has Spearman 0.7021, MAE
+208.5 mV, RMSE 296.2 mV, and R2 0.4282. Thus, the largest Spearman and the best
+error/R2 values do not all occur at one checkpoint. The outer-test trajectory
+must not be used to choose among them.
+
+In the five reduced-context runs, the largest recorded mean Spearman for
+CorrPFN-v8 occurs at step 8,500. Values are mean plus or minus sample standard
+deviation across the five context folds; predictions are not averaged.
+
+| Model at step 8,500 | Spearman | MAE (mV) | RMSE (mV) | R2 |
+| --- | ---: | ---: | ---: | ---: |
+| CorrPFN-v8 Trial 17 | **0.5409 +/- 0.1081** | **255.1 +/- 19.9** | **340.5 +/- 27.2** | **0.2402 +/- 0.1219** |
+| Generic local baseline | 0.4688 +/- 0.1200 | 267.5 +/- 19.1 | 357.9 +/- 22.7 | 0.1624 +/- 0.1068 |
+| Pretrained TabICL V2 | 0.4563 +/- 0.2094 | 266.4 +/- 47.8 | 389.2 +/- 87.7 | -0.0274 +/- 0.4585 |
+| CatBoost | 0.4293 +/- 0.1010 | 271.2 +/- 16.4 | 367.5 +/- 31.0 | 0.1147 +/- 0.1532 |
+
+At step 10,000, the corresponding CorrPFN-v8 fold means are Spearman
+0.5297 +/- 0.1151, MAE 257.1 +/- 19.1 mV, RMSE 343.0 +/- 27.6 mV, and R2
+0.2294 +/- 0.1247. Relative to its full-context step-10,000 result, mean
+Spearman is lower by 0.1724, while MAE and RMSE are higher by 48.7 and 46.8 mV.
+This is a sensitivity comparison on the same queries, not an estimate from five
+independent test samples.
+
+The saved EPIT reduced-context run predates the evaluator fields that record
+full-development preprocessing and the model-visible fixed feature count. Its
+rows confirm the fixed outer query set and 28 supplied features, but they do not
+prove that constant-column removal was disabled inside every model fit. Treat
+the numerical fold comparison above as provisional and rerun it with the
+current fixed-schema evaluator before using it as formal evidence about sample
+scarcity.
+
+### Soccol results
+
+With all 3,222 development rows as context, the largest recorded outer-test
+Spearman for Soccol Trial 19 occurs at step 8,500 on the fixed 805-row query
+set.
+
+| Model at step 8,500 | Spearman | MAE (mV) | RMSE (mV) | R2 |
+| --- | ---: | ---: | ---: | ---: |
+| Soccol Trial 19 | **0.6897** | 158.5 | **210.7** | **0.4545** |
+| Generic local baseline | 0.5566 | 184.5 | 249.5 | 0.2349 |
+| Pretrained TabICL V2 | 0.6272 | 158.7 | 221.2 | 0.3989 |
+| CatBoost | 0.6605 | **152.0** | 210.8 | 0.4541 |
+
+At step 10,000, Soccol Trial 19 has Spearman 0.6830, MAE 161.4 mV, RMSE
+214.0 mV, and R2 0.4374. Trial 19 has the best rank correlation at its
+descriptive step-8,500 maximum, while CatBoost retains the smallest MAE and is
+nearly tied in RMSE and R2. The differences do not establish dominance on all
+metrics.
+
+In the five fixed-schema reduced-context runs, the largest recorded mean
+Spearman for Soccol Trial 19 occurs at step 9,400.
+
+| Model at step 9,400 | Spearman | MAE (mV) | RMSE (mV) | R2 |
+| --- | ---: | ---: | ---: | ---: |
+| Soccol Trial 19 | **0.5752 +/- 0.0839** | **183.8 +/- 14.5** | **242.2 +/- 13.3** | **0.2774 +/- 0.0791** |
+| Generic local baseline | 0.4448 +/- 0.0883 | 208.1 +/- 21.0 | 276.4 +/- 27.3 | 0.0537 +/- 0.1858 |
+| Pretrained TabICL V2 | 0.4758 +/- 0.0656 | 201.0 +/- 7.8 | 259.8 +/- 10.3 | 0.1696 +/- 0.0665 |
+| CatBoost | 0.5644 +/- 0.0532 | 188.6 +/- 8.9 | 246.5 +/- 10.6 | 0.2525 +/- 0.0646 |
+
+At step 10,000, the Soccol fold means are Spearman 0.5727 +/- 0.0860, MAE
+184.1 +/- 14.7 mV, RMSE 242.5 +/- 13.3 mV, and R2 0.2754 +/- 0.0792. Relative
+to the full-context step-10,000 result, mean Spearman is lower by 0.1103, while
+MAE and RMSE are higher by 22.7 and 28.6 mV. The saved manifest records all
+five completed folds, the unchanged outer query partition, preprocessing fitted
+on the full development covariates, preservation of the 37-feature schema, and
+zero evaluation errors.
+
+### Artifact and plot locations
+
+The four recorded comparison directories are:
+
+| Evaluation | Result and table files | Plot directory |
+| --- | --- | --- |
+| EPIT-v8, full development context | [`v8_final_test_cpu_comparison/`](corrosion_datasets/analysis/epit_pipeline/v8_final_test_cpu_comparison/) contains `results.json`, `rows.csv`, `rows_wide.csv`, and `rows_summary.csv`. | [`plots/`](corrosion_datasets/analysis/epit_pipeline/v8_final_test_cpu_comparison/plots/) |
+| EPIT-v8, five reduced context folds | [`v8_final_test_context_folds/`](corrosion_datasets/analysis/epit_pipeline/v8_final_test_context_folds/) contains the aggregate files plus one directory per context fold. | [`plots/`](corrosion_datasets/analysis/epit_pipeline/v8_final_test_context_folds/plots/) |
+| Soccol, full development context | [`final_test_full_development_comparison/`](corrosion_datasets/analysis/soccol_pipeline/final_test_full_development_comparison/) contains `results.json`, `rows.csv`, `wide.csv`, and `summary.csv`. | [`plots/`](corrosion_datasets/analysis/soccol_pipeline/final_test_full_development_comparison/plots/) |
+| Soccol, five reduced context folds | [`final_test_context_folds_comparison/`](corrosion_datasets/analysis/soccol_pipeline/final_test_context_folds_comparison/) contains the aggregate files plus one directory per context fold. | [`plots/`](corrosion_datasets/analysis/soccol_pipeline/final_test_context_folds_comparison/plots/) |
+
+Every plot directory contains these six SVG files:
+
+- `trend_mean_test_spearman.svg`
+- `trend_mean_test_mae.svg`
+- `trend_mean_test_r2.svg`
+- `trend_mean_test_pearson.svg`
+- `trend_mean_test_nmae_iqr.svg`
+- `trend_mean_test_nrmse_iqr.svg`
+
+These paths should be used when figures are later copied into the manuscript.
+The separate `epit_pipeline/v8_final_test_cpu/` directory is an earlier
+CorrPFN-only run and is not the complete EPIT full-context comparison.
+
+## 14. Combined EPIT--Soccol training with frozen MPEA queries (2026-10-13)
+
+### Target and reference-electrode decision
+
+The combined task uses one response,
+`reported_pitting_potential_mV`, meaning the reported potential in mV on the
+scale identified by the categorical predictor `reference_type`. It does not
+create separate SCE and Ag/AgCl targets and does not use a numeric sentinel such
+as `-1` for an unknown reference. The two known reference categories are `SCE`
+and `AgAgCl`; an unverified reference is represented by an actual missing value,
+not a third physical electrode category.
+
+The standalone Soccol section above records the collection-level Ag/AgCl
+convention. For combined training, the audit adopted a more conservative
+source-level rule: 565 Soccol rows have verified SCE provenance, 112 have
+verified Ag/AgCl provenance, and 3,350 of 4,027 do not have enough retained
+primary-source evidence to assign either scale. Those 3,350 rows are retained
+with `reference_type=NaN`, while `reference_type_evidence` records
+`source_reference_not_verified` for auditing. No electrode conversion is
+applied, because a blanket conversion would falsely claim a known reference for
+most Soccol rows. This keeps the observed target while allowing the in-context
+model to condition on the known measurement type when it is available and use
+its learned missing token otherwise.
+
+This is input uncertainty, not a missing-target problem. All labeled context
+rows retain a finite reported potential. A row with an actually missing target
+could not be context or contribute to a score. The MPEA scoring targets are SCE
+and remain separate from the query features.
+
+### Derived data and shared feature contract
+
+The original EPIT, Soccol, and MPEA files are unchanged. The derived directory
+[`combined_epit_soccol_mpea/`](corrosion_datasets/datasets/combined_epit_soccol_mpea/)
+contains:
+
+| Artifact | Contents |
+| --- | --- |
+| `epit_soccol_context.csv` | 4,787 labeled rows: 760 EPIT and 4,027 Soccol. Across both sources, 1,325 have verified SCE, 112 verified Ag/AgCl, and 3,350 have a missing reference type with separate audit evidence. |
+| `mpea_queries.csv` | 267 fixed source-screened MPEA query rows with no target column. |
+| `mpea_scoring_targets.csv` | The 267 row-ID-aligned SCE targets, held separately for final scoring. |
+| `shared_feature_registry.json` | Canonical names, order, units, aliases, source mappings, and reference categories. |
+| `context_missingness_profile.json` | Context-only joint missingness patterns: 9 EPIT patterns and 265 Soccol patterns, including missing reference type. |
+| `combined_prior_config.json` | Frozen prior regimes, source commands, source hashes, formulas, coefficients, and mixture policy. |
+
+The shared input has exactly 50 named slots: 24 composition columns, 20
+continuous preparation/environment columns, and six categorical columns
+(`Prep_medium`, `CP_aeration`, `CP_agitation`, `CP_anions_info`, `test_method`,
+and `reference_type`). Fifty features means 50 stable semantic positions; a
+missingness mask sets individual cells to `NaN` and does not delete columns.
+Features unsupported by a source remain `NaN`. Soccol composition zeros are
+also restored to `NaN` where its retained audit flag says that the original
+cell was unreported. The two known `2016Alar` value discrepancies are recorded
+but preserved rather than silently changing an existing processed dataset.
+
+Incoming DataFrames are aligned by exact canonical column names plus explicit
+approved aliases. Columns can arrive in any order; absent columns are filled
+with `NaN`, and unknown columns are reported or rejected. The aligner performs
+no fuzzy matching and does not infer units. The estimator also reindexes exact
+canonical names at prediction time. Fixed-schema inference retains all 50
+columns, disables constant-feature removal, and uses no feature shuffle.
+
+### Learned missingness and source-aware masks
+
+The combined model opts into a learned column-level missing-value token through
+`--col_missing_value_embedding True`. Actual `NaN` values are preserved through
+the scikit-learn path instead of being replaced by a universal numeric
+sentinel. Column feature grouping is disabled only for this missing-aware path,
+because grouping columns with different missingness identities would destroy
+the fixed schema. The ordinary generic model keeps its historical feature
+grouping and all new behavior is opt-in; existing generic configurations and
+checkpoints are not rewritten.
+
+During pretraining, joint masks sampled from the 4,787 context rows are applied
+to composition as well as non-composition inputs, never to the target. EPIT-
+informed tables receive EPIT masks, Soccol-informed tables receive Soccol masks,
+and generic tables sample EPIT or Soccol masks in proportion to their empirical
+context row counts. At the default augmentation probability of 0.8, at least
+two originally observed composition values are retained per synthetic row when
+possible. Internal source IDs route these masks without becoming model inputs.
+MPEA queries and MPEA targets contribute to neither the mask profile nor
+pretraining.
+
+### Frozen combined prior
+
+The prior does not average the EPIT and Soccol formulas or coefficients. It
+first gives the two selected source-model regimes equal weight. The EPIT-v8
+model was historically 50% generic and 50% informed, whereas the selected
+Soccol model was 100% informed. This yields the frozen combined mixture below.
+
+| Regime | Share | MLP/tree | Categorical generation | Retained source settings |
+| --- | ---: | ---: | ---: | --- |
+| Generic | 0.25 | 0.7/0.3 | `cat_prob=0.2` | Generic 50-feature SCM; no informed corrosion formula. |
+| EPIT-informed | 0.25 | 0.7/0.3 | Random categorization off | EPIT profile, `(24,3,1,0,0,0,0,0,0)` block allocation, target-mix weight 0.2642320686, family probabilities `(0.745,0.1375,0.0425,0.0425,0.0325)`, perturbation 0.1496753492, and the selected EPIT formulas and coefficient dictionaries. |
+| Soccol-informed | 0.50 | 1.0/0.0 | Random categorization off | Soccol profile, `(13,20,4,0,0,0,0,0,0)` block allocation, target-mix weight 0.6629552825, family probabilities `(1,0,0,0,0)`, perturbation 0.03576597424, and the selected Soccol formulas and coefficient dictionaries. |
+
+Both informed regimes retain coefficient variation 0.8, its calibrated bounds,
+and seed 42. Their schema-defined categorical fields remain categorical even
+though generic random category conversion is disabled. EPIT's 28 and Soccol's
+37 generated source features are mapped into the canonical 50 slots by name;
+unsupported slots remain `NaN`. The generic regime directly generates all 50
+slots. The configuration builder
+[`prepare_prior_config.py`](corrosion_datasets/datasets/combined_epit_soccol_mpea/prepare_prior_config.py)
+freezes the selected EPIT Trial 17 and Soccol Trial 19 training commands and
+hashes, so the exact rule scores, formula coefficients, coefficient bounds, and
+other selected settings are auditable in
+[`combined_prior_config.json`](corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/combined_prior_config.json).
+
+The implementation is opt-in through
+[`combined_corrosion.py`](src/tabicl/prior/combined_corrosion.py),
+[`missingness.py`](src/tabicl/train/missingness.py), and the combined-prior flag
+in [`run.py`](src/tabicl/train/run.py). Checkpoints record both the frozen-prior
+and missingness-profile provenance.
+
+### Final training and evaluation boundary
+
+The final run is fixed at 10,000 steps with seed 42, batch size 512,
+micro-batch size 4, sequence length 1,024, 999 regression quantiles, and the
+standard 128-dimensional TabICL architecture. It saves every 100 steps and
+permanent checkpoints every 500 steps, but the intended final model is the
+fixed step-10,000 endpoint; MPEA labels must not be used for checkpoint or
+configuration selection. The Slurm entry point is
+[`train_final.sbatch`](scripts/combined_corrosion/train_final.sbatch), launched
+with:
+
+```bash
+sbatch scripts/combined_corrosion/train_final.sbatch
+```
+
+The final frozen model must use all 4,787 labeled EPIT--Soccol rows as context
+and the same 267 MPEA rows as the query partition. Development folds may be
+used only for development-time selection or diagnostics; they cannot replace
+the MPEA query set. The separated MPEA targets are opened only for the final
+score.
+At this snapshot, the combined path has passed focused prior,
+missingness, estimator-regression, and one-step end-to-end training checks, but
+the 10,000-step Slurm run and final MPEA evaluation have not yet been executed.

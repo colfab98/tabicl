@@ -69,6 +69,10 @@ class TabICL(nn.Module):
     col_feature_group_size : int, default=3
         Number of features per group when feature grouping is enabled.
 
+    col_missing_value_embedding : bool, default=False
+        If True, represent NaN feature values with a learned embedding. Requires
+        ``col_feature_group=False``.
+
     col_target_aware : bool, default=True
         If True, incorporates target information into column-wise embeddings.
 
@@ -152,6 +156,7 @@ class TabICL(nn.Module):
         col_affine: bool = False,
         col_feature_group: Union[bool, Literal["same", "valid"]] = "same",
         col_feature_group_size: int = 3,
+        col_missing_value_embedding: bool = False,
         col_target_aware: bool = True,
         col_ssmax: Union[
             bool,
@@ -210,6 +215,7 @@ class TabICL(nn.Module):
         self.col_affine = col_affine
         self.col_feature_group = col_feature_group
         self.col_feature_group_size = col_feature_group_size
+        self.col_missing_value_embedding = col_missing_value_embedding
         self.col_target_aware = col_target_aware
         self.col_ssmax = col_ssmax
         self.row_num_blocks = row_num_blocks
@@ -239,6 +245,7 @@ class TabICL(nn.Module):
             affine=col_affine,
             feature_group=col_feature_group,
             feature_group_size=col_feature_group_size,
+            missing_value_embedding=col_missing_value_embedding,
             target_aware=col_target_aware,
             max_classes=max_classes,
             reserve_cls_tokens=row_num_cls,

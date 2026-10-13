@@ -65,6 +65,11 @@ class TransformToNumerical(TransformerMixin, BaseEstimator):
     verbose : bool, default=False
         Whether to print information about column classifications.
 
+    preserve_missing_values : bool, default=False
+        If True, keep missing numeric and categorical values as NaN instead of
+        imputing or encoding them. Use this with a checkpoint trained with a
+        learned missing-value embedding.
+
     Attributes
     ----------
     tfm_ : ColumnTransformer or FunctionTransformer
@@ -77,8 +82,35 @@ class TransformToNumerical(TransformerMixin, BaseEstimator):
           through unchanged.
     """
 
-    def __init__(self, verbose: bool = False):
+    def __init__(self, verbose: bool = False, preserve_missing_values: bool = False):
         self.verbose = verbose
+        self.preserve_missing_values = preserve_missing_values
+
+    @staticmethod
+    def _replace_missing_categories(X, positions=None):
+        """Use a string sentinel for encoding, while retaining the original mask."""
+        sentinel = "__TABICL_INTERNAL_MISSING_VALUE__"
+        if hasattr(X, "iloc"):
+            X_prepared = X.copy()
+            masks = []
+            for pos in positions:
+                missing = X_prepared.iloc[:, pos].isna().to_numpy()
+                column = X_prepared.iloc[:, pos].astype(object)
+                X_prepared.isetitem(pos, column.where(~missing, sentinel))
+                masks.append(missing)
+            return X_prepared, masks
+
+        X_prepared = np.asarray(X, dtype=object).copy()
+        missing = np.fromiter(
+            (
+                value is None or (isinstance(value, (float, np.floating)) and np.isnan(value))
+                for value in X_prepared.flat
+            ),
+            dtype=bool,
+            count=X_prepared.size,
+        ).reshape(X_prepared.shape)
+        X_prepared[missing] = sentinel
+        return X_prepared, [missing[:, pos] for pos in range(missing.shape[1])]
 
     def fit(self, X, y=None):
         """Configure transformers for different column types in the input data.
@@ -99,17 +131,24 @@ class TransformToNumerical(TransformerMixin, BaseEstimator):
         """
 
         cat_tfm = OrdinalEncoder(
-            dtype=np.int64, handle_unknown="use_encoded_value", unknown_value=-1, encoded_missing_value=-1
+            dtype=np.float64 if self.preserve_missing_values else np.int64,
+            handle_unknown="use_encoded_value",
+            unknown_value=-1,
+            encoded_missing_value=np.nan if self.preserve_missing_values else -1,
         )
-        num_tfm = SimpleImputer()
+        num_tfm = FunctionTransformer() if self.preserve_missing_values else SimpleImputer()
 
         if not hasattr(X, "columns"):  # proxy way to check whether X is a dataframe without importing pandas
             # no dataframe
             # check if dtype is bool, object, byte sting, or unicode string
             is_categorical = np.asarray(X).dtype.kind in {"b", "O", "S", "U"}
             self._preserve_dataframe_column_order_ = False
+            self._all_input_categorical_ = is_categorical
             self.tfm_ = cat_tfm if is_categorical else num_tfm
-            self.tfm_.fit(X)
+            X_fit = X
+            if self.preserve_missing_values and is_categorical:
+                X_fit, _ = self._replace_missing_categories(X)
+            self.tfm_.fit(X_fit)
             return self
 
         cat_cols = make_column_selector(dtype_include=["string", "object", "category", "boolean"])(X)
@@ -119,6 +158,7 @@ class TransformToNumerical(TransformerMixin, BaseEstimator):
         numeric_pos = [X.columns.get_loc(col) for col in numeric_cols]
 
         self._preserve_dataframe_column_order_ = True
+        self._categorical_input_positions_ = cat_pos
         self._selected_input_positions_ = sorted(cat_pos + numeric_pos)
         self._transformed_output_positions_ = {
             **{input_pos: output_pos for output_pos, input_pos in enumerate(cat_pos)},
@@ -128,7 +168,10 @@ class TransformToNumerical(TransformerMixin, BaseEstimator):
         self.tfm_ = ColumnTransformer(
             transformers=[("categorical", cat_tfm, cat_pos), ("continuous", num_tfm, numeric_pos)]
         )
-        self.tfm_.fit(X)
+        X_fit = X
+        if self.preserve_missing_values:
+            X_fit, _ = self._replace_missing_categories(X, cat_pos)
+        self.tfm_.fit(X_fit)
 
         if self.verbose:
             selected_cols = []
@@ -157,7 +200,19 @@ class TransformToNumerical(TransformerMixin, BaseEstimator):
         X_out : ndarray of shape (n_samples, n_features)
             Transformed array with numerical representations.
         """
-        X_out = self.tfm_.transform(X)
+        categorical_missing_masks = []
+        X_transform = X
+        if self.preserve_missing_values:
+            if getattr(self, "_preserve_dataframe_column_order_", False):
+                X_transform, categorical_missing_masks = self._replace_missing_categories(
+                    X, self._categorical_input_positions_
+                )
+            elif getattr(self, "_all_input_categorical_", False):
+                X_transform, categorical_missing_masks = self._replace_missing_categories(X)
+
+        X_out = self.tfm_.transform(X_transform)
+        for output_pos, missing_mask in enumerate(categorical_missing_masks):
+            X_out[missing_mask, output_pos] = np.nan
         if not getattr(self, "_preserve_dataframe_column_order_", False):
             return X_out
 
@@ -214,7 +269,7 @@ class UniqueFeatureFilter(TransformerMixin, BaseEstimator):
         self : object
             Returns self.
         """
-        X = validate_data(self, X)
+        X = validate_data(self, X, allow_nan=True)
 
         # If there are very few samples, keep all features
         if X.shape[0] <= self.threshold:
@@ -243,7 +298,7 @@ class UniqueFeatureFilter(TransformerMixin, BaseEstimator):
             Transformed array with selected features.
         """
         check_is_fitted(self)
-        X = validate_data(self, X, reset=False)
+        X = validate_data(self, X, reset=False, allow_nan=True)
 
         return X[:, self.features_to_keep_]
 
@@ -304,7 +359,7 @@ class OutlierRemover(TransformerMixin, BaseEstimator):
         self : OutlierRemover
             Returns self.
         """
-        X = validate_data(self, X)
+        X = validate_data(self, X, allow_nan=True)
 
         # First stage: Identify outliers using initial statistics
         self.means_ = np.nanmean(X, axis=0)
@@ -363,7 +418,7 @@ class OutlierRemover(TransformerMixin, BaseEstimator):
             Transformed array with clipped values.
         """
         check_is_fitted(self)
-        X = validate_data(self, X, reset=False)
+        X = validate_data(self, X, reset=False, allow_nan=True)
         X = np.maximum(-np.log1p(np.abs(X)) + self.lower_bounds_, X)
         X = np.minimum(np.log1p(np.abs(X)) + self.upper_bounds_, X)
 
@@ -424,10 +479,10 @@ class CustomStandardScaler(TransformerMixin, BaseEstimator):
             # If X is a 1D array, reshape it to 2D
             X = X.reshape(-1, 1)
 
-        X = validate_data(self, X)
+        X = validate_data(self, X, allow_nan=True)
 
-        self.mean_ = np.mean(X, axis=0)
-        self.scale_ = np.std(X, axis=0) + self.epsilon
+        self.mean_ = np.nanmean(X, axis=0)
+        self.scale_ = np.nanstd(X, axis=0) + self.epsilon
 
         return self
 
@@ -451,7 +506,7 @@ class CustomStandardScaler(TransformerMixin, BaseEstimator):
             is_vector = False
 
         check_is_fitted(self)
-        X = validate_data(self, X, reset=False)
+        X = validate_data(self, X, reset=False, allow_nan=True)
 
         X_scaled = (X - self.mean_) / self.scale_
         X_clipped = np.clip(X_scaled, self.clip_min, self.clip_max)
@@ -478,7 +533,7 @@ class CustomStandardScaler(TransformerMixin, BaseEstimator):
             is_vector = False
 
         check_is_fitted(self)
-        X = validate_data(self, X, reset=False)
+        X = validate_data(self, X, reset=False, allow_nan=True)
         X_out = X * self.scale_ + self.mean_
 
         return X_out.reshape(-1) if is_vector else X_out
@@ -613,7 +668,7 @@ class RTDLQuantileTransformer(BaseEstimator, TransformerMixin):
         X_noisy : ndarray of shape (n_samples, n_features)
             The input data with added Gaussian noise.
         """
-        stds = np.std(X, axis=0, keepdims=True)
+        stds = np.nanstd(X, axis=0, keepdims=True)
         noise_std = self.noise / np.maximum(stds, self.noise)
         rng = np.random.default_rng(self.random_state)
         X_noisy = X + noise_std * rng.standard_normal(X.shape)
@@ -682,7 +737,7 @@ class PreprocessingPipeline(TransformerMixin, BaseEstimator):
         self : PreprocessingPipeline
             Returns self.
         """
-        X = validate_data(self, X)
+        X = validate_data(self, X, allow_nan=True)
 
         # 1. Apply standard scaling
         self.standard_scaler_ = CustomStandardScaler()
@@ -709,8 +764,8 @@ class PreprocessingPipeline(TransformerMixin, BaseEstimator):
             else:
                 raise ValueError(f"Unknown normalization method: {self.normalization_method}")
 
-            self.X_min_ = np.min(X_scaled, axis=0, keepdims=True)
-            self.X_max_ = np.max(X_scaled, axis=0, keepdims=True)
+            self.X_min_ = np.nanmin(X_scaled, axis=0, keepdims=True)
+            self.X_max_ = np.nanmax(X_scaled, axis=0, keepdims=True)
             X_normalized = self.normalizer_.fit_transform(X_scaled)
         else:
             self.normalizer_ = None
@@ -736,7 +791,7 @@ class PreprocessingPipeline(TransformerMixin, BaseEstimator):
             Preprocessed data.
         """
         check_is_fitted(self)
-        X = validate_data(self, X, reset=False, copy=True)
+        X = validate_data(self, X, reset=False, copy=True, allow_nan=True)
         # Standard scaling
         X = self.standard_scaler_.transform(X)
         # Normalization
@@ -940,6 +995,9 @@ class EnsembleGenerator(TransformerMixin, BaseEstimator):
     random_state : int or None, default=None
         Seed for reproducible ensemble generation.
 
+    remove_constant_features : bool, default=True
+        Whether to remove columns with one unique value before preprocessing.
+
     Attributes
     ----------
     n_features_in_ : int
@@ -983,6 +1041,7 @@ class EnsembleGenerator(TransformerMixin, BaseEstimator):
         class_shuffle_method: str = "shift",
         outlier_threshold: float = 4.0,
         random_state: Optional[int] = None,
+        remove_constant_features: bool = True,
     ):
         self.classification = classification
         self.n_estimators = n_estimators
@@ -994,6 +1053,7 @@ class EnsembleGenerator(TransformerMixin, BaseEstimator):
 
         self.outlier_threshold = outlier_threshold
         self.random_state = random_state
+        self.remove_constant_features = remove_constant_features
 
     def fit(self, X, y):
         """Create ensemble configurations and fit preprocessing pipelines.
@@ -1017,7 +1077,7 @@ class EnsembleGenerator(TransformerMixin, BaseEstimator):
         self : EnsembleGenerator
             Fitted generator.
         """
-        validate_data(self, X, y)
+        validate_data(self, X, y, allow_nan=True)
 
         if self.norm_methods is None:
             self.norm_methods_ = ["none", "power"]
@@ -1028,7 +1088,9 @@ class EnsembleGenerator(TransformerMixin, BaseEstimator):
                 self.norm_methods_ = self.norm_methods
 
         # Filter unique features
-        self.unique_filter_ = UniqueFeatureFilter()
+        self.unique_filter_ = UniqueFeatureFilter(
+            threshold=1 if self.remove_constant_features else 0
+        )
         X = self.unique_filter_.fit_transform(X)
 
         self.X_ = X

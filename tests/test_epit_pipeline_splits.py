@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
 from scipy.spatial.distance import pdist
 
-from scripts.eval_corrosion_datasets import DEFAULT_FEATURE_GROUPS, build_task
+from scripts.eval_corrosion_datasets import (
+    DEFAULT_FEATURE_GROUPS,
+    build_task,
+    preprocess_epit_split,
+)
 from scripts.epit_pipeline.split_data import (
     COMPOSITION_DISTANCE_THRESHOLD,
     build_composition_groups,
@@ -11,6 +16,7 @@ from scripts.epit_pipeline.split_data import (
     load_epit_dataset,
 )
 from tabicl.prior.epit_schema import EPIT_COMPOSITION_COLUMNS
+from tabicl.sklearn.preprocessing import TransformToNumerical
 
 
 def test_threshold_components_keep_every_close_pair_together() -> None:
@@ -82,3 +88,34 @@ def test_direct_evaluator_exposes_all_24_composition_columns() -> None:
         for column in EPIT_COMPOSITION_COLUMNS
         for dropped in task.dropped_feature_columns
     )
+
+
+def test_epit_preprocessing_normalizes_nullable_categorical_missing_values() -> None:
+    train = pd.DataFrame(
+        {
+            "Cr": [18.0, 20.0, 22.0],
+            "[Cl-] Test Method": pd.Series(
+                ["potentiodynamic", pd.NA, "scratch"],
+                dtype="string",
+            ),
+        }
+    )
+    test = pd.DataFrame(
+        {
+            "Cr": [19.0, np.nan],
+            "[Cl-] Test Method": pd.Series(
+                [pd.NA, "unseen"],
+                dtype="string",
+            ),
+        }
+    )
+
+    prepared_train, prepared_test = preprocess_epit_split(train, test)
+    transformer = TransformToNumerical().fit(prepared_train)
+    encoded_train = transformer.transform(prepared_train)
+    encoded_test = transformer.transform(prepared_test)
+
+    assert pd.isna(prepared_train.loc[1, "[Cl-] Test Method"])
+    assert pd.isna(prepared_test.loc[0, "[Cl-] Test Method"])
+    assert np.isfinite(np.asarray(encoded_train, dtype=float)).all()
+    assert np.isfinite(np.asarray(encoded_test, dtype=float)).all()

@@ -43,6 +43,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.model_selection import GroupShuffleSplit, train_test_split
 
 from tabicl import TabICLClassifier, TabICLRegressor
+from tabicl.sklearn.preprocessing import TransformToNumerical
 from tabicl.prior.magpie_features import (
     EPIT_MAGPIE_DESCRIPTOR_NAMES,
     EPIT_MAGPIE_MATERIAL_COLUMNS,
@@ -267,6 +268,7 @@ class EvalSplit:
     train_index: np.ndarray
     test_index: np.ndarray
     split_strategy: str
+    preprocessing_index: np.ndarray | None = None
 
 
 @dataclass
@@ -344,6 +346,17 @@ def parse_args() -> argparse.Namespace:
         default=[],
         help="Label for a local model. Pass once per local model when evaluating multiple local checkpoints.",
     )
+    parser.add_argument(
+        "--fixed-schema-model",
+        action="append",
+        default=[],
+        metavar="LABEL",
+        help=(
+            "Local TabICL model whose fixed input schema must be preserved. "
+            "Constant columns are retained and final-test context folds reuse "
+            "preprocessing fitted on the full development partition."
+        ),
+    )
     parser.add_argument("--checkpoint-root", type=Path, default=REPO_ROOT / "checkpoints")
     parser.add_argument("--run-prefix", type=str, default="tabicl_s1mini_generic_")
     parser.add_argument("--device", type=str, default="cuda")
@@ -406,6 +419,30 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Use all saved EPIT development rows as context and the untouched "
             "outer final-test rows as test. Requires --epit-split-manifest."
+        ),
+    )
+    parser.add_argument(
+        "--epit-final-context-fold",
+        type=int,
+        choices=range(1, 6),
+        default=None,
+        help=(
+            "With --epit-final-test, restrict labeled context to one saved "
+            "development fold while keeping the untouched outer final-test "
+            "rows as the query set."
+        ),
+    )
+    parser.add_argument(
+        "--context-folds",
+        "--epit-final-context-folds",
+        dest="epit_final_context_folds",
+        type=int,
+        default=None,
+        metavar="N",
+        help=(
+            "Run all N saved development folds separately as labeled context, "
+            "always query the same outer final-test rows, and aggregate metrics "
+            "across folds. Requires --epit-final-test."
         ),
     )
     parser.add_argument("--target-mode", choices=("primary", "all"), default="primary")
@@ -616,6 +653,23 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError(
             "A fixed EPIT fold cannot be combined with random --split-seeds."
         )
+    if args.epit_final_context_fold is not None and not args.epit_final_test:
+        raise ValueError(
+            "--epit-final-context-fold requires --epit-final-test; it cannot "
+            "create a development-query evaluation."
+        )
+    if args.epit_final_context_folds is not None:
+        if not args.epit_final_test:
+            raise ValueError(
+                "--context-folds requires --epit-final-test."
+            )
+        if args.epit_final_context_fold is not None:
+            raise ValueError(
+                "--context-folds cannot be combined with "
+                "--epit-final-context-fold."
+            )
+        if args.epit_final_context_folds <= 1:
+            raise ValueError("--context-folds must be greater than 1.")
     if args.checkpoint_step_interval < 0:
         raise ValueError("--checkpoint-step-interval must be >= 0.")
     alphas = list(args.regression_quantile_alphas or [])
@@ -692,8 +746,12 @@ def expand_runs(args: argparse.Namespace) -> list[str]:
 
 
 def resolve_run_checkpoint(run: str, args: argparse.Namespace) -> Path:
-    run_dir_name = run if run.startswith(args.run_prefix) else f"{args.run_prefix}{run}"
-    run_dir = (args.checkpoint_root / run_dir_name).expanduser().resolve()
+    supplied_path = Path(run).expanduser()
+    if supplied_path.is_absolute():
+        run_dir = supplied_path.resolve()
+    else:
+        run_dir_name = run if run.startswith(args.run_prefix) else f"{args.run_prefix}{run}"
+        run_dir = (args.checkpoint_root / run_dir_name).expanduser().resolve()
     if not run_dir.is_dir():
         raise FileNotFoundError(f"Checkpoint directory not found: {run_dir}")
 
@@ -719,8 +777,12 @@ def resolve_run_checkpoint(run: str, args: argparse.Namespace) -> Path:
 
 
 def resolve_run_dir(run: str, args: argparse.Namespace) -> Path:
-    run_dir_name = run if run.startswith(args.run_prefix) else f"{args.run_prefix}{run}"
-    run_dir = (args.checkpoint_root / run_dir_name).expanduser().resolve()
+    supplied_path = Path(run).expanduser()
+    if supplied_path.is_absolute():
+        run_dir = supplied_path.resolve()
+    else:
+        run_dir_name = run if run.startswith(args.run_prefix) else f"{args.run_prefix}{run}"
+        run_dir = (args.checkpoint_root / run_dir_name).expanduser().resolve()
     if not run_dir.is_dir():
         raise FileNotFoundError(f"Checkpoint directory not found: {run_dir}")
     return run_dir
@@ -1744,16 +1806,43 @@ def apply_epit_pipeline_final_test(
     tasks: list[EvalTask],
     *,
     manifest_path: Path,
+    context_fold: int | None = None,
 ) -> None:
-    """Use all development rows as context and untouched rows as final test."""
-    task, development_global, final_global, _ = _load_epit_pipeline_indices(
+    """Use development context and always keep untouched rows as final test."""
+    task, development_global, final_global, manifest = _load_epit_pipeline_indices(
         tasks,
         manifest_path=manifest_path,
     )
+    preprocessing_global = development_global.copy()
+    split_strategy = "epit_pipeline_final_test"
+    if context_fold is not None:
+        by_index = {
+            int(record["task_row_index"]): record
+            for record in manifest.get("rows", [])
+        }
+        fold_field = (
+            "development_validation_fold"
+            if manifest.get("schema_version") == "soccol_composition_split_manifest_v1"
+            else "optuna_validation_fold"
+        )
+        development_global = np.asarray(
+            [
+                index
+                for index in development_global
+                if int(by_index[int(index)][fold_field]) == int(context_fold)
+            ],
+            dtype=int,
+        )
+        if len(development_global) == 0:
+            raise RuntimeError(
+                f"Saved development context fold {context_fold} is empty."
+            )
+        split_strategy = f"epit_pipeline_final_test_context_fold_{context_fold}"
     task.fixed_split = EvalSplit(
         train_index=development_global,
         test_index=final_global,
-        split_strategy="epit_pipeline_final_test",
+        split_strategy=split_strategy,
+        preprocessing_index=preprocessing_global,
     )
     task.split_strategy = task.fixed_split.split_strategy
 
@@ -1863,12 +1952,14 @@ def make_tabicl_regressor(
     allow_auto_download: bool,
     feat_shuffle_method: str = "latin",
     norm_methods: list[str] | None = None,
+    remove_constant_features: bool = True,
 ) -> TabICLRegressor:
     kwargs: dict[str, Any] = {
         "device": device,
         "n_estimators": n_estimators,
         "feat_shuffle_method": feat_shuffle_method,
         "norm_methods": norm_methods,
+        "remove_constant_features": remove_constant_features,
         "random_state": random_state,
         "allow_auto_download": allow_auto_download,
     }
@@ -2335,27 +2426,38 @@ def augment_pitting_magpie_split(
 def preprocess_soccol_split(
     X_train: pd.DataFrame,
     X_test: pd.DataFrame,
+    *,
+    X_preprocessing: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Apply the approved Soccol encodings using context rows only."""
+    """Apply the approved Soccol encodings using fixed preprocessing rows."""
     train = X_train.loc[:, SOCCOL_FEATURE_COLUMNS].copy()
     test = X_test.loc[:, SOCCOL_FEATURE_COLUMNS].copy()
+    preprocessing = (
+        train.copy()
+        if X_preprocessing is None
+        else X_preprocessing.loc[:, SOCCOL_FEATURE_COLUMNS].copy()
+    )
     for column in (*SOCCOL_COMPOSITION_COLUMNS, *SOCCOL_ION_COLUMNS):
         train[column] = pd.to_numeric(train[column], errors="coerce").fillna(0.0)
         test[column] = pd.to_numeric(test[column], errors="coerce").fillna(0.0)
     for column in SOCCOL_CONTINUOUS_COLUMNS:
+        preprocessing_values = pd.to_numeric(preprocessing[column], errors="coerce")
         train_values = pd.to_numeric(train[column], errors="coerce")
         test_values = pd.to_numeric(test[column], errors="coerce")
-        mean = float(train_values.mean())
+        mean = float(preprocessing_values.mean())
         if not math.isfinite(mean):
             raise RuntimeError(
-                f"Soccol context rows cannot fit a finite mean for {column}."
+                f"Soccol preprocessing rows cannot fit a finite mean for {column}."
             )
         train[column] = train_values.fillna(mean)
         test[column] = test_values.fillna(mean)
     for column in SOCCOL_CATEGORICAL_COLUMNS:
+        preprocessing_values = preprocessing[column].astype("string").str.strip()
         train_values = train[column].astype("string").str.strip()
         test_values = test[column].astype("string").str.strip()
-        categories = sorted(str(value) for value in train_values.dropna().unique())
+        categories = sorted(
+            str(value) for value in preprocessing_values.dropna().unique()
+        )
         mapping = {value: index for index, value in enumerate(categories)}
         train[column] = train_values.map(mapping).fillna(-1).astype(float)
         test[column] = test_values.map(mapping).fillna(-1).astype(float)
@@ -2364,6 +2466,54 @@ def preprocess_soccol_split(
     if not np.isfinite(train.to_numpy()).all() or not np.isfinite(test.to_numpy()).all():
         raise RuntimeError("Soccol preprocessing produced non-finite model inputs.")
     return train, test
+
+
+def preprocess_epit_split(
+    X_train: pd.DataFrame,
+    X_test: pd.DataFrame,
+    *,
+    X_preprocessing: pd.DataFrame | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Normalize EPIT inputs, optionally freezing encodings on reference rows."""
+    train = X_train.copy()
+    test = X_test.copy()
+    preprocessing = None if X_preprocessing is None else X_preprocessing.copy()
+    frames = [train, test] if preprocessing is None else [preprocessing, train, test]
+    for column in train.columns:
+        if pd.api.types.is_numeric_dtype(train[column]):
+            continue
+        for frame in frames:
+            frame[column] = frame[column].astype(object).where(
+                frame[column].notna(), np.nan
+            )
+    if preprocessing is None:
+        return train, test
+
+    encoder = TransformToNumerical()
+    encoder.fit(preprocessing)
+    train_values = encoder.transform(train)
+    test_values = encoder.transform(test)
+    if train_values.shape[1] != len(train.columns):
+        raise RuntimeError("EPIT preprocessing changed the fixed feature count.")
+    train = pd.DataFrame(train_values, columns=train.columns, index=train.index).astype(float)
+    test = pd.DataFrame(test_values, columns=test.columns, index=test.index).astype(float)
+    if not np.isfinite(train.to_numpy()).all() or not np.isfinite(test.to_numpy()).all():
+        raise RuntimeError("EPIT preprocessing produced non-finite model inputs.")
+    return train, test
+
+
+def should_preserve_feature_schema(
+    model_kind: str,
+    split: EvalSplit,
+    explicitly_requested: bool,
+) -> bool:
+    return bool(
+        explicitly_requested
+        or (
+            split.preprocessing_index is not None
+            and "tabicl" in model_kind
+        )
+    )
 
 
 def evaluate_estimator(
@@ -2379,6 +2529,7 @@ def evaluate_estimator(
     regression_quantile_alphas: list[float] | None = None,
     regression_uncertainty: bool = True,
     pitting_magpie_features: bool = False,
+    preserve_feature_schema: bool = False,
 ) -> dict[str, Any]:
     if pitting_magpie_features and task.task_id != "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg":
         raise ValueError("pitting_magpie_features is only valid for the fixed EPIT pitting task.")
@@ -2392,19 +2543,56 @@ def evaluate_estimator(
         regression_quantile_alphas = list(regression_quantile_alphas or DEFAULT_REGRESSION_QUANTILE_ALPHAS)
         y_values = task.y.astype(float)
         split = task_split or make_task_split(task, test_size=test_size, random_state=random_state)
+        preserve_feature_schema = should_preserve_feature_schema(
+            model_kind,
+            split,
+            preserve_feature_schema,
+        )
         train_index = split.train_index
         test_index = split.test_index
         split_strategy = split.split_strategy
         X_train = task.X.iloc[train_index].reset_index(drop=True)
         X_test = task.X.iloc[test_index].reset_index(drop=True)
+        X_preprocessing = (
+            None
+            if split.preprocessing_index is None
+            else task.X.iloc[split.preprocessing_index].reset_index(drop=True)
+        )
         if task.task_id == SOCCOL_PIPELINE_TASK_ID:
-            X_train, X_test = preprocess_soccol_split(X_train, X_test)
+            X_train, X_test = preprocess_soccol_split(
+                X_train,
+                X_test,
+                X_preprocessing=X_preprocessing,
+            )
+        elif task.task_id == EPIT_PIPELINE_TASK_ID:
+            X_train, X_test = preprocess_epit_split(
+                X_train,
+                X_test,
+                X_preprocessing=(
+                    X_preprocessing if "tabicl" in model_kind else None
+                ),
+            )
         if pitting_magpie_features:
             X_train, X_test = augment_pitting_magpie_split(X_train, X_test)
         y_train = y_values.iloc[train_index].reset_index(drop=True)
         y_test = y_values.iloc[test_index].reset_index(drop=True)
         estimator = estimator_factory()
+        if preserve_feature_schema:
+            if not hasattr(estimator, "remove_constant_features"):
+                raise TypeError(
+                    "Fixed-schema evaluation requires a TabICL regressor."
+                )
+            estimator.set_params(remove_constant_features=False)
         estimator.fit(X_train, y_train)
+        n_model_features = int(
+            getattr(
+                getattr(estimator, "ensemble_generator_", None),
+                "n_features_in_",
+                X_train.shape[1],
+            )
+        )
+        if preserve_feature_schema and n_model_features != X_train.shape[1]:
+            raise RuntimeError("Fixed-schema model input columns were removed.")
         quantile_pred: np.ndarray | None = None
         if regression_uncertainty:
             try:
@@ -2474,6 +2662,8 @@ def evaluate_estimator(
             "n_train": int(len(X_train)),
             "n_test": int(len(X_test)),
             "n_features": int(X_train.shape[1]),
+            "n_model_features": n_model_features,
+            "preserve_feature_schema": bool(preserve_feature_schema),
             "pitting_magpie_features": bool(pitting_magpie_features),
             "n_classes": 0,
             "class_labels": "",
@@ -2806,11 +2996,17 @@ def make_summary_dataframe(
         win_counts: dict[str, dict[str, int]] = {
             metric: {model: 0 for model in model_order} for metric in METRIC_COLUMNS
         }
+        comparison_group_cols = ["task_id"]
+        for replicate_column in ("split_seed", "context_fold"):
+            if replicate_column in checkpoint_df.columns:
+                comparison_group_cols.append(replicate_column)
         if not checkpoint_df.empty:
             for metric in METRIC_COLUMNS:
                 if metric not in checkpoint_df.columns:
                     continue
-                for _, group in checkpoint_df.groupby("task_id", sort=False):
+                for _, group in checkpoint_df.groupby(
+                    comparison_group_cols, sort=False
+                ):
                     values = pd.to_numeric(group[metric], errors="coerce")
                     if not values.notna().any():
                         continue
@@ -2828,7 +3024,12 @@ def make_summary_dataframe(
             for metric in METRIC_COLUMNS:
                 if metric not in checkpoint_df.columns:
                     continue
-                pivot = checkpoint_df.pivot_table(index="task_id", columns="model", values=metric, aggfunc="first")
+                pivot = checkpoint_df.pivot_table(
+                    index=comparison_group_cols,
+                    columns="model",
+                    values=metric,
+                    aggfunc="first",
+                )
                 if baseline_model not in pivot.columns:
                     continue
                 baseline = pd.to_numeric(pivot[baseline_model], errors="coerce")
@@ -2923,6 +3124,24 @@ def ensure_unique_job_labels(jobs: list[dict[str, Any]]) -> None:
 def model_uses_pitting_magpie(args: argparse.Namespace, model_label: str, *, force: bool = False) -> bool:
     requested_labels = {slugify(label) for label in (args.pitting_magpie_model or [])}
     return bool(force or args.pitting_magpie_features or slugify(model_label) in requested_labels)
+
+
+def model_uses_fixed_schema(args: argparse.Namespace, model_label: str) -> bool:
+    requested_labels = {slugify(label) for label in args.fixed_schema_model}
+    return slugify(model_label) in requested_labels
+
+
+def validate_fixed_schema_model_labels(
+    args: argparse.Namespace,
+    local_labels: set[str],
+) -> None:
+    requested_labels = {slugify(label) for label in args.fixed_schema_model}
+    unknown_labels = sorted(requested_labels.difference(local_labels))
+    if unknown_labels:
+        raise ValueError(
+            "--fixed-schema-model must name a local TabICL model: "
+            + ", ".join(unknown_labels)
+        )
 
 
 def validate_pitting_magpie_model_labels(args: argparse.Namespace, available_labels: set[str]) -> None:
@@ -3188,6 +3407,13 @@ REPEATED_SPLIT_VALUE_ARGS = {
 }
 REPEATED_SPLIT_DROP_FLAGS = {"--no-checkpoint-plots", "--save-task-tables"}
 
+CONTEXT_FOLD_VALUE_ARGS = REPEATED_SPLIT_VALUE_ARGS | {
+    "--epit-final-context-fold",
+    "--context-folds",
+    "--epit-final-context-folds",
+}
+CONTEXT_FOLD_DROP_FLAGS = REPEATED_SPLIT_DROP_FLAGS
+
 
 def strip_repeated_split_driver_args(argv: list[str]) -> list[str]:
     """Remove args controlled by the repeated-split driver before spawning seed runs."""
@@ -3204,6 +3430,23 @@ def strip_repeated_split_driver_args(argv: list[str]) -> list[str]:
             index += 2
             continue
         if arg in REPEATED_SPLIT_DROP_FLAGS:
+            index += 1
+            continue
+        cleaned.append(arg)
+        index += 1
+    return cleaned
+
+
+def strip_context_fold_driver_args(argv: list[str]) -> list[str]:
+    """Remove args controlled by the EPIT context-fold driver."""
+    cleaned: list[str] = []
+    index = 0
+    while index < len(argv):
+        arg = argv[index]
+        if arg in CONTEXT_FOLD_VALUE_ARGS:
+            index += 2
+            continue
+        if arg in CONTEXT_FOLD_DROP_FLAGS:
             index += 1
             continue
         cleaned.append(arg)
@@ -3252,12 +3495,70 @@ def repeated_split_output_paths(args: argparse.Namespace) -> tuple[Path, Path, P
     return output_json, output_csv, output_wide_csv, output_summary_csv, output_plot_dir
 
 
+def context_fold_output_paths(
+    args: argparse.Namespace,
+) -> tuple[Path, Path, Path, Path, Path]:
+    if args.output_csv is not None:
+        artifact_dir = args.output_csv.expanduser().resolve().parent
+    elif args.output_json is not None:
+        artifact_dir = args.output_json.expanduser().resolve().parent
+    elif args.output_wide_csv is not None:
+        artifact_dir = args.output_wide_csv.expanduser().resolve().parent
+    elif args.output_summary_csv is not None:
+        artifact_dir = args.output_summary_csv.expanduser().resolve().parent
+    else:
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        artifact_dir = DEFAULT_OUTPUT_DIR / f"epit_final_context_folds_{stamp}"
+
+    output_json = (
+        args.output_json.expanduser().resolve()
+        if args.output_json is not None
+        else artifact_dir / "results.json"
+    )
+    output_csv = (
+        args.output_csv.expanduser().resolve()
+        if args.output_csv is not None
+        else artifact_dir / "rows.csv"
+    )
+    output_wide_csv = (
+        args.output_wide_csv.expanduser().resolve()
+        if args.output_wide_csv is not None
+        else artifact_dir / "wide.csv"
+    )
+    output_summary_csv = (
+        args.output_summary_csv.expanduser().resolve()
+        if args.output_summary_csv is not None
+        else artifact_dir / "summary.csv"
+    )
+    output_plot_dir = (
+        args.output_plot_dir.expanduser().resolve()
+        if args.output_plot_dir is not None
+        else artifact_dir / "plots"
+    )
+    return output_json, output_csv, output_wide_csv, output_summary_csv, output_plot_dir
+
+
 def add_split_metadata(records: list[dict[str, Any]], *, seed: int, seed_dir: Path) -> list[dict[str, Any]]:
     enriched: list[dict[str, Any]] = []
     for record in records:
         item = dict(record)
         item["split_seed"] = int(seed)
         item["seed_output_dir"] = str(seed_dir)
+        enriched.append(item)
+    return enriched
+
+
+def add_context_fold_metadata(
+    records: list[dict[str, Any]],
+    *,
+    fold: int,
+    fold_dir: Path,
+) -> list[dict[str, Any]]:
+    enriched: list[dict[str, Any]] = []
+    for record in records:
+        item = dict(record)
+        item["context_fold"] = int(fold)
+        item["context_fold_output_dir"] = str(fold_dir)
         enriched.append(item)
     return enriched
 
@@ -3285,6 +3586,76 @@ def add_split_counts_to_summary(summary: pd.DataFrame, rows: list[dict[str, Any]
         ordered_cols.insert(insert_at, "n_splits")
         merged = merged[ordered_cols]
     return merged
+
+
+def add_context_fold_stats_to_summary(
+    summary: pd.DataFrame,
+    rows: list[dict[str, Any]],
+) -> pd.DataFrame:
+    if summary.empty or not rows:
+        return summary
+    row_df = pd.DataFrame(rows)
+    if "context_fold" not in row_df.columns or "model" not in row_df.columns:
+        return summary
+
+    group_cols = ["model"]
+    if "checkpoint_name" in row_df.columns and "checkpoint_name" in summary.columns:
+        group_cols = ["checkpoint_name", "model"]
+    grouped = row_df.groupby(group_cols, dropna=False)
+    counts = grouped["context_fold"].nunique().reset_index(name="n_context_folds")
+    merged = summary.merge(counts, on=group_cols, how="left")
+
+    metric_columns = [metric for metric in METRIC_COLUMNS if metric in row_df.columns]
+    if metric_columns:
+        standard_deviations = grouped[metric_columns].std(ddof=1).reset_index()
+        standard_deviations = standard_deviations.rename(
+            columns={metric: f"std_{metric}" for metric in metric_columns}
+        )
+        merged = merged.merge(standard_deviations, on=group_cols, how="left")
+
+    ordered_cols = list(merged.columns)
+    ordered_cols.remove("n_context_folds")
+    insert_at = ordered_cols.index("n_success") if "n_success" in ordered_cols else len(ordered_cols)
+    ordered_cols.insert(insert_at, "n_context_folds")
+    return merged[ordered_cols]
+
+
+def require_complete_context_folds(
+    rows: list[dict[str, Any]],
+    errors: list[dict[str, Any]],
+    folds: list[int],
+) -> None:
+    expected = set(folds)
+    identities = {
+        (
+            record.get("checkpoint_name"),
+            record.get("model"),
+            record.get("task_id"),
+        )
+        for record in (*rows, *errors)
+    }
+    incomplete: list[str] = []
+    for identity in sorted(identities, key=lambda values: tuple(map(str, values))):
+        completed = {
+            int(record["context_fold"])
+            for record in rows
+            if (
+                record.get("checkpoint_name"),
+                record.get("model"),
+                record.get("task_id"),
+            )
+            == identity
+        }
+        if completed != expected:
+            incomplete.append(
+                f"{identity[1]}@{identity[0] or 'single'}: {sorted(completed)}"
+            )
+    if errors or incomplete:
+        details = "; ".join(incomplete) or f"{len(errors)} errors"
+        raise RuntimeError(
+            "Context-fold evaluation requires every model to complete all "
+            f"{len(folds)} folds; completed {details}."
+        )
 
 
 def make_repeated_split_wide_dataframe(rows: list[dict[str, Any]], summary: pd.DataFrame) -> pd.DataFrame:
@@ -3331,6 +3702,17 @@ def make_repeated_split_wide_dataframe(rows: list[dict[str, Any]], summary: pd.D
             seeds = sorted({int(seed) for seed in pd.to_numeric(group["split_seed"], errors="coerce").dropna()})
             record["split_seeds"] = " ".join(str(seed) for seed in seeds)
             record["n_splits"] = len(seeds)
+        if "context_fold" in group.columns:
+            folds = sorted(
+                {
+                    int(fold)
+                    for fold in pd.to_numeric(
+                        group["context_fold"], errors="coerce"
+                    ).dropna()
+                }
+            )
+            record["context_folds"] = " ".join(str(fold) for fold in folds)
+            record["n_context_folds"] = len(folds)
 
         if has_checkpoint:
             summary_group = summary[summary["checkpoint_name"].astype(str) == str(first["checkpoint_name"])]
@@ -3345,6 +3727,172 @@ def make_repeated_split_wide_dataframe(rows: list[dict[str, Any]], summary: pd.D
                     record[f"{metric}__{model_key}"] = summary_row[value_col]
         records.append(record)
     return pd.DataFrame(records)
+
+
+def saved_epit_development_folds(manifest_path: Path) -> list[int]:
+    manifest = json.loads(manifest_path.expanduser().resolve().read_text(encoding="utf-8"))
+    fold_field = (
+        "development_validation_fold"
+        if manifest.get("schema_version") == "soccol_composition_split_manifest_v1"
+        else "optuna_validation_fold"
+    )
+    folds = sorted(
+        {
+            int(record[fold_field])
+            for record in manifest.get("rows", [])
+            if record.get("outer_split") == "development"
+        }
+    )
+    if not folds:
+        raise RuntimeError("EPIT split manifest has no saved development folds.")
+    return folds
+
+
+def run_epit_final_context_fold_eval(args: argparse.Namespace) -> None:
+    folds = saved_epit_development_folds(args.epit_split_manifest)
+    requested_count = int(args.epit_final_context_folds)
+    if requested_count != len(folds):
+        raise ValueError(
+            f"--context-folds requested {requested_count}, but the "
+            f"frozen manifest defines {len(folds)} folds: {folds}."
+        )
+
+    (
+        output_json,
+        output_csv,
+        output_wide_csv,
+        output_summary_csv,
+        output_plot_dir,
+    ) = context_fold_output_paths(args)
+    artifact_dir = output_json.parent
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    for output_path in (output_json, output_csv, output_wide_csv, output_summary_csv):
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    task_table_paths: list[Path] = []
+    if args.save_task_tables:
+        task_table_paths = save_model_input_tables(
+            make_tasks(args), artifact_dir / "task_tables"
+        )
+
+    base_argv = strip_context_fold_driver_args(sys.argv[1:])
+    all_rows: list[dict[str, Any]] = []
+    all_errors: list[dict[str, Any]] = []
+    fold_outputs: list[dict[str, Any]] = []
+    for fold in folds:
+        fold_dir = artifact_dir / f"context_fold_{fold}"
+        fold_dir.mkdir(parents=True, exist_ok=True)
+        fold_json = fold_dir / "results.json"
+        fold_rows = fold_dir / "rows.csv"
+        fold_wide = fold_dir / "wide.csv"
+        fold_summary = fold_dir / "summary.csv"
+        command = [
+            sys.executable,
+            str(Path(__file__).resolve()),
+            *base_argv,
+            "--epit-final-context-fold",
+            str(fold),
+            "--output-json",
+            str(fold_json),
+            "--output-csv",
+            str(fold_rows),
+            "--output-wide-csv",
+            str(fold_wide),
+            "--output-summary-csv",
+            str(fold_summary),
+            "--no-checkpoint-plots",
+        ]
+        print(f"\nEPIT final context fold {fold}: {' '.join(command)}", flush=True)
+        subprocess.run(command, cwd=REPO_ROOT, check=True)
+        payload = json.loads(fold_json.read_text(encoding="utf-8"))
+        all_rows.extend(
+            add_context_fold_metadata(
+                payload.get("rows", []), fold=fold, fold_dir=fold_dir
+            )
+        )
+        all_errors.extend(
+            add_context_fold_metadata(
+                payload.get("errors", []), fold=fold, fold_dir=fold_dir
+            )
+        )
+        fold_outputs.append(
+            {
+                "context_fold": fold,
+                "json": str(fold_json),
+                "rows_csv": str(fold_rows),
+                "wide_csv": str(fold_wide),
+                "summary_csv": str(fold_summary),
+            }
+        )
+
+    primary_metric = primary_metric_for_args(args)
+    metric_sort_specs = metric_sort_specs_for_args(args)
+    summary_df = print_summary(
+        all_rows,
+        all_errors,
+        primary_metric=primary_metric,
+        metric_sort_specs=metric_sort_specs,
+    )
+    summary_df = add_context_fold_stats_to_summary(summary_df, all_rows)
+    wide_df = make_repeated_split_wide_dataframe(all_rows, summary_df)
+
+    plot_paths: list[Path] = []
+    if args.checkpoint == "all" and args.checkpoint_plots:
+        plot_metrics = list(args.plot_metric or default_plot_metrics_for_args(args))
+        plot_paths = write_checkpoint_trend_plots(
+            summary_df, output_plot_dir, plot_metrics
+        )
+
+    payload = {
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "epit_final_context_fold_eval": True,
+        "context_folds": folds,
+        "context_fold_outputs": fold_outputs,
+        "query_partition": "frozen_outer_final_test",
+        "metrics_averaged_across_context_folds": True,
+        "predictions_averaged_across_context_folds": False,
+        "preprocessing_partition": "full_development",
+        "fixed_schema_models": sorted(
+            {slugify(label) for label in args.fixed_schema_model}
+        ),
+        "runs": expand_runs(args),
+        "checkpoint": args.checkpoint,
+        "target_mode": args.target_mode,
+        "target_binning": args.target_binning,
+        "regression_output": args.regression_output,
+        "regression_uncertainty": args.regression_uncertainty,
+        "primary_metric": primary_metric,
+        "n_estimators": args.n_estimators,
+        "tabicl_feat_shuffle_method": args.tabicl_feat_shuffle_method,
+        "compare_pretrained_tabicl": bool(args.compare_pretrained_tabicl),
+        "compare_catboost": bool(args.compare_catboost),
+        "rows": all_rows,
+        "errors": all_errors,
+        "summary": summary_df.to_dict(orient="records"),
+        "output_files": {
+            "artifact_dir": str(artifact_dir),
+            "json": str(output_json),
+            "csv": str(output_csv),
+            "wide_csv": str(output_wide_csv),
+            "summary_csv": str(output_summary_csv),
+            "plot_dir": str(output_plot_dir) if plot_paths else None,
+            "plots": [str(path) for path in plot_paths],
+            "task_tables": [str(path) for path in task_table_paths],
+        },
+    }
+    output_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    pd.DataFrame(all_rows).to_csv(output_csv, index=False)
+    wide_df.to_csv(output_wide_csv, index=False)
+    summary_df.to_csv(output_summary_csv, index=False)
+
+    require_complete_context_folds(all_rows, all_errors, folds)
+
+    print(f"\nSaved EPIT context-fold evaluation artifacts to {artifact_dir}")
+    print(f"Saved averaged model summary CSV to {output_summary_csv}")
+    if plot_paths:
+        print(f"Saved averaged checkpoint trend plots to {output_plot_dir}")
+    if all_errors:
+        print(f"Completed with {len(all_errors)} task/model errors; see JSON for details.")
 
 
 def run_repeated_split_eval(args: argparse.Namespace) -> None:
@@ -3442,6 +3990,9 @@ def run_repeated_split_eval(args: argparse.Namespace) -> None:
         "compare_catboost_magpie": bool(args.compare_catboost_magpie),
         "pitting_magpie_features": bool(args.pitting_magpie_features),
         "pitting_magpie_models": sorted({slugify(label) for label in args.pitting_magpie_model}),
+        "fixed_schema_models": sorted(
+            {slugify(label) for label in args.fixed_schema_model}
+        ),
         "catboost_settings": {
             "iterations": args.catboost_iterations,
             "depth": args.catboost_depth,
@@ -3488,6 +4039,9 @@ def run_repeated_split_eval(args: argparse.Namespace) -> None:
 def main() -> None:
     args = parse_args()
     validate_args(args)
+    if args.epit_final_context_folds is not None:
+        run_epit_final_context_fold_eval(args)
+        return
     if args.split_seeds is not None:
         run_repeated_split_eval(args)
         return
@@ -3506,6 +4060,7 @@ def main() -> None:
             apply_epit_pipeline_final_test(
                 tasks,
                 manifest_path=args.epit_split_manifest,
+                context_fold=args.epit_final_context_fold,
             )
         else:
             apply_epit_pipeline_fold(
@@ -3534,7 +4089,9 @@ def main() -> None:
 
     checkpoint_specs = resolve_checkpoint_eval_specs(args)
     first_local_specs = checkpoint_specs[0].local_specs
-    available_model_labels = {spec.label for spec in first_local_specs}
+    local_model_labels = {spec.label for spec in first_local_specs}
+    validate_fixed_schema_model_labels(args, local_model_labels)
+    available_model_labels = set(local_model_labels)
     if args.compare_pretrained_tabicl:
         available_model_labels.add("pretrained_tabicl_v2")
     if args.compare_tabpfn:
@@ -3585,6 +4142,9 @@ def main() -> None:
                         "model_label": spec.label,
                         "model_kind": "local_tabicl_regressor",
                         "factory": factory,
+                        "preserve_feature_schema": model_uses_fixed_schema(
+                            args, spec.label
+                        ),
                         "pitting_magpie_features": model_uses_pitting_magpie(args, spec.label),
                         "cache_key": (
                             "local_tabicl_regressor",
@@ -3612,6 +4172,7 @@ def main() -> None:
                         "model_label": spec.label,
                         "model_kind": "local_tabicl_classifier",
                         "factory": factory,
+                        "preserve_feature_schema": False,
                         "pitting_magpie_features": model_uses_pitting_magpie(args, spec.label),
                         "cache_key": (
                             "local_tabicl_classifier",
@@ -3641,6 +4202,7 @@ def main() -> None:
                         "model_label": "pretrained_tabicl_v2",
                         "model_kind": "pretrained_tabicl_regressor",
                         "factory": factory,
+                        "preserve_feature_schema": False,
                         "pitting_magpie_features": model_uses_pitting_magpie(args, "pretrained_tabicl_v2"),
                         "cache_key": (
                             "pretrained_tabicl_regressor",
@@ -3669,6 +4231,7 @@ def main() -> None:
                         "model_label": "pretrained_tabicl_v2",
                         "model_kind": "pretrained_tabicl_classifier",
                         "factory": factory,
+                        "preserve_feature_schema": False,
                         "pitting_magpie_features": model_uses_pitting_magpie(args, "pretrained_tabicl_v2"),
                         "cache_key": (
                             "pretrained_tabicl_classifier",
@@ -3693,6 +4256,7 @@ def main() -> None:
                     "model_label": "pretrained_tabpfn",
                     "model_kind": "pretrained_tabpfn_regressor" if is_regression_eval else "pretrained_tabpfn_classifier",
                     "factory": tabpfn_factory,
+                    "preserve_feature_schema": False,
                     "pitting_magpie_features": model_uses_pitting_magpie(args, "pretrained_tabpfn"),
                     "cache_key": None,
                 }
@@ -3713,6 +4277,7 @@ def main() -> None:
                     "reuse_static_baseline": reuse_static_baselines,
                     "model_kind": "catboost_regressor",
                     "factory": catboost_factory,
+                    "preserve_feature_schema": False,
                     "pitting_magpie_features": model_uses_pitting_magpie(args, "catboost"),
                     "cache_key": None,
                 }
@@ -3733,6 +4298,7 @@ def main() -> None:
                     "model_label": "catboost_magpie",
                     "model_kind": "catboost_regressor",
                     "factory": catboost_magpie_factory,
+                    "preserve_feature_schema": False,
                     "pitting_magpie_features": True,
                     "cache_key": None,
                 }
@@ -3785,6 +4351,9 @@ def main() -> None:
                         regression_quantile_alphas=args.regression_quantile_alphas,
                         regression_uncertainty=args.regression_uncertainty,
                         pitting_magpie_features=bool(job["pitting_magpie_features"]),
+                        preserve_feature_schema=bool(
+                            job["preserve_feature_schema"]
+                        ),
                     )
                     if job.get("reuse_static_baseline"):
                         pretrained_tabicl_row_templates_by_task.setdefault(task.task_id, []).append(dict(row))
@@ -3801,6 +4370,9 @@ def main() -> None:
                     error = {
                         "model": job["model_label"],
                         "model_kind": job["model_kind"],
+                        "preserve_feature_schema": bool(
+                            job["preserve_feature_schema"]
+                        ),
                         "pitting_magpie_features": bool(job["pitting_magpie_features"]),
                         "task_id": task.task_id,
                         "dataset": task.dataset,
@@ -3940,6 +4512,9 @@ def main() -> None:
         "excluded_quality_flags": list(args.exclude_quality_flag or []),
         "compare_catboost_magpie": bool(args.compare_catboost_magpie),
         "pitting_magpie_models": sorted({slugify(label) for label in args.pitting_magpie_model}),
+        "fixed_schema_models": sorted(
+            {slugify(label) for label in args.fixed_schema_model}
+        ),
         "n_estimators": args.n_estimators,
         "tabicl_feat_shuffle_method": args.tabicl_feat_shuffle_method,
         "compare_catboost": bool(args.compare_catboost),

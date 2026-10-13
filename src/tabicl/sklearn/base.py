@@ -60,6 +60,30 @@ class TabICLBaseEstimator(BaseEstimator):
         tags.non_deterministic = True
         return tags
 
+    def _align_missing_aware_dataframe(self, X):
+        """Align named prediction columns to the fitted schema.
+
+        Missing-aware checkpoints may receive DataFrame columns in any order or
+        omit features entirely. Unknown and duplicate columns remain errors so
+        that a misspelling cannot silently change the model input.
+        """
+        if not getattr(self, "preserve_missing_values_", False):
+            return X
+        if not hasattr(X, "columns") or not hasattr(self, "feature_names_in_"):
+            return X
+
+        columns = list(X.columns)
+        duplicated = X.columns[X.columns.duplicated()].tolist()
+        if duplicated:
+            raise ValueError(f"Duplicate feature columns are not allowed: {duplicated}")
+
+        expected = list(self.feature_names_in_)
+        unexpected = [name for name in columns if name not in self.feature_names_in_]
+        if unexpected:
+            raise ValueError(f"Feature columns were not present during fit: {unexpected}")
+
+        return X.reindex(columns=expected)
+
     def _resolve_device(self) -> None:
         """Resolve the target device from the init parameter."""
         if self.device is None:

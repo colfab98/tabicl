@@ -1,0 +1,161 @@
+{
+  "preparation_version": "mpea_candidate_v2",
+  "status": "audited_candidate_not_frozen_evaluation",
+  "inputs": [
+    {
+      "path": "corrosion_datasets/datasets/mpea_corrosion/raw/Mendeley_MPEA_corrosion_database.xlsx",
+      "sha256": "595200617e007db3281115d0dc7764fd86f337203b6fc1a2ab34bf3b88800e69"
+    },
+    {
+      "path": "corrosion_datasets/datasets/electrochemical_metrics_alloys/raw/CRA_database_Scientific_Data_Publication_12102020.xlsx",
+      "sha256": "d0ce5e9c4b42e0b5a20dbd5c4896791703c5f433ae19bc032674d5848d9d1438"
+    },
+    {
+      "path": "corrosion_datasets/datasets/soccol_pitting_potential/raw/Pitting_potential_dataset_2024.xlsx",
+      "sha256": "cb255c5a94d90bd207248f6e25727f965d587c29a73b2ffcef6b8c0ced6da1da"
+    }
+  ],
+  "processor": {
+    "path": "corrosion_datasets/datasets/mpea_corrosion/prepare_evaluation.py",
+    "sha256": "c44214272633a6db584941f7f6237b892163a58d6410623d7d63e62b1c77e0f6"
+  },
+  "software": {
+    "pandas": "2.3.3",
+    "numpy": "2.4.4"
+  },
+  "composition": {
+    "raw_unit": "atomic fraction",
+    "output_unit": "wt%",
+    "atomic_weights": {
+      "Al": 26.982,
+      "B": 10.81,
+      "Be": 9.0122,
+      "Co": 58.933,
+      "Cr": 51.996,
+      "Cu": 63.546,
+      "Fe": 55.845,
+      "Ga": 69.723,
+      "Hf": 178.49,
+      "La": 138.91,
+      "Mg": 24.305,
+      "Mn": 54.938,
+      "Mo": 95.95,
+      "Nb": 92.906,
+      "Ni": 58.693,
+      "Si": 28.085,
+      "Sn": 118.71,
+      "Ta": 180.95,
+      "Ti": 47.867,
+      "V": 50.942,
+      "W": 183.84,
+      "Y": 88.906,
+      "Zn": 65.38,
+      "Zr": 91.222
+    },
+    "atomic_weights_source": "https://ciaaw.org/abridged-atomic-weights.htm",
+    "fraction_sum_absolute_tolerance": 0.001,
+    "formula": "100 * x_i * A_i / sum_over_all_24_reported_elements(x_j * A_j)",
+    "invalid_composition_policy": "exclude from candidate exports; preserve in raw workbook and all-row audit",
+    "unsupported_elements_policy": "included in mass denominator, omitted from predictors, never renormalize retained subset"
+  },
+  "dataset_source": "https://data.mendeley.com/datasets/nskb9khgsm/1",
+  "dataset_license": "CC BY 4.0",
+  "paper_source": "https://www.nature.com/articles/s41529-025-00700-9",
+  "source_overlap_scope": "All DOI fields in the EPIT and Soccol reference sheets; shared publication, not confirmed shared measurement",
+  "source_screened_subset_policy": "Eligible rows with an extracted DOI and no EPIT/Soccol DOI match; exclude shared and unresolved sources; NOT verified measurement-independent",
+  "reference_doi_resolution_verified": false,
+  "exact_cross_dataset_row_overlap_assessed": false,
+  "frozen_partitions_created": false,
+  "models_trained_or_evaluated": false,
+  "summary": {
+    "raw_rows": 619,
+    "candidate_rows": 332,
+    "finite_target_rows_before_composition_filter": 335,
+    "excluded_missing_or_nonfinite_target": 284,
+    "excluded_incomplete_composition_with_target": 3,
+    "excluded_composition_excel_rows": [
+      466,
+      467,
+      468
+    ],
+    "source_screened_subset_rows": 267,
+    "zero_targets_retained": 1,
+    "composition_conversion_valid_candidates": 332,
+    "candidates_with_unsupported_elements": 67,
+    "candidate_source_overlap_status": {
+      "no_shared_doi_found": 267,
+      "unresolved_reference": 43,
+      "shared_source_doi": 22
+    },
+    "candidate_rows_sharing_epit_doi": 22,
+    "candidate_rows_sharing_soccol_doi": 0,
+    "candidate_review_flag_counts": {
+      "unsupported_elements_present": 67,
+      "unresolved_reference": 43,
+      "mixed_or_unspecified_electrolyte_recipe": 43,
+      "mass_percent_to_molarity_unverified": 41,
+      "acid_to_ion_mapping_unverified": 26,
+      "shared_source_doi": 22,
+      "electrolyte_text_conflict": 1
+    },
+    "feature_observed_counts": {
+      "Al": 332,
+      "B": 332,
+      "Co": 332,
+      "Cr": 332,
+      "Cu": 332,
+      "Fe": 332,
+      "Mg": 332,
+      "Mn": 332,
+      "Mo": 332,
+      "Nb": 332,
+      "Ni": 332,
+      "Si": 332,
+      "Ta": 332,
+      "Ti": 332,
+      "V": 332,
+      "W": 332,
+      "Y": 332,
+      "CP_temp": 5,
+      "CP_pH": 0,
+      "CP_Cl": 216,
+      "CP_OH": 5,
+      "CP_SO4": 0,
+      "CP_NO3": 0,
+      "scan_rate": 18
+    },
+    "paper_count_discrepancy": {
+      "paper_reported_epit_entries": 306,
+      "workbook_numeric_epit_entries": 335,
+      "status": "unresolved; no undocumented 29-row exclusion was applied",
+      "diagnostics_not_selection_rules": {
+        "nonzero_finite_target_rows": 334,
+        "all_three_responses_finite_rows": 311,
+        "target_rows_complete_across_all_raw_columns": 257,
+        "exact_duplicate_raw_target_rows_beyond_first": 0
+      }
+    }
+  },
+  "outputs": {
+    "mpea_evaluation_candidates.csv": {
+      "sha256": "a026fdafc79238691ff93030139b36264274eb3131a9244f42a09e7a3b2221bc",
+      "size_bytes": 46848
+    },
+    "mpea_row_audit.csv": {
+      "sha256": "31b92472a0a89bb59255e821ef9c9c9028b319e784b70e5ae1ee8235561d4e78",
+      "size_bytes": 213529
+    },
+    "mpea_source_audit.csv": {
+      "sha256": "975ed65ad41e72f1cf583c7a19f9b4124c22efd3225f18a5ea116ff34f3371cc",
+      "size_bytes": 13330
+    },
+    "mpea_source_screened_candidates.csv": {
+      "sha256": "f902b4d53760895efaee6e8d24e9dc7ff08d1e6e5d5727d0531d16af5802d878",
+      "size_bytes": 37471
+    },
+    "feature_manifest.json": {
+      "sha256": "52f24cda8f7e50ba692ce366b245e62b4cb07ae614bd2c20f89ff93c53acd08b",
+      "size_bytes": 2592
+    }
+  }
+}

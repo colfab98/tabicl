@@ -105,6 +105,23 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dataloader-num-workers", type=int, default=4)
     parser.add_argument("--dataloader-prefetch-factor", type=int, default=4)
     parser.add_argument("--eval-n-estimators", type=int, default=8)
+    parser.add_argument(
+        "--eval-device",
+        default=None,
+        help=(
+            "Device used only for development checkpoint selection and final "
+            "evaluation provenance. Defaults to --device."
+        ),
+    )
+    parser.add_argument(
+        "--resume-checkpoint-selection",
+        action="store_true",
+        help=(
+            "Reuse an already completed, command-matched final training run "
+            "and resume development-only checkpoint evaluation. Never "
+            "restarts training or uses final-test rows for selection."
+        ),
+    )
     parser.add_argument("--override-informed-prior-ratio", type=float, default=None)
     parser.add_argument("--override-mlp-prob", type=float, default=None)
     parser.add_argument(
@@ -679,6 +696,7 @@ def evaluation_record(
     output_dir: Path,
     split_manifest: Path,
     rules: search.TargetRuleConfig,
+    reuse_existing: bool = False,
 ) -> dict[str, Any]:
     step = checkpoint_step(checkpoint)
     model_label = f"final_step_{step:05d}"
@@ -690,13 +708,15 @@ def evaluation_record(
         output_dir,
     )
     summary_csv = output_dir / "summary.csv"
-    if output_dir.exists() and any(output_dir.iterdir()):
+    has_existing_output = output_dir.exists() and any(output_dir.iterdir())
+    if has_existing_output and not reuse_existing:
         raise FileExistsError(f"Checkpoint evaluation already exists: {output_dir}")
-    search.original.search_utils.run_command(
-        command,
-        cwd=REPO_ROOT,
-        log_path=output_dir.parent / f"step_{step:05d}.log",
-    )
+    if not has_existing_output:
+        search.original.search_utils.run_command(
+            command,
+            cwd=REPO_ROOT,
+            log_path=output_dir.parent / f"step_{step:05d}.log",
+        )
 
     payload = search.verify_no_power_fold_evaluation(output_dir)
     validate_fold_evaluation_payload(
@@ -743,6 +763,35 @@ def output_dir_for(
     if isolate_run:
         return (study_root / search.slugify(run_name)).resolve()
     return study_root.resolve()
+
+
+def validate_resumable_training(
+    args: argparse.Namespace,
+    *,
+    output_dir: Path,
+    checkpoint_dir: Path,
+    train_command: list[str],
+) -> None:
+    """Verify that resume mode targets the exact completed training run."""
+    train_log = output_dir / "train.log"
+    if not train_log.is_file():
+        raise FileNotFoundError(
+            f"Resume mode requires the original training log: {train_log}"
+        )
+    first_line = train_log.read_text(
+        encoding="utf-8", errors="replace"
+    ).splitlines()[0].strip()
+    expected_command = " ".join(train_command)
+    if first_line != expected_command:
+        raise RuntimeError(
+            "Existing train.log does not match the requested final-training "
+            "configuration; refusing to attach checkpoint-selection results."
+        )
+    if not checkpoint_dir.is_dir():
+        raise FileNotFoundError(
+            f"Resume mode requires the existing checkpoint directory: {checkpoint_dir}"
+        )
+    checkpoint_candidates(args, checkpoint_dir)
 
 
 def run(args: argparse.Namespace) -> Path:
@@ -892,28 +941,39 @@ def run(args: argparse.Namespace) -> Path:
         "checkpoint_selection_interval": args.checkpoint_selection_interval,
         "train_command": train_command,
     }
-    if output_dir.exists() and any(output_dir.iterdir()):
-        raise FileExistsError(f"Final output directory is non-empty: {output_dir}")
-    if checkpoint_dir.exists() and any(checkpoint_dir.iterdir()):
-        raise FileExistsError(
-            f"Final checkpoint directory is non-empty: {checkpoint_dir}"
+    if args.resume_checkpoint_selection:
+        validate_resumable_training(
+            args,
+            output_dir=output_dir,
+            checkpoint_dir=checkpoint_dir,
+            train_command=train_command,
         )
-    output_dir.mkdir(parents=True, exist_ok=True)
-    search.original.search_utils.run_command(
-        train_command,
-        cwd=REPO_ROOT,
-        log_path=output_dir / "train.log",
-    )
+    else:
+        if output_dir.exists() and any(output_dir.iterdir()):
+            raise FileExistsError(f"Final output directory is non-empty: {output_dir}")
+        if checkpoint_dir.exists() and any(checkpoint_dir.iterdir()):
+            raise FileExistsError(
+                f"Final checkpoint directory is non-empty: {checkpoint_dir}"
+            )
+        output_dir.mkdir(parents=True, exist_ok=True)
+        search.original.search_utils.run_command(
+            train_command,
+            cwd=REPO_ROOT,
+            log_path=output_dir / "train.log",
+        )
 
     evaluation_root = output_dir / "development_checkpoint_evaluations"
+    evaluation_args = argparse.Namespace(**vars(args))
+    evaluation_args.device = args.eval_device or args.device
     records = [
         evaluation_record(
-            args,
+            evaluation_args,
             params,
             checkpoint=checkpoint,
             output_dir=evaluation_root / f"step_{checkpoint_step(checkpoint):05d}",
             split_manifest=args.split_manifest,
             rules=rules,
+            reuse_existing=args.resume_checkpoint_selection,
         )
         for checkpoint in checkpoint_candidates(args, checkpoint_dir)
     ]
@@ -921,7 +981,7 @@ def run(args: argparse.Namespace) -> Path:
     selected_checkpoint = Path(selected["checkpoint_path"])
     evaluation_configuration = {
         "task_id": PITTING_TASK_ID,
-        "device": args.device,
+        "device": evaluation_args.device,
         "random_state": 42,
         "n_estimators": args.eval_n_estimators,
         "tabicl_feat_shuffle_method": "none",
@@ -985,6 +1045,9 @@ def run(args: argparse.Namespace) -> Path:
         "checkpoint_selection": {
             "data": "five frozen development folds only",
             "primary_metric": "mean_test_spearman",
+            "resumed_from_existing_training": bool(
+                args.resume_checkpoint_selection
+            ),
             "candidates": records,
         },
         "selected_checkpoint": {

@@ -1,0 +1,131 @@
+{
+  "schema_version": "mpea_candidate_v1",
+  "status": "candidate_only_not_final_shared_schema",
+  "row_id_column": "row_id",
+  "target_column": "E_pit_mV_SCE",
+  "target_unit": "mV vs SCE",
+  "predictor_columns_in_order": [
+    "Al",
+    "B",
+    "Co",
+    "Cr",
+    "Cu",
+    "Fe",
+    "Mg",
+    "Mn",
+    "Mo",
+    "Nb",
+    "Ni",
+    "Si",
+    "Ta",
+    "Ti",
+    "V",
+    "W",
+    "Y",
+    "CP_temp",
+    "CP_pH",
+    "CP_Cl",
+    "CP_OH",
+    "CP_SO4",
+    "CP_NO3",
+    "scan_rate"
+  ],
+  "feature_units": {
+    "Al": "wt%",
+    "B": "wt%",
+    "Co": "wt%",
+    "Cr": "wt%",
+    "Cu": "wt%",
+    "Fe": "wt%",
+    "Mg": "wt%",
+    "Mn": "wt%",
+    "Mo": "wt%",
+    "Nb": "wt%",
+    "Ni": "wt%",
+    "Si": "wt%",
+    "Ta": "wt%",
+    "Ti": "wt%",
+    "V": "wt%",
+    "W": "wt%",
+    "Y": "wt%",
+    "CP_temp": "degC",
+    "CP_pH": "pH",
+    "CP_Cl": "mol/L",
+    "CP_OH": "mol/L",
+    "CP_SO4": "mol/L",
+    "CP_NO3": "mol/L",
+    "scan_rate": "mV/s"
+  },
+  "features_reserved_but_entirely_unobserved": [
+    "CP_pH",
+    "CP_SO4",
+    "CP_NO3"
+  ],
+  "excluded_mpea_elements": [
+    "Be",
+    "Ga",
+    "Hf",
+    "La",
+    "Sn",
+    "Zn",
+    "Zr"
+  ],
+  "excluded_raw_predictors": [
+    "Alloy name",
+    "Phases present",
+    "FCC",
+    "BCC",
+    "HCP",
+    "IM",
+    "Test environment",
+    "Concentration in M",
+    "Electrolyte",
+    "Corrosion potential (mV vs SCE)",
+    "Pitting potential (mV vs SCE)",
+    "Corrosion current density (microA/cm2)",
+    "Calculated passive window",
+    "Processing",
+    "Be",
+    "Ga",
+    "Hf",
+    "La",
+    "Sn",
+    "Zn",
+    "Zr",
+    "Reference"
+  ],
+  "metadata_not_predictors": [
+    "row_id",
+    "all fields in mpea_row_audit.csv and mpea_source_audit.csv"
+  ],
+  "missing_value_encoding": "CSV NaN; no imputation or learned missingness encoding applied",
+  "shared_source_aliases": {
+    "CP_temp": {
+      "epit": "Test Temp. oC",
+      "soccol": "CP_temp"
+    },
+    "CP_pH": {
+      "epit": "[Cl-] pH",
+      "soccol": "CP_pH"
+    },
+    "CP_Cl": {
+      "epit": "[Cl-] M",
+      "soccol": "CP_Cl"
+    },
+    "CP_OH": {
+      "soccol": "CP_OH"
+    },
+    "CP_SO4": {
+      "soccol": "CP_SO4"
+    },
+    "CP_NO3": {
+      "soccol": "CP_NO3"
+    },
+    "scan_rate": {
+      "soccol": "scan_rate"
+    }
+  },
+  "target_alignment": "MPEA kept in mV vs SCE; cross-source electrode conversion not performed here",
+  "scan_rate_alignment": "MPEA and Soccol use mV/s; confirmed by Soccol manuscript Table 3; no unit conversion needed",
+  "soccol_units_source": "https://lirias.kuleuven.be/retrieve/f69750dc-fb1a-4962-8e5c-8982608a4efb"
+}

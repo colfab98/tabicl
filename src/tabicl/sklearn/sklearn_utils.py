@@ -8,6 +8,7 @@ Adapted from: https://github.com/scikit-learn/scikit-learn/blob/1eb422d6c5/sklea
 
 from __future__ import annotations
 
+import inspect
 import sys
 import warnings
 from typing import Any
@@ -314,6 +315,7 @@ def validate_data(
     reset: bool = True,
     validate_separately: bool | tuple = False,
     skip_check_array: bool = False,
+    allow_nan: bool = False,
     **check_params: Any,
 ):
     """Validate input data and set or check feature names and counts of the input.
@@ -350,6 +352,9 @@ def validate_data(
         If ``True``, ``X`` and ``y`` are unchanged and only
         ``feature_names_in_`` and ``n_features_in_`` are checked.
 
+    allow_nan : bool, default=False
+        Whether NaN values are accepted in ``X``. Infinities remain invalid.
+
     **check_params : kwargs
         Parameters passed to ``check_array`` or ``check_X_y``.
 
@@ -360,6 +365,14 @@ def validate_data(
         are validated.
     """
     from sklearn.utils.validation import check_array, check_X_y
+
+    if allow_nan:
+        finite_arg = (
+            "ensure_all_finite"
+            if "ensure_all_finite" in inspect.signature(check_array).parameters
+            else "force_all_finite"
+        )
+        check_params.setdefault(finite_arg, "allow-nan")
 
     _check_feature_names(_estimator, X, reset=reset)
 

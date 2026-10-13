@@ -80,6 +80,11 @@ class ColEmbedding(nn.Module):
     feature_group_size : int, default=3
         Number of features per group when feature_group is enabled.
 
+    missing_value_embedding : bool, default=False
+        If True, replace each NaN cell with a learned embedding before column
+        attention. This requires feature grouping to be disabled so each token
+        represents exactly one feature value.
+
     target_aware : bool, default=False
         If True, incorporates target information into embeddings during training.
         The target values are embedded into the same embedding space and added to each feature's embeddings,
@@ -133,6 +138,7 @@ class ColEmbedding(nn.Module):
         affine: bool = True,
         feature_group: Union[bool, Literal["same", "valid"]] = False,
         feature_group_size: int = 3,
+        missing_value_embedding: bool = False,
         target_aware: bool = False,
         max_classes: int = 10,
         reserve_cls_tokens: int = 4,
@@ -145,11 +151,17 @@ class ColEmbedding(nn.Module):
         self.reserve_cls_tokens = reserve_cls_tokens
         self.feature_group = feature_group
         self.feature_group_size = feature_group_size
+        self.missing_value_embedding = missing_value_embedding
         self.target_aware = target_aware
         self.max_classes = max_classes
         self.affine = affine
         self.mixed_radix_ensemble = mixed_radix_ensemble
         self.in_linear = SkippableLinear(feature_group_size if feature_group else 1, embed_dim)
+        if missing_value_embedding:
+            if feature_group:
+                raise ValueError("missing_value_embedding requires feature_group=False.")
+            self.missing_embedding = nn.Parameter(torch.empty(embed_dim))
+            nn.init.normal_(self.missing_embedding, std=0.02)
 
         self.tf_col = SetTransformer(
             num_blocks=num_blocks,
@@ -179,6 +191,17 @@ class ColEmbedding(nn.Module):
             self.ln_b = nn.LayerNorm(embed_dim, bias=not bias_free_ln) if norm_first else nn.Identity()
 
         self.inference_mgr = InferenceManager(enc_name="tf_col", out_dim=embed_dim)
+
+    def _project_features(self, features: Tensor) -> tuple[Tensor, Tensor]:
+        """Project values and replace NaN cells with the learned missing token."""
+        if not self.missing_value_embedding:
+            return features, self.in_linear(features)
+
+        missing_mask = torch.isnan(features)
+        safe_features = features.masked_fill(missing_mask, 0.0)
+        src = self.in_linear(safe_features)
+        src = torch.where(missing_mask, self.missing_embedding, src)
+        return safe_features, src
 
     @staticmethod
     def map_feature_shuffle(reference_pattern: List[int], other_pattern: List[int]) -> List[int]:
@@ -367,7 +390,7 @@ class ColEmbedding(nn.Module):
             Embeddings of shape (..., T, E) where E is the embedding dimension.
         """
 
-        src = self.in_linear(features)  # (..., T, in_dim) -> (..., T, E)
+        features, src = self._project_features(features)  # (..., T, in_dim) -> (..., T, E)
 
         if not self.target_aware:
             src = self.tf_col(src, train_size=None if embed_with_test else train_size)
@@ -768,7 +791,7 @@ class ColEmbedding(nn.Module):
         Tensor
             Embeddings of shape (..., T, E).
         """
-        src = self.in_linear(features)
+        features, src = self._project_features(features)
 
         if not self.target_aware:
             src = self.tf_col.forward_with_cache(

@@ -124,6 +124,15 @@ def build_parser():
         help="If set, load pre-generated prior datasets directly from this directory on disk instead of generating them on the fly.",
     )
     parser.add_argument(
+        "--combined_corrosion_prior_config",
+        type=str,
+        default=None,
+        help=(
+            "Frozen configuration for the opt-in 50-column generic/EPIT/Soccol "
+            "corrosion prior mixture."
+        ),
+    )
+    parser.add_argument(
         "--load_prior_start",
         type=int,
         default=0,
@@ -621,6 +630,30 @@ def build_parser():
     parser.add_argument("--col_num_blocks", type=int, default=3, help="Number of blocks in column embedder")
     parser.add_argument("--col_nhead", type=int, default=4, help="Number of attention heads in column embedder")
     parser.add_argument("--col_num_inds", type=int, default=128, help="Number of inducing points in column embedder")
+    parser.add_argument(
+        "--col_missing_value_embedding",
+        default=False,
+        type=str2bool,
+        help="Represent NaN feature values with a learned token and disable feature grouping",
+    )
+    parser.add_argument(
+        "--missingness_profile_path",
+        type=str,
+        default=None,
+        help="EPIT/Soccol context missingness profile used for training augmentation",
+    )
+    parser.add_argument(
+        "--missingness_augmentation_probability",
+        type=float,
+        default=0.8,
+        help="Probability of applying a sampled context missingness regime to each synthetic table",
+    )
+    parser.add_argument(
+        "--missingness_min_observed_composition",
+        type=int,
+        default=2,
+        help="Minimum originally observed composition features retained per row after augmentation",
+    )
     parser.add_argument("--freeze_col", default=False, type=str2bool, help="Whether to freeze the column embedder")
 
     # Row Interaction Config

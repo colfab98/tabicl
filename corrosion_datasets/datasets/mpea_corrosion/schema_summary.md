@@ -52,3 +52,18 @@ Safe prior implications:
 - Phase/microstructure is a distinct material-state group.
 - Processing route supports a history/process block.
 - Electrochemical variables should be grouped as responses, not used blindly as pre-outcome features.
+
+## Evaluation-candidate export (2026-10-12)
+
+The new [preparation rules](preprocessing_plan.md) narrow the general raw-schema
+description above to the proposed EPIT/Soccol transfer task. The
+[candidate table](processed/mpea_evaluation_candidates.csv) contains 332
+eligible target-bearing rows, 17 composition predictors in wt%, and 7 environmental
+slots. Phase, processing, identifiers, and other electrochemical responses
+are not predictors. Unknown values remain `NaN`.
+
+Three incomplete-composition rows are excluded from this export but preserved
+in the raw workbook and audit. A separate 267-row source-screened subset omits
+shared and unresolved sources; it is not proven measurement-independent.
+This is not a frozen evaluation set. The paper's 306-versus-workbook-335 count
+discrepancy remains documented. See [README.md](README.md) for reproduction.

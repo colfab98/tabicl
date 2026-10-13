@@ -499,7 +499,11 @@ class TabICLClassifier(ClassifierMixin, TabICLBaseEstimator):
                 )
 
         #  Transform input features
-        self.X_encoder_ = TransformToNumerical(verbose=self.verbose)
+        self.preserve_missing_values_ = bool(self.model_config_.get("col_missing_value_embedding", False))
+        self.X_encoder_ = TransformToNumerical(
+            verbose=self.verbose,
+            preserve_missing_values=self.preserve_missing_values_,
+        )
         X = self.X_encoder_.fit_transform(X)
 
         # Fit ensemble generator to create multiple dataset views
@@ -722,22 +726,28 @@ class TabICLClassifier(ClassifierMixin, TabICLBaseEstimator):
 
             torch.set_num_threads(n_threads)
 
+        X = self._align_missing_aware_dataframe(X)
+
         # Preserve DataFrame structure to retain column names and types for correct feature transformation
         X = validate_data(self, X, reset=False, dtype=None, skip_check_array=True)
 
-        # Detect all-NaN columns (used by SHAP's feature masking approach)
-        if hasattr(X, "columns"):  # check for dataframe without importing pandas
-            feature_mask = X.isna().all(axis=0).to_numpy()
-        else:
-            arr = np.asarray(X)
-            if np.issubdtype(arr.dtype, np.number):
-                feature_mask = np.isnan(arr).all(axis=0)
-            else:
-                # object dtype: v != v is True only for NaN in IEEE 754, safe for strings too
-                feature_mask = np.array([all(v != v for v in arr[:, i]) for i in range(arr.shape[1])])
-
-        if feature_mask is not None and not np.any(feature_mask):
+        # Legacy checkpoints drop all-NaN SHAP-mask columns. Missing-aware
+        # checkpoints keep them in place for the learned missing embedding.
+        if self.preserve_missing_values_:
             feature_mask = None
+        else:
+            if hasattr(X, "columns"):  # check for dataframe without importing pandas
+                feature_mask = X.isna().all(axis=0).to_numpy()
+            else:
+                arr = np.asarray(X)
+                if np.issubdtype(arr.dtype, np.number):
+                    feature_mask = np.isnan(arr).all(axis=0)
+                else:
+                    # object dtype: v != v is True only for NaN in IEEE 754, safe for strings too
+                    feature_mask = np.array([all(v != v for v in arr[:, i]) for i in range(arr.shape[1])])
+
+            if feature_mask is not None and not np.any(feature_mask):
+                feature_mask = None
 
         # Fill masked columns so that transformers don't choke on NaN
         if feature_mask is not None:
