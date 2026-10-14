@@ -1,0 +1,176 @@
+{
+  "created_at": "2026-10-14T15:48:09.560165",
+  "diagnostic_only": true,
+  "checkpoint_policy": "step 5500, the latest point in the user-referenced plot; no checkpoint selection",
+  "context_rows": 4787,
+  "query_rows": 267,
+  "query_policy": "unchanged frozen outer MPEA queries",
+  "data_sha256": {
+    "epit_soccol_context.csv": "3ac7fa8730bba6084ad8f81e05c216601c724641bb1c861b701d07ae1fec247e",
+    "mpea_queries.csv": "8f57ef0653d9a638414c108608ce2ce2986b9b5e1247289601488b48950ea46a",
+    "mpea_scoring_targets.csv": "db0bb8f5948755158515c65a59886cdeb97e97cddcd369cbb02b4a0711b6b0d4"
+  },
+  "torch_threads": 8,
+  "rows": [
+    {
+      "model": "combined_original",
+      "model_path": "/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_seed42/step-5500.ckpt",
+      "feat_shuffle_method": "none",
+      "norm_methods": [
+        "none"
+      ],
+      "remove_constant_features": false,
+      "requested_n_estimators": 8,
+      "ensemble_counts": {
+        "none": 1
+      },
+      "preserve_missing_values": true,
+      "n_model_features": 50,
+      "y_mean": [
+        337.89534500560654
+      ],
+      "y_scale": [
+        310.35026184657227
+      ],
+      "test_spearman": 0.15760287682003837,
+      "test_rmse": 733.6575510908987,
+      "trace": [
+        {
+          "X_shape": [
+            1,
+            5054,
+            50
+          ],
+          "y_shape": [
+            1,
+            4787
+          ],
+          "context_nan_fraction": 0.4883225402130771,
+          "query_nan_fraction": 0.6252434456928839,
+          "unique_ensemble_inputs": 1
+        }
+      ],
+      "elapsed_seconds": 4.719905376434326
+    },
+    {
+      "model": "generic_matched",
+      "model_path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-5500.ckpt",
+      "feat_shuffle_method": "none",
+      "norm_methods": [
+        "none"
+      ],
+      "remove_constant_features": false,
+      "requested_n_estimators": 8,
+      "ensemble_counts": {
+        "none": 1
+      },
+      "preserve_missing_values": false,
+      "n_model_features": 50,
+      "y_mean": [
+        337.89534500560654
+      ],
+      "y_scale": [
+        310.35026184657227
+      ],
+      "test_spearman": 0.4488439881155743,
+      "test_rmse": 592.0560149701805,
+      "trace": [
+        {
+          "X_shape": [
+            1,
+            5054,
+            50
+          ],
+          "y_shape": [
+            1,
+            4787
+          ],
+          "context_nan_fraction": 0.0,
+          "query_nan_fraction": 0.0,
+          "unique_ensemble_inputs": 1
+        }
+      ],
+      "elapsed_seconds": 4.463069677352905
+    },
+    {
+      "model": "pretrained_matched",
+      "model_path": "/home/fcolanto/.cache/huggingface/hub/models--jingang--TabICL/snapshots/4dcd344ece2c00be9e831fdd35bed57b5ad83e19/tabicl-regressor-v2-20260212.ckpt",
+      "feat_shuffle_method": "none",
+      "norm_methods": [
+        "none"
+      ],
+      "remove_constant_features": false,
+      "requested_n_estimators": 8,
+      "ensemble_counts": {
+        "none": 1
+      },
+      "preserve_missing_values": false,
+      "n_model_features": 50,
+      "y_mean": [
+        337.89534500560654
+      ],
+      "y_scale": [
+        310.35026184657227
+      ],
+      "test_spearman": 0.2566516869881769,
+      "test_rmse": 662.2119173125427,
+      "trace": [
+        {
+          "X_shape": [
+            1,
+            5054,
+            50
+          ],
+          "y_shape": [
+            1,
+            4787
+          ],
+          "context_nan_fraction": 0.0,
+          "query_nan_fraction": 0.0,
+          "unique_ensemble_inputs": 1
+        }
+      ],
+      "elapsed_seconds": 4.478245496749878
+    },
+    {
+      "model": "combined_imputed",
+      "model_path": "/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_seed42/step-5500.ckpt",
+      "feat_shuffle_method": "none",
+      "norm_methods": [
+        "none"
+      ],
+      "remove_constant_features": false,
+      "requested_n_estimators": 8,
+      "ensemble_counts": {
+        "none": 1
+      },
+      "preserve_missing_values": true,
+      "n_model_features": 50,
+      "y_mean": [
+        337.89534500560654
+      ],
+      "y_scale": [
+        310.35026184657227
+      ],
+      "test_spearman": 0.3365193241757511,
+      "test_rmse": 661.3969764454723,
+      "trace": [
+        {
+          "X_shape": [
+            1,
+            5054,
+            50
+          ],
+          "y_shape": [
+            1,
+            4787
+          ],
+          "context_nan_fraction": 0.0,
+          "query_nan_fraction": 0.0,
+          "unique_ensemble_inputs": 1
+        }
+      ],
+      "elapsed_seconds": 4.527940034866333
+    }
+  ]
+}

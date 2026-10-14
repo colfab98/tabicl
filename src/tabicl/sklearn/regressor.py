@@ -628,7 +628,12 @@ class TabICLRegressor(RegressorMixin, TabICLBaseEstimator):
         return results
 
     def predict(
-        self, X: np.ndarray, output_type: str | list[str] = "mean", alphas: Optional[List[float]] = None
+        self,
+        X: np.ndarray,
+        output_type: str | list[str] = "mean",
+        alphas: Optional[List[float]] = None,
+        *,
+        feature_mask: Optional[np.ndarray] = None,
     ) -> np.ndarray | dict[str, np.ndarray]:
         """Predict target values for test samples.
 
@@ -644,10 +649,8 @@ class TabICLRegressor(RegressorMixin, TabICLBaseEstimator):
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features)
-            Test samples for prediction.  Columns that are entirely NaN are
-            treated as masked features and excluded from inference.  This is
-            useful for computing SHAP values, where masked features are
-            represented as all-NaN columns.
+            Test samples for prediction. NaN values, including entirely missing
+            query columns, use the checkpoint's usual missing-value handling.
 
         output_type : str or list of str, default="mean"
             Determines the type of output to return.
@@ -665,6 +668,11 @@ class TabICLRegressor(RegressorMixin, TabICLBaseEstimator):
             By default, the ``[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]``
             quantiles are returned. The predictions per quantile match
             the input order.
+
+        feature_mask : array-like of bool, shape (n_features,), optional
+            Explicitly exclude columns marked True from context and queries,
+            for example for SHAP explanations. Uses fitted column order.
+            Missing values alone never request feature exclusion.
 
         Returns
         -------
@@ -716,31 +724,7 @@ class TabICLRegressor(RegressorMixin, TabICLBaseEstimator):
         # Preserve DataFrame structure to retain column names and types for correct feature transformation
         X = validate_data(self, X, reset=False, dtype=None, skip_check_array=True)
 
-        # Legacy checkpoints drop all-NaN SHAP-mask columns. Missing-aware
-        # checkpoints keep them in place for the learned missing embedding.
-        if self.preserve_missing_values_:
-            feature_mask = None
-        else:
-            if hasattr(X, "columns"):  # check for dataframe without importing pandas
-                feature_mask = X.isna().all(axis=0).to_numpy()
-            else:
-                arr = np.asarray(X)
-                if np.issubdtype(arr.dtype, np.number):
-                    feature_mask = np.isnan(arr).all(axis=0)
-                else:
-                    # object dtype: v != v is True only for NaN in IEEE 754, safe for strings too
-                    feature_mask = np.array([all(v != v for v in arr[:, i]) for i in range(arr.shape[1])])
-
-            if feature_mask is not None and not np.any(feature_mask):
-                feature_mask = None
-
-        # Fill masked columns so that transformers don't choke on NaN
-        if feature_mask is not None:
-            if hasattr(X, "columns"):  # Proxy way to check whether X is a dataframe
-                X.iloc[:, feature_mask] = 0.0
-            else:
-                X[:, feature_mask] = 0.0
-
+        feature_mask = self._validate_feature_mask(feature_mask)
         X = self.X_encoder_.transform(X)
 
         output_type = [output_type] if isinstance(output_type, str) else list(output_type)
@@ -754,6 +738,7 @@ class TabICLRegressor(RegressorMixin, TabICLBaseEstimator):
             test_data = self.ensemble_generator_.transform(X, mode="test")
             results = {key: [] for key in output_type}
             for norm_method, (Xs_test,) in test_data.items():
+                self.n_features_in_prediction_ = int(Xs_test.shape[-1])
                 kv_cache = self.model_kv_cache_[norm_method]
                 batch_out = self._batch_forward_with_cache(Xs_test, kv_cache, output_type=output_type, alphas=alphas)
                 if isinstance(batch_out, dict):
@@ -766,6 +751,7 @@ class TabICLRegressor(RegressorMixin, TabICLBaseEstimator):
             data = self.ensemble_generator_.transform(X, mode="both", feature_mask=feature_mask)
             results = {key: [] for key in output_type}
             for Xs, ys in data.values():
+                self.n_features_in_prediction_ = int(Xs.shape[-1])
                 batch_out = self._batch_forward(Xs, ys, output_type=output_type, alphas=alphas)
                 if isinstance(batch_out, dict):
                     for key in output_type:

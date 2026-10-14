@@ -1,0 +1,56 @@
+{
+  "diagnostic_only": true,
+  "created_at": "2026-10-15T00:02:24.025774+02:00",
+  "checkpoint": "/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_seed42/step-5500.ckpt",
+  "query_rows": 267,
+  "context_rows": 4787,
+  "query_partition": "unchanged frozen outer MPEA",
+  "imputation": "numeric means fitted only on context; categorical -1; original observed values and category codes unchanged except named category-code control",
+  "rows": [
+    {
+      "case": "encoded_nan_control",
+      "spearman": 0.15760287682003837,
+      "rmse": 733.6575510908987,
+      "context_nan_fraction": 0.4883225402130771,
+      "query_nan_fraction": 0.6252434456928839,
+      "n_model_features": 50,
+      "elapsed_seconds": 4.397002935409546
+    },
+    {
+      "case": "query_only_imputed",
+      "spearman": 0.15314700779019758,
+      "rmse": 656.4770634588907,
+      "context_nan_fraction": 0.4883225402130771,
+      "query_nan_fraction": 0.0,
+      "n_model_features": 50,
+      "elapsed_seconds": 4.120394229888916
+    },
+    {
+      "case": "context_only_imputed",
+      "spearman": 0.25069213557768866,
+      "rmse": 647.7399722150842,
+      "context_nan_fraction": 0.0,
+      "query_nan_fraction": 0.6252434456928839,
+      "n_model_features": 50,
+      "elapsed_seconds": 4.020398855209351
+    },
+    {
+      "case": "both_imputed_same_category_codes",
+      "spearman": 0.33890680226052006,
+      "rmse": 661.3183702967976,
+      "context_nan_fraction": 0.0,
+      "query_nan_fraction": 0.0,
+      "n_model_features": 50,
+      "elapsed_seconds": 4.068386793136597
+    },
+    {
+      "case": "legacy_category_codes_keep_nan",
+      "spearman": 0.15770944940226922,
+      "rmse": 733.575365251896,
+      "context_nan_fraction": 0.4883225402130771,
+      "query_nan_fraction": 0.6252434456928839,
+      "n_model_features": 50,
+      "elapsed_seconds": 4.1525819301605225
+    }
+  ]
+}

@@ -514,6 +514,10 @@ class Trainer:
 
         self.missingness_augmenter = None
         if not bool(getattr(self.config, "col_missing_value_embedding", False)):
+            if getattr(self.config, "missingness_query_column_probability", 0.0) != 0.0 or getattr(
+                self.config, "missingness_preserve_observed_composition", False
+            ):
+                raise ValueError("Query/composition masking options require --col_missing_value_embedding true.")
             return
 
         profile_path = getattr(self.config, "missingness_profile_path", None)
@@ -532,6 +536,8 @@ class Trainer:
             profile_path,
             augmentation_probability=self.config.missingness_augmentation_probability,
             min_observed_composition=self.config.missingness_min_observed_composition,
+            query_column_probability=getattr(self.config, "missingness_query_column_probability", 0.0),
+            preserve_observed_composition=getattr(self.config, "missingness_preserve_observed_composition", False),
         )
         self.missingness_augmenter.validate_max_features(self.config.max_features)
 
@@ -870,6 +876,7 @@ class Trainer:
             micro_X, missingness_results = self.missingness_augmenter.augment(
                 micro_X,
                 micro_d,
+                train_size=train_size,
                 source_ids=micro_source_ids,
             )
 
@@ -965,6 +972,8 @@ class Trainer:
                     "missing_mask_fraction": 0.0,
                     "composition_missing_mask_fraction": 0.0,
                     "other_missing_mask_fraction": 0.0,
+                    "context_missing_mask_fraction": 0.0,
+                    "query_missing_mask_fraction": 0.0,
                 }
             )
 

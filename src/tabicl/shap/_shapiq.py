@@ -4,9 +4,9 @@
 indices — richer than plain SHAP values because they also capture feature
 interactions.
 
-TabICL natively treats NaN columns as absent features, so we provide a
-custom :class:`_NaNImputer` that replaces masked features with NaN instead
-of drawing from the marginal distribution.
+The custom :class:`_NaNImputer` uses NaN to represent excluded features
+and explicitly requests their exclusion during explanations. Ordinary
+predictions continue to treat NaN as missing data.
 
 Example::
 
@@ -25,6 +25,7 @@ Example::
 
 from __future__ import annotations
 
+from copy import copy
 from typing import Any
 
 import numpy as np
@@ -32,14 +33,16 @@ import shapiq
 from shapiq.imputer import MarginalImputer
 from sklearn.base import BaseEstimator
 
+from ._masking import nan_mask_predict
+
 
 class _NaNImputer(MarginalImputer):
-    """Replace absent features with NaN for TabICL's native missing-feature handling.
+    """Explicitly exclude coalition features using a NaN-background adapter.
 
     When shapiq evaluates a coalition (subset of features), absent features are
-    set to NaN.  TabICL recognises NaN columns as genuinely missing by giving
-    semantically correct "remove-and-recontextualize" explanations without any
-    sampling noise.
+    set to NaN. The explanation adapter passes an explicit feature mask for
+    each coalition, without changing the caller's estimator or its ordinary
+    missing-value handling.
 
     Parameters
     ----------
@@ -56,6 +59,11 @@ class _NaNImputer(MarginalImputer):
     def __init__(self, model, data: np.ndarray, *, class_index: int | None = None, **kwargs) -> None:
         from shapiq.explainer.utils import get_predict_function_and_model_type
 
+        model = copy(model)
+        if hasattr(model, "predict_proba"):
+            model.predict_proba = nan_mask_predict(model.predict_proba)
+        else:
+            model.predict = nan_mask_predict(model.predict)
         resolved_predict, _ = get_predict_function_and_model_type(model, class_index=class_index)
         model._shapiq_predict_function = resolved_predict
         super().__init__(model, data, sample_size=1, normalize=False, **kwargs)
@@ -102,8 +110,8 @@ def get_shapiq_explainer(
         How absent features are handled when evaluating coalitions:
 
         - ``"nan"`` (default) — uses :class:`_NaNImputer` so that absent
-          features become NaN, exploiting TabICL's native missing-feature
-          handling.  Deterministic, no sampling noise.
+          features become NaN and are explicitly excluded from context and
+          queries. Deterministic, no sampling noise.
         - ``"marginal"`` — standard marginal-sampling imputation.
         - ``"baseline"`` — replace absent features with a fixed baseline
           value (typically the mean of `data`).

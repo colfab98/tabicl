@@ -23,11 +23,15 @@ class MissingnessAugmenter:
         *,
         augmentation_probability: float = 0.8,
         min_observed_composition: int = 2,
+        query_column_probability: float = 0.0,
+        preserve_observed_composition: bool = False,
     ) -> None:
         if not 0.0 < augmentation_probability <= 1.0:
             raise ValueError("augmentation_probability must be in (0, 1].")
         if min_observed_composition < 0:
             raise ValueError("min_observed_composition must be non-negative.")
+        if not 0.0 <= query_column_probability <= 1.0:
+            raise ValueError("query_column_probability must be in [0, 1].")
 
         self.profile_path = Path(profile_path).resolve()
         profile_bytes = self.profile_path.read_bytes()
@@ -37,6 +41,8 @@ class MissingnessAugmenter:
         self.composition_feature_count = int(profile["composition_feature_count"])
         self.augmentation_probability = float(augmentation_probability)
         self.min_observed_composition = int(min_observed_composition)
+        self.query_column_probability = float(query_column_probability)
+        self.preserve_observed_composition = bool(preserve_observed_composition)
 
         if not 0 <= self.composition_feature_count <= len(self.feature_columns):
             raise ValueError("Invalid composition_feature_count in missingness profile.")
@@ -84,6 +90,9 @@ class MissingnessAugmenter:
             "composition_feature_count": self.composition_feature_count,
             "augmentation_probability": self.augmentation_probability,
             "min_observed_composition": self.min_observed_composition,
+            "query_column_probability": self.query_column_probability,
+            "preserve_observed_composition": self.preserve_observed_composition,
+            "query_masking": "non-composition columns sampled per table and hidden across all query rows",
             "sources": dict(zip(self.source_names, self.source_row_counts, strict=True)),
             "source_routing": {
                 "generic": "sampled from empirical source row counts",
@@ -156,6 +165,9 @@ class MissingnessAugmenter:
         generator: torch.Generator | None,
     ) -> Tensor:
         composition_count = min(self.composition_feature_count, X.shape[-1])
+        if self.preserve_observed_composition:
+            mask[..., :composition_count] = False
+            return mask
         if composition_count == 0 or self.min_observed_composition == 0:
             return mask
 
@@ -196,10 +208,15 @@ class MissingnessAugmenter:
         X: Tensor,
         d: Tensor,
         *,
+        train_size: int | None = None,
         source_ids: Tensor | None = None,
         generator: torch.Generator | None = None,
     ) -> tuple[Tensor, dict[str, float]]:
-        """Apply sampled masks to X only; targets are never accepted or modified."""
+        """Mask X after target generation, optionally hiding query-only columns.
+
+        The first ``train_size`` rows are labeled context. Additional query
+        masking never changes them and never masks composition columns.
+        """
         if X.ndim != 3:
             raise ValueError("X must have shape (batch, rows, features).")
         if d.ndim != 1 or d.shape[0] != X.shape[0]:
@@ -208,6 +225,14 @@ class MissingnessAugmenter:
             raise ValueError("Training batch is wider than the missingness profile.")
         if not X.is_floating_point():
             raise TypeError("Missingness augmentation requires a floating-point feature tensor.")
+        if train_size is not None and (
+            isinstance(train_size, bool)
+            or not isinstance(train_size, int)
+            or not 0 < train_size < X.shape[1]
+        ):
+            raise ValueError("train_size must be an integer with 0 < train_size < number of rows.")
+        if self.query_column_probability > 0.0 and train_size is None:
+            raise ValueError("train_size is required for additional query-column masking.")
 
         active = (
             torch.arange(X.shape[-1], device=X.device).view(1, 1, -1)
@@ -218,6 +243,21 @@ class MissingnessAugmenter:
         mask = self._protect_composition(mask, X, d, generator)
 
         composition_count = min(self.composition_feature_count, X.shape[-1])
+        if self.query_column_probability > 0.0 and composition_count < X.shape[-1]:
+            # One draw per table/column, broadcast across all queries. Sampling
+            # after the empirical mask keeps context masking independent of
+            # query severity for an otherwise identical RNG state.
+            query_columns = torch.rand(
+                (X.shape[0], 1, X.shape[-1] - composition_count),
+                device=X.device,
+                generator=generator,
+            ) < self.query_column_probability
+            mask[:, train_size:, composition_count:] |= (
+                query_columns
+                & active[:, train_size:, composition_count:]
+                & ~original_missing[:, train_size:, composition_count:]
+            )
+
         composition_active = active[..., :composition_count]
         other_active = active[..., composition_count:]
         stats = {
@@ -229,4 +269,11 @@ class MissingnessAugmenter:
                 mask[..., composition_count:].sum().item() / max(1, other_active.sum().item())
             ),
         }
+        if train_size is not None:
+            stats["context_missing_mask_fraction"] = float(
+                mask[:, :train_size].sum().item() / max(1, active[:, :train_size].sum().item())
+            )
+            stats["query_missing_mask_fraction"] = float(
+                mask[:, train_size:].sum().item() / max(1, active[:, train_size:].sum().item())
+            )
         return X.masked_fill(mask, torch.nan), stats

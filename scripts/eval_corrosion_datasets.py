@@ -74,6 +74,12 @@ from analyze_structure import Table, clean_name, load_all_tables  # noqa: E402
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "corrosion_datasets" / "analysis" / "eval_results"
 EPIT_PIPELINE_TASK_ID = "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg"
 SOCCOL_PIPELINE_TASK_ID = "soccol_pitting_potential__event1__epit_mv_agagcl_3m_kcl"
+COMBINED_PIPELINE_TASK_ID = "combined_epit_soccol_context__mpea_pitting_potential_mv_sce"
+COMBINED_CONTEXT_NAME = "epit_soccol_context.csv"
+COMBINED_QUERY_NAME = "mpea_queries.csv"
+COMBINED_SCORING_NAME = "mpea_scoring_targets.csv"
+COMBINED_REGISTRY_NAME = "shared_feature_registry.json"
+COMBINED_MANIFEST_NAME = "preparation_manifest.json"
 DEFAULT_FEATURE_GROUPS = (
     "material",
     "environment",
@@ -357,6 +363,13 @@ def parse_args() -> argparse.Namespace:
             "preprocessing fitted on the full development partition."
         ),
     )
+    parser.add_argument(
+        "--missing-aware-model",
+        action="append",
+        default=[],
+        metavar="LABEL",
+        help="Local TabICL model that must load with learned missing-value embeddings enabled.",
+    )
     parser.add_argument("--checkpoint-root", type=Path, default=REPO_ROOT / "checkpoints")
     parser.add_argument("--run-prefix", type=str, default="tabicl_s1mini_generic_")
     parser.add_argument("--device", type=str, default="cuda")
@@ -376,6 +389,14 @@ def parse_args() -> argparse.Namespace:
             "Feature normalization methods passed to TabICL estimators. If omitted, "
             "the estimator's legacy default (none plus power) is preserved. Pass "
             "'--tabicl-norm-methods none' to explicitly disable power transformation."
+        ),
+    )
+    parser.add_argument(
+        "--native-tabicl-baselines",
+        action="store_true",
+        help=(
+            "Keep non-fixed local TabICL models and official pretrained TabICL on "
+            "the original latin-shuffle and default normalization settings."
         ),
     )
     parser.add_argument(
@@ -404,6 +425,15 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Fixed EPIT pipeline split manifest. Requires exactly one of "
             "--epit-validation-fold or --epit-final-test."
+        ),
+    )
+    parser.add_argument(
+        "--combined-data-dir",
+        type=Path,
+        default=None,
+        help=(
+            "Directory containing the frozen combined context, MPEA queries, and "
+            "separate MPEA scoring targets."
         ),
     )
     parser.add_argument(
@@ -639,6 +669,21 @@ def validate_args(args: argparse.Namespace) -> None:
     epit_mode_count = int(args.epit_validation_fold is not None) + int(
         args.epit_final_test
     )
+    if args.combined_data_dir is not None:
+        if args.epit_split_manifest is not None or epit_mode_count:
+            raise ValueError(
+                "--combined-data-dir cannot be combined with EPIT/Soccol split options."
+            )
+        if args.epit_final_context_fold is not None or args.epit_final_context_folds is not None:
+            raise ValueError(
+                "Combined final evaluation always uses the full labeled context."
+            )
+        if args.split_seeds is not None:
+            raise ValueError(
+                "Combined final evaluation cannot use random train/test splits."
+            )
+        if args.target_binning != "continuous":
+            raise ValueError("Combined final evaluation requires a continuous target.")
     if args.epit_split_manifest is None and epit_mode_count:
         raise ValueError(
             "--epit-validation-fold and --epit-final-test require "
@@ -1653,6 +1698,117 @@ def _make_soccol_pipeline_task(manifest_path: Path) -> EvalTask:
     )
 
 
+def _make_combined_pipeline_task(data_dir: Path) -> EvalTask:
+    """Build the frozen 50-feature context/query task from derived artifacts."""
+    data_dir = data_dir.expanduser().resolve()
+    paths = {
+        COMBINED_CONTEXT_NAME: data_dir / COMBINED_CONTEXT_NAME,
+        COMBINED_QUERY_NAME: data_dir / COMBINED_QUERY_NAME,
+        COMBINED_SCORING_NAME: data_dir / COMBINED_SCORING_NAME,
+        COMBINED_REGISTRY_NAME: data_dir / COMBINED_REGISTRY_NAME,
+    }
+    manifest_path = data_dir / COMBINED_MANIFEST_NAME
+    if not manifest_path.is_file():
+        raise FileNotFoundError(f"Combined preparation manifest not found: {manifest_path}")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("preparation_version") != "combined_context_query_v2":
+        raise RuntimeError("Unsupported combined preparation version.")
+    for name, path in paths.items():
+        if not path.is_file():
+            raise FileNotFoundError(f"Combined evaluation artifact not found: {path}")
+        expected_hash = str(manifest.get("outputs", {}).get(name, {}).get("sha256", ""))
+        if not expected_hash or _sha256_file(path) != expected_hash:
+            raise RuntimeError(f"Combined evaluation artifact changed after preparation: {name}")
+
+    context = pd.read_csv(paths[COMBINED_CONTEXT_NAME])
+    queries = pd.read_csv(paths[COMBINED_QUERY_NAME])
+    scoring = pd.read_csv(paths[COMBINED_SCORING_NAME])
+    registry = json.loads(paths[COMBINED_REGISTRY_NAME].read_text(encoding="utf-8"))
+    feature_columns = tuple(registry.get("feature_columns_in_order", ()))
+    numeric_columns = tuple(registry.get("numeric_feature_columns", ()))
+    categorical_columns = tuple(registry.get("categorical_feature_columns", ()))
+    composition_columns = tuple(registry.get("active_source_supported_elements", ()))
+    target_column = str(registry.get("target_column", ""))
+    if len(feature_columns) != 50 or target_column != "reported_pitting_potential_mV":
+        raise RuntimeError("Combined feature registry does not match the frozen task contract.")
+    missing_context = sorted(
+        set(feature_columns + (target_column,)) - set(context.columns)
+    )
+    missing_queries = sorted(set(feature_columns) - set(queries.columns))
+    missing_scoring = sorted(
+        {"row_id", target_column, "reference_type"} - set(scoring.columns)
+    )
+    if missing_context or missing_queries or missing_scoring:
+        raise RuntimeError(
+            "Combined evaluation inputs are incomplete: "
+            f"context={missing_context}, queries={missing_queries}, scoring={missing_scoring}."
+        )
+    if target_column in queries.columns:
+        raise RuntimeError("MPEA query features must not contain the scoring target.")
+    if len(context) != 4787 or len(queries) != 267 or len(scoring) != 267:
+        raise RuntimeError("Expected 4,787 context rows and 267 frozen MPEA queries/targets.")
+    if context["row_id"].duplicated().any() or queries["row_id"].duplicated().any():
+        raise RuntimeError("Context and query row IDs must be unique.")
+    if set(context["row_id"]).intersection(set(queries["row_id"])):
+        raise RuntimeError("Context and MPEA query row IDs overlap.")
+    if queries["row_id"].astype(str).tolist() != scoring["row_id"].astype(str).tolist():
+        raise RuntimeError("MPEA query and scoring-target row IDs are not aligned.")
+    if not queries["reference_type"].eq("SCE").all() or not scoring[
+        "reference_type"
+    ].eq("SCE").all():
+        raise RuntimeError("Every frozen MPEA query and target must use the SCE scale.")
+
+    context_y = pd.to_numeric(context[target_column], errors="coerce")
+    query_y = pd.to_numeric(scoring[target_column], errors="coerce")
+    if not np.isfinite(context_y.to_numpy(dtype=float)).all():
+        raise RuntimeError("Combined context targets must be finite.")
+    if not np.isfinite(query_y.to_numpy(dtype=float)).all():
+        raise RuntimeError("MPEA scoring targets must be finite.")
+
+    X = pd.concat(
+        (
+            context.loc[:, feature_columns],
+            queries.loc[:, feature_columns],
+        ),
+        ignore_index=True,
+    )
+    y = pd.concat((context_y, query_y), ignore_index=True)
+    fixed_split = EvalSplit(
+        train_index=np.arange(len(context), dtype=int),
+        test_index=np.arange(len(context), len(X), dtype=int),
+        split_strategy="combined_full_context_frozen_mpea_queries",
+    )
+    return EvalTask(
+        task_id=COMBINED_PIPELINE_TASK_ID,
+        dataset="combined_epit_soccol_mpea",
+        table="epit_soccol_context_with_frozen_mpea_queries",
+        target=target_column,
+        threshold=math.nan,
+        target_binning="continuous",
+        target_bins=0,
+        bin_edges=[],
+        class_labels=[],
+        class_counts={},
+        X=X,
+        y=y,
+        y_ordinal=pd.Series(np.zeros(len(X), dtype=int)),
+        task_family="normal_corrosion",
+        feature_groups_used=["material", "environment", "process_history"],
+        feature_group_counts={
+            "material": len(composition_columns),
+            "environment": len(numeric_columns) - len(composition_columns),
+            "process_history": len(categorical_columns),
+        },
+        dropped_feature_columns=[],
+        quality_flags=[],
+        split_groups=None,
+        split_strategy=fixed_split.split_strategy,
+        include_in_summary=True,
+        summary_exclusion_reason="",
+        fixed_split=fixed_split,
+    )
+
+
 def _load_epit_pipeline_indices(
     tasks: list[EvalTask],
     *,
@@ -1854,6 +2010,13 @@ def slugify(text: str) -> str:
 
 
 def make_tasks(args: argparse.Namespace) -> list[EvalTask]:
+    if args.combined_data_dir is not None:
+        task = _make_combined_pipeline_task(args.combined_data_dir)
+        if args.dataset and task.dataset not in set(args.dataset):
+            return []
+        if args.task and task.task_id not in set(args.task):
+            return []
+        return [task]
     if args.epit_split_manifest is not None:
         manifest_path = args.epit_split_manifest.expanduser().resolve()
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -2516,6 +2679,21 @@ def should_preserve_feature_schema(
     )
 
 
+def validate_missing_value_mode(
+    estimator: Any,
+    expected: bool | None,
+) -> bool | None:
+    if expected is None:
+        return None
+    actual = bool(getattr(estimator, "preserve_missing_values_", False))
+    if actual != expected:
+        expected_text = "enabled" if expected else "disabled"
+        raise RuntimeError(
+            f"Checkpoint has the wrong missing-value mode; expected {expected_text}."
+        )
+    return actual
+
+
 def evaluate_estimator(
     *,
     model_label: str,
@@ -2530,6 +2708,7 @@ def evaluate_estimator(
     regression_uncertainty: bool = True,
     pitting_magpie_features: bool = False,
     preserve_feature_schema: bool = False,
+    expected_preserve_missing_values: bool | None = None,
 ) -> dict[str, Any]:
     if pitting_magpie_features and task.task_id != "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg":
         raise ValueError("pitting_magpie_features is only valid for the fixed EPIT pitting task.")
@@ -2584,6 +2763,10 @@ def evaluate_estimator(
                 )
             estimator.set_params(remove_constant_features=False)
         estimator.fit(X_train, y_train)
+        preserve_missing_values = validate_missing_value_mode(
+            estimator,
+            expected_preserve_missing_values,
+        )
         n_model_features = int(
             getattr(
                 getattr(estimator, "ensemble_generator_", None),
@@ -2616,6 +2799,9 @@ def evaluate_estimator(
                 y_pred = np.asarray(estimator.predict(X_test, output_type=regression_output), dtype=float)
             except TypeError:
                 y_pred = np.asarray(estimator.predict(X_test), dtype=float)
+        n_model_features = int(getattr(estimator, "n_features_in_prediction_", n_model_features))
+        if preserve_feature_schema and n_model_features != X_train.shape[1]:
+            raise RuntimeError("Fixed-schema model input columns were removed during prediction.")
         y_true = y_test.to_numpy(dtype=float)
 
         mae = float(mean_absolute_error(y_true, y_pred))
@@ -2684,6 +2870,8 @@ def evaluate_estimator(
             "feature_group_counts": json.dumps(feature_group_counts, sort_keys=True),
             "dropped_feature_columns": ";".join(task.dropped_feature_columns),
         }
+        if expected_preserve_missing_values is not None:
+            row["preserve_missing_values"] = preserve_missing_values
         row.update(uncertainty_metrics)
         return row
 
@@ -2700,6 +2888,10 @@ def evaluate_estimator(
     y_test_ordinal = task.y_ordinal.iloc[test_index].reset_index(drop=True)
     estimator = estimator_factory()
     estimator.fit(X_train, y_train)
+    preserve_missing_values = validate_missing_value_mode(
+        estimator,
+        expected_preserve_missing_values,
+    )
     y_pred = pd.Series(estimator.predict(X_test)).astype(str)
     y_true_ord = y_test_ordinal.to_numpy(dtype=float)
     y_pred_ord = labels_to_ordinals(y_pred, task)
@@ -2773,6 +2965,8 @@ def evaluate_estimator(
         "feature_group_counts": json.dumps(feature_group_counts, sort_keys=True),
         "dropped_feature_columns": ";".join(task.dropped_feature_columns),
     }
+    if expected_preserve_missing_values is not None:
+        row["preserve_missing_values"] = preserve_missing_values
     row.update(ord_metrics)
     return row
 
@@ -3131,6 +3325,35 @@ def model_uses_fixed_schema(args: argparse.Namespace, model_label: str) -> bool:
     return slugify(model_label) in requested_labels
 
 
+def tabicl_inference_settings(
+    args: argparse.Namespace,
+    model_label: str,
+    *,
+    pretrained: bool = False,
+) -> tuple[str, list[str] | None]:
+    if args.native_tabicl_baselines and (
+        pretrained or not model_uses_fixed_schema(args, model_label)
+    ):
+        return "latin", None
+    return args.tabicl_feat_shuffle_method, args.tabicl_norm_methods
+
+
+def expected_missing_value_mode(
+    args: argparse.Namespace,
+    model_label: str,
+    *,
+    pretrained: bool = False,
+) -> bool | None:
+    requested_labels = {slugify(label) for label in args.missing_aware_model}
+    if slugify(model_label) in requested_labels:
+        return True
+    if args.native_tabicl_baselines and (
+        pretrained or not model_uses_fixed_schema(args, model_label)
+    ):
+        return False
+    return None
+
+
 def validate_fixed_schema_model_labels(
     args: argparse.Namespace,
     local_labels: set[str],
@@ -3140,6 +3363,19 @@ def validate_fixed_schema_model_labels(
     if unknown_labels:
         raise ValueError(
             "--fixed-schema-model must name a local TabICL model: "
+            + ", ".join(unknown_labels)
+        )
+
+
+def validate_missing_aware_model_labels(
+    args: argparse.Namespace,
+    local_labels: set[str],
+) -> None:
+    requested_labels = {slugify(label) for label in args.missing_aware_model}
+    unknown_labels = sorted(requested_labels.difference(local_labels))
+    if unknown_labels:
+        raise ValueError(
+            "--missing-aware-model must name a local TabICL model: "
             + ", ".join(unknown_labels)
         )
 
@@ -4091,6 +4327,7 @@ def main() -> None:
     first_local_specs = checkpoint_specs[0].local_specs
     local_model_labels = {spec.label for spec in first_local_specs}
     validate_fixed_schema_model_labels(args, local_model_labels)
+    validate_missing_aware_model_labels(args, local_model_labels)
     available_model_labels = set(local_model_labels)
     if args.compare_pretrained_tabicl:
         available_model_labels.add("pretrained_tabicl_v2")
@@ -4126,46 +4363,51 @@ def main() -> None:
         jobs: list[dict[str, Any]] = []
         for spec in checkpoint_eval.local_specs:
             model_path = str(spec.checkpoint_path)
+            feat_shuffle_method, norm_methods = tabicl_inference_settings(
+                args,
+                spec.label,
+            )
+            preserve_feature_schema = model_uses_fixed_schema(args, spec.label)
+            expected_missing_mode = expected_missing_value_mode(args, spec.label)
             if is_regression_eval:
-                factory = lambda model_path=model_path: make_tabicl_regressor(
+                factory = lambda model_path=model_path, feat_shuffle_method=feat_shuffle_method, norm_methods=norm_methods: make_tabicl_regressor(
                     model_path=model_path,
                     checkpoint_version=pretrained_checkpoint_version,
                     device=args.device,
                     n_estimators=args.n_estimators,
                     random_state=args.random_state,
                     allow_auto_download=False,
-                    feat_shuffle_method=args.tabicl_feat_shuffle_method,
-                    norm_methods=args.tabicl_norm_methods,
+                    feat_shuffle_method=feat_shuffle_method,
+                    norm_methods=norm_methods,
                 )
                 jobs.append(
                     {
                         "model_label": spec.label,
                         "model_kind": "local_tabicl_regressor",
                         "factory": factory,
-                        "preserve_feature_schema": model_uses_fixed_schema(
-                            args, spec.label
-                        ),
+                        "preserve_feature_schema": preserve_feature_schema,
+                        "expected_preserve_missing_values": expected_missing_mode,
                         "pitting_magpie_features": model_uses_pitting_magpie(args, spec.label),
                         "cache_key": (
                             "local_tabicl_regressor",
                             model_path,
                             args.device,
                             args.n_estimators,
-                            args.tabicl_feat_shuffle_method,
-                            tuple(args.tabicl_norm_methods or ()),
+                            feat_shuffle_method,
+                            tuple(norm_methods or ()),
                         ),
                     }
                 )
             else:
-                factory = lambda model_path=model_path: make_tabicl_classifier(
+                factory = lambda model_path=model_path, feat_shuffle_method=feat_shuffle_method, norm_methods=norm_methods: make_tabicl_classifier(
                     model_path=model_path,
                     checkpoint_version=pretrained_checkpoint_version,
                     device=args.device,
                     n_estimators=args.n_estimators,
                     random_state=args.random_state,
                     allow_auto_download=False,
-                    feat_shuffle_method=args.tabicl_feat_shuffle_method,
-                    norm_methods=args.tabicl_norm_methods,
+                    feat_shuffle_method=feat_shuffle_method,
+                    norm_methods=norm_methods,
                 )
                 jobs.append(
                     {
@@ -4173,19 +4415,30 @@ def main() -> None:
                         "model_kind": "local_tabicl_classifier",
                         "factory": factory,
                         "preserve_feature_schema": False,
+                        "expected_preserve_missing_values": expected_missing_mode,
                         "pitting_magpie_features": model_uses_pitting_magpie(args, spec.label),
                         "cache_key": (
                             "local_tabicl_classifier",
                             model_path,
                             args.device,
                             args.n_estimators,
-                            args.tabicl_feat_shuffle_method,
-                            tuple(args.tabicl_norm_methods or ()),
+                            feat_shuffle_method,
+                            tuple(norm_methods or ()),
                         ),
                     }
                 )
 
         if args.compare_pretrained_tabicl and not pretrained_tabicl_reuse_ready:
+            pretrained_feat_shuffle, pretrained_norm_methods = tabicl_inference_settings(
+                args,
+                "pretrained_tabicl_v2",
+                pretrained=True,
+            )
+            pretrained_missing_mode = expected_missing_value_mode(
+                args,
+                "pretrained_tabicl_v2",
+                pretrained=True,
+            )
             if is_regression_eval:
                 factory = lambda: make_tabicl_regressor(
                     model_path=None,
@@ -4194,8 +4447,8 @@ def main() -> None:
                     n_estimators=args.n_estimators,
                     random_state=args.random_state,
                     allow_auto_download=args.baseline_auto_download,
-                    feat_shuffle_method=args.tabicl_feat_shuffle_method,
-                    norm_methods=args.tabicl_norm_methods,
+                    feat_shuffle_method=pretrained_feat_shuffle,
+                    norm_methods=pretrained_norm_methods,
                 )
                 jobs.append(
                     {
@@ -4203,14 +4456,15 @@ def main() -> None:
                         "model_kind": "pretrained_tabicl_regressor",
                         "factory": factory,
                         "preserve_feature_schema": False,
+                        "expected_preserve_missing_values": pretrained_missing_mode,
                         "pitting_magpie_features": model_uses_pitting_magpie(args, "pretrained_tabicl_v2"),
                         "cache_key": (
                             "pretrained_tabicl_regressor",
                             pretrained_checkpoint_version,
                             args.device,
                             args.n_estimators,
-                            args.tabicl_feat_shuffle_method,
-                            tuple(args.tabicl_norm_methods or ()),
+                            pretrained_feat_shuffle,
+                            tuple(pretrained_norm_methods or ()),
                         ),
                         "reuse_static_baseline": reuse_static_baselines,
                     }
@@ -4223,8 +4477,8 @@ def main() -> None:
                     n_estimators=args.n_estimators,
                     random_state=args.random_state,
                     allow_auto_download=args.baseline_auto_download,
-                    feat_shuffle_method=args.tabicl_feat_shuffle_method,
-                    norm_methods=args.tabicl_norm_methods,
+                    feat_shuffle_method=pretrained_feat_shuffle,
+                    norm_methods=pretrained_norm_methods,
                 )
                 jobs.append(
                     {
@@ -4232,14 +4486,15 @@ def main() -> None:
                         "model_kind": "pretrained_tabicl_classifier",
                         "factory": factory,
                         "preserve_feature_schema": False,
+                        "expected_preserve_missing_values": pretrained_missing_mode,
                         "pitting_magpie_features": model_uses_pitting_magpie(args, "pretrained_tabicl_v2"),
                         "cache_key": (
                             "pretrained_tabicl_classifier",
                             pretrained_checkpoint_version,
                             args.device,
                             args.n_estimators,
-                            args.tabicl_feat_shuffle_method,
-                            tuple(args.tabicl_norm_methods or ()),
+                            pretrained_feat_shuffle,
+                            tuple(pretrained_norm_methods or ()),
                         ),
                         "reuse_static_baseline": reuse_static_baselines,
                     }
@@ -4354,6 +4609,9 @@ def main() -> None:
                         preserve_feature_schema=bool(
                             job["preserve_feature_schema"]
                         ),
+                        expected_preserve_missing_values=job.get(
+                            "expected_preserve_missing_values"
+                        ),
                     )
                     if job.get("reuse_static_baseline"):
                         pretrained_tabicl_row_templates_by_task.setdefault(task.task_id, []).append(dict(row))
@@ -4384,6 +4642,10 @@ def main() -> None:
                         "summary_exclusion_reason": task.summary_exclusion_reason,
                         "error": repr(exc),
                     }
+                    if job.get("expected_preserve_missing_values") is not None:
+                        error["expected_preserve_missing_values"] = job[
+                            "expected_preserve_missing_values"
+                        ]
                     if job.get("reuse_static_baseline"):
                         pretrained_tabicl_error_templates_by_task.setdefault(task.task_id, []).append(dict(error))
                         if job["model_label"] not in pretrained_tabicl_reuse_labels:

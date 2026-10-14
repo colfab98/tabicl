@@ -77,3 +77,47 @@ training.
 The active v1 composition schema contains the 24 elements supported by EPIT or
 Soccol. The registry reserves every other periodic-table element, but MPEA-only
 elements remain inactive because the source priors do not teach their effects.
+
+To train with heavier missingness in queries while preserving observed
+composition, use:
+
+```bash
+sbatch scripts/combined_corrosion/train_final_v2.sbatch
+```
+
+This policy protects observed composition values in both context and queries;
+existing NaNs remain NaNs. Non-composition features retain the usual
+source-derived missingness in context and queries. In addition, each
+non-composition column has an independent 80% probability per synthetic table
+of being hidden across **all query rows**, without additional masking in
+context. This includes environmental, preparation, and categorical features;
+the selection does not depend on MPEA. Targets are generated before masking
+and remain unchanged.
+
+`QUERY_COLUMN_MASK_PROBABILITY` overrides the initial 0.8 setting. The launcher
+uses a fresh `checkpoints/combined_epit_soccol_mpea/final_v2_seed42`
+directory and refuses to overwrite an existing run. Checkpoints record both
+new masking settings. The original `train_final.sbatch` defaults remain
+unchanged. When evaluating this run, pass its path as `--candidate-run` and
+choose a separate `--output-dir`; the frozen MPEA query partition stays fixed.
+
+Evaluate the currently available training checkpoints with:
+
+```bash
+sbatch scripts/combined_corrosion/evaluate_final.sbatch
+```
+
+The evaluator uses all 4,787 labeled context rows and only the 267 fixed MPEA
+rows as queries. It compares the combined missing-aware checkpoint, the
+unchanged local generic TabICL checkpoint, official pretrained TabICL V2, and
+CatBoost. Generic and pretrained TabICL retain their original preprocessing;
+only the combined checkpoint uses the learned missing-value embedding. The
+ordinary prediction path retains columns that are entirely missing in MPEA:
+generic/pretrained models impute or encode their missing values using fitted
+context preprocessing. Only an explicit `feature_mask` requests feature
+exclusion for explanations. Evaluation records the prediction-time feature
+count. Comparisons saved before this correction require a fresh evaluation.
+The combined script is a thin wrapper over the same shared corrosion evaluator used
+by the existing EPIT and Soccol comparisons. By default it evaluates every
+checkpoint step currently shared by the combined and local generic runs;
+`--checkpoint <step>` restricts it to one explicit step.

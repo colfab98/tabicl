@@ -666,7 +666,7 @@ class TabICLClassifier(ClassifierMixin, TabICLBaseEstimator):
             outputs.append(out.float().cpu().numpy())
         return np.concatenate(outputs, axis=0)
 
-    def predict_proba(self, X: np.ndarray) -> np.ndarray:
+    def predict_proba(self, X: np.ndarray, *, feature_mask: Optional[np.ndarray] = None) -> np.ndarray:
         """Predict class probabilities for test samples.
 
         Applies the ensemble of TabICL models to make predictions, with each ensemble
@@ -681,10 +681,13 @@ class TabICLClassifier(ClassifierMixin, TabICLBaseEstimator):
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features)
-            Test samples for prediction.  Columns that are entirely NaN are
-            treated as masked features and excluded from inference.  This is
-            useful for computing SHAP values, where masked features are
-            represented as all-NaN columns.
+            Test samples for prediction. NaN values, including entirely missing
+            query columns, use the checkpoint's usual missing-value handling.
+
+        feature_mask : array-like of bool, shape (n_features,), optional
+            Explicitly exclude columns marked True from context and queries,
+            for example for SHAP explanations. Uses fitted column order.
+            Missing values alone never request feature exclusion.
 
         Returns
         -------
@@ -731,31 +734,7 @@ class TabICLClassifier(ClassifierMixin, TabICLBaseEstimator):
         # Preserve DataFrame structure to retain column names and types for correct feature transformation
         X = validate_data(self, X, reset=False, dtype=None, skip_check_array=True)
 
-        # Legacy checkpoints drop all-NaN SHAP-mask columns. Missing-aware
-        # checkpoints keep them in place for the learned missing embedding.
-        if self.preserve_missing_values_:
-            feature_mask = None
-        else:
-            if hasattr(X, "columns"):  # check for dataframe without importing pandas
-                feature_mask = X.isna().all(axis=0).to_numpy()
-            else:
-                arr = np.asarray(X)
-                if np.issubdtype(arr.dtype, np.number):
-                    feature_mask = np.isnan(arr).all(axis=0)
-                else:
-                    # object dtype: v != v is True only for NaN in IEEE 754, safe for strings too
-                    feature_mask = np.array([all(v != v for v in arr[:, i]) for i in range(arr.shape[1])])
-
-            if feature_mask is not None and not np.any(feature_mask):
-                feature_mask = None
-
-        # Fill masked columns so that transformers don't choke on NaN
-        if feature_mask is not None:
-            if hasattr(X, "columns"):  # Proxy way to check whether X is a dataframe
-                X.iloc[:, feature_mask] = 0.0
-            else:
-                X[:, feature_mask] = 0.0
-
+        feature_mask = self._validate_feature_mask(feature_mask)
         X = self.X_encoder_.transform(X)
 
         # Skip KV cache when features are masked
@@ -767,6 +746,7 @@ class TabICLClassifier(ClassifierMixin, TabICLBaseEstimator):
             test_data = self.ensemble_generator_.transform(X, mode="test")
             outputs = []
             for norm_method, (Xs_test,) in test_data.items():
+                self.n_features_in_prediction_ = int(Xs_test.shape[-1])
                 kv_cache = self.model_kv_cache_[norm_method]
                 outputs.append(self._batch_forward_with_cache(Xs_test, kv_cache))
             outputs = np.concatenate(outputs, axis=0)
@@ -775,6 +755,7 @@ class TabICLClassifier(ClassifierMixin, TabICLBaseEstimator):
             data = self.ensemble_generator_.transform(X, mode="both", feature_mask=feature_mask)
             outputs = []
             for norm_method, (Xs, ys) in data.items():
+                self.n_features_in_prediction_ = int(Xs.shape[-1])
                 if feature_mask is None:
                     feature_shuffles = self.ensemble_generator_.feature_shuffles_[norm_method]
                 else:
@@ -811,7 +792,7 @@ class TabICLClassifier(ClassifierMixin, TabICLBaseEstimator):
         # Normalize probabilities
         return avg / avg.sum(axis=1, keepdims=True)
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
+    def predict(self, X: np.ndarray, *, feature_mask: Optional[np.ndarray] = None) -> np.ndarray:
         """Predict class labels for test samples.
 
         Uses predict_proba to get class probabilities and returns the class with
@@ -820,17 +801,18 @@ class TabICLClassifier(ClassifierMixin, TabICLBaseEstimator):
         Parameters
         ----------
         X : array-like of shape (n_samples, n_features)
-            Test samples for prediction.  Columns that are entirely NaN are
-            treated as masked features and excluded from inference.  This is
-            useful for computing SHAP values, where masked features are
-            represented as all-NaN columns.
+            Test samples for prediction. NaN values use the checkpoint's usual
+            missing-value handling without deleting query columns.
+
+        feature_mask : array-like of bool, shape (n_features,), optional
+            Explicit feature exclusions; see :meth:`predict_proba`.
 
         Returns
         -------
         array-like of shape (n_samples,)
             Predicted class labels for each test sample.
         """
-        proba = self.predict_proba(X)
+        proba = self.predict_proba(X, feature_mask=feature_mask)
         y = np.argmax(proba, axis=1)
 
         return self.y_encoder_.inverse_transform(y)

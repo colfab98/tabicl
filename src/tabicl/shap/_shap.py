@@ -1,9 +1,8 @@
 """SHAP explanations for TabICL.
 
-TabICL treats NaN columns as absent features. This module exploits that
-by using a single all-NaN row as the SHAP background, so that masked
-features are genuinely removed from the model's perspective rather than
-replaced by some reference value.
+This module uses a single all-NaN row as the SHAP background and explicitly
+requests feature exclusion for each coalition. Ordinary prediction treats
+NaN as a missing value and does not exclude columns.
 
 Example::
 
@@ -23,6 +22,8 @@ from typing import Any, Callable
 import matplotlib.pyplot as plt
 import numpy as np
 import shap
+
+from ._masking import nan_mask_predict
 
 
 def get_shap_values(estimator: Any, X_test: np.ndarray, attribute_names: list[str] | None = None, **kwargs: Any) -> Any:
@@ -75,7 +76,8 @@ def get_shap_explainer(
         Used only to infer ``n_features``.
 
     predict_fn : str or callable, default="predict_proba"
-        Prediction method; resolved via ``getattr`` when a string.
+        Prediction method; resolved via ``getattr`` when a string. Custom
+        callables must accept the explicit ``feature_mask`` keyword argument.
 
     **kwargs
         Forwarded to ``shap.Explainer``.
@@ -87,7 +89,7 @@ def get_shap_explainer(
     if isinstance(predict_fn, str):
         predict_fn = getattr(estimator, predict_fn)
 
-    return shap.Explainer(predict_fn, np.full((1, X.shape[1]), np.nan), **kwargs)
+    return shap.Explainer(nan_mask_predict(predict_fn), np.full((1, X.shape[1]), np.nan), **kwargs)
 
 
 # ── visualisation helpers ───────────────────────────────────────────────

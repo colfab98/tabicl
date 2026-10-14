@@ -1,0 +1,24 @@
+{
+  "check": "training versus inference forward on the same synthetic batch",
+  "context_size": 27,
+  "source_ids": [
+    1,
+    2,
+    2,
+    0
+  ],
+  "output_shape": [
+    4,
+    37,
+    999
+  ],
+  "max_abs_difference": 0.0,
+  "mean_abs_difference": 0.0,
+  "finite": true,
+  "mask_stats": {
+    "missing_mask_fraction": 0.24078125,
+    "composition_missing_mask_fraction": 0.28955078125,
+    "other_missing_mask_fraction": 0.19576322115384615
+  },
+  "passed": true
+}

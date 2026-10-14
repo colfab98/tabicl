@@ -1,0 +1,9 @@
+{
+  "metric": "training CRPS, lower is better",
+  "unique_logged_steps": 5936,
+  "first_100_mean": 0.5684600000000001,
+  "last_100_mean": 0.17656,
+  "last_step": 5935,
+  "log": "/home/fcolanto/tmp/combined_corr_final.11434.err",
+  "note": "Synthetic training loss only; not an estimate of real-data performance."
+}

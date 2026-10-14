@@ -1,15 +1,16 @@
-# Supplement to main4.tex: target mixing and coefficient variation
+# Supplement to main4.tex: target mixing, combined training, and diagnostics
 
 Recorded: 2026-09-26; updated with completed training results on 2026-10-01;
 Soccol extension added on 2026-10-04; frozen-query context-size diagnostic
 implementation and the corresponding checkpoint diagnostics added on
 2026-10-11; combined EPIT--Soccol training and frozen MPEA-query workflow
-added on 2026-10-13.
+added on 2026-10-13; combined results, implementation audit, and the V2
+missingness policy documented on 2026-10-15.
 Working notes for a later merge into [main4.tex](main4.tex).
 Sources: the Codex conversation **“Review main4 and presentation.md”**
 (2026-09-23–25, thread `01a0cde2-bea1-7b32-81c2-2ac6045ae94f`), the subsequent
 launch/concurrency discussion, the linked combined EPIT--Soccol/MPEA design and
-implementation conversations continued on 2026-10-13, and the repository
+implementation conversations continued on 2026-10-13--15, and the repository
 artifacts linked below.
 
 This document separates measured findings, implemented functionality, and proposed
@@ -29,8 +30,11 @@ in main4; reconcile them during the merge instead of adding duplicate sections.
 | Several nodes running the same new study concurrently | **Not supported by the current runner.** Shared journal storage exists, but the runner permits only one active process. |
 | Failed/constant SCM component rejection | Discussed, but not implemented by this experiment. |
 | Adaptive λ, grouped bootstrap, joint λ/variation tuning | Discussed only. |
-| Combined EPIT--Soccol context model | Implemented with a frozen 25% generic, 25% EPIT-informed, and 50% Soccol-informed prior; final training has not yet been submitted. |
-| MPEA evaluation | 267 fixed SCE query rows prepared with targets stored separately; no final-model result yet. |
+| Combined EPIT--Soccol context model | Original run trained beyond step 5,900, with saved checkpoint comparisons through step 5,500; the intended step-10,000 endpoint was not reached in the audited run. Prior mixture remains 25% generic, 25% EPIT-informed, and 50% Soccol-informed. |
+| MPEA evaluation | Corrected checkpoint comparisons and specialist-transfer results are recorded on the same 267 fixed SCE queries; these are diagnostic results, not a newly selected final model. See Section 15. |
+| Missing-query-column inference bug | Fixed: ordinary missing values no longer trigger SHAP-style feature deletion. Earlier affected comparisons require reevaluation. |
+| Combined V2 training | Implemented and checked: additional query-column masking and protection of observed composition values, with a fresh-run launcher. No V2 performance result is recorded here. |
+| Electrode-conditioned synthetic targets | Limitation identified; generating reference labels and electrode-dependent targets remains deferred. |
 
 The earlier chat reports **64 passing tests** and tiny CPU training checks with
 zero and four DataLoader workers. These are historical verification results,
@@ -1245,9 +1249,10 @@ primary-source evidence to assign either scale. Those 3,350 rows are retained
 with `reference_type=NaN`, while `reference_type_evidence` records
 `source_reference_not_verified` for auditing. No electrode conversion is
 applied, because a blanket conversion would falsely claim a known reference for
-most Soccol rows. This keeps the observed target while allowing the in-context
-model to condition on the known measurement type when it is available and use
-its learned missing token otherwise.
+most Soccol rows. This keeps the observed target and exposes known measurement
+types as inputs. It does not establish that the model has learned the physical
+reference-electrode relationship: the informed generators currently leave
+`reference_type` missing, as clarified in Section 15.
 
 This is input uncertainty, not a missing-target problem. All labeled context
 rows retain a finite reported potential. A row with an actually missing target
@@ -1288,24 +1293,28 @@ columns, disables constant-feature removal, and uses no feature shuffle.
 
 ### Learned missingness and source-aware masks
 
-The combined model opts into a learned column-level missing-value token through
+The combined model opts into a learned missing-value token through
 `--col_missing_value_embedding True`. Actual `NaN` values are preserved through
 the scikit-learn path instead of being replaced by a universal numeric
-sentinel. Column feature grouping is disabled only for this missing-aware path,
-because grouping columns with different missingness identities would destroy
-the fixed schema. The ordinary generic model keeps its historical feature
-grouping and all new behavior is opt-in; existing generic configurations and
-checkpoints are not rewritten.
+sentinel. The implementation uses one learned embedding vector shared across
+columns, not a separate missing token for each named feature. Column feature
+grouping is disabled for this path, as required by the current implementation;
+this is an architecture difference from the generic and specialist checkpoints.
+The ordinary generic model keeps its historical feature grouping and all new
+behavior is opt-in; existing generic configurations and checkpoints are not
+rewritten. Canonical names align the inputs; they are not text descriptions
+encoded by a language model.
 
-During pretraining, joint masks sampled from the 4,787 context rows are applied
-to composition as well as non-composition inputs, never to the target. EPIT-
+In the original training policy, joint masks sampled from the 4,787 context
+rows are applied to composition as well as non-composition inputs, never to the target. EPIT-
 informed tables receive EPIT masks, Soccol-informed tables receive Soccol masks,
 and generic tables sample EPIT or Soccol masks in proportion to their empirical
 context row counts. At the default augmentation probability of 0.8, at least
 two originally observed composition values are retained per synthetic row when
 possible. Internal source IDs route these masks without becoming model inputs.
 MPEA queries and MPEA targets contribute to neither the mask profile nor
-pretraining.
+pretraining. Section 15 records the V2 change to composition protection and
+additional query-only masking.
 
 ### Frozen combined prior
 
@@ -1356,8 +1365,260 @@ sbatch scripts/combined_corrosion/train_final.sbatch
 The final frozen model must use all 4,787 labeled EPIT--Soccol rows as context
 and the same 267 MPEA rows as the query partition. Development folds may be
 used only for development-time selection or diagnostics; they cannot replace
-the MPEA query set. The separated MPEA targets are opened only for the final
-score.
-At this snapshot, the combined path has passed focused prior,
-missingness, estimator-regression, and one-step end-to-end training checks, but
-the 10,000-step Slurm run and final MPEA evaluation have not yet been executed.
+the MPEA query set. The separated MPEA targets are used only for scoring, not
+as query inputs or pretraining data. The later checkpoint and input-handling
+diagnostics also scored these same targets; their interpretation is recorded
+in Section 15.
+
+The final evaluator uses the same structure as the existing EPIT and Soccol
+evaluators: the thin combined wrapper
+[`evaluate_final.py`](scripts/combined_corrosion/evaluate_final.py) delegates
+task construction, model execution, metrics, and output tables to the shared
+[`eval_corrosion_datasets.py`](scripts/eval_corrosion_datasets.py). Its Slurm entry point is
+[`evaluate_final.sbatch`](scripts/combined_corrosion/evaluate_final.sbatch):
+
+```bash
+sbatch scripts/combined_corrosion/evaluate_final.sbatch
+```
+
+By default it compares every checkpoint step currently shared by the combined
+CorrPFN and local generic TabICL runs, together with official pretrained TabICL
+V2 and CatBoost, on the same frozen query partition. An explicit
+`--checkpoint <step>` can restrict the comparison to one saved step; evaluation
+does not require training to reach step 10,000. All methods receive the same canonical 50 raw
+columns. Only the combined checkpoint retains `NaN` through preprocessing and
+uses the learned missing token. The local generic and official
+pretrained checkpoints keep original TabICL behavior (Latin feature shuffling,
+the default normalization ensemble, numeric mean imputation, and categorical
+missing/unseen code `-1`). CatBoost handles numeric `NaN` natively and maps
+categorical `NaN` to its fixed missing-category string. The evaluator verifies
+the context/query row boundary and refuses a combined checkpoint without the
+trained missing-value mode or a generic/pretrained checkpoint that enables it.
+
+At the original 2026-10-13 implementation snapshot, the combined path had
+passed focused prior, missingness, estimator-regression, and one-step training
+checks. Training and MPEA checkpoint diagnostics subsequently ran; the results,
+corrections, and V2 status are recorded below.
+
+## 15. Combined-model results, missingness audit, and V2 fixes (2026-10-14--15)
+
+### Evaluation scope and previous results
+
+All comparisons below keep the outer query partition fixed: 4,787 labeled
+EPIT--Soccol context rows and the same 267 MPEA queries. The combined,
+generic, pretrained, and CatBoost comparison uses the canonical 50 raw
+features. Targets, row identities, and context/query boundaries agree across
+models. TabICL regression predictions use the median. Its target scaling is
+fitted only on context labels, with mean 337.8953 mV and standard deviation
+310.3503 mV.
+
+The corrected checkpoint comparison was saved on 2026-10-14 after the
+missing-column inference fix described below. Its latest plotted step is
+5,500. At that step:
+
+| Model | Test Spearman | Test RMSE (mV) |
+| --- | ---: | ---: |
+| Combined CorrPFN, original missingness training | 0.1576 | 733.7 |
+| Local generic TabICL | 0.5592 | 596.8 |
+| Official pretrained TabICL V2 | 0.3278 | 652.9 |
+| CatBoost | 0.5311 | 564.3 |
+| EPIT specialist, native 28-feature projection | 0.4005 | 636.3 |
+| Soccol specialist, native 37-feature projection | 0.6058 | 570.0 |
+
+The specialist rows come from the separate transfer evaluation saved on
+2026-10-13. They use the same context/query rows, but project them to each
+specialist's native schema and apply its existing imputation/encoding. They
+therefore demonstrate transfer with the mixed-source context, without being
+a controlled test of changing only the prior mixture.
+
+The combined curve rises from Spearman 0.1197 at step 500 to 0.2869 at step
+1,500, then reaches 0.1892 at step 4,000 and 0.1576 at step 5,500. Its largest
+observed value is a descriptive diagnostic, not an authorized checkpoint
+selection. At the specialists' fixed step-10,000 endpoints, EPIT scores 0.3924
+and Soccol 0.5821 on this transfer task.
+
+The original combined training log ends around step 5,935 with a Slurm
+termination, before the planned 10,000 steps. Mean logged training CRPS falls
+from 0.5685 over the first 100 logged steps to 0.1766 over the last 100.
+This is evidence of learning the synthetic tasks; it does not establish good
+real-data transfer or explain why the transfer curve declines.
+
+Sources: [corrected comparison table](corrosion_datasets/analysis/combined_epit_soccol_mpea/checkpoint_comparison_cpu/summary.csv),
+[comparison Spearman plot](corrosion_datasets/analysis/combined_epit_soccol_mpea/checkpoint_comparison_cpu/plots/trend_mean_test_spearman.svg),
+[specialist transfer table](corrosion_datasets/analysis/combined_epit_soccol_mpea/specialist_transfer_cpu/summary.csv),
+[specialist Spearman plot](corrosion_datasets/analysis/combined_epit_soccol_mpea/specialist_transfer_cpu/plots/trend_mean_test_spearman.svg),
+and [training-loss audit](corrosion_datasets/analysis/combined_epit_soccol_mpea/implementation_audit_20261014T154809/training_loss_check.json).
+
+### Confirmed inference bug and implemented correction
+
+Previously, ordinary prediction treated any query column containing only
+`NaN` as a SHAP exclusion request for generic/pretrained checkpoints. It then
+removed that feature from both context and queries, even when context had
+useful observations. For this MPEA input, the earlier audit traced 21 actual
+model inputs despite an evaluator count of 50. The missing-aware combined
+checkpoint retained all 50. Which columns disappeared could also depend on
+which query rows were predicted together.
+
+Ordinary prediction now retains entirely missing query columns and uses each
+checkpoint's usual missing-value processing. Generic/pretrained models impute
+or encode them using context-fitted preprocessing; combined preserves `NaN`
+for its learned missing representation. Feature exclusion requires an explicit
+boolean `feature_mask`; the SHAP adapters now pass that mask deliberately.
+The fix covers regression and classification. Preprocessing also handles a
+categorical column that arrives as an all-missing numeric-typed column.
+The evaluator records the feature count actually passed during prediction.
+
+The current 50-feature comparison already includes this correction. It
+improves the validity of evaluation but does not modify or retrain the old
+combined checkpoint. It does not add MPEA-only features to the fixed schema.
+
+Implementation: [regressor](src/tabicl/sklearn/regressor.py),
+[classifier](src/tabicl/sklearn/classifier.py),
+[preprocessing](src/tabicl/sklearn/preprocessing.py),
+[explicit SHAP masks](src/tabicl/shap/_masking.py), and
+[regression tests](tests/test_prediction_missing_columns.py).
+
+### Inference settings and controlled missing-value checks
+
+Beyond missing-value handling, the default evaluator gives generic/pretrained
+TabICL Latin feature shuffling and the `none`/`power` transform ensemble.
+Combined uses fixed feature order and `none`. Although all request eight
+estimators, combined's identical configurations reduce to one distinct pass,
+whereas the native baselines use eight. Here `none` means no additional
+power/quantile transform; standard scaling and outlier processing still occur.
+
+At step 5,500, matching fixed order, the `none` setting, and one distinct pass
+gives Spearman 0.4488 for generic, 0.2567 for pretrained, and 0.1576 for
+combined. Missing-value processing and trained architectures still differ.
+Thus the inference settings account for part of the plotted gap, but not all
+of it. These controls did not change the default evaluator configuration.
+
+The combined inputs contain approximately 48.8% missing cells in context and
+62.5% in queries. A second diagnostic holds the combined checkpoint, all rows,
+and all observed values/category codes fixed. It fills only missing cells,
+using context-derived numeric means and categorical code `-1`:
+
+| Combined input treatment | Test Spearman | Test RMSE (mV) |
+| --- | ---: | ---: |
+| Preserve original missing values | 0.1576 | 733.7 |
+| Fill query missing values only | 0.1531 | 656.5 |
+| Fill context missing values only | 0.2507 | 647.7 |
+| Fill missing values in both | 0.3389 | 661.3 |
+| Change observed categorical codes to legacy encoding, retain all NaNs | 0.1577 | 733.6 |
+
+The first imputation trial scored 0.3365 but also changed some observed
+categorical codes. The controlled 0.3389 result removes that confound.
+Missing-value handling therefore matters substantially, including in context;
+the categorical-code difference alone has negligible effect in this check.
+Query-only filling improves RMSE but not Spearman. These results do not prove
+that the learned missing token is incorrectly implemented or that additional
+query masking will solve the transfer gap. Imputation also changes the input
+distribution and the fitted feature scales.
+
+The audit found no further confirmed feature/target alignment or evaluation
+bug. A four-table synthetic check spanning all three source regimes produced
+exactly equal finite outputs through the model's training and inference paths.
+These checks cannot rule out every implementation issue. Combining three
+useful priors remains a possible source of transfer mismatch, not an established
+explanation: combined also changes missing-value representation, feature
+grouping, and per-source training exposure relative to the specialists.
+
+Sources: [matched-setting results and input traces](corrosion_datasets/analysis/combined_epit_soccol_mpea/implementation_audit_20261014T154809/results.json),
+[controlled missing-value results](corrosion_datasets/analysis/combined_epit_soccol_mpea/missingness_audit_20261015T000223/results.json),
+[forward-path check](corrosion_datasets/analysis/combined_epit_soccol_mpea/implementation_audit_20261014T154809/forward_parity.json),
+and [audit findings](corrosion_datasets/analysis/combined_epit_soccol_mpea/implementation_audit_20261014T154809/audit_summary.json).
+Both audit directories include `reproduce.py` and per-query predictions.
+
+### What missingness means in training and inference
+
+There are separate sources of missing inputs. The informed generators use
+preprocessed source profiles; they do not simply copy raw real rows with all
+their original NaNs. Mapping their native generated schemas into 50 columns
+leaves unsupported features missing. On top of that, the original augmentation
+artificially hides values using joint missingness patterns from real context
+rows. An 80% per-table draw enables that augmentation; enabled tables sample
+patterns per row for both synthetic context and synthetic queries.
+
+In real inference, missing values come from the real context and query data
+or absent schema columns. No training augmentation is applied during
+prediction. The V2 change below adds a further training-only mechanism to
+represent a feature being available in context but absent from an entire query
+dataset. A column such as pH remains in the shared schema even when all its
+query values are unknown.
+
+### Implemented V2 training policy and launch status
+
+Here V2 names the second combined training recipe; it is distinct from the
+official pretrained TabICL V2 baseline. The agreed policy changes the original
+training augmentation as follows:
+
+| Input part | V2 treatment |
+| --- | --- |
+| Observed composition values, in context and queries | Protected from both empirical and additional query masks. Already missing or unsupported values remain missing. |
+| Non-composition context features | Keep the original source-derived artificial masking; receive no additional query-column mask. |
+| Non-composition query features | Keep source-derived masking, then independently hide each column with probability 0.8 across all query rows in that synthetic table. |
+| Synthetic targets | Generated before masking and unchanged by it. |
+
+All 26 non-composition slots are eligible, including environmental,
+preparation, and categorical features. The extra 0.8 probability is per
+table/column, not per cell, and is separate from the existing 0.8 per-table
+empirical augmentation probability. Context is therefore not guaranteed to be
+complete. Observed composition protection applies to both masking mechanisms.
+
+The flags are `--missingness_query_column_probability 0.8` and
+`--missingness_preserve_observed_composition True`. The trainer passes the
+actual context/query boundary, logs context and query masking fractions, and
+records the new settings in checkpoints. The prior mixture, formulas, target
+standardization, and model architecture are unchanged. This changes two
+masking aspects together, so it does not isolate the effect of query masking
+from composition protection.
+
+Launch a fresh run with:
+
+```bash
+sbatch scripts/combined_corrosion/train_final_v2.sbatch
+```
+
+The [V2 launcher](scripts/combined_corrosion/train_final_v2.sbatch) uses
+`checkpoints/combined_epit_soccol_mpea/final_v2_seed42`, refuses a directory
+already containing step checkpoints, and delegates to the original launcher
+with the new flags enabled. The original `train_final.sbatch` still defaults
+to the old masking policy. V2 retains the planned 10,000-step seed-42 schedule.
+For evaluation, explicitly pass the V2 directory as `--candidate-run` and a
+separate `--output-dir`; the evaluator otherwise defaults to the original run.
+The outer MPEA queries must stay fixed.
+
+The readiness check recorded **56 passing tests**, including a small actual
+training step with the new masking policy, checkpoint provenance, missing-value
+inference, and the combined evaluation boundaries. The launcher dry-run and
+shell syntax checks passed. These were CPU and launch-configuration checks,
+not a completed V2 training experiment. No V2 checkpoint or performance result
+was present when this update was written; no Slurm submission is claimed here.
+
+Implementation: [augmentation](src/tabicl/train/missingness.py),
+[trainer integration](src/tabicl/train/run.py),
+[training flags](src/tabicl/train/train_config.py), and
+[masking and training tests](tests/test_missingness_augmentation.py).
+
+### Deferred changes and limits of interpretation
+
+`reference_type` is available for 1,437 real context rows, but both informed
+generators leave that slot missing. Generic SCM tasks do not encode a physical
+reference-electrode offset either. Including the column therefore does not
+establish learned SCE/AgAgCl conditioning. Generating reference labels and
+making synthetic targets depend on them remains deferred, as agreed. Existing
+analytical rule scores and target components are standardized; this update
+does not treat their intermediate scores as calibrated mV or insert an
+uncalibrated mV offset into those formulas.
+
+MPEA-only features remain excluded, and the 50-column source-supported schema
+is retained. No electrode, formula, prior-weight, or feature-grouping change
+was made as part of V2. The missing-value experiments are diagnostics, not an
+adopted imputation policy or a demonstrated cure for underperformance.
+
+All reported scores use the frozen outer queries rather than substituting
+development folds. Their labels have now been inspected for checkpoint and
+input-handling diagnostics. V2 was motivated after that inspection, so a later
+comparison on the same MPEA rows is a follow-up result, not independent
+confirmation on a previously untouched test set. No checkpoint or input
+treatment is promoted as the final model from the diagnostic maxima above.

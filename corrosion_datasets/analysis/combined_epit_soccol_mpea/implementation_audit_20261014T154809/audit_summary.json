@@ -1,0 +1,36 @@
+{
+  "scope": "Diagnostic audit of step 5500, latest checkpoint in the referenced plot. Frozen real query rows unchanged. No checkpoint selection or production implementation changes.",
+  "evaluation_checks": {
+    "context_rows": 4787,
+    "query_rows": 267,
+    "features": 50,
+    "target_scaling": "same context-fitted mean and standard deviation",
+    "matched_inference": "fixed feature order, no extra power transform, one distinct ensemble member",
+    "original_native_baseline_difference": "Generic/pretrained used feature shuffling, two transform methods, and eight distinct ensemble members; combined used one.",
+    "training_inference_forward_parity": "exact equality on four synthetic tables spanning all three sources",
+    "targeted_tests": "35 passed: combined final evaluation, specialist transfer, combined prior, missing-value embedding, prediction missing columns"
+  },
+  "interpretation": [
+    "Mixing priors alone is not an established explanation for poor transfer.",
+    "The combined checkpoint also changes the missing-value representation and disables feature grouping relative to the specialist checkpoints.",
+    "Matching inference settings leaves a substantial combined-versus-generic gap.",
+    "Context-only and joint context/query imputation improve Spearman; query-only imputation does not.",
+    "Category-code changes alone have negligible effect in the controlled test.",
+    "The original combined checkpoint predates the added query-column masking policy. Its benefit remains untested.",
+    "No further implementation bug was confirmed by this audit. These checks cannot exclude every bug."
+  ],
+  "training": {
+    "metric": "training CRPS, lower is better",
+    "unique_logged_steps": 5936,
+    "first_100_mean": 0.5684600000000001,
+    "last_100_mean": 0.17656,
+    "last_step": 5935,
+    "log": "/home/fcolanto/tmp/combined_corr_final.11434.err",
+    "note": "Synthetic training loss only; not an estimate of real-data performance."
+  },
+  "artifacts": {
+    "matched_inference": "corrosion_datasets/analysis/combined_epit_soccol_mpea/implementation_audit_20261014T154809/results.json",
+    "controlled_imputation": "corrosion_datasets/analysis/combined_epit_soccol_mpea/missingness_audit_20261015T000223/results.json",
+    "forward_parity": "corrosion_datasets/analysis/combined_epit_soccol_mpea/implementation_audit_20261014T154809/forward_parity.json"
+  }
+}

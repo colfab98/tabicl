@@ -84,6 +84,22 @@ class TabICLBaseEstimator(BaseEstimator):
 
         return X.reindex(columns=expected)
 
+    def _validate_feature_mask(self, feature_mask):
+        """Validate explicit feature exclusion, independently of missing values."""
+        if feature_mask is None:
+            return None
+        mask = np.asarray(feature_mask)
+        if mask.dtype != np.bool_ or mask.shape != (self.n_features_in_,):
+            raise ValueError(
+                "feature_mask must be a boolean vector in fitted column order "
+                f"with shape ({self.n_features_in_},)."
+            )
+        if not mask.any():
+            return None
+        if getattr(self.ensemble_generator_, "X_", None) is None:
+            raise RuntimeError("Explicit feature exclusion requires the original training data; re-fit the estimator.")
+        return mask
+
     def _resolve_device(self) -> None:
         """Resolve the target device from the init parameter."""
         if self.device is None:

@@ -109,8 +109,12 @@ class TransformToNumerical(TransformerMixin, BaseEstimator):
             dtype=bool,
             count=X_prepared.size,
         ).reshape(X_prepared.shape)
-        X_prepared[missing] = sentinel
-        return X_prepared, [missing[:, pos] for pos in range(missing.shape[1])]
+        positions = range(missing.shape[1]) if positions is None else positions
+        masks = []
+        for pos in positions:
+            X_prepared[missing[:, pos], pos] = sentinel
+            masks.append(missing[:, pos])
+        return X_prepared, masks
 
     def fit(self, X, y=None):
         """Configure transformers for different column types in the input data.
@@ -209,6 +213,18 @@ class TransformToNumerical(TransformerMixin, BaseEstimator):
                 )
             elif getattr(self, "_all_input_categorical_", False):
                 X_transform, categorical_missing_masks = self._replace_missing_categories(X)
+        elif getattr(self, "_preserve_dataframe_column_order_", False):
+            # An entirely missing query category may arrive with float dtype.
+            # Keep categorical inputs as objects so OrdinalEncoder can compare
+            # missing/unseen values with the categories learned during fit.
+            if hasattr(X, "iloc"):
+                X_transform = X.copy()
+                for pos in self._categorical_input_positions_:
+                    X_transform.isetitem(pos, X_transform.iloc[:, pos].astype(object))
+            else:
+                X_transform = np.asarray(X, dtype=object)
+        elif getattr(self, "_all_input_categorical_", False):
+            X_transform = np.asarray(X, dtype=object)
 
         X_out = self.tfm_.transform(X_transform)
         for output_pos, missing_mask in enumerate(categorical_missing_masks):
@@ -1197,7 +1213,7 @@ class EnsembleGenerator(TransformerMixin, BaseEstimator):
               ``(X_test_ensemble[n_variants, n_test, n_features],)``.
 
         feature_mask : ndarray of shape (n_original_features,) or None, default=None
-            Boolean mask where ``True`` indicates masked (all-NaN) columns in
+            Explicit boolean mask where ``True`` indicates excluded columns in
             the *original* feature space (before ``UniqueFeatureFilter``).  When
             provided, masked columns are dropped from both preprocessed training
             and test data, and feature shuffles are remapped to the reduced

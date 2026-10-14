@@ -654,6 +654,18 @@ def build_parser():
         default=2,
         help="Minimum originally observed composition features retained per row after augmentation",
     )
+    parser.add_argument(
+        "--missingness_query_column_probability",
+        type=float,
+        default=0.0,
+        help="Additional probability of hiding each non-composition column across all query rows in a table",
+    )
+    parser.add_argument(
+        "--missingness_preserve_observed_composition",
+        type=str2bool,
+        default=False,
+        help="Prevent augmentation from masking observed composition values in context or queries",
+    )
     parser.add_argument("--freeze_col", default=False, type=str2bool, help="Whether to freeze the column embedder")
 
     # Row Interaction Config

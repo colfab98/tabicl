@@ -32,6 +32,8 @@ WANDB_MODE="${WANDB_MODE:-disabled}"
 
 PRIOR_CONFIG="${PRIOR_CONFIG:-corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/combined_prior_config.json}"
 MISSINGNESS_PROFILE="${MISSINGNESS_PROFILE:-corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/context_missingness_profile.json}"
+QUERY_COLUMN_MASK_PROBABILITY="${QUERY_COLUMN_MASK_PROBABILITY:-0.0}"
+PRESERVE_OBSERVED_COMPOSITION="${PRESERVE_OBSERVED_COMPOSITION:-False}"
 CHECKPOINT_DIR="${CHECKPOINT_DIR:-checkpoints/combined_epit_soccol_mpea/final_seed42}"
 
 [[ -f "$PRIOR_CONFIG" ]] || { echo "Missing prior config: $PRIOR_CONFIG" >&2; exit 1; }
@@ -74,6 +76,8 @@ torchrun --standalone --nproc_per_node="$NPROC_PER_NODE" src/tabicl/train/run.py
   --missingness_profile_path "$MISSINGNESS_PROFILE" \
   --missingness_augmentation_probability 0.8 \
   --missingness_min_observed_composition 2 \
+  --missingness_query_column_probability "$QUERY_COLUMN_MASK_PROBABILITY" \
+  --missingness_preserve_observed_composition "$PRESERVE_OBSERVED_COMPOSITION" \
   --embed_dim 128 \
   --col_num_blocks 3 \
   --col_nhead 4 \
