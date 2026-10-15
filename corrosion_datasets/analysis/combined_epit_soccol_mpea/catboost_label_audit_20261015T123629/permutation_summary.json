@@ -1,0 +1,10 @@
+{
+  "n_permutations": 23,
+  "observed_spearman": 0.5311255688653359,
+  "null_mean": -0.0005311914359771828,
+  "null_median": -0.14806458086758945,
+  "null_min": -0.567794864395963,
+  "null_max": 0.6231145198428836,
+  "permutations_at_least_observed": 3,
+  "note": "Small descriptive permutation audit; all context labels randomly permuted before fitting; no checkpoint or input-policy selection. Same frozen MPEA queries throughout."
+}

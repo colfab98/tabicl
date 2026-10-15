@@ -287,13 +287,23 @@ def test_trainer_configures_query_masking_and_requires_missing_embedding(tmp_pat
         trainer.configure_missingness()
 
 
-def test_combined_training_step_with_query_masking(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("source", "expected_counts"),
+    [(None, [1, 1, 2]), ("EPIT", [2, 2, 0]), ("Soccol", [0, 0, 4])],
+)
+def test_combined_training_step_with_query_masking(tmp_path: Path, source, expected_counts) -> None:
+    from scripts.combined_corrosion.train_specialist_shared_v2 import build_specialist_config
     from tabicl.train.run import Trainer
 
     processed = (
         Path(__file__).resolve().parents[1]
         / "corrosion_datasets/datasets/combined_epit_soccol_mpea/processed"
     )
+    prior_config = processed / "combined_prior_config.json"
+    if source is not None:
+        specialist_config = build_specialist_config(prior_config, source)
+        prior_config = tmp_path / "prior_config.json"
+        prior_config.write_text(json.dumps(specialist_config), encoding="utf-8")
     config = build_parser().parse_args(
         [
             "--device", "cpu", "--prior_device", "cpu", "--amp", "false",
@@ -306,7 +316,7 @@ def test_combined_training_step_with_query_masking(tmp_path: Path) -> None:
             "--icl_num_blocks", "1", "--icl_nhead", "2",
             "--warmup_proportion", "0", "--max_steps", "2",
             "--checkpoint_dir", str(tmp_path / "checkpoints"),
-            "--combined_corrosion_prior_config", str(processed / "combined_prior_config.json"),
+            "--combined_corrosion_prior_config", str(prior_config),
             "--col_missing_value_embedding", "true",
             "--missingness_profile_path", str(processed / "context_missingness_profile.json"),
             "--missingness_query_column_probability", "0.8",
@@ -315,6 +325,8 @@ def test_combined_training_step_with_query_masking(tmp_path: Path) -> None:
     )
     trainer = Trainer(config)
     batch = trainer.dataloader.dataset.get_batch()
+    assert batch[0].shape == (4, 32, 50)
+    assert batch[5].bincount(minlength=3).tolist() == expected_counts
     original_X, original_y = batch[0].clone(), batch[1].clone()
     boundary = int(batch[4][0])
     composition_count = trainer.missingness_augmenter.composition_feature_count
@@ -348,3 +360,7 @@ def test_combined_training_step_with_query_masking(tmp_path: Path) -> None:
     assert checkpoint["curr_step"] == 1
     assert checkpoint["missingness_augmentation"]["query_column_probability"] == 0.8
     assert checkpoint["missingness_augmentation"]["preserve_observed_composition"] is True
+    assert checkpoint["combined_corrosion_prior"]["regime_probabilities"] == {
+        name: count / 4
+        for name, count in zip(("generic", "EPIT", "Soccol"), expected_counts)
+    }

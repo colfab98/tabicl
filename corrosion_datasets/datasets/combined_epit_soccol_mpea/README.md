@@ -101,6 +101,35 @@ new masking settings. The original `train_final.sbatch` defaults remain
 unchanged. When evaluating this run, pass its path as `--candidate-run` and
 choose a separate `--output-dir`; the frozen MPEA query partition stays fixed.
 
+To retrain the individual source recipes using the same shared V2 setup:
+
+```bash
+sbatch scripts/combined_corrosion/train_epit_shared_v2.sbatch
+sbatch scripts/combined_corrosion/train_soccol_shared_v2.sbatch
+```
+
+EPIT uses 50% generic and 50% EPIT-informed tables; Soccol uses 100%
+Soccol-informed tables. Both reuse `train_final_v2.sbatch`, including the
+50-column schema, missing-value embedding, composition protection, query
+masking, and default 10,000-step schedule. Each informed generator retains its
+frozen formulas, coefficients, feature profile, and perturbation settings.
+Generic tables use the combined V2 generator with 50 features, rather than the
+old EPIT run's 28-feature generic tables. These are controlled retrainings in
+the shared setup, not exact reproductions of the old specialist runs.
+
+Checkpoints go to `checkpoints/combined_epit_soccol_mpea/epit_shared_v2_seed42`
+and `checkpoints/combined_epit_soccol_mpea/soccol_shared_v2_seed42`. Each run
+saves its effective `prior_config.json` there, including the base configuration
+hash; checkpoints record the effective configuration hash and regime weights.
+Existing checkpoints or a conflicting saved configuration cause the launcher
+to stop. The original launchers and frozen base configuration are unchanged.
+The existing training environment overrides still apply; `PRIOR_CONFIG` selects
+the base configuration and `CHECKPOINT_DIR` selects a fresh output directory.
+Use `bash <launcher> --dry-run` to save and inspect the configuration without
+starting training. These new 50-column models require the combined evaluator's
+missing-aware preprocessing, not the old native-schema specialist evaluator;
+the outer MPEA query partition remains fixed.
+
 Evaluate the currently available training checkpoints with:
 
 ```bash

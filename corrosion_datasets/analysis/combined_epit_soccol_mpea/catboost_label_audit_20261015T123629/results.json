@@ -1,0 +1,108 @@
+{
+  "diagnostic_only": true,
+  "frozen_queries_unchanged": true,
+  "context_rows": 4787,
+  "query_rows": 267,
+  "independent_fit_loaded_scoring_targets_only_after_prediction": true,
+  "params": {
+    "iterations": 1000,
+    "depth": 6,
+    "learning_rate": 0.03,
+    "l2_leaf_reg": 3.0,
+    "random_seed": 42,
+    "thread_count": 8,
+    "loss_function": "RMSE",
+    "eval_metric": "RMSE",
+    "task_type": "CPU",
+    "verbose": false,
+    "allow_writing_files": false
+  },
+  "direct_catboost_matches_saved_metrics": true,
+  "generic_shared_steps": [
+    500,
+    1000,
+    1500,
+    2000,
+    2500
+  ],
+  "generic_scores_and_checkpoint_paths_unchanged": true,
+  "exact_feature_duplicate_queries_in_context": 0,
+  "duplicate_check_limitation": "Exact 50-feature equality only; different missingness or source encodings can conceal duplicate measurements.",
+  "unique_query_feature_rows": 154,
+  "top_training_feature_importances": [
+    {
+      "feature": "CP_Cl",
+      "importance": 15.003252969924509
+    },
+    {
+      "feature": "Mo",
+      "importance": 12.166621166781301
+    },
+    {
+      "feature": "CP_temp",
+      "importance": 10.822929006806016
+    },
+    {
+      "feature": "Cr",
+      "importance": 9.86743996873661
+    },
+    {
+      "feature": "Fe",
+      "importance": 6.474201507628825
+    },
+    {
+      "feature": "Al",
+      "importance": 6.319982434271275
+    },
+    {
+      "feature": "Prep_medium",
+      "importance": 3.975494782144648
+    },
+    {
+      "feature": "CP_pH",
+      "importance": 3.872087088771798
+    },
+    {
+      "feature": "Si",
+      "importance": 3.58078738601976
+    },
+    {
+      "feature": "N",
+      "importance": 3.4964826819769677
+    }
+  ],
+  "rows": [
+    {
+      "case": "direct_context_only_fit",
+      "spearman": 0.5311255688653359,
+      "rmse": 564.3211664915074,
+      "mae": 413.708026251979,
+      "r2": 0.2044964076088397,
+      "elapsed_seconds": 2.528752326965332
+    },
+    {
+      "case": "shuffled_context_labels_17",
+      "spearman": 0.09114041660182465,
+      "rmse": 675.7440152739322,
+      "mae": 521.5518030027805,
+      "r2": -0.1406538777526034,
+      "elapsed_seconds": 2.6067357063293457
+    },
+    {
+      "case": "shuffled_context_labels_29",
+      "spearman": 0.4003861990287659,
+      "rmse": 627.2979687748157,
+      "mae": 477.8471156785969,
+      "r2": 0.017036871149601618,
+      "elapsed_seconds": 2.614631175994873
+    },
+    {
+      "case": "shuffled_context_labels_43",
+      "spearman": 0.5784653679798082,
+      "rmse": 593.2911771925703,
+      "mae": 453.3301151079203,
+      "r2": 0.12072394741811376,
+      "elapsed_seconds": 2.5832085609436035
+    }
+  ]
+}

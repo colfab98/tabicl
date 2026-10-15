@@ -1,0 +1,31 @@
+{
+  "model_labels": "No swap found: saved paths, checkpoint metadata, and SVG legends agree.",
+  "generic": "All five shared Spearman values from steps 500 through 2500 are exactly unchanged. The old plot continues through 5500; the new plot ends at 2500.",
+  "v2_checkpoint_metadata": {
+    "step": 2500,
+    "col_missing_value_embedding": true,
+    "col_feature_group": false,
+    "query_column_probability": 0.8,
+    "preserve_observed_composition": true
+  },
+  "catboost": "Independent direct fit on 4787 context rows reproduces Spearman 0.5311255688653359 and RMSE 564.3211664915074. Query labels were loaded only after baseline predictions had been made.",
+  "static_baseline": "CatBoost is fitted once per comparison and its result is intentionally repeated across transformer checkpoint steps.",
+  "permutation_control": {
+    "n_permutations": 23,
+    "observed_spearman": 0.5311255688653359,
+    "null_mean": -0.0005311914359771828,
+    "null_median": -0.14806458086758945,
+    "null_min": -0.567794864395963,
+    "null_max": 0.6231145198428836,
+    "permutations_at_least_observed": 3,
+    "note": "Small descriptive permutation audit; all context labels randomly permuted before fitting; no checkpoint or input-policy selection. Same frozen MPEA queries throughout."
+  },
+  "interpretation": "The reported score is reproducible, but 3 of 23 shuffled-context-label fits meet or exceed its Spearman. This small control shows substantial chance variation in transfer rankings and weakens interpreting the raw correlation alone as evidence of robust learning. It does not establish query-label leakage or a CatBoost implementation bug.",
+  "data_limitations": {
+    "query_rows": 267,
+    "unique_query_feature_rows": 154,
+    "exact_full_feature_matches_with_context": 0,
+    "measurement_independence": "DOI screening and exact-feature comparison do not exclude all duplicate underlying measurements."
+  },
+  "production_code_changed": false
+}
