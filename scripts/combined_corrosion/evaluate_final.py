@@ -39,14 +39,15 @@ CATEGORICAL_COLUMNS = (
 )
 
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--candidate-run", type=Path, default=DEFAULT_CANDIDATE_RUN)
+def add_evaluation_arguments(
+    parser: argparse.ArgumentParser, *, default_output_dir: Path
+) -> None:
+    """Share the frozen-query protocol and baseline settings between comparisons."""
     parser.add_argument("--generic-run", type=Path, default=DEFAULT_GENERIC_RUN)
     parser.add_argument("--combined-data-dir", type=Path, default=DEFAULT_DATA_DIR)
     parser.add_argument("--checkpoint", default="all")
     parser.add_argument("--min-checkpoint-step", type=int, default=0)
-    parser.add_argument("--checkpoint-step-interval", type=int, default=0)
+    parser.add_argument("--checkpoint-step-interval", type=int, default=500)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--n-estimators", type=int, default=8)
     parser.add_argument("--random-state", type=int, default=42)
@@ -55,27 +56,40 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--catboost-learning-rate", type=float, default=0.03)
     parser.add_argument("--catboost-l2-leaf-reg", type=float, default=3.0)
     parser.add_argument("--catboost-thread-count", type=int, default=8)
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--output-dir", type=Path, default=default_output_dir)
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--candidate-run", type=Path, default=DEFAULT_CANDIDATE_RUN)
+    add_evaluation_arguments(parser, default_output_dir=DEFAULT_OUTPUT_DIR)
     return parser.parse_args(argv)
 
 
 def evaluation_command(args: argparse.Namespace) -> list[str]:
+    return comparison_command(
+        args,
+        [("combined_corrpfn", args.candidate_run), ("generic_tabicl", args.generic_run)],
+        missing_aware_models=("combined_corrpfn",),
+    )
+
+
+def comparison_command(
+    args: argparse.Namespace,
+    model_runs: list[tuple[str, Path]],
+    *,
+    missing_aware_models: tuple[str, ...],
+) -> list[str]:
     output_dir = args.output_dir.expanduser().resolve()
     command = [
         sys.executable,
         str(REPO_ROOT / "scripts" / "eval_corrosion_datasets.py"),
-        "--run",
-        str(args.candidate_run.expanduser().resolve()),
-        "--run",
-        str(args.generic_run.expanduser().resolve()),
-        "--local-model-label",
-        "combined_corrpfn",
-        "--local-model-label",
-        "generic_tabicl",
-        "--fixed-schema-model",
-        "combined_corrpfn",
-        "--missing-aware-model",
-        "combined_corrpfn",
+    ]
+    for label, run in model_runs:
+        command.extend(["--run", str(run.expanduser().resolve()), "--local-model-label", label])
+    for label in missing_aware_models:
+        command.extend(["--fixed-schema-model", label, "--missing-aware-model", label])
+    command.extend([
         "--native-tabicl-baselines",
         "--checkpoint",
         str(args.checkpoint),
@@ -121,7 +135,7 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
         str(args.catboost_l2_leaf_reg),
         "--catboost-thread-count",
         str(args.catboost_thread_count),
-    ]
+    ])
     for column in CATEGORICAL_COLUMNS:
         command.extend(["--catboost-categorical-column", column])
     command.extend(

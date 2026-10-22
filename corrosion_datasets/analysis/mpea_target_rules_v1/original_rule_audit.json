@@ -1,0 +1,417 @@
+[
+  {
+    "source": "EPIT",
+    "original_rule": "pren_n_linear",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "W",
+      "N"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "N"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "epit_pren_interaction"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "EPIT",
+    "original_rule": "cr_mow_n_synergy",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "W",
+      "N"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "N"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "epit_synergy_interaction"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "EPIT",
+    "original_rule": "threshold_saturation",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "W"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "epit_threshold_interaction"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "EPIT",
+    "original_rule": "pren_n_improved_environment",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "W",
+      "N"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "N"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "epit_pren_chloride"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "EPIT",
+    "original_rule": "mo_n_acid_repassivation",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "W",
+      "N"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "N"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "epit_pren_chloride"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "EPIT",
+    "original_rule": "mns_inclusion_penalty",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "W",
+      "N",
+      "Mn",
+      "S"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "N",
+      "S"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "epit_pren_chloride"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "EPIT",
+    "original_rule": "coupled_breakdown",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "W"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "epit_coupled_pren_coupled"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "EPIT",
+    "original_rule": "fe_ni_cr_threshold",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "W",
+      "Material class"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "Material class"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [],
+    "decision": "Omit class-specific threshold: MPEA has no comparable Fe/Ni class labels."
+  },
+  {
+    "source": "EPIT",
+    "original_rule": "method_aware_pren_n",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "W",
+      "N",
+      "test_method"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "N",
+      "test_method"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "epit_synergy_interaction"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "Soccol",
+    "original_rule": "pren_n_linear",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "N"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "N"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "soccol_pren_interaction"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "Soccol",
+    "original_rule": "cr_mow_n_synergy",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "N"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "N"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "soccol_synergy_interaction"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "Soccol",
+    "original_rule": "threshold_saturation",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "soccol_threshold_interaction"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "Soccol",
+    "original_rule": "pren_n_improved_environment",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "N"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "N"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "soccol_pren_chloride"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "Soccol",
+    "original_rule": "mo_n_acid_repassivation",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "N"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "N"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "soccol_pren_chloride"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "Soccol",
+    "original_rule": "mns_inclusion_penalty",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "N",
+      "Mn",
+      "S"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "N",
+      "S"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "soccol_pren_chloride"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "Soccol",
+    "original_rule": "coupled_breakdown",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "soccol_coupled_pren_coupled"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "Soccol",
+    "original_rule": "pren_n_coupled_mns",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "N",
+      "Mn",
+      "S"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "N",
+      "S"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "soccol_pren_coupled"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  },
+  {
+    "source": "Soccol",
+    "original_rule": "pren_n_coupled_mns_weak_anions",
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "CP_temp",
+      "CP_Cl",
+      "CP_pH",
+      "N",
+      "Mn",
+      "S",
+      "CP_Br",
+      "CP_SO4",
+      "CP_NO3"
+    ],
+    "entirely_unrecorded_columns": [
+      "CP_pH",
+      "N",
+      "S",
+      "CP_Br",
+      "CP_SO4",
+      "CP_NO3"
+    ],
+    "directly_evaluable_unchanged": false,
+    "temperature_observations": 4,
+    "reduced_candidates": [
+      "soccol_pren_coupled"
+    ],
+    "decision": "Test reduced hypothesis; do not invent missing values."
+  }
+]

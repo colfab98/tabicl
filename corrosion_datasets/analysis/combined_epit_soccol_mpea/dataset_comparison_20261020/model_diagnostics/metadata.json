@@ -1,0 +1,32 @@
+{
+  "scope": "Post-hoc diagnostic, existing frozen MPEA outer folds; no checkpoint selection.",
+  "checkpoint_step": 5000,
+  "checkpoints": {
+    "combined_corrpfn_v2": "/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_v2_seed42/step-5000.ckpt",
+    "epit_shared_v2": "/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/epit_shared_v2_seed42/step-5000.ckpt",
+    "soccol_shared_v2": "/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/soccol_shared_v2_seed42/step-5000.ckpt",
+    "combined_g50_epit25_soccol25": "/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_v2_g50_epit25_soccol25_seed42/step-5000.ckpt",
+    "generic_tabicl": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-5000.ckpt"
+  },
+  "input_hashes": {
+    "mpea_queries.csv": "8f57ef0653d9a638414c108608ce2ce2986b9b5e1247289601488b48950ea46a",
+    "mpea_scoring_targets.csv": "db0bb8f5948755158515c65a59886cdeb97e97cddcd369cbb02b4a0711b6b0d4",
+    "shared_feature_registry.json": "8181a068616112011c709d77ee04e3bdd54aa7bce5f0a698d9171c3976e2aed7"
+  },
+  "masked_columns": [
+    "Al",
+    "B",
+    "Ce",
+    "Co",
+    "Cu",
+    "Gd",
+    "Mg",
+    "Re",
+    "Ta",
+    "W",
+    "Y"
+  ],
+  "mask_scope": "context and query, same fixed 50-column order",
+  "baseline_verified_against_previous_run": true,
+  "n_predictions": 1602
+}

@@ -1,0 +1,1462 @@
+{
+  "rule": "epit_pren_chloride",
+  "fold_spearman": {
+    "1": 0.38623647209923806,
+    "2": 0.3102928850455245,
+    "3": 0.3972571502804477,
+    "4": 0.5019152711063102,
+    "5": -0.42881201194413554
+  },
+  "worst_fold": 5,
+  "largest_composition_group_in_worst_fold": {
+    "fold": 5,
+    "composition_group": "composition_0091",
+    "rows": 13,
+    "alloy_names": [
+      "Al2NbTi3V2Zr"
+    ],
+    "electrolytes": [
+      "HNO3"
+    ],
+    "median_target_mV_SCE": 1856.0,
+    "median_rule_score": -0.8351335223694978,
+    "mean_Cr_Mo_W_wt_percent": 0.0,
+    "mean_Ti_Nb_wt_percent": 48.90782646809999
+  },
+  "scope": "Descriptive analysis of saved development predictions only. No rows excluded, no folds changed, no new fits.",
+  "interpretation": "Cr/Mo/W-only material scores cannot distinguish protective effects of other alloy components. Missing chloride and different electrolytes also coincide with these groups; this does not isolate their separate causal effects or prove the cause of a trained model's performance.",
+  "groups": [
+    {
+      "fold": 1,
+      "composition_group": "composition_0003",
+      "rows": 4,
+      "alloy_names": [
+        "Co1.5CrFeNi1.5Ti0.5Mo0.8"
+      ],
+      "electrolytes": [
+        "H2SO4",
+        "NaCl",
+        "NaOH"
+      ],
+      "median_target_mV_SCE": 1134.5,
+      "median_rule_score": 0.6286096791114686,
+      "mean_Cr_Mo_W_wt_percent": 33.4454189704,
+      "mean_Ti_Nb_wt_percent": 6.21692142446
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0005",
+      "rows": 1,
+      "alloy_names": [
+        "Al0CoCrFeNiTi2"
+      ],
+      "electrolytes": [
+        "H2SO4"
+      ],
+      "median_target_mV_SCE": 193.3,
+      "median_rule_score": -0.3937405100463671,
+      "mean_Cr_Mo_W_wt_percent": 16.1879944334,
+      "mean_Ti_Nb_wt_percent": 29.8050130604
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0013",
+      "rows": 11,
+      "alloy_names": [
+        "Al0.5CoCrFeNi",
+        "CoCrFeNiAl0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 390.0,
+      "median_rule_score": 0.17741262832488844,
+      "mean_Cr_Mo_W_wt_percent": 21.7594723759,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0017",
+      "rows": 1,
+      "alloy_names": [
+        "Al0.9CoCrFeNiTi0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 184.0,
+      "median_rule_score": 0.09039339630711687,
+      "mean_Cr_Mo_W_wt_percent": 18.9985322505,
+      "mean_Ti_Nb_wt_percent": 8.74492983339
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0024",
+      "rows": 1,
+      "alloy_names": [
+        "FeCoNiNb0.5Mo0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 295.0,
+      "median_rule_score": 9.120890015076968e-05,
+      "mean_Cr_Mo_W_wt_percent": 17.9078682638,
+      "mean_Ti_Nb_wt_percent": 17.3397437094
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0032",
+      "rows": 2,
+      "alloy_names": [
+        "CuYZrAlHf"
+      ],
+      "electrolytes": [
+        "NaCl",
+        "Seawater"
+      ],
+      "median_target_mV_SCE": -928.0,
+      "median_rule_score": -1.3500151824527333,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0036",
+      "rows": 1,
+      "alloy_names": [
+        "Ti60Cu14Ni12Sn4Nb10"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -182.0,
+      "median_rule_score": -1.9270480729969846,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 64.7556679182
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0038",
+      "rows": 6,
+      "alloy_names": [
+        "CoCrFeNiCu",
+        "CuCoCrFeNi",
+        "FeCoNiCrCu"
+      ],
+      "electrolytes": [
+        "H2SO4",
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 80.0,
+      "median_rule_score": 0.059577153570744605,
+      "mean_Cr_Mo_W_wt_percent": 17.990886223100002,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0041",
+      "rows": 1,
+      "alloy_names": [
+        "CrMnFeNi"
+      ],
+      "electrolytes": [
+        "H2SO4"
+      ],
+      "median_target_mV_SCE": 1326.0,
+      "median_rule_score": -0.16647617570075482,
+      "mean_Cr_Mo_W_wt_percent": 23.4774599046,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0049",
+      "rows": 1,
+      "alloy_names": [
+        "CoCrFeNiMo0.2"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 941.0,
+      "median_rule_score": 0.97336050523205,
+      "mean_Cr_Mo_W_wt_percent": 29.096244947029998,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0051",
+      "rows": 1,
+      "alloy_names": [
+        "CoCrFeNiMo0.4"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 948.0,
+      "median_rule_score": 1.3421224514166992,
+      "mean_Cr_Mo_W_wt_percent": 34.253184610800005,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0068",
+      "rows": 7,
+      "alloy_names": [
+        "CoCrFeNiW",
+        "CoCrFeNiW 0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 1048.0,
+      "median_rule_score": 1.4783494991322752,
+      "mean_Cr_Mo_W_wt_percent": 57.6183646994,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0072",
+      "rows": 1,
+      "alloy_names": [
+        "TiZrHfNbFe2"
+      ],
+      "electrolytes": [
+        "PBS"
+      ],
+      "median_target_mV_SCE": 820.0,
+      "median_rule_score": -0.7729822919084821,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 26.9589696941
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0074",
+      "rows": 1,
+      "alloy_names": [
+        "Ti20Zr20Nb20V20Ta20"
+      ],
+      "electrolytes": [
+        "KOH"
+      ],
+      "median_target_mV_SCE": -160.0,
+      "median_rule_score": -0.7729822919084821,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 30.3463990153
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0094",
+      "rows": 1,
+      "alloy_names": [
+        "Co1.5CrFeNi1.5Ti0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 330.0,
+      "median_rule_score": -1.1977580636033416,
+      "mean_Cr_Mo_W_wt_percent": 16.8701241185,
+      "mean_Ti_Nb_wt_percent": 7.76523416398
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0101",
+      "rows": 1,
+      "alloy_names": [
+        "Fe46.86Ni12.88Co12.54Mn11.72Cr15.8Nb0.16"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 240.0,
+      "median_rule_score": -0.4367955505914806,
+      "mean_Cr_Mo_W_wt_percent": 14.6908738343,
+      "mean_Ti_Nb_wt_percent": 0.265817979075
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0108",
+      "rows": 1,
+      "alloy_names": [
+        "Al2NbTiV2Zr"
+      ],
+      "electrolytes": [
+        "HNO3"
+      ],
+      "median_target_mV_SCE": 1416.0,
+      "median_rule_score": -0.7729822919084821,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 36.2963879714
+    },
+    {
+      "fold": 1,
+      "composition_group": "composition_0111",
+      "rows": 1,
+      "alloy_names": [
+        "Al2NbTi2.5V2Zr"
+      ],
+      "electrolytes": [
+        "HNO3"
+      ],
+      "median_target_mV_SCE": 1923.0,
+      "median_rule_score": -0.7729822919084821,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 46.247472225699994
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0004",
+      "rows": 3,
+      "alloy_names": [
+        "CoCrFeNiTi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 0.84,
+      "median_rule_score": -0.33412534737022914,
+      "mean_Cr_Mo_W_wt_percent": 19.022880432,
+      "mean_Ti_Nb_wt_percent": 17.5122743603
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0008",
+      "rows": 2,
+      "alloy_names": [
+        "Al1.2CoCrFeNiTi0.8"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 348.6,
+      "median_rule_score": -0.00523805275232452,
+      "mean_Cr_Mo_W_wt_percent": 17.5579710879,
+      "mean_Ti_Nb_wt_percent": 12.9309547206
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0020",
+      "rows": 1,
+      "alloy_names": [
+        "FeCoNiCrNb0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 976.0,
+      "median_rule_score": -1.0267846388052377,
+      "mean_Cr_Mo_W_wt_percent": 19.1218005296,
+      "mean_Ti_Nb_wt_percent": 17.0833333333
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0027",
+      "rows": 1,
+      "alloy_names": [
+        "Co1.5CrFeNi1.5TiMo0.8"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 941.0,
+      "median_rule_score": 0.29277839464543004,
+      "mean_Cr_Mo_W_wt_percent": 31.4878444243,
+      "mean_Ti_Nb_wt_percent": 11.7060847577
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0035",
+      "rows": 1,
+      "alloy_names": [
+        "Ni50.8Ti49.2"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 358.0,
+      "median_rule_score": -1.8286994471246267,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 44.1297749334
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0037",
+      "rows": 7,
+      "alloy_names": [
+        "AlCoCrFeNi",
+        "CoCrFeNiAl",
+        "FeCoCrAlNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 112.0,
+      "median_rule_score": 0.08876742629938883,
+      "mean_Cr_Mo_W_wt_percent": 20.596635359999997,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0048",
+      "rows": 1,
+      "alloy_names": [
+        "CoCrFeNiMo0.1"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 949.0,
+      "median_rule_score": 0.5900862482388893,
+      "mean_Cr_Mo_W_wt_percent": 26.202023296020002,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0059",
+      "rows": 1,
+      "alloy_names": [
+        "Al0.2CrFeVMo"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 1025.0,
+      "median_rule_score": 1.4911275127924908,
+      "mean_Cr_Mo_W_wt_percent": 56.874001939,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0063",
+      "rows": 4,
+      "alloy_names": [
+        "TiZr0.5NbCr0.5V"
+      ],
+      "electrolytes": [
+        "H2SO4",
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 1106.0,
+      "median_rule_score": -0.2153054835582429,
+      "mean_Cr_Mo_W_wt_percent": 9.87300815725,
+      "mean_Ti_Nb_wt_percent": 53.4599960505
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0071",
+      "rows": 1,
+      "alloy_names": [
+        "TiZrHfNbFe1.5"
+      ],
+      "electrolytes": [
+        "PBS"
+      ],
+      "median_target_mV_SCE": 1160.0,
+      "median_rule_score": -0.7913980176706655,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 28.4820005969
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0078",
+      "rows": 1,
+      "alloy_names": [
+        "Fe0CoCrNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 720.0,
+      "median_rule_score": 0.42453801969599453,
+      "mean_Cr_Mo_W_wt_percent": 30.6540425181,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0080",
+      "rows": 1,
+      "alloy_names": [
+        "Fe0.4CoCrNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 464.0,
+      "median_rule_score": 0.3031800037882495,
+      "mean_Cr_Mo_W_wt_percent": 27.0868931027,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0084",
+      "rows": 9,
+      "alloy_names": [
+        "Al0.5CoCrCuFeNi",
+        "Al0.5CoCrCuFeNiB0.02",
+        "Al0.5CoCrCuFeNiB0.03",
+        "Al0.5CoCrCuFeNiB0.04",
+        "Al0.5CoCrCuFeNiB0.05",
+        "Al0.5CoCrCuFeNiB0.07",
+        "Al0.5CoCrCuFeNiB0.09"
+      ],
+      "electrolytes": [
+        "NaCl",
+        "NaOH"
+      ],
+      "median_target_mV_SCE": -414.0,
+      "median_rule_score": -0.39038887864837646,
+      "mean_Cr_Mo_W_wt_percent": 17.16810336176667,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0086",
+      "rows": 1,
+      "alloy_names": [
+        "AlCrFeNiMo0.5Ti0.25"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 410.0,
+      "median_rule_score": 1.4124680249106452,
+      "mean_Cr_Mo_W_wt_percent": 39.4428657241,
+      "mean_Ti_Nb_wt_percent": 4.72139833957
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0092",
+      "rows": 1,
+      "alloy_names": [
+        "Al0.3CrFe1.5MnNi0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -150.0,
+      "median_rule_score": -0.9096622821460628,
+      "mean_Cr_Mo_W_wt_percent": 22.7910087813,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0093",
+      "rows": 1,
+      "alloy_names": [
+        "Al0.5CrFe1.5MnNi0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -120.0,
+      "median_rule_score": -0.9268560642813501,
+      "mean_Cr_Mo_W_wt_percent": 22.2643755433,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0100",
+      "rows": 1,
+      "alloy_names": [
+        "Fe39.8Ni15.42Co14.89Mn13.62Cr16.06Nb0.17"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 730.0,
+      "median_rule_score": -0.456288898989864,
+      "mean_Cr_Mo_W_wt_percent": 14.9002826274,
+      "mean_Ti_Nb_wt_percent": 0.281819937177
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0103",
+      "rows": 5,
+      "alloy_names": [
+        "(TiMoZr)60Al30Si10"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 517.46,
+      "median_rule_score": 1.476791869608392,
+      "mean_Cr_Mo_W_wt_percent": 33.1371123571,
+      "mean_Ti_Nb_wt_percent": 16.5312575007
+    },
+    {
+      "fold": 2,
+      "composition_group": "composition_0116",
+      "rows": 1,
+      "alloy_names": [
+        "CoCr2CuFeMnNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -85.0,
+      "median_rule_score": 0.27533525318756613,
+      "mean_Cr_Mo_W_wt_percent": 26.2641212081,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0002",
+      "rows": 4,
+      "alloy_names": [
+        "Co1.5CrFeNi1.5Ti0.5Mo0.5"
+      ],
+      "electrolytes": [
+        "H2SO4",
+        "NaCl",
+        "NaOH"
+      ],
+      "median_target_mV_SCE": 1124.5,
+      "median_rule_score": 0.2936545961930405,
+      "mean_Cr_Mo_W_wt_percent": 28.0668803176,
+      "mean_Ti_Nb_wt_percent": 6.71933540808
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0016",
+      "rows": 1,
+      "alloy_names": [
+        "Al0.9CoCrFeNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 164.0,
+      "median_rule_score": 0.12674111425004964,
+      "mean_Cr_Mo_W_wt_percent": 20.8191525312,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0019",
+      "rows": 4,
+      "alloy_names": [
+        "CoCrFeMnNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 136.0,
+      "median_rule_score": 0.06238620588414167,
+      "mean_Cr_Mo_W_wt_percent": 18.5431786166,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0028",
+      "rows": 1,
+      "alloy_names": [
+        "Co1.5CrFeNi1.5TiMo0"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 97.0,
+      "median_rule_score": -1.2764847845499283,
+      "mean_Cr_Mo_W_wt_percent": 15.6545144168,
+      "mean_Ti_Nb_wt_percent": 14.4113901375
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0029",
+      "rows": 1,
+      "alloy_names": [
+        "Al0.3CrFeMn0.5Ni0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -391.0,
+      "median_rule_score": -0.8513440643600987,
+      "mean_Cr_Mo_W_wt_percent": 30.0987953188,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0030",
+      "rows": 1,
+      "alloy_names": [
+        "Al0.5CrFeMn0.5Ni0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -361.0,
+      "median_rule_score": -1.283049435120482,
+      "mean_Cr_Mo_W_wt_percent": 29.1870500568,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0047",
+      "rows": 1,
+      "alloy_names": [
+        "VNbMoTaWAl0.5"
+      ],
+      "electrolytes": [
+        "H2SO4"
+      ],
+      "median_target_mV_SCE": 1700.0,
+      "median_rule_score": 0.9796273610286284,
+      "mean_Cr_Mo_W_wt_percent": 45.2676761385,
+      "mean_Ti_Nb_wt_percent": 15.0314118422
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0050",
+      "rows": 1,
+      "alloy_names": [
+        "CoCrFeNiMo0.3"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 955.0,
+      "median_rule_score": 1.1247594139293278,
+      "mean_Cr_Mo_W_wt_percent": 31.772021459,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0052",
+      "rows": 1,
+      "alloy_names": [
+        "CoCrFeNiMo0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 965.0,
+      "median_rule_score": 1.3357560209044124,
+      "mean_Cr_Mo_W_wt_percent": 36.5602211804,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0058",
+      "rows": 1,
+      "alloy_names": [
+        "Al0CrFeVMo"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 992.0,
+      "median_rule_score": 1.4465593180688445,
+      "mean_Cr_Mo_W_wt_percent": 58.0788511893,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0060",
+      "rows": 1,
+      "alloy_names": [
+        "Al0.6CrFeVMo"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 1004.0,
+      "median_rule_score": 1.4452544480524505,
+      "mean_Cr_Mo_W_wt_percent": 54.6082971421,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0067",
+      "rows": 14,
+      "alloy_names": [
+        "FeCoNiCuSn0",
+        "FeCoNiCuSn0.02",
+        "FeCoNiCuSn0.03",
+        "FeCoNiCuSn0.04",
+        "FeCoNiCuSn0.05",
+        "FeCoNiCuSn0.07",
+        "FeCoNiCuSn0.09"
+      ],
+      "electrolytes": [
+        "NaCl",
+        "NaOH"
+      ],
+      "median_target_mV_SCE": 113.0,
+      "median_rule_score": -0.551059761713029,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0069",
+      "rows": 1,
+      "alloy_names": [
+        "TiZrHfNbFe0.75"
+      ],
+      "electrolytes": [
+        "PBS"
+      ],
+      "median_target_mV_SCE": 1360.0,
+      "median_rule_score": -0.7714353016748682,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 31.1190815015
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0076",
+      "rows": 3,
+      "alloy_names": [
+        "Al0.1CoCrFeNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 490.3,
+      "median_rule_score": 0.18456489929134107,
+      "mean_Cr_Mo_W_wt_percent": 22.788751308300004,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0082",
+      "rows": 4,
+      "alloy_names": [
+        "Fe40Mn20Cr20Ni20"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 41.5,
+      "median_rule_score": 0.06810457676875327,
+      "mean_Cr_Mo_W_wt_percent": 18.7496619392,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0085",
+      "rows": 1,
+      "alloy_names": [
+        "AlCrFeNiMo0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 320.0,
+      "median_rule_score": 1.386447998033518,
+      "mean_Cr_Mo_W_wt_percent": 41.3974019736,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0087",
+      "rows": 1,
+      "alloy_names": [
+        "AlCrFeNiMo0.5Ti0.4"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 310.0,
+      "median_rule_score": 1.3580145864785143,
+      "mean_Cr_Mo_W_wt_percent": 38.3562936765,
+      "mean_Ti_Nb_wt_percent": 7.34613321629
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0096",
+      "rows": 1,
+      "alloy_names": [
+        "Fe17.39Ni21.47Co21.68Mn20.27Cr19.14"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 290.0,
+      "median_rule_score": -0.4010350492143804,
+      "mean_Cr_Mo_W_wt_percent": 17.7153469022,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 3,
+      "composition_group": "composition_0105",
+      "rows": 1,
+      "alloy_names": [
+        "Al0.5CoCrFeNi0.2"
+      ],
+      "electrolytes": [
+        "H2SO4"
+      ],
+      "median_target_mV_SCE": 919.0,
+      "median_rule_score": -0.12506442791639139,
+      "mean_Cr_Mo_W_wt_percent": 27.0807422361,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0009",
+      "rows": 2,
+      "alloy_names": [
+        "Al1.0CoCrFeNiTi1.0",
+        "AlCoCrFeNiTi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 369.4,
+      "median_rule_score": 0.033841901422626344,
+      "mean_Cr_Mo_W_wt_percent": 17.3137628365,
+      "mean_Ti_Nb_wt_percent": 15.9388777155
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0012",
+      "rows": 14,
+      "alloy_names": [
+        "CoCrCu0.5FeNi",
+        "CoCrFeNiCu0.5",
+        "Cu0.5CoCrFeNi",
+        "FeCoNiCrCu0.5"
+      ],
+      "electrolytes": [
+        "H2SO4",
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 275.0,
+      "median_rule_score": 0.12312038877273182,
+      "mean_Cr_Mo_W_wt_percent": 20.213030632899997,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0022",
+      "rows": 1,
+      "alloy_names": [
+        "FeCoNiNb"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -235.0,
+      "median_rule_score": -1.496474166278177,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 34.8776358319
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0023",
+      "rows": 1,
+      "alloy_names": [
+        "CrFeMn0.5Ni0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -222.0,
+      "median_rule_score": -0.6241942939373487,
+      "mean_Cr_Mo_W_wt_percent": 31.5784679014,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0034",
+      "rows": 2,
+      "alloy_names": [
+        "CuYZrAlTi"
+      ],
+      "electrolytes": [
+        "NaCl",
+        "Seawater"
+      ],
+      "median_target_mV_SCE": -829.0,
+      "median_rule_score": -1.3229761066965142,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 15.0278001903
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0040",
+      "rows": 2,
+      "alloy_names": [
+        "CrFe1.5MnNi0.5"
+      ],
+      "electrolytes": [
+        "H2SO4",
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 595.5,
+      "median_rule_score": -0.5326728649004756,
+      "mean_Cr_Mo_W_wt_percent": 23.6293899513,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0043",
+      "rows": 1,
+      "alloy_names": [
+        "AlCoCrFeNiSi0.1"
+      ],
+      "electrolytes": [
+        "H2SO4"
+      ],
+      "median_target_mV_SCE": 1141.0,
+      "median_rule_score": -0.2792069417715767,
+      "mean_Cr_Mo_W_wt_percent": 20.3700185107,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0045",
+      "rows": 2,
+      "alloy_names": [
+        "VNbMoTaW",
+        "VNbMoTaWAl0.1"
+      ],
+      "electrolytes": [
+        "H2SO4"
+      ],
+      "median_target_mV_SCE": 1431.5,
+      "median_rule_score": 1.0607378243255674,
+      "mean_Cr_Mo_W_wt_percent": 46.17498862035,
+      "mean_Ti_Nb_wt_percent": 15.332690563549999
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0046",
+      "rows": 1,
+      "alloy_names": [
+        "VNbMoTaWAl0.3"
+      ],
+      "electrolytes": [
+        "H2SO4"
+      ],
+      "median_target_mV_SCE": 1683.0,
+      "median_rule_score": 1.05917319574039,
+      "mean_Cr_Mo_W_wt_percent": 45.6663858252,
+      "mean_Ti_Nb_wt_percent": 15.1638058597
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0054",
+      "rows": 3,
+      "alloy_names": [
+        "(CoCrFeNi)98Mo2"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 944.0,
+      "median_rule_score": 0.5609956217468826,
+      "mean_Cr_Mo_W_wt_percent": 25.644552949930002,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0061",
+      "rows": 1,
+      "alloy_names": [
+        "Al1CrFeVMo"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 993.0,
+      "median_rule_score": 1.4860762314874907,
+      "mean_Cr_Mo_W_wt_percent": 52.5161954458,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0065",
+      "rows": 3,
+      "alloy_names": [
+        "AlFeNiCoCuCr"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -107.07,
+      "median_rule_score": 0.008371926647783048,
+      "mean_Cr_Mo_W_wt_percent": 16.4546907388,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0070",
+      "rows": 1,
+      "alloy_names": [
+        "TiZrHfNbFe"
+      ],
+      "electrolytes": [
+        "PBS"
+      ],
+      "median_target_mV_SCE": 1220.0,
+      "median_rule_score": -0.778297435982843,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 30.1874209251
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0073",
+      "rows": 1,
+      "alloy_names": [
+        "Ti5Zr5Hf5Nb2.5Ta2.5"
+      ],
+      "electrolytes": [
+        "Hanks"
+      ],
+      "median_target_mV_SCE": 1238.0,
+      "median_rule_score": -0.778297435982843,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 20.7521556324
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0090",
+      "rows": 1,
+      "alloy_names": [
+        "(TiAl)0.7V0.15Fe0.1Ni0.05"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 164.0,
+      "median_rule_score": -0.3710031631764052,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 39.5524061798
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0095",
+      "rows": 1,
+      "alloy_names": [
+        "Fe24.85Ni25.89Co26Mn0.51Cr22.66Al0.07"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 490.0,
+      "median_rule_score": -0.26355874371987437,
+      "mean_Cr_Mo_W_wt_percent": 20.8620929087,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0097",
+      "rows": 1,
+      "alloy_names": [
+        "Fe17.18Ni22.15Co21.45Mn19.91Cr19.17Nb0.11"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 130.0,
+      "median_rule_score": -0.36117665120131887,
+      "mean_Cr_Mo_W_wt_percent": 17.7221950317,
+      "mean_Ti_Nb_wt_percent": 0.181702921891
+    },
+    {
+      "fold": 4,
+      "composition_group": "composition_0102",
+      "rows": 5,
+      "alloy_names": [
+        "(TiMoZr)60Co20Cr20"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 882.65,
+      "median_rule_score": 1.4730424760394882,
+      "mean_Cr_Mo_W_wt_percent": 42.7629144892,
+      "mean_Ti_Nb_wt_percent": 13.8356726634
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0006",
+      "rows": 2,
+      "alloy_names": [
+        "Al1.8CoCrFeNiTi0.2"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 189.4,
+      "median_rule_score": -0.14175826450070506,
+      "mean_Cr_Mo_W_wt_percent": 18.3337564526,
+      "mean_Ti_Nb_wt_percent": 3.37557473696
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0007",
+      "rows": 2,
+      "alloy_names": [
+        "Al1.5CoCrFeNiTi0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 262.2,
+      "median_rule_score": -0.15256635941231614,
+      "mean_Cr_Mo_W_wt_percent": 17.9374796247,
+      "mean_Ti_Nb_wt_percent": 8.25653259094
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0014",
+      "rows": 3,
+      "alloy_names": [
+        "Al0.3CoCrFeNi",
+        "CoCrFeNiAl0.3"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 460.0,
+      "median_rule_score": -0.029363395337128097,
+      "mean_Cr_Mo_W_wt_percent": 22.262221187000005,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0015",
+      "rows": 1,
+      "alloy_names": [
+        "Al0.6CoCrFeNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 190.0,
+      "median_rule_score": -0.05139487945095856,
+      "mean_Cr_Mo_W_wt_percent": 21.5165180947,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0021",
+      "rows": 1,
+      "alloy_names": [
+        "FeCoNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -32.0,
+      "median_rule_score": -1.3855401427705336,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0026",
+      "rows": 1,
+      "alloy_names": [
+        "Co1.5CrFeNi1.5TiMo0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 923.0,
+      "median_rule_score": 0.12185488329018936,
+      "mean_Cr_Mo_W_wt_percent": 26.2997143022,
+      "mean_Ti_Nb_wt_percent": 12.5925360805
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0031",
+      "rows": 1,
+      "alloy_names": [
+        "Cu0.5NiAlCoCrFeSi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -490.0,
+      "median_rule_score": -1.331155744029465,
+      "mean_Cr_Mo_W_wt_percent": 16.6490024239,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0039",
+      "rows": 1,
+      "alloy_names": [
+        "CoCrFeNiSn"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 1099.0,
+      "median_rule_score": -0.22670502867819498,
+      "mean_Cr_Mo_W_wt_percent": 15.1073430241,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0053",
+      "rows": 3,
+      "alloy_names": [
+        "(CoCrFeNi)99Mo"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 958.0,
+      "median_rule_score": 0.15714300475587364,
+      "mean_Cr_Mo_W_wt_percent": 24.36201700301,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0056",
+      "rows": 3,
+      "alloy_names": [
+        "AlCrFe2Ni2"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 0.0,
+      "median_rule_score": -0.18093243698120284,
+      "mean_Cr_Mo_W_wt_percent": 16.8788589014,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0062",
+      "rows": 4,
+      "alloy_names": [
+        "TiZr0.5NbCr0.5"
+      ],
+      "electrolytes": [
+        "H2SO4",
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 961.0,
+      "median_rule_score": -0.2961077695001038,
+      "mean_Cr_Mo_W_wt_percent": 12.24115038,
+      "mean_Ti_Nb_wt_percent": 66.2829241649
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0075",
+      "rows": 1,
+      "alloy_names": [
+        "Al0.7CoCrFeNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 52.0,
+      "median_rule_score": -0.05834903216847542,
+      "mean_Cr_Mo_W_wt_percent": 21.2789292929,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0079",
+      "rows": 1,
+      "alloy_names": [
+        "Fe0.2CoCrNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 579.0,
+      "median_rule_score": 0.17366925454648133,
+      "mean_Cr_Mo_W_wt_percent": 28.7602812087,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0088",
+      "rows": 1,
+      "alloy_names": [
+        "AlCrFeNiMo0.5Ti0.5"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": 90.0,
+      "median_rule_score": 1.3545978499763256,
+      "mean_Cr_Mo_W_wt_percent": 37.6645712811,
+      "mean_Ti_Nb_wt_percent": 9.01706511645
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0091",
+      "rows": 13,
+      "alloy_names": [
+        "Al2NbTi3V2Zr"
+      ],
+      "electrolytes": [
+        "HNO3"
+      ],
+      "median_target_mV_SCE": 1856.0,
+      "median_rule_score": -0.8351335223694978,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 48.90782646809999
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0104",
+      "rows": 1,
+      "alloy_names": [
+        "Al0.5CoCrFe"
+      ],
+      "electrolytes": [
+        "H2SO4"
+      ],
+      "median_target_mV_SCE": 886.0,
+      "median_rule_score": -0.13166257260041903,
+      "mean_Cr_Mo_W_wt_percent": 28.8442015921,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0113",
+      "rows": 1,
+      "alloy_names": [
+        "CoCuFeMnNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -585.0,
+      "median_rule_score": -0.5270774621058889,
+      "mean_Cr_Mo_W_wt_percent": 0.0,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0114",
+      "rows": 1,
+      "alloy_names": [
+        "CoCr0.5CuFeMnNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -460.0,
+      "median_rule_score": -0.3844216771132282,
+      "mean_Cr_Mo_W_wt_percent": 8.17668020116,
+      "mean_Ti_Nb_wt_percent": 0.0
+    },
+    {
+      "fold": 5,
+      "composition_group": "composition_0115",
+      "rows": 1,
+      "alloy_names": [
+        "CoCr1.5CuFeMnNi"
+      ],
+      "electrolytes": [
+        "NaCl"
+      ],
+      "median_target_mV_SCE": -105.0,
+      "median_rule_score": -0.06407802927330784,
+      "mean_Cr_Mo_W_wt_percent": 21.0823654071,
+      "mean_Ti_Nb_wt_percent": 0.0
+    }
+  ]
+}

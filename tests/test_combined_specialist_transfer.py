@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -38,7 +39,7 @@ def test_specialist_tasks_keep_frozen_query_and_native_schemas() -> None:
         assert task.fixed_split.test_index.tolist() == list(range(4787, 5054))
 
 
-def test_checkpoint_selection_uses_only_common_steps(tmp_path: Path) -> None:
+def test_checkpoint_selection_retains_each_specialists_last_step(tmp_path: Path) -> None:
     epit = tmp_path / "epit"
     soccol = tmp_path / "soccol"
     epit.mkdir()
@@ -55,7 +56,11 @@ def test_checkpoint_selection_uses_only_common_steps(tmp_path: Path) -> None:
         min_step=0,
         step_interval=1000,
     )
-    assert [step for step, _, _ in pairs] == [1000]
+    assert pairs == [
+        (1000, epit / "step-1000.ckpt", soccol / "step-1000.ckpt"),
+        (1200, None, soccol / "step-1200.ckpt"),
+        (1400, epit / "step-1400.ckpt", None),
+    ]
     latest = specialist_eval.select_checkpoint_pairs(
         epit,
         soccol,
@@ -64,6 +69,52 @@ def test_checkpoint_selection_uses_only_common_steps(tmp_path: Path) -> None:
         step_interval=0,
     )
     assert [step for step, _, _ in latest] == [1000]
+
+
+def test_all_specialist_steps_need_no_shared_checkpoints(tmp_path: Path) -> None:
+    epit, soccol = tmp_path / "epit", tmp_path / "soccol"
+    epit.mkdir()
+    soccol.mkdir()
+    (epit / "step-500.ckpt").touch()
+    (soccol / "step-1000.ckpt").touch()
+    assert specialist_eval.select_checkpoint_pairs(
+        epit, soccol, checkpoint="all", min_step=0, step_interval=0,
+    ) == [
+        (500, epit / "step-500.ckpt", None),
+        (1000, None, soccol / "step-1000.ckpt"),
+    ]
+
+
+def test_specialist_driver_skips_missing_steps_and_keeps_outer_queries(tmp_path, monkeypatch):
+    epit, soccol = tmp_path / "epit", tmp_path / "soccol"
+    epit.mkdir()
+    soccol.mkdir()
+    (epit / "step-500.ckpt").touch()
+    (soccol / "step-1000.ckpt").touch()
+    output = tmp_path / "results"
+    options = specialist_eval.parse_args([
+        "--epit-run", str(epit), "--soccol-run", str(soccol),
+        "--output-dir", str(output),
+    ])
+    monkeypatch.setattr(specialist_eval, "parse_args", lambda: options)
+    calls = []
+
+    def fake_evaluate(**kwargs):
+        assert kwargs["task_split"].test_index.tolist() == list(range(4787, 5054))
+        calls.append(kwargs["model_label"])
+        return {
+            "model": kwargs["model_label"], "model_kind": kwargs["model_kind"],
+            "task_id": kwargs["task"].task_id, "test_spearman": .3,
+        }
+
+    monkeypatch.setattr(specialist_eval.corrosion_eval, "evaluate_estimator", fake_evaluate)
+    specialist_eval.main()
+    payload = json.loads((output / "results.json").read_text())
+    assert not payload["errors"]
+    assert calls == [specialist_eval.EPIT_MODEL_LABEL, specialist_eval.SOCCOL_MODEL_LABEL]
+    assert [(row["checkpoint_step"], row["model"]) for row in payload["rows"]] == [
+        (500, specialist_eval.EPIT_MODEL_LABEL), (1000, specialist_eval.SOCCOL_MODEL_LABEL),
+    ]
 
 
 def test_specialist_launcher_matches_checkpoint_comparison_convention() -> None:

@@ -1,0 +1,189 @@
+dataset,feature,value,rows,fraction
+EPIT,Prep_medium,<MISSING>,760,1.0
+EPIT,CP_aeration,<MISSING>,760,1.0
+EPIT,CP_agitation,<MISSING>,760,1.0
+EPIT,CP_anions_info,<MISSING>,760,1.0
+EPIT,test_method,Potentiodynamic Polarization,143,0.1881578947368421
+EPIT,test_method,"Potentiodynamic Polarization with exposed area of 1 cm2. Potentiodynamic polarization experiments were carried out using a scan rate of 0.1 mV/s commencing at a potential about 250 mV more active than the stable OCP. Before starting the polarization scan, the specimen in the sample holder (WE) was left in the cell for about 1 h to attain a steady state which is shown by a constant potential and current at the beginning of the experiment. The potcntiodynamic runs were programmed such that upon attaining a current density of 25μA/cm^2, the scan direction was reversed and the potentials were scanned back to the starting potential.",65,0.08552631578947369
+EPIT,test_method,Potentiostatic Polarization,59,0.07763157894736843
+EPIT,test_method,"Potentiodynamic Polarization - test electrodes were made from 0.25 mm wire looped to a diameter of 25 mm. Test solutions were prepared from reagent grade chemicals and distilled water and the pH value was adjusted using H2SO4 or NaOH as required. The oxygen content of the test solutions was reduced to a negligible value by bubbling nitrogen through them for a period of 24 h. All electrochemical measurements were carried out in conventional setup, purged with nitrogen during each experiment",39,0.05131578947368421
+EPIT,test_method,Potentiodynamic Polarzation until a stable pit formed then Potentiostatic Polarization at pitting potential to monitior pit growth,33,0.04342105263157895
+EPIT,test_method,"Potentiodynamic Polarization in a three electrode flat cell, prior to anodic sweep OCP measured for 1 hr",33,0.04342105263157895
+EPIT,test_method,"Polarization test, strips of 1.25 cm x 1.25 cm of the experimental alloys, as well as the commercial alloys, were subjected to anodic polarization in dearated 1 N NaCI solution at 30 C. A Type 308 rod was welded to one side of each specimen and covered with rubber tubing, except the tip for electrical connection to a potentiostat. The specimens were then mounted in epoxy, ground to 600 grit, and rinsed with distilled water. The specimen/mount interface was covered with a thin film of lacquer, and approximately 1 cm 2 of the specimen was exposed. They were then kept in a desiccator until testing. The testing procedure consisted of: (1) introduction of the solution to a one liter polarization cell; (2) setting the temperature of the solution; (3) deoxygenating the solution with prepurified nitrogen at the rate of 90 ml/min starting 30 minutes before immersion of the specimen; (4) cleaning the specimen with distilled water just prior to transferring to the cel]; and (5) anodic polarization 50 minutes after the immersion at a scanning rate of 20 mV/min, using a PAR Model 173 potentiostat and ELSCINT Model ABA-26 Automatic Baseline Advance.",30,0.039473684210526314
+EPIT,test_method,Scratch,27,0.035526315789473684
+EPIT,test_method,"Potentiodynamic Polarization, the specimens were cut from rods and mounted in epoxy resin so that the exposed surface area was about 0.8 cm^2. This surface was coarse-ground with silicon-carbide papers and then fine-ground with alumina paste.",22,0.02894736842105263
+EPIT,test_method,"Potentiodynamic Polarization, the specimen surface was ground to a 120 grit finish and 5 cm2 was exposed to the corrodent. The potential was controlled, relative to a standard saturated calomel electrode, by a potentiostat. Following. pretreatment for 5 min at -1.5 V, the -potential was increased-rapidly to -0.5V and thereafter at a steady rate of 1V in 50 min. In this work the critical pitting potential was taken as that at which there was an anodic current flow of 10^-5 A/cm2.",19,0.025
+EPIT,test_method,"Following pretreatment for 5 min at -1.5 V, the potential was increased-rapidly to -0.5V and thereafter at a steady rate of 1V in 50 min. In this work the critical pitting potential was taken as that at which there was an anodic current flow of 10^-5 A/cm^2.",19,0.025
+EPIT,test_method,"Potentiostatic Polarization. The experimental procedure was to first polarize the electrode potentiostatically at the least noble potential within the passive region for at least 15 min in order to achieve steady-state passivity. The potential was then advanced in stages of 50 mV, allowing 5 min between each change. Initially the current decreased or remained constant after each potential adjustment, but eventually a steadily increasing current at some potential V'c indicated the onset of pitting (or of transpassivity). Steady-state values Vc were obtained subsequently by holding the potential for long times at a fixed value and then observing pitting or the lack of it under a low power microscope. The lowest potential for which pitting could not be observed after a 10-hr or longer period of constant polarization was considered to be the steady-state value Vc. Reproducibility was in the order of ±5 mv.",18,0.02368421052631579
+EPIT,test_method,"Potentiodynamic Polarization. For pitting tests, specimens were allowed to passivate in air for at least 18 h prior to testing.",16,0.021052631578947368
+EPIT,test_method,Potentiostatic Polarization for 24 hrs in deaerated Cl- solution,13,0.017105263157894738
+EPIT,test_method,"Potentiodynamic Polarization. The onset of pitting was marked by a sharp and sudden increase in polarization current. The potential scanning was stopped at the pitting potential, and the electrode was allowed to pit for 20 to 30 min. It was then removed from the solution, the tape was stripped, and its surface was examined for pitting and possible crevice corrosion. The potential scanning was usually started at -0.7 to -0.6v, with respect to the saturated calomel electrode (SCE); the scanning was always into the passive potential region. In some experiments, the potential of an actively corroding electrode was changed almost instantaneously to a selected potential in a passive range by switching on a potentiostat, with a potential preset at a desired value.",12,0.015789473684210527
+EPIT,test_method,"Potentiostatic Polarization, Potentiostatic polarization curves were obtained at 25°C and at 0°C in N,-saturated 0.1N NaCl and O*lN NaBr. The electrode totally immersed was first polarized in the least noble passive region for 15min, then the potential was moved in the noble direction 50mV every Smin until the pitting potential was approximated and the current showed a marked increase. This was followed by longer-time runs of 12-15h at a single potential in the neighbourhood of the critical potential in order to establish the steady state value. The least noble potential at which the current did not continuously increase with time and at which no pits could be observed under a low power microscope was taken as the final value.",12,0.015789473684210527
+EPIT,test_method,"Potentiodynamic Polarization in a three electrode flat cell, prior to anodic sweep OCP measured for 30 mins",12,0.015789473684210527
+EPIT,test_method,"Potentiostatic Polarization. For most of the measurements, Al electrodes were employed measuring 1.5 cm long and 0.4 cm in diameter. One end of each electrode was drilled and tapped, allowing a threaded member attached to a nickel wire to hold the electrode firmly against a glass tube separated by a water-tight Teflon gasket. Only the electrode surface, totally immersed, Teflon, and glass made contact with the electrolyte. Specimens were polished to 3/0 emery paper followed by pickling in 2N NaOH at 80~ for 5 min and then washing in distilled water.",12,0.015789473684210527
+EPIT,test_method,Potentiodynamic Polarization - pitting potentital measured by potential sweep method,12,0.015789473684210527
+EPIT,test_method,"Polarization curves were obtained potentiodynamically at a scan rate of 20 mV/min, using a Tacussel electrochemical set composed of a potentiostat, a current recorder, and a high impedance electronic millivoltmeter.",11,0.014473684210526316
+EPIT,test_method,ASTMG1,11,0.014473684210526316
+EPIT,test_method,"The ""scratch"" technique was employed for the determination of pitting potentials.The electrode was first polarized potentiostatically to some potential well below the expected pitting potential.The polarization current was allowedto stabilize and then the electrode surface was scratched with a sharp silicon-carbide crystal mounted on the end of a glass tube. The scratching of the electrode surface resulted in a sharp polarization current ""blip."" The electrode potential was manually adjusted by 20 mV steps to more and more noble potential values, until the scratch failed to repassivate, a failure which was indicated by a gradual current rise after the electrode was scratched. The pit was allowed to develop for 10 min, and then the electrode was examined visually. Only those results were considered to be valid where pits actually developed at the scratched site.",10,0.013157894736842105
+EPIT,test_method,"Potentiodynamic Polarization - the sample was stabilized in the electrolyte, which was sparged continuously with oxygen (O2), until the potential change was < 1 mV/min, and this potential was considered as the OCP. Then, the sample was scanned potentiodynamically at a rate of 600 mV/h to a potential corresponding to a current density of 10–3 A/cm2 and then scan direction was reversed.",9,0.011842105263157895
+EPIT,test_method,"Potentiodynamic Polarization in a three electrode flat cell, prior to anodic sweep OCP was mesured until stability for 6 mins",9,0.011842105263157895
+EPIT,test_method,"Potentiodynamic Polarization(Anodic polarization was applied to the working electrode after a stable corrosion potential had been achieved; this usually took about 2 h after immersion in the solution. As a measure of the resistance to pitting corrosion, the pitting potentials for the alloys were determined from the anodic polarization curve by the potential at which the anodic current density reached a value of 10 uA/cm2 after film breakdown.",8,0.010526315789473684
+EPIT,test_method,"Potentiodynamic Polarization, Potentiodynamic polarization commenced at the free-corrosion potential after the sample had been immersed in the solution for 30 minutes",8,0.010526315789473684
+EPIT,test_method,<MISSING>,8,0.010526315789473684
+EPIT,test_method,"Potentiodynamic Polarization. Potentiodynamic polarization tests were performed using a three-electrode cell system consisting of a saturated calomel electrode (SCE) as a reference, a platinum electrode as a counter, and a specimen as the working electrode. The sample was kept immersed in the test solution for 2 h at open-circuit potential. After obtaining the stable corrosion potential (Ecorr), the potential was raised in the anodic direction, from ±100 mV below Ecorr, at a scan rate of 0.2 mV/s.",8,0.010526315789473684
+EPIT,test_method,Potentiodynamic Polarization. Gound to 600 grit at least 18 h before the test,8,0.010526315789473684
+EPIT,test_method,"Potentiodynamic Polarization. Before the test, the sample remain in contact with the solution for 30 min. at -0.3 to -0.1 V to passivate or reach equilibrium.",7,0.009210526315789473
+EPIT,test_method,Potentiostatic Polarization. Measurements made in 10 mV steps and held until a stationary current was observed,7,0.009210526315789473
+EPIT,test_method,"Potentiodynamic Polarization. The potential was controlled by a Wenkingt potentiostat (Model 68 TS-3) and changed in steps of 10 mV with a Wenking SMP 69 scanning potentiometer every hour for the positive polarization direction until the onset of pitting or appearance of pits, and every 100 s for the reverse scan until zero current. The potential was initially held at 150 mV for 1 h to attain stable current, whereupon the scanning potentiometer was activated.",6,0.007894736842105263
+EPIT,test_method,"Potentiodynamic Polarization- Samples were mechanically polished with emery paper up to grade 1000 under water, then degreased in absolute ethyl alcohol, washed in deionized water, and dried by warm air blowing for electrochemical tests. Polarization curves were obtained potentiodynamically at a scan rate of 20 mV/min.",6,0.007894736842105263
+EPIT,test_method,ASTM G1,5,0.006578947368421052
+EPIT,test_method,Potentiodynamic Polarization in a three electrode flat cell,5,0.006578947368421052
+EPIT,test_method,"Potentiodynamic Polarization. Potentiodynamic sweeps in hot 3.5% NaCl solution were carried out at a rate of 1 mV s-1. The tests were carried out in a glass three-electrode cell held in a water bath at 65 °C. In all experiments the rod under test was supported in a holder on the lid of the cell such that the end face just touched the surface of the test solution as described above. The counter electrode was a platinum wire, the reference electrode a saturated calomel electrode (SCE) at the same solution temperature; all potentials are given against the SCE. The potential at which the current density exceeded 50 uA cm-2 was defined as the pitting potential.",4,0.005263157894736842
+EPIT,test_method,"Potentiodynamic Polarization. the sample was kept immersed in the experimental solution for 5 min at open-circuit potential (OCP). The anodic potential was increased in steps of 20 mVSCE, and the current readings were recorded after waiting at each set potential for 1 min.",4,0.005263157894736842
+EPIT,test_method,Potentiodynamic polarization. All studies were carried out with rotating disk electrodes of 0.1 cm2 (diameter 0.357 cm) insulated with a PTFE shrinkable tubing. Experiments were performed at 6000 rpm (in part at 600 rpm) in 1 M HCI at 25°C under a nitrogen atmosphere.,4,0.005263157894736842
+EPIT,test_method,"Anodic Polarization - Anodic polarization tests performed in deaerated 4 M sodium chloride (NaCl) solution at 80°C. The electrochemical cell for the test consisted of a 1-L multineck flask, as specified in ASTM G 5 with a platinum counter electrode and a saturated calomel electrode (SCE) positioned in a salt bridge with a high-silica tip.",3,0.003947368421052632
+EPIT,test_method,"Potentiodynamic Polarization. The electrodes for the potentiodynamic studies were mounted in epoxy plastic with a single exposed surface parallel to the rolling plane. Electrical contact was made by soft-soldering a nickel wire to the back of the electrode. Contact between the solder or lead wire and the electrolyte was excluded by the plastic and glass tube. The 0.5 by 0.6 cm exposed surface was polished by using standard metallographic techniques, finishing with a distilled water slurry of 0.3 mu alumina. The edges of the electrode were masked with clear Glyptal varnish to prevent crevice corrosion. The coupons for the exposure tests, 2.5 by 2.5 by 0.3 cm, were surface ground and then polished through No. 600 wet silicon carbide paper. They were solvent degreased and rinsed in methanol before exposure.",3,0.003947368421052632
+EPIT,test_method,"Potentiostatic Polarization at different potentials. The working electrode was a rotating disk, the rotation rate was 3000 rpm in all experiments.",2,0.002631578947368421
+EPIT,test_method,"Potentiodynamic Polarization, the electrochemical experiments were carried out in an inert gas glove box by using a 0.5 M H2SO4 solution which was de-aerated by purging with N2. Sample disks of 10 mm diameter were mounted in the electrochemical glass cell equipped with a platinum counter electrode and a mercurous sulfate reference electrode.",2,0.002631578947368421
+EPIT,test_method,"Potentiodynamic Polarization. Polarization was performed in an electrochemical cell attached to the ESCA instrument. The arrangement allows the samples to be transferred to the analyser without air exposure. The electrolyte was de-aerated by Ar bubbling for 2 h before exposure. The samples were activated at - 700 mV for 10 min. The sweep rate at the potentiodynamic tests was 1 mVs_‘. The samples prepared for the ESCA analyses were polarized by stepping the potential from the activation potential to the potentials - 75, 500 and 800 mV (SCE). The potentials were maintained for 10 min and 2 h.",2,0.002631578947368421
+EPIT,test_method,"Potentiodynamic Polarization. Before athe test, specimens were cathodically polarized at - 1.150 V(SCE) for 15 min to reduce the polish-formed film.",2,0.002631578947368421
+EPIT,test_method,Potentiodynamic Polarization in a three electrode flat cell until 100mA or 1.241 VSCE,2,0.002631578947368421
+EPIT,test_method,"Potentiostatically-controlled anodic Polarization, test solution deaerated with N2",2,0.002631578947368421
+EPIT,test_method,"Potentiodynamic Polarization in a the electrode flat cell, prior to swwep help at OCP then cathodically polarizes for 300s to remove surface films",2,0.002631578947368421
+EPIT,test_method,"To measure the pitting potentials, the potential was stepped upwards by 25 mV every 400 s, beginning at -300 mV(SCE).",2,0.002631578947368421
+EPIT,test_method,"Potentiodynamic Polarization, Cu-wire was spot-welded to one side of each specimen, mounted in epoxy resin, and ground to 2000 grade silicon carbide. To avoid crevice corrosion, the specimenmount interface was carefully coated with a thin ®lm of silicone sealant. Approximately 1 cm2 of the surface was exposed to the test solution.",1,0.0013157894736842105
+EPIT,test_method,Potentiodynamic Polarization. The specimens were activated at the cathodic potential of 2700 mV saturated calomel electrode (SCE) for 10 min.,1,0.0013157894736842105
+EPIT,test_method,"Potentiodynamic Polarization. All solutions used were deaerated with high-purity argon for at least 2 h before analysis. Potentials were measured against a saturated calomel electrode (SCE). Cathodic pretreatments were performed in 0.1 M hydrochloric acid (HCl) for 15 min at –700 mV SCE , while the current was monitored, in order to remove the air-formed oxide film.",1,0.0013157894736842105
+EPIT,test_method,ASTMG!,1,0.0013157894736842105
+EPIT,reference_type,SCE,760,1.0
+Soccol,Prep_medium,<MISSING>,1814,0.4504593990563695
+Soccol,Prep_medium,air,432,0.10727588775763595
+Soccol,Prep_medium,(24h air),204,0.05065805810777253
+Soccol,Prep_medium,none,162,0.04022845790911348
+Soccol,Prep_medium,pickled,153,0.0379935435808294
+Soccol,Prep_medium,reduced -0.2V,145,0.03600695306679911
+Soccol,Prep_medium,HNO3,125,0.031040476781723367
+Soccol,Prep_medium,as-delivered,86,0.021355848025825675
+Soccol,Prep_medium,(tabulated data),81,0.02011422895455674
+Soccol,Prep_medium,reduced -1.0V,73,0.018127638440526447
+Soccol,Prep_medium,wet ground,69,0.0171343431835113
+Soccol,Prep_medium,(air passivated 2h),54,0.013409485969704494
+Soccol,Prep_medium,24h air,52,0.01291283834119692
+Soccol,Prep_medium,sensitized + polished,41,0.010181276384405264
+Soccol,Prep_medium,oxidizing 0.005 Cu2+,37,0.009187981127390117
+Soccol,Prep_medium,(1200 = 600 US grit),31,0.007698038241867395
+Soccol,Prep_medium,(extracted from cyclopol),29,0.0072013906133598215
+Soccol,Prep_medium,air passivation (12h),28,0.006953066799106034
+Soccol,Prep_medium,(anneal+quench),24,0.005959771542090887
+Soccol,Prep_medium,pickling HNO3 + HF,23,0.005711447727837099
+Soccol,Prep_medium,(CPT held 1h prior),21,0.005214800099329526
+Soccol,Prep_medium,air (24h),21,0.005214800099329526
+Soccol,Prep_medium,pre-oxidation,15,0.003724857213806804
+Soccol,Prep_medium,0.01cm2 wire,15,0.003724857213806804
+Soccol,Prep_medium,0.436mm2 wire,15,0.003724857213806804
+Soccol,Prep_medium,reduced -1.3V,13,0.00322820958529923
+Soccol,Prep_medium,0.05cm2 discs edge epol,13,0.00322820958529923
+Soccol,Prep_medium,wet grind + 10%HNO3,12,0.0029798857710454435
+Soccol,Prep_medium,wet grind + 1%HNO3,12,0.0029798857710454435
+Soccol,Prep_medium,0.5 V - 30',12,0.0029798857710454435
+Soccol,Prep_medium,0.05cm2 discs edge grind,12,0.0029798857710454435
+Soccol,Prep_medium,0.1 V - 30',11,0.0027315619567916563
+Soccol,Prep_medium,0.01cm2 wire edge epol,11,0.0027315619567916563
+Soccol,Prep_medium,reduced -1.5V,10,0.0024832381425378696
+Soccol,Prep_medium,oxidizing 0.01 Cu2+,9,0.0022349143282840824
+Soccol,Prep_medium,0.3 V - 30',9,0.0022349143282840824
+Soccol,Prep_medium,oxidizing 0.05 Cu2+,9,0.0022349143282840824
+Soccol,Prep_medium,oxidizing 0.001 Cu2+,9,0.0022349143282840824
+Soccol,Prep_medium,0.4 V - 30',9,0.0022349143282840824
+Soccol,Prep_medium,oxidizing 0.5 Cu2+,9,0.0022349143282840824
+Soccol,Prep_medium,0.2 V - 30',8,0.0019865905140302956
+Soccol,Prep_medium,wet grind + 60%HNO3,8,0.0019865905140302956
+Soccol,Prep_medium,citric,6,0.0014899428855227217
+Soccol,Prep_medium,H2O,6,0.0014899428855227217
+Soccol,Prep_medium,desiccator / air,6,0.0014899428855227217
+Soccol,Prep_medium,(+ H-charged),6,0.0014899428855227217
+Soccol,Prep_medium,sulfuric,6,0.0014899428855227217
+Soccol,Prep_medium,(fine grain sandpaper),5,0.0012416190712689348
+Soccol,Prep_medium,(e-pol - heated only),5,0.0012416190712689348
+Soccol,Prep_medium,(annealed 1040),4,0.0009932952570151478
+Soccol,Prep_medium,(+ H + left standing),4,0.0009932952570151478
+Soccol,Prep_medium,(annealed 1170),4,0.0009932952570151478
+Soccol,Prep_medium,(annealed 1140),4,0.0009932952570151478
+Soccol,Prep_medium,(annealed 1110),4,0.0009932952570151478
+Soccol,Prep_medium,(annealed 1080),4,0.0009932952570151478
+Soccol,Prep_medium,(annealed 1200),4,0.0009932952570151478
+Soccol,Prep_medium,as-ground,3,0.0007449714427613609
+Soccol,Prep_medium,distilled water,3,0.0007449714427613609
+Soccol,Prep_medium,oxidizing 0.005 CuCl2,3,0.0007449714427613609
+Soccol,Prep_medium,(pickled),3,0.0007449714427613609
+Soccol,Prep_medium,(electropolished),3,0.0007449714427613609
+Soccol,Prep_medium,reduced -1V,3,0.0007449714427613609
+Soccol,Prep_medium,(surface remelted),2,0.0004966476285075739
+Soccol,Prep_medium,HNO3 pass,2,0.0004966476285075739
+Soccol,Prep_medium,(as received),2,0.0004966476285075739
+Soccol,Prep_medium,(+ HNO3 + H-charged),1,0.00024832381425378696
+Soccol,Prep_medium,diamond polish,1,0.00024832381425378696
+Soccol,Prep_medium,(uncharged),1,0.00024832381425378696
+Soccol,Prep_medium,(+ HNO3),1,0.00024832381425378696
+Soccol,Prep_medium,(+ left standing),1,0.00024832381425378696
+Soccol,Prep_medium,+ sulfuric + anodized,1,0.00024832381425378696
+Soccol,Prep_medium,+ air,1,0.00024832381425378696
+Soccol,Prep_medium,as-ground + pickled,1,0.00024832381425378696
+Soccol,Prep_medium,+ nitric (20% - 50degC),1,0.00024832381425378696
+Soccol,CP_aeration,deaerated,2231,0.5540104296001986
+Soccol,CP_aeration,<MISSING>,1263,0.3136329774025329
+Soccol,CP_aeration,natural,360,0.0893965731313633
+Soccol,CP_aeration,aerated,171,0.042463372237397566
+Soccol,CP_aeration,ozonated,2,0.0004966476285075739
+Soccol,CP_agitation,<MISSING>,3509,0.8713682642165383
+Soccol,CP_agitation,no,413,0.102557735286814
+Soccol,CP_agitation,yes,105,0.02607400049664763
+Soccol,CP_anions_info,none,2648,0.6575614601440278
+Soccol,CP_anions_info,<MISSING>,937,0.23267941395579836
+Soccol,CP_anions_info,oxyanions,68,0.016886019369257512
+Soccol,CP_anions_info,pure chloride,39,0.00968462875589769
+Soccol,CP_anions_info,0.2M borate,31,0.007698038241867395
+Soccol,CP_anions_info,0.06M SO4,30,0.007449714427613608
+Soccol,CP_anions_info,0.6M SO4,30,0.007449714427613608
+Soccol,CP_anions_info,0.15M SO4,30,0.007449714427613608
+Soccol,CP_anions_info,0.1M OH,23,0.005711447727837099
+Soccol,CP_anions_info,2x25mM HCO3+CO3,21,0.005214800099329526
+Soccol,CP_anions_info,0.015M CO3,18,0.004469828656568165
+Soccol,CP_anions_info,sea water,18,0.004469828656568165
+Soccol,CP_anions_info,0.5M SO4,13,0.00322820958529923
+Soccol,CP_anions_info,0.01M nitrate,12,0.0029798857710454435
+Soccol,CP_anions_info,dichromate,10,0.0024832381425378696
+Soccol,CP_anions_info,0.1M SO4,8,0.0019865905140302956
+Soccol,CP_anions_info,0.6mM SO4,7,0.0017382666997765085
+Soccol,CP_anions_info,borate buffer,6,0.0014899428855227217
+Soccol,CP_anions_info,pH,6,0.0014899428855227217
+Soccol,CP_anions_info,0.05M OH,6,0.0014899428855227217
+Soccol,CP_anions_info,1% Al2SO43 + 0.1M H2SO4,6,0.0014899428855227217
+Soccol,CP_anions_info,0.5% MgSO4 + 0.1M H2SO4,5,0.0012416190712689348
+Soccol,CP_anions_info,artificial sea water,5,0.0012416190712689348
+Soccol,CP_anions_info,5M SO4,5,0.0012416190712689348
+Soccol,CP_anions_info,2M SO4,5,0.0012416190712689348
+Soccol,CP_anions_info,0.5% MgSO4,4,0.0009932952570151478
+Soccol,CP_anions_info,sulfate,4,0.0009932952570151478
+Soccol,CP_anions_info,(phosphate),4,0.0009932952570151478
+Soccol,CP_anions_info,1M borate,3,0.0007449714427613609
+Soccol,CP_anions_info,5mM nitrate,3,0.0007449714427613609
+Soccol,CP_anions_info,0.05M  borate,3,0.0007449714427613609
+Soccol,CP_anions_info,1M SO4,3,0.0007449714427613609
+Soccol,CP_anions_info,0.025M nitrate,3,0.0007449714427613609
+Soccol,CP_anions_info,2mM nitrate,3,0.0007449714427613609
+Soccol,CP_anions_info,0.01M borate,3,0.0007449714427613609
+Soccol,CP_anions_info,nitrate,2,0.0004966476285075739
+Soccol,CP_anions_info,citrate,2,0.0004966476285075739
+Soccol,CP_anions_info,0.01M SO4,2,0.0004966476285075739
+Soccol,CP_anions_info,0.8mM SO4,1,0.00024832381425378696
+Soccol,test_method,<MISSING>,4027,1.0
+Soccol,reference_type,<MISSING>,3350,0.8318847777501862
+Soccol,reference_type,SCE,565,0.14030295505338963
+Soccol,reference_type,AgAgCl,112,0.027812267196424136
+MPEA,Prep_medium,<MISSING>,267,1.0
+MPEA,CP_aeration,<MISSING>,267,1.0
+MPEA,CP_agitation,<MISSING>,267,1.0
+MPEA,CP_anions_info,<MISSING>,267,1.0
+MPEA,test_method,<MISSING>,267,1.0
+MPEA,reference_type,SCE,267,1.0

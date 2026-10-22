@@ -1,0 +1,20 @@
+{
+  "scope": "CPU float32, actual combined V2 step-1000 weights, four fresh 32-row synthetic tables; no real query rows or targets",
+  "feature_target_source_pairing": "exact after mapping and shuffle",
+  "source_generator_replay": {
+    "EPIT": "exactly identical features, targets, widths, and boundaries",
+    "Soccol": "exactly identical features, targets, widths, and boundaries"
+  },
+  "source_counts": [
+    1,
+    1,
+    2
+  ],
+  "mixed_batch_vs_individual_tables": {
+    "max_prediction_difference": 1.52587890625e-05,
+    "mixed_loss": 0.5255990624427795,
+    "individual_loss_sum": 0.5255990996956825,
+    "relative_gradient_l2_difference": 4.1852526780290645e-05
+  },
+  "passed": true
+}

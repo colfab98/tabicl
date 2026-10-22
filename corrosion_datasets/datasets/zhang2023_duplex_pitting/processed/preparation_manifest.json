@@ -1,0 +1,108 @@
+{
+  "preparation_version": "zhang2023_external_v1",
+  "task_id": "epit_soccol_context__zhang2023_pitting_potential_mv_sce",
+  "dataset": "zhang2023_duplex_pitting",
+  "doi": "10.1038/s41467-023-43752-8",
+  "rows": {
+    "context": 4787,
+    "queries": 56,
+    "composition_groups": 7,
+    "replicates_per_composition": 8,
+    "excluded_industrial_targets": 16
+  },
+  "query_partition": "all 56 rows frozen as external queries; no query labels used as context",
+  "features": [
+    "B",
+    "C",
+    "N",
+    "Mg",
+    "Al",
+    "Si",
+    "P",
+    "S",
+    "Ti",
+    "V",
+    "Cr",
+    "Mn",
+    "Fe",
+    "Co",
+    "Ni",
+    "Cu",
+    "Y",
+    "Nb",
+    "Mo",
+    "Ce",
+    "Gd",
+    "Ta",
+    "W",
+    "Re",
+    "Prep_grinding_grit",
+    "Prep_Ra_micron",
+    "Prep_pH",
+    "Prep_redox",
+    "Prep_time",
+    "CP_time",
+    "CP_temp",
+    "CP_pH",
+    "Test_area_cm2",
+    "scan_rate",
+    "CP_Cl",
+    "CP_Br",
+    "CP_OH",
+    "CP_SO4",
+    "CP_CO3",
+    "CP_NO3",
+    "CP_PO4",
+    "CP_MoO4",
+    "CP_CrO4",
+    "CP_ion_other",
+    "Prep_medium",
+    "CP_aeration",
+    "CP_agitation",
+    "CP_anions_info",
+    "test_method",
+    "reference_type"
+  ],
+  "target_column": "reported_pitting_potential_mV",
+  "composition_policy": "Reported wt%; Fe = 100 minus reported non-Fe elements because Fe is explicitly balance. Unreported elements/dashes stay NaN; explicit Nb zeros remain zero.",
+  "electrolyte": {
+    "CP_Cl": 1.1189993797223758,
+    "CP_Br": 0.0016974461838132541,
+    "CP_SO4": 0.05758854379411631
+  },
+  "electrolyte_policy": "Nominal mol/L from cited double-concentration recipe; sum all chloride salts. Bicarbonate not mapped to carbonate. No pH-derived hydroxide.",
+  "procedure_policy": "Numeric CP_time, Prep_time and Prep_redox left NaN because shared registry units are unverified; original seconds/volts retained in row_audit. Aeration/agitation unreported.",
+  "target_policy": "Workbook mV vs SCE retained without conversion; separate scoring file; no re-estimation from curves.",
+  "metadata_policy": "Alloy identifiers and sorted replicate rank excluded from predictors. No row aggregation; 56 replicate targets but seven distinct inputs.",
+  "limitations": [
+    "One study/environment",
+    "Nb-induced microstructure absent from feature schema"
+  ],
+  "raw_inputs": {
+    "Supplementary Fig. 6.xlsx": "ba1ede58a3dc108c21236f9da0bc98560c3ece830e59bd10e404ace90eb8e196",
+    "experimental_compositions_wt_percent.csv": "a95113ca0257e032b17729db95b72a21e22ea070e6830debe41696d228cc26b8",
+    "niobium2023.html": "2c732823d12f7cdde6b39471b76dd14a533cf31fbe473ffe27130aff5cdee82a",
+    "niobium_source.zip": "5fd35a710d7fc73eb22d0261f37b4efc8a3c4606c89c3906691e05fec9df248c",
+    "niobium_supp.pdf": "9547c2b835cc097db551fec4d6e63492b68949afe3c4d62fa6c84365fe44c4fd",
+    "seawater_recipe.json": "148c868c99aba1c88dfd645da1ada14e0b27fa5667cf3820ee24fe341caa7b41"
+  },
+  "processor_sha256": "31e036a8222ce025f0d0dfae5bb63f841b1fc76ee7e03a4a71101c2b516140fa",
+  "original_context_manifest_sha256": "03a5b60a038049f5686907d50af5dfc9421d39e14ac48f27a5014ef834718f68",
+  "outputs": {
+    "zhang2023_queries.csv": {
+      "sha256": "ddf36f0e07aab00d2804b761274fc9be542d31abb4c08e179c9bc33ad01b76e5"
+    },
+    "zhang2023_scoring_targets.csv": {
+      "sha256": "e29db9ebaef83cdc93aaff5a3189ff8fbaa4ab26264929e417c760384c1d058e"
+    },
+    "row_audit.csv": {
+      "sha256": "85f23694e6192ae8a943cfa78b16d62612aee0c260e9a3f3374ea423529fc4bf"
+    },
+    "epit_soccol_context.csv": {
+      "sha256": "3ac7fa8730bba6084ad8f81e05c216601c724641bb1c861b701d07ae1fec247e"
+    },
+    "shared_feature_registry.json": {
+      "sha256": "8181a068616112011c709d77ee04e3bdd54aa7bce5f0a698d9171c3976e2aed7"
+    }
+  }
+}

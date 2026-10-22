@@ -1,0 +1,126 @@
+{
+  "research_date": "2026-10-21",
+  "evaluation_performed": false,
+  "conclusion": "Superseded: MAP-E rejected for this request because exact alloy composition is unavailable and target audit has unresolved issues. See replacement_audit.json for verified Zhang 2023 composition-bearing candidate.",
+  "map_e": {
+    "paper": "https://www.nature.com/articles/s41529-026-00822-8",
+    "repository": "https://github.com/dpersaud/MAP_E",
+    "commit": "7a2fea2dd8ea2ea07425a2b2c6f252bb421c93eb",
+    "inspected_table": "https://github.com/dpersaud/MAP_E/blob/7a2fea2dd8ea2ea07425a2b2c6f252bb421c93eb/autonomousStabilityDiagram/data/data_old.csv",
+    "rows": 56,
+    "experiment_ids": 28,
+    "nominal_pH_chloride_pairs": 27,
+    "measured_pH_chloride_pairs": 28,
+    "pH_measured_range": [
+      2.54,
+      11.69
+    ],
+    "chloride_molar_values": [
+      0.0,
+      0.004,
+      0.01,
+      0.04,
+      0.1
+    ],
+    "zero_chloride_rows": 12,
+    "additional_validation_replicates": 32,
+    "strengths": [
+      "Fresh experiments dated May-September 2025, after Nyby 2020 and Soccol 2024 releases.",
+      "Commercial Fe-based stainless steel; measured pH and chloride vary.",
+      "Same intended pitting-potential outcome; raw scans and processed data public; specified Ag/AgCl 1 M KCl reference."
+    ],
+    "limitations": [
+      "One material; paper calls it 304 and specifies UNS S30403. Exact measured heat composition not located.",
+      "56 campaign measurements are paired replicates of 28 prepared environments (27 distinct nominal combinations); extra 32 validation replicates do not add environmental diversity.",
+      "Britton-Robinson buffer contains phosphate/borate/acetate; authors report roughly 400 mV higher potentials than conventional mapping studies and changed pH dependence.",
+      "Supplement section S2 reports 8 problematic automatic labels: noise, secondary current rises, or unclear stable pitting.",
+      "Supplement names 20250922_004_6 and _7 as noise failures, but repository last condition is cells 7 and 8: resolve ID discrepancy before exclusion.",
+      "data_old.csv values differ from final supplementary plot annotations. Do not assume this table is final corrected ground truth.",
+      "Audit no-pitting/censoring, electrode drift and SCE conversion before finalization.",
+      "No frozen context/query split created."
+    ],
+    "supplement": "https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41529-026-00822-8/MediaObjects/41529_2026_822_MOESM1_ESM.pdf"
+  },
+  "alternatives": [
+    {
+      "candidate": "Huang et al., 2026",
+      "url": "https://www.nature.com/articles/s41598-026-75356-9",
+      "published": "2026-10-19",
+      "reported_all_records": 36095,
+      "reported_Epit_records": 3756,
+      "Epit_extraction_precision_percent": 66.88,
+      "Epit_normalization_accuracy_percent": 66.43,
+      "condition_result_alignment_accuracy_percent": 75.0,
+      "availability": "Corresponding author on reasonable request (paper Data availability).",
+      "assessment": "Potential broad source after obtaining data, manual ground-truth verification and source-overlap screening; not a ready benchmark."
+    },
+    {
+      "candidate": "Qiao et al., 2023",
+      "url": "https://doi.org/10.1016/j.colsurfa.2023.132274",
+      "reported_Epit_records": 106,
+      "assessment": "Excellent task match, but raw downloadable table not verified and literature overlap not established."
+    },
+    {
+      "candidate": "Coelho 316L descriptors, 2023",
+      "url": "https://data.mendeley.com/datasets/5x4dmc38bg/1",
+      "reported_records": 955,
+      "distinct_conditions": 5,
+      "assessment": "One material and five concentration/scan-rate conditions, with estimated labels; limited useful predictor variation."
+    },
+    {
+      "candidate": "Hou et al. rebar compilation, 2026",
+      "url": "https://zenodo.org/records/21987599",
+      "locally_counted_stainless_numeric_potential_rows": 68,
+      "assessment": "Small stainless subset in predominantly alkaline/concrete or inhibitor conditions; source overlap and label/composition quality unresolved."
+    },
+    {
+      "candidate": "CorrosionOptiMap, 2025",
+      "url": "https://www.nature.com/articles/s41529-025-00694-4",
+      "reported_real_samples": 77,
+      "assessment": "Main variation is additive-manufacturing process parameters absent from the frozen shared feature schema; augmented rows are not independent measurements."
+    },
+    {
+      "candidate": "Predicting Pitting Potential of Additively Manufactured Stainless Steel, 2026",
+      "url": "https://www.researchsquare.com/article/rs-9213876/v1",
+      "assessment": "Data and code on request; process/surface descriptors are a different feature focus."
+    }
+  ],
+  "evidence_files": [
+    {
+      "path": "evidence/MAP_E/autonomousStabilityDiagram/data/data_old.csv",
+      "sha256": "d3f7a9ce82e491e7d49ed698a4cadf087f046a89ac44f3e509c70945d9d0b2ef",
+      "bytes": 3245
+    },
+    {
+      "path": "evidence/MAP_E/autonomousStabilityDiagram/data/experiments.csv",
+      "sha256": "e9a4772ffdf6ecefb40a4b6cd83e823c4f28a2458824470b8e4e00605fa48faf",
+      "bytes": 761
+    },
+    {
+      "path": "evidence/MAP_E/corrosionValidation/analysis/overview.csv",
+      "sha256": "fd73dd35da428cafd446d02fe5cf8a0fbc6eba502fdd26bd2836bc61f001ad9d",
+      "bytes": 2003
+    },
+    {
+      "path": "evidence/huang.pdf",
+      "sha256": "c86b4cc253906bfa83740b4163372cc85f513e903d6c39d9c87bf11ac0c09f49",
+      "bytes": 4949112
+    },
+    {
+      "path": "evidence/huang.txt",
+      "sha256": "2ade9b064cef0f426fce439af94940941295e3d82238e7711a02d9f3b374256e",
+      "bytes": 102103
+    },
+    {
+      "path": "evidence/mape_supp.pdf",
+      "sha256": "cbad542b833aa1792876e2c1f08188a25830789d1987fa03aaa7938660b7e56e",
+      "bytes": 1781380
+    },
+    {
+      "path": "evidence/mape_supp.txt",
+      "sha256": "e606a2d5c5369e88509c2f8ac6c6f945bf66014f1b7295ef8bed1c7438910c52",
+      "bytes": 40471
+    }
+  ],
+  "superseded_by": "replacement_audit.json"
+}

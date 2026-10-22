@@ -1,0 +1,3208 @@
+Supplementary information for:
+Materials Acceleration Platform for Electrochemistry: a
+Platform for Autonomous Electrochemistry
+Daniel Persaud 1,2, Mike Werezak1, Mark Xu1, Melyne Zhou 2, Frank Benkel1, Xin
+Peng 1, Vahid Attari 1, Brian DeCost 3, Ashley Dale 2, Nicholas Senior 1, Gabriel
+Birsan1, *, and Jason Hattrick-Simpers 1, 2, 4, 5, 6, **
+1CanmetMATERIALS, Natural Resources Canada, 183 Longwood Road South, Hamilton, ON, Canada
+2Department of Materials Science and Engineering, University of Toronto, 27 King’s College Cir, Toronto,
+ON, Canada
+3Material Measurement Laboratory, National Institute of Standards and Technology, 100 Bureau Dr,
+Gaithersburg, MD, USA
+4Acceleration Consortium, University of Toronto, 27 King’s College Cir, Toronto, ON, Canada.
+5Vector Institute for Artificial Intelligence, 661 University Ave, Toronto, ON, Canada.
+6Schwartz Reisman Institute for Technology and Society, 101 College St, Toronto, ON, Canada.
+*Correspondence: gabriel.birsan@NRCan-RNCan.gc.ca
+**Correspondence: jason.hattrick.simpers@utoronto.ca
+1
+S1 Corrosion Validation Potentiodynamic Polarization
+Below are the 32 potentiodynamic polarization (PP) scans and automated analysis to extract
+the corrosion potential (Ecorr) and pitting potential (Epit), for each of the ASTM G61-analog exper-
+iments performed to validate the MAP-E. The Epit values extracted from the automated analysis
+closely match the onset of stable pitting observed in the raw PP scans, all within ≈ 50mV.
+2
+Potentodynamic Polarization scans for batch 1 of replication experiments with the MAP-E.
+a) b)
+c) d)
+e) f)
+g) h)
+0.4
+ 0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250526_01_1
+Ecorr=-0.145 V, Epit=0.362 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+3000
+2000
+1000
+0
+1000
+2000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_01_2
+Ecorr=-0.110 V, Epit=0.400 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+6000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250526_01_3
+Ecorr=-0.148 V, Epit=0.503 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+6000
+4000
+2000
+0
+2000
+4000
+6000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_01_4
+Ecorr=-0.143 V, Epit=0.443 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+6000
+4000
+2000
+0
+2000
+4000
+6000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_01_5
+Ecorr=-0.081 V, Epit=0.407 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+3000
+2000
+1000
+0
+1000
+2000
+3000
+4000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250526_01_6
+Ecorr=-0.116 V, Epit=0.427 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+6000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250526_01_7
+Ecorr=-0.106 V, Epit=0.333 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+2000
+1000
+0
+1000
+2000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250526_01_8
+Ecorr=-0.112 V, Epit=0.402 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+Figure S1: a) cell 1, b) cell 2, c) cell 3, d) cell 4, e) cell 5, f) cell 6, g) cell 7, h) cell 8. Each
+plot shows the logarithm of the current density vs. potential. The solid grey line is the raw data,
+blue dashed line is the smoothed data, solid red line is the smoothed data derivative, solid orange
+line is the smoothed data second derivative, dashed green line is the extracted Ecorr, and dotted
+purple line is the extracted Epit.
+3
+Potentodynamic Polarization scans for batch 2 of replication experiments with the MAP-E.
+a) b)
+c) d)
+e) f)
+g) h)
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250526_02_1
+Ecorr=-0.118 V, Epit=0.401 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+6000
+4000
+2000
+0
+2000
+4000
+6000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_02_2
+Ecorr=-0.096 V, Epit=0.398 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_02_3
+Ecorr=-0.113 V, Epit=0.419 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.4
+ 0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_02_4
+Ecorr=-0.128 V, Epit=0.500 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+6000
+4000
+2000
+0
+2000
+4000
+6000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_02_5
+Ecorr=-0.100 V, Epit=0.133 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+2000
+1000
+0
+1000
+2000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_02_6
+Ecorr=-0.108 V, Epit=0.364 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250526_02_7
+Ecorr=-0.095 V, Epit=0.412 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_02_8
+Ecorr=-0.115 V, Epit=0.426 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+Figure S2: a) cell 1, b) cell 2, c) cell 3, d) cell 4, e) cell 5, f) cell 6, g) cell 7, h) cell 8. Each
+plot shows the logarithm of the current density vs. potential. The solid grey line is the raw data,
+blue dashed line is the smoothed data, solid red line is the smoothed data derivative, solid orange
+line is the smoothed data second derivative, dashed green line is the extracted Ecorr, and dotted
+purple line is the extracted Epit.
+4
+Potentodynamic Polarization scans for batch 3 of replication experiments with the MAP-E.
+a) b)
+c) d)
+e) f)
+g) h)
+0.2
+ 0.0
+ 0.2
+ 0.4
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_03_1
+Ecorr=-0.122 V, Epit=0.336 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250526_03_2
+Ecorr=-0.114 V, Epit=0.424 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_03_3
+Ecorr=-0.110 V, Epit=0.438 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+6000
+4000
+2000
+0
+2000
+4000
+6000
+d2[log(i)]/d2E
+0.4
+ 0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_03_4
+Ecorr=-0.129 V, Epit=0.420 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+6000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_03_5
+Ecorr=-0.104 V, Epit=0.447 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.4
+ 0.2
+ 0.0
+ 0.2
+ 0.4
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_03_6
+Ecorr=-0.193 V, Epit=0.154 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+2000
+1000
+0
+1000
+2000
+3000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_03_7
+Ecorr=-0.108 V, Epit=0.398 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_03_8
+Ecorr=-0.124 V, Epit=0.403 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+Figure S3: a) cell 1, b) cell 2, c) cell 3, d) cell 4, e) cell 5, f) cell 6, g) cell 7, h) cell 8. Each
+plot shows the logarithm of the current density vs. potential. The solid grey line is the raw data,
+blue dashed line is the smoothed data, solid red line is the smoothed data derivative, solid orange
+line is the smoothed data second derivative, dashed green line is the extracted Ecorr, and dotted
+purple line is the extracted Epit.
+5
+Potentodynamic Polarization scans for batch 4 of replication experiments with the MAP-E.
+a) b)
+c) d)
+e) f)
+g) h)
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_04_1
+Ecorr=-0.119 V, Epit=0.354 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_04_2
+Ecorr=-0.110 V, Epit=0.379 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+6000
+4000
+2000
+0
+2000
+4000
+6000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_04_3
+Ecorr=-0.105 V, Epit=0.437 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+6000
+4000
+2000
+0
+2000
+4000
+6000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_04_4
+Ecorr=-0.093 V, Epit=0.432 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+6000
+4000
+2000
+0
+2000
+4000
+6000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_04_5
+Ecorr=-0.125 V, Epit=0.421 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+6000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_04_6
+Ecorr=-0.150 V, Epit=0.376 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_04_7
+Ecorr=-0.125 V, Epit=0.392 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+3000
+2000
+1000
+0
+1000
+2000
+3000
+4000
+d2[log(i)]/d2E
+0.4
+ 0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+20250526_04_8
+Ecorr=-0.131 V, Epit=0.408 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+Figure S4: a) cell 1, b) cell 2, c) cell 3, d) cell 4, e) cell 5, f) cell 6, g) cell 7, h) cell 8. Each
+plot shows the logarithm of the current density vs. potential. The solid grey line is the raw data,
+blue dashed line is the smoothed data, solid red line is the smoothed data derivative, solid orange
+line is the smoothed data second derivative, dashed green line is the extracted Ecorr, and dotted
+purple line is the extracted Epit.
+6
+Potentodynamic Polarization scans for replication experiments with the MAP-E grouped
+by cell.
+0.4
+ 0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+Cell 1 - Polarization Curves
+Ecorr Mean: -0.13 V ± 0.01 V
+Epit Mean: 0.36 V ± 0.03 V
+Runs
+01
+02
+03
+04
+Analysis
+Ecorr
+Epit
+Analysis
+Ecorr
+Epit
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+Cell 2 - Polarization Curves
+Ecorr Mean: -0.11 V ± 0.01 V
+Epit Mean: 0.40 V ± 0.02 V
+Runs
+01
+02
+03
+04
+Analysis
+Ecorr
+Epit
+Analysis
+Ecorr
+Epit
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+Cell 3 - Polarization Curves
+Ecorr Mean: -0.12 V ± 0.02 V
+Epit Mean: 0.45 V ± 0.04 V
+Runs
+01
+02
+03
+04
+Analysis
+Ecorr
+Epit
+Analysis
+Ecorr
+Epit
+0.4
+ 0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+Cell 4 - Polarization Curves
+Ecorr Mean: -0.12 V ± 0.02 V
+Epit Mean: 0.45 V ± 0.04 V
+Runs
+01
+02
+03
+04
+Analysis
+Ecorr
+Epit
+Analysis
+Ecorr
+Epit
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+2
+1
+log(Current Density (mA/mm²))
+Cell 5 - Polarization Curves
+Ecorr Mean: -0.10 V ± 0.02 V
+Epit Mean: 0.35 V ± 0.15 V
+Runs
+01
+02
+03
+04
+Analysis
+Ecorr
+Epit
+Analysis
+Ecorr
+Epit
+0.4
+ 0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+Cell 6 - Polarization Curves
+Ecorr Mean: -0.14 V ± 0.04 V
+Epit Mean: 0.33 V ± 0.12 V
+Runs
+01
+02
+03
+04
+Analysis
+Ecorr
+Epit
+Analysis
+Ecorr
+Epit
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+Cell 7 - Polarization Curves
+Ecorr Mean: -0.11 V ± 0.01 V
+Epit Mean: 0.38 V ± 0.03 V
+Runs
+01
+02
+03
+04
+Analysis
+Ecorr
+Epit
+Analysis
+Ecorr
+Epit
+0.4
+ 0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+Cell 8 - Polarization Curves
+Ecorr Mean: -0.12 V ± 0.01 V
+Epit Mean: 0.41 V ± 0.01 V
+Runs
+01
+02
+03
+04
+Analysis
+Ecorr
+Epit
+Analysis
+Ecorr
+Epit
+a) b)
+c) d)
+e) f)
+g) h)
+Figure S5: a) cell 1, b) cell 2, c) cell 3, d) cell 4, e) cell 5, f) cell 6, g) cell 7, h) cell 8. Each plot
+shows the logarithm of the current density vs. potential. The blue solid line is scan 1, purple solid
+line is scan 2, pink solid line is scan 3, and orange solid line is scan 4. The dashed lines are the
+Ecorr and dotted lines are the Epit for each scan, with the same color coding.
+7
+S2 Autonomous Stability Diagram Potentodynamic Polarization
+Below are all potentodynamic polarization (PP) scans and automated analyses used to con-
+struct the autonomous stability diagram shown in Figure 3 of the main text, including the 4 initial
+conditions (8 scans total) and 6 iterations of adaptive experimentation (4 conditions per round, 2
+scans per condition), for a total of 56 PP scans.
+Similar to the validation experiments in section S1, the automated Epit extraction closely
+matched the visually identifiable onset of stable pitting in the majority of cases, with 85% of ex-
+tracted values falling within approximately 50 mV of manual interpretation.
+In a small number of cases, the automated analysis identified noise fluctuations or secondary
+current increases instead of the primary pitting transition. Specifically, two scans:
+• 20250922 004 6
+• 20250922 004 7
+exhibited noise-related misidentification, while six additional scans:
+• 20250812 004
+• 20250903 002
+• 20250916 004
+corresponded to either secondary current rises or scans where stable pitting was not clearly ob-
+served.
+These behaviors represent known limitations of the current automated extraction algorithm.
+However, they did not significantly affect the adaptive experimentation workflow because duplicate
+measurements were performed at each condition and disagreement between replicates was in-
+corporated into the uncertainty estimation used by the GP model. Overall, the extracted values
+remained sufficient to capture the dominant trends in the stability diagram.
+8
+Potentodynamic Polarization scans for iteration 0 of stability diagram building
+a) b)
+c) d)
+e) f)
+g) h)
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250812_001_1
+Cl-=0.01 mol/L
+pH_target=4.0
+pH_measured=3.92
+Ecorr=-0.040 V, Epit=1.318 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+200
+100
+0
+100
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250812_001_2
+Cl-=0.01 mol/L
+pH_target=4.0
+pH_measured=3.92
+Ecorr=-0.061 V, Epit=1.330 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+300
+200
+100
+0
+100
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250812_002_3
+Cl-=0.04 mol/L
+pH_target=5.0
+pH_measured=4.23
+Ecorr=-0.091 V, Epit=0.488 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+2000
+0
+2000
+d2[log(i)]/d2E
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250812_002_4
+Cl-=0.04 mol/L
+pH_target=5.0
+pH_measured=4.23
+Ecorr=-0.036 V, Epit=0.487 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+2000
+1000
+0
+1000
+2000
+3000
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250812_003_5
+Cl-=0.004 mol/L
+pH_target=7.5
+pH_measured=6.54
+Ecorr=-0.035 V, Epit=1.273 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative 300
+200
+100
+0
+100
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250812_003_6
+Cl-=0.004 mol/L
+pH_target=7.5
+pH_measured=6.54
+Ecorr=-0.180 V, Epit=1.164 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+100
+0
+100
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250812_004_7
+Cl-=0.04 mol/L
+pH_target=10.0
+pH_measured=8.75
+Ecorr=-0.142 V, Epit=1.193 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+750
+500
+250
+0
+250
+500
+750
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250812_004_8
+Cl-=0.04 mol/L
+pH_target=10.0
+pH_measured=8.75
+Ecorr=-0.152 V, Epit=1.187 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative 1000
+500
+0
+500
+1000
+d2[log(i)]/d2E
+Figure S6: a) cell 1, b) cell 2, c) cell 3, d) cell 4, e) cell 5, f) cell 6, g) cell 7, h) cell 8. Each
+plot shows the logarithm of the current density vs. potential. The solid grey line is the raw data,
+blue dashed line is the smoothed data, solid red line is the smoothed data derivative, solid orange
+line is the smoothed data second derivative, dashed green line is the extracted Ecorr, and dotted
+purple line is the extracted Epit.
+9
+Potentodynamic Polarization scans for iteration 1 of stability diagram building
+a) b)
+c) d)
+e) f)
+g) h)
+0.50
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250819_001_1
+Cl-=0.1 mol/L
+pH_target=10.5
+pH_measured=8.87
+Ecorr=-0.236 V, Epit=0.994 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.50
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250819_001_2
+Cl-=0.1 mol/L
+pH_target=10.5
+pH_measured=8.87
+Ecorr=-0.240 V, Epit=0.793 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative 4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+log(Current Density (mA/mm²))
+20250819_002_3
+Cl-=0.01 mol/L
+pH_target=10.0
+pH_measured=8.79
+Ecorr=-0.114 V, Epit=1.058 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+400
+200
+0
+200
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250819_002_4
+Cl-=0.01 mol/L
+pH_target=10.0
+pH_measured=8.79
+Ecorr=-0.085 V, Epit=1.041 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+200
+100
+0
+100
+200
+d2[log(i)]/d2E
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+log(Current Density (mA/mm²))
+20250819_003_5
+Cl-=0.0 mol/L
+pH_target=9.5
+pH_measured=8.17
+Ecorr=-0.032 V, Epit=1.149 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative 200
+100
+0
+100
+200
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+log(Current Density (mA/mm²))
+20250819_003_6
+Cl-=0.0 mol/L
+pH_target=9.5
+pH_measured=8.17
+Ecorr=-0.230 V, Epit=1.051 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+100
+0
+100
+200
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250819_004_7
+Cl-=0.004 mol/L
+pH_target=9.0
+pH_measured=7.3
+Ecorr=-0.170 V, Epit=1.133 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+1000
+500
+0
+500
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+log(Current Density (mA/mm²))
+20250819_004_8
+Cl-=0.004 mol/L
+pH_target=9.0
+pH_measured=7.3
+Ecorr=-0.163 V, Epit=0.941 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+3000
+2000
+1000
+0
+1000
+2000
+3000
+d2[log(i)]/d2E
+Figure S7: a) cell 1, b) cell 2, c) cell 3, d) cell 4, e) cell 5, f) cell 6, g) cell 7, h) cell 8. Each
+plot shows the logarithm of the current density vs. potential. The solid grey line is the raw data,
+blue dashed line is the smoothed data, solid red line is the smoothed data derivative, solid orange
+line is the smoothed data second derivative, dashed green line is the extracted Ecorr, and dotted
+purple line is the extracted Epit.
+10
+Potentodynamic Polarization scans for iteration 2 of stability diagram building
+a) b)
+c) d)
+e) f)
+g) h)
+0.25
+0.00
+ 0.25
+ 0.50
+ 0.75
+ 1.00
+ 1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250821_001_1
+Cl-=0.1 mol/L
+pH_target=11.5
+pH_measured=9.78
+Ecorr=-0.128 V, Epit=0.694 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+2000
+1000
+0
+1000
+2000
+d2[log(i)]/d2E
+0.25
+0.00
+ 0.25
+ 0.50
+ 0.75
+ 1.00
+ 1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250821_001_2
+Cl-=0.1 mol/L
+pH_target=11.5
+pH_measured=9.78
+Ecorr=-0.127 V, Epit=0.779 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+3000
+2000
+1000
+0
+1000
+2000
+3000
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+log(Current Density (mA/mm²))
+20250821_002_3
+Cl-=0.004 mol/L
+pH_target=10.0
+pH_measured=8.66
+Ecorr=-0.137 V, Epit=1.028 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+100
+0
+100
+200
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+log(Current Density (mA/mm²))
+20250821_002_4
+Cl-=0.004 mol/L
+pH_target=10.0
+pH_measured=8.66
+Ecorr=-0.145 V, Epit=1.030 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+100
+0
+100
+200
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+log(Current Density (mA/mm²))
+20250821_003_5
+Cl-=0.0 mol/L
+pH_target=4.0
+pH_measured=2.85
+Ecorr=-0.008 V, Epit=1.499 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+200
+100
+0
+100
+d2[log(i)]/d2E
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+1.75
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+5.5
+5.0
+4.5
+4.0
+3.5
+3.0
+2.5
+log(Current Density (mA/mm²))
+20250821_003_6
+Cl-=0.0 mol/L
+pH_target=4.0
+pH_measured=2.85
+Ecorr=0.112 V, Epit=1.404 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+100
+50
+0
+50
+100
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250821_004_7
+Cl-=0.04 mol/L
+pH_target=11.0
+pH_measured=9.13
+Ecorr=-0.141 V, Epit=1.006 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+100
+0
+100
+200
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+log(Current Density (mA/mm²))
+20250821_004_8
+Cl-=0.04 mol/L
+pH_target=11.0
+pH_measured=9.13
+Ecorr=-0.198 V, Epit=1.007 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative 200
+100
+0
+100
+200
+d2[log(i)]/d2E
+Figure S8: a) cell 1, b) cell 2, c) cell 3, d) cell 4, e) cell 5, f) cell 6, g) cell 7, h) cell 8. Each
+plot shows the logarithm of the current density vs. potential. The solid grey line is the raw data,
+blue dashed line is the smoothed data, solid red line is the smoothed data derivative, solid orange
+line is the smoothed data second derivative, dashed green line is the extracted Ecorr, and dotted
+purple line is the extracted Epit.
+11
+Potentodynamic Polarization scans for iteration 3 of stability diagram building
+a) b)
+c) d)
+e) f)
+g) h)
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250903_001_1
+Cl-=0.1 mol/L
+pH_target=3.0
+pH_measured=2.74
+Ecorr=0.196 V, Epit=0.279 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.25
+0.00
+ 0.25
+ 0.50
+ 0.75
+ 1.00
+ 1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250903_001_2
+Cl-=0.1 mol/L
+pH_target=3.0
+pH_measured=2.74
+Ecorr=0.154 V, Epit=0.445 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250903_002_3
+Cl-=0.004 mol/L
+pH_target=3.5
+pH_measured=2.54
+Ecorr=0.056 V, Epit=1.466 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+200
+150
+100
+50
+0
+50
+d2[log(i)]/d2E
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250903_002_4
+Cl-=0.004 mol/L
+pH_target=3.5
+pH_measured=2.54
+Ecorr=0.069 V, Epit=1.417 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+200
+150
+100
+50
+0
+50
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+log(Current Density (mA/mm²))
+20250903_003_5
+Cl-=0.0 mol/L
+pH_target=10.5
+pH_measured=8.91
+Ecorr=-0.127 V, Epit=1.097 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+100
+0
+100
+200
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250903_003_6
+Cl-=0.0 mol/L
+pH_target=10.5
+pH_measured=8.91
+Ecorr=-0.209 V, Epit=0.980 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+100
+0
+100
+200
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250903_004_7
+Cl-=0.01 mol/L
+pH_target=6.5
+pH_measured=6.42
+Ecorr=-0.226 V, Epit=1.052 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+150
+100
+50
+0
+50
+100
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250903_004_8
+Cl-=0.01 mol/L
+pH_target=6.5
+pH_measured=6.42
+Ecorr=-0.237 V, Epit=1.075 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+150
+100
+50
+0
+50
+100
+d2[log(i)]/d2E
+Figure S9: a) cell 1, b) cell 2, c) cell 3, d) cell 4, e) cell 5, f) cell 6, g) cell 7, h) cell 8. Each
+plot shows the logarithm of the current density vs. potential. The solid grey line is the raw data,
+blue dashed line is the smoothed data, solid red line is the smoothed data derivative, solid orange
+line is the smoothed data second derivative, dashed green line is the extracted Ecorr, and dotted
+purple line is the extracted Epit.
+12
+Potentodynamic Polarization scans for iteration 4 of stability diagram building
+a) b)
+c) d)
+e) f)
+g) h)
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250909_001_1
+Cl-=0.004 mol/L
+pH_target=12.5
+pH_measured=11.55
+Ecorr=0.086 V, Epit=0.448 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative 1000
+500
+0
+500
+1000
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250909_001_2
+Cl-=0.004 mol/L
+pH_target=12.5
+pH_measured=11.55
+Ecorr=-0.024 V, Epit=0.531 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+2000
+1000
+0
+1000
+2000
+d2[log(i)]/d2E
+0.25
+ 0.00
+ 0.25
+ 0.50
+ 0.75
+ 1.00
+ 1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250909_002_3
+Cl-=0.1 mol/L
+pH_target=7.0
+pH_measured=7.72
+Ecorr=-0.174 V, Epit=0.842 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250909_002_4
+Cl-=0.1 mol/L
+pH_target=7.0
+pH_measured=7.72
+Ecorr=-0.200 V, Epit=1.005 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+log(Current Density (mA/mm²))
+20250909_003_5
+Cl-=0.0 mol/L
+pH_target=6.0
+pH_measured=6.26
+Ecorr=-0.054 V, Epit=1.283 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+200
+100
+0
+100
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250909_003_6
+Cl-=0.0 mol/L
+pH_target=6.0
+pH_measured=6.26
+Ecorr=-0.154 V, Epit=1.167 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+200
+100
+0
+100
+d2[log(i)]/d2E
+0.50
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250909_004_7
+Cl-=0.01 mol/L
+pH_target=11.0
+pH_measured=11.69
+Ecorr=-0.255 V, Epit=0.793 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+200
+0
+200
+400
+d2[log(i)]/d2E
+0.50
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+log(Current Density (mA/mm²))
+20250909_004_8
+Cl-=0.01 mol/L
+pH_target=11.0
+pH_measured=11.69
+Ecorr=-0.268 V, Epit=0.793 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative 400
+200
+0
+200
+400
+d2[log(i)]/d2E
+Figure S10: a) cell 1, b) cell 2, c) cell 3, d) cell 4, e) cell 5, f) cell 6, g) cell 7, h) cell 8. Each
+plot shows the logarithm of the current density vs. potential. The solid grey line is the raw data,
+blue dashed line is the smoothed data, solid red line is the smoothed data derivative, solid orange
+line is the smoothed data second derivative, dashed green line is the extracted Ecorr, and dotted
+purple line is the extracted Epit.
+13
+Potentodynamic Polarization scans for iteration 5 of stability diagram building
+a) b)
+c) d)
+e) f)
+g) h)
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250916_001_1
+Cl-=0.04 mol/L
+pH_target=3.0
+pH_measured=2.76
+Ecorr=-0.030 V, Epit=0.633 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+300
+200
+100
+0
+100
+200
+300
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250916_001_2
+Cl-=0.04 mol/L
+pH_target=3.0
+pH_measured=2.76
+Ecorr=-0.079 V, Epit=0.718 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+2000
+0
+2000
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+log(Current Density (mA/mm²))
+20250916_002_3
+Cl-=0.0 mol/L
+pH_target=10.5
+pH_measured=9.04
+Ecorr=-0.192 V, Epit=0.994 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+200
+100
+0
+100
+200
+300
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250916_002_4
+Cl-=0.0 mol/L
+pH_target=10.5
+pH_measured=9.04
+Ecorr=-0.031 V, Epit=0.486 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+1000
+500
+0
+500
+1000
+1500
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250916_003_5
+Cl-=0.1 mol/L
+pH_target=5.0
+pH_measured=4.81
+Ecorr=-0.179 V, Epit=0.788 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.2
+ 0.0
+ 0.2
+ 0.4
+ 0.6
+ 0.8
+ 1.0
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+5
+4
+3
+2
+log(Current Density (mA/mm²))
+20250916_003_6
+Cl-=0.1 mol/L
+pH_target=5.0
+pH_measured=4.81
+Ecorr=0.185 V, Epit=0.568 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative 4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250916_004_7
+Cl-=0.004 mol/L
+pH_target=4.5
+pH_measured=3.76
+Ecorr=-0.147 V, Epit=0.921 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+150
+100
+50
+0
+50
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+9
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250916_004_8
+Cl-=0.004 mol/L
+pH_target=4.5
+pH_measured=3.76
+Ecorr=-0.114 V, Epit=0.925 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+200
+150
+100
+50
+0
+50
+d2[log(i)]/d2E
+Figure S11: a) cell 1, b) cell 2, c) cell 3, d) cell 4, e) cell 5, f) cell 6, g) cell 7, h) cell 8. Each
+plot shows the logarithm of the current density vs. potential. The solid grey line is the raw data,
+blue dashed line is the smoothed data, solid red line is the smoothed data derivative, solid orange
+line is the smoothed data second derivative, dashed green line is the extracted Ecorr, and dotted
+purple line is the extracted Epit.
+14
+Potentodynamic Polarization scans for iteration 6 of stability diagram building
+a) b)
+c) d)
+e) f)
+g) h)
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250922_001_1
+Cl-=0.0 mol/L
+pH_target=11.5
+pH_measured=9.67
+Ecorr=-0.200 V, Epit=0.944 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+200
+100
+0
+100
+200
+300
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+log(Current Density (mA/mm²))
+20250922_001_2
+Cl-=0.0 mol/L
+pH_target=11.5
+pH_measured=9.67
+Ecorr=-0.211 V, Epit=0.962 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+200
+100
+0
+100
+200
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250922_002_3
+Cl-=0.04 mol/L
+pH_target=6.5
+pH_measured=5.59
+Ecorr=-0.129 V, Epit=1.207 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative 3000
+2000
+1000
+0
+1000
+2000
+3000
+d2[log(i)]/d2E
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+1.75
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+10
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250922_002_4
+Cl-=0.04 mol/L
+pH_target=6.5
+pH_measured=5.59
+Ecorr=0.102 V, Epit=0.468 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+2000
+1000
+0
+1000
+2000
+d2[log(i)]/d2E
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+log(Current Density (mA/mm²))
+20250922_003_5
+Cl-=0.01 mol/L
+pH_target=3.0
+pH_measured=2.93
+Ecorr=0.063 V, Epit=1.492 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative 300
+200
+100
+0
+100
+d2[log(i)]/d2E
+0.50
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+log(Current Density (mA/mm²))
+20250922_003_6
+Cl-=0.01 mol/L
+pH_target=3.0
+pH_measured=2.93
+Ecorr=-0.184 V, Epit=0.820 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+400
+300
+200
+100
+0
+100
+d2[log(i)]/d2E
+0.25
+0.00
+0.25
+0.50
+0.75
+1.00
+1.25
+1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+7
+6
+5
+4
+3
+2
+log(Current Density (mA/mm²))
+20250922_004_7
+Cl-=0.1 mol/L
+pH_target=6.0
+pH_measured=5.92
+Ecorr=-0.155 V, Epit=1.416 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+400
+200
+0
+200
+400
+d2[log(i)]/d2E
+0.25
+0.00
+ 0.25
+ 0.50
+ 0.75
+ 1.00
+ 1.25
+ 1.50
+Potential (V vs Ag/AgCl (1 mol/L KCl))
+8
+6
+4
+2
+log(Current Density (mA/mm²))
+20250922_004_8
+Cl-=0.1 mol/L
+pH_target=6.0
+pH_measured=5.92
+Ecorr=-0.095 V, Epit=0.697 V
+Forward Scan
+Smoothed log(Current)
+Epit Search Region
+Ecorr
+Epit
+Derivative
+2nd Derivative
+4000
+2000
+0
+2000
+4000
+d2[log(i)]/d2E
+Figure S12: a) cell 1, b) cell 2, c) cell 3, d) cell 4, e) cell 5, f) cell 6, g) cell 7, h) cell 8. Each
+plot shows the logarithm of the current density vs. potential. The solid grey line is the raw data,
+blue dashed line is the smoothed data, solid red line is the smoothed data derivative, solid orange
+line is the smoothed data second derivative, dashed green line is the extracted Ecorr, and dotted
+purple line is the extracted Epit.
+15
+S3 Autonomous Stability Diagram Chloride dependence
+Below is all the Epit values plotted against pH for the 56 PP scans performed as part of the
+autonomous stability diagram experiment, grouped by Cl−. The traces corresponding to 0.04 mol/L
+and 0.1 mol/L Cl− show a positive correlation between pH andEpit, while the traces corresponding
+to 0 mol/L, 0.004 mol/L, and 0.01 mol/L Cl− show a negative correlation between pH and Epit.
+Measured pH vs Epit for different Cl − concentrations
+4 6 8 10 12
+Measured pH
+0.2
+0.4
+0.6
+0.8
+1.0
+1.2
+1.4
+1.6
+Measured Epit (V vs Ag/AgCl (1 mol/L KCl))
+ Cl=0.0 mol/L, slope=-0.084 V/pH
+Cl=0.004 mol/L, slope=-0.075 V/pH
+Cl=0.01 mol/L, slope=-0.048 V/pH
+Cl=0.04 mol/L, slope=0.085 V/pH
+Cl=0.1 mol/L, slope=0.054 V/pH
+Figure S13: Scatter plot of measured pH vs. Epit for the 56 PP scans performed as part of the
+autonomous stability diagram experiment, grouped by Cl − concentration, with 0 mol/L in yellow,
+0.004 mol/L in pink, 0.01 mol/L in blue, 0.04 mol/L in purple, and 0.1 mol/L in orange.
+16

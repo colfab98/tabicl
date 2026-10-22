@@ -1,0 +1,92 @@
+{
+  "research_date": "2026-10-21",
+  "evaluation_performed": false,
+  "recommendation": "Usable small external composition-transfer check. Limited to seven composition/environment groups; insufficient by itself to resolve broad model performance.",
+  "doi": "10.1038/s41467-023-43752-8",
+  "paper": "https://www.nature.com/articles/s41467-023-43752-8",
+  "source_zip": "https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41467-023-43752-8/MediaObjects/41467_2023_43752_MOESM3_ESM.zip",
+  "supplement": "https://media.springernature.com/original/springer-static/esm/art%3A10.1038%2Fs41467-023-43752-8/MediaObjects/41467_2023_43752_MOESM1_ESM.pdf",
+  "verified_target_rows": 56,
+  "distinct_reported_compositions": 7,
+  "rows_per_composition": 8,
+  "environment_count": 1,
+  "Epit_mV_SCE_range": [
+    -85.97,
+    734.8
+  ],
+  "chemistry_ranges_wt_pct": {
+    "Cr": [
+      21.5,
+      25.05
+    ],
+    "Ni": [
+      1.48,
+      7.06
+    ],
+    "Mo": [
+      0.29,
+      4.08
+    ],
+    "N": [
+      0.16,
+      0.28
+    ],
+    "Nb": [
+      0.0,
+      0.25
+    ]
+  },
+  "target_definition": "Potential where anodic current density reaches 100 microA/cm2; experimental pitting observed by SEM.",
+  "unmatched_industrial_rows_excluded": 16,
+  "excluded_reason": "Sheet 6d industrial S32205 has 16 targets but a separately identified industrial bulk-composition table was not located. Do not assume laboratory heat compositions.",
+  "registry_overlap": {
+    "Nyby_reference_count": 85,
+    "Soccol_reference_count": 154,
+    "Nyby_matches": [],
+    "Soccol_matches": [],
+    "scope": "DOI/title source-level check; not numerical row deduplication."
+  },
+  "missingness_policy": "P/S absent in Table 6; Cu dash in two S32750 rows; unreported trace elements remain unknown. Fe reported as balance. No generic grade composition substituted.",
+  "remaining_preprocessing_detail": "Electrolyte is described as double-concentration simulated seawater following Xin and Li 2014 (10.1016/j.corsci.2013.12.004). Exact salt recipe/molar species have not been verified; do not equate seawater to pure NaCl.",
+  "limitations": [
+    "Seven independent input conditions despite 56 replicate targets.",
+    "One high-temperature seawater environment.",
+    "Nb-induced inclusion modification is not explicitly represented in the current feature schema; a targeted scientific challenge, not proof of broad interpolation."
+  ],
+  "broader_candidate": {
+    "doi": "10.1016/j.conbuildmat.2026.148142",
+    "Epit_rows_reported": 346,
+    "grades": [
+      "304L",
+      "316L",
+      "2205",
+      "2304",
+      "24100"
+    ],
+    "explicit_mill_certificate_compositions": true,
+    "availability": "Data will be made available on request. Not downloaded, not ready for evaluation.",
+    "independence": "Mixed literature and original experiments; independent original Epit subset count not verified."
+  },
+  "other_rejected_candidates": [
+    {
+      "name": "Jung and Kim 2025",
+      "doi": "10.3390/ma18184390",
+      "reason": "Three measured compositions and 81 design IDs but only 27 unambiguously visible Epit values, each beside three alloy IDs. No clean 81-row target mapping."
+    },
+    {
+      "name": "Hou et al. 2026 rebar workbook",
+      "reason": "Stainless subset contains missing compositions and apparent shifted or erroneous chemistry fields. Not verified as a clean external benchmark."
+    },
+    {
+      "name": "Loto et al. 2025",
+      "doi": "10.1007/s42452-025-07234-4",
+      "reason": "Only 16 finite pitting targets in two chemistries; uncertain pitting versus transpassive labels, ambiguous composition and solution fields."
+    }
+  ],
+  "raw_sha256": {
+    "niobium_source.zip": "5fd35a710d7fc73eb22d0261f37b4efc8a3c4606c89c3906691e05fec9df248c",
+    "niobium_supp.pdf": "9547c2b835cc097db551fec4d6e63492b68949afe3c4d62fa6c84365fe44c4fd",
+    "niobium2023.html": "2c732823d12f7cdde6b39471b76dd14a533cf31fbe473ffe27130aff5cdee82a",
+    "Supplementary Fig. 6.xlsx": "ba1ede58a3dc108c21236f9da0bc98560c3ece830e59bd10e404ace90eb8e196"
+  }
+}

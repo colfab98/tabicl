@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-22",
+  "scope": "Read-only schema review. EPIT/Soccol feature coverage uses existing full input tables; MPEA coverage and formulation decisions use only its frozen development rows. No target column parsed. No dataset, split, formula or model changed.",
+  "existing_features_reviewed": 50,
+  "source_hashes": {
+    "corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/shared_feature_registry.json": "8181a068616112011c709d77ee04e3bdd54aa7bce5f0a698d9171c3976e2aed7",
+    "corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/epit_soccol_context.csv": "3ac7fa8730bba6084ad8f81e05c216601c724641bb1c861b701d07ae1fec247e",
+    "corrosion_datasets/datasets/mpea_corrosion/processed/splits_v1/development.csv": "9c077d4345e42953652a7e0d59dfb1d0801534759ad8555e0b51609ac4abf970",
+    "corrosion_datasets/datasets/mpea_corrosion/processed/mpea_row_audit.csv": "31b92472a0a89bb59255e821ef9c9c9028b319e784b70e5ae1ee8235561d4e78"
+  },
+  "implementation_notes": [
+    "Existing native EPIT/Soccol schemas are 28/37 features; current combined schema has 50.",
+    "Shared named-column mapping already enforces feature identity and order; it does not infer unit conversions.",
+    "Old Soccol specialist preprocessing zero-fills ion blanks. The current shared export preserves remaining blanks; do not label all Soccol ion zeros as imputed.",
+    "New categorical labels require consistent meaning/encoding in all three sources, synthetic data and real evaluation.",
+    "Preserve frozen row/fold assignments. Any changed feature exports require separately versioned artifacts with the same row memberships and explicit new hashes.",
+    "The new combined training must generate the added features with meaningful joint relationships; adding them only at inference is insufficient."
+  ]
+}

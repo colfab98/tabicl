@@ -1,0 +1,35 @@
+{
+  "schema_version": "epit_split_lock_v1",
+  "frozen_utc": "2026-10-22T10:58:21.441835+00:00",
+  "source_sha256": "8f57ef0653d9a638414c108608ce2ce2986b9b5e1247289601488b48950ea46a",
+  "manifest": {
+    "file": "split_manifest.json",
+    "sha256": "63872779294dadf4d7768e177c347af311bc6dd7fa65d52af22032c4d86478d0"
+  },
+  "assignments": {
+    "file": "split_assignments.csv",
+    "sha256": "a011d86058189c8f98facac7e7ef4bec1996ca6a364c194213f5682be5367e53"
+  },
+  "report": {
+    "file": "split_report.html",
+    "sha256": "17bdadadb52fc848c4c464fb51a6fa32bdc0f53b40ef4a2926a47926f35ca796"
+  },
+  "exported_tables": {
+    "development.csv": {
+      "file": "development.csv",
+      "sha256": "9c077d4345e42953652a7e0d59dfb1d0801534759ad8555e0b51609ac4abf970"
+    },
+    "final_test_queries.csv": {
+      "file": "final_test_queries.csv",
+      "sha256": "837a0144acfebf02ebc2647e9f998ba7dd3e31b041a0f8443801c4f849f11368"
+    },
+    "final_test_scoring_targets.csv": {
+      "file": "final_test_scoring_targets.csv",
+      "sha256": "f6dbf6eaf5b7bb9423657530273c66dfd1da61434187415efe9ebb3e4d010df6"
+    },
+    "shared_feature_registry.json": {
+      "file": "shared_feature_registry.json",
+      "sha256": "8181a068616112011c709d77ee04e3bdd54aa7bce5f0a698d9171c3976e2aed7"
+    }
+  }
+}

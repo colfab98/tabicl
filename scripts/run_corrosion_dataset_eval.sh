@@ -20,9 +20,9 @@ if [ -z "$RUN_OR_CKPT" ] || [ -z "$CHECKPOINT" ]; then
   echo "  $0 /path/to/step-3350.ckpt step-3350 custom_bins3 3"
   echo
   echo "For checkpoint='all', override defaults with MIN_CHECKPOINT_STEP and CHECKPOINT_STEP_INTERVAL."
-  echo "The wrapper defaults are stage-aware: s1 every 500 steps, s2 every 100 steps, fallback every 1000 steps."
-  echo "The latest common checkpoint is included by default; set INCLUDE_LATEST_COMMON_CHECKPOINT=0 to disable."
-  echo "Set CHECKPOINT_STEP_INTERVAL=0 to evaluate every common checkpoint."
+  echo "The default checkpoint spacing is 500 steps."
+  echo "Each run's latest checkpoint is included by default; set INCLUDE_LATEST_COMMON_CHECKPOINT=0 to disable."
+  echo "Set CHECKPOINT_STEP_INTERVAL=0 to evaluate every available checkpoint across runs."
   echo "Pass extra eval_corrosion_datasets.py args after the run_prefix argument, e.g. --task <task_id>."
   echo "Set COMPARE_PRETRAINED_TABICL=0 to skip pretrained TabICL in the submitted eval."
   echo "Set DRY_RUN=1 to print resolved arguments without submitting sbatch."
@@ -73,17 +73,6 @@ extra_args_have_model_labels() {
     fi
   done
   return 1
-}
-
-default_checkpoint_step_interval() {
-  local text="$RUN_PREFIX_MODE $RUN_OR_CKPT"
-  if [[ "$text" == *tabicl_s2_* ]]; then
-    echo 100
-  elif [[ "$text" == *tabicl_s1_* || "$text" == *tabicl_s1mini* ]]; then
-    echo 500
-  else
-    echo 1000
-  fi
 }
 
 if [[ "$TARGET_MODE" != "continuous" && "$TARGET_MODE" != "regression" ]]; then
@@ -154,7 +143,7 @@ elif [[ "$RUN_OR_CKPT" == *,* ]]; then
   CKPT_ARGS+=(--checkpoint "$CHECKPOINT")
 
   if [ "$CHECKPOINT" = "all" ]; then
-    CKPT_LABEL="all_common"
+    CKPT_LABEL="all_available"
   else
     CKPT_LABEL="$CHECKPOINT"
     CKPT_LABEL="${CKPT_LABEL%.ckpt}"
@@ -180,7 +169,7 @@ else
   CKPT_ARGS=(--run "$RUN_OR_CKPT" --checkpoint "$CHECKPOINT")
 
   if [ "$CHECKPOINT" = "all" ]; then
-    CKPT_LABEL="all_common"
+    CKPT_LABEL="all_available"
     PASS_MODEL_LABEL=0
   else
     CKPT_LABEL="$CHECKPOINT"
@@ -210,14 +199,14 @@ fi
 
 if [ "$CHECKPOINT" = "all" ]; then
   MIN_CHECKPOINT_STEP="${MIN_CHECKPOINT_STEP:-0}"
-  CHECKPOINT_STEP_INTERVAL="${CHECKPOINT_STEP_INTERVAL:-$(default_checkpoint_step_interval)}"
+  CHECKPOINT_STEP_INTERVAL="${CHECKPOINT_STEP_INTERVAL:-500}"
   INCLUDE_LATEST_COMMON_CHECKPOINT="${INCLUDE_LATEST_COMMON_CHECKPOINT:-1}"
   if ! [[ "$MIN_CHECKPOINT_STEP" =~ ^[0-9]+$ ]]; then
     echo "MIN_CHECKPOINT_STEP must be an integer >= 0." >&2
     exit 1
   fi
   if ! [[ "$CHECKPOINT_STEP_INTERVAL" =~ ^[0-9]+$ ]]; then
-    echo "CHECKPOINT_STEP_INTERVAL must be an integer >= 0; use 0 for every common checkpoint." >&2
+    echo "CHECKPOINT_STEP_INTERVAL must be an integer >= 0; use 0 for every available checkpoint." >&2
     exit 1
   fi
   if ! [[ "$INCLUDE_LATEST_COMMON_CHECKPOINT" =~ ^[01]$ ]]; then

@@ -8,6 +8,32 @@ import torch
 from tabicl import TabICLClassifier, TabICLRegressor
 from tabicl.model.tabicl import TabICL
 from tabicl.shap._masking import nan_mask_predict
+from tabicl.sklearn.preprocessing import TransformToNumerical
+
+
+@pytest.mark.parametrize("missing_aware", [False, True])
+def test_empty_context_columns_preserve_numeric_and_categorical_alignment(missing_aware):
+    train = pd.DataFrame({
+        "first": [1., 3.], "empty": [np.nan, np.nan],
+        "method": ["a", "b"], "last": [10., 20.],
+    })
+    query = pd.DataFrame({"first": [np.nan], "empty": [np.nan],
+                          "method": ["b"], "last": [15.]})
+    encoder = TransformToNumerical(preserve_missing_values=missing_aware).fit(train)
+    encoded_train, encoded_query = encoder.transform(train), encoder.transform(query)
+    assert encoded_train.shape == (2, 4)
+    assert encoded_query.shape == (1, 4)
+    np.testing.assert_array_equal(encoded_train[:, [0, 2, 3]], [[1., 0., 10.], [3., 1., 20.]])
+    np.testing.assert_array_equal(encoded_query[:, 2:], [[1., 15.]])
+    if missing_aware:
+        assert np.isnan(encoded_train[:, 1]).all()
+        assert np.isnan(encoded_query[:, :2]).all()
+    else:
+        np.testing.assert_array_equal(encoded_train[:, 1], [0., 0.])
+        np.testing.assert_array_equal(encoded_query[:, :2], [[2., 0.]])
+    # A value first observed in a query retains its position, without refitting.
+    query["empty"] = 99.
+    assert encoder.transform(query)[0, 1] == 99.
 
 
 @pytest.fixture(scope="module")

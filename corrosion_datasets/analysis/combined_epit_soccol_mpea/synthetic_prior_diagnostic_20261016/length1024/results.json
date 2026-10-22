@@ -1,0 +1,147 @@
+{
+  "diagnostic_only": true,
+  "real_evaluation_rows_or_targets_used": false,
+  "seed": 1700630,
+  "tasks_per_source": 16,
+  "rows_per_task": 1024,
+  "context_rows_per_task": 512,
+  "independent_hyperparameter_draws_per_table": true,
+  "data_sha256": "cd240bc0754e339f9680673f5dd123eb3030bdc166330f0d9a56fa33ce6122c4",
+  "model_checkpoints": {
+    "epit_shared_1000": "/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/epit_shared_v2_seed42/step-1000.ckpt",
+    "soccol_shared_1000": "/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/soccol_shared_v2_seed42/step-1000.ckpt",
+    "combined_v2_1000": "/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_v2_seed42/step-1000.ckpt",
+    "combined_v2_3000": "/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_v2_seed42/step-3000.ckpt"
+  },
+  "missingness": {
+    "profile_path": "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/context_missingness_profile.json",
+    "profile_sha256": "6cd30f6de454a7bf0c2c437fc31f974fd2df10bf1b8edbdd091e916b4115abe8",
+    "schema_version": "combined_epit_soccol_missingness_v2",
+    "feature_count": 50,
+    "composition_feature_count": 24,
+    "augmentation_probability": 0.8,
+    "min_observed_composition": 2,
+    "query_column_probability": 0.8,
+    "preserve_observed_composition": true,
+    "query_masking": "non-composition columns sampled per table and hidden across all query rows",
+    "sources": {
+      "EPIT": 760,
+      "Soccol": 4027
+    },
+    "source_routing": {
+      "generic": "sampled from empirical source row counts",
+      "informed": "matched to the informed EPIT or Soccol generator"
+    }
+  },
+  "limitation": "Synthetic diagnostic at a fixed context length, not a replacement for frozen MPEA evaluation.",
+  "summary": [
+    {
+      "model": "combined_v2_1000",
+      "source": "EPIT",
+      "spearman": 0.40565772687462087,
+      "crps": 0.4607461830601096,
+      "rmse": 0.9344722405076027,
+      "context_only_crps": 0.5173765514045954,
+      "context_median_rmse": 1.01381890848279
+    },
+    {
+      "model": "combined_v2_1000",
+      "source": "Soccol",
+      "spearman": 0.6483474795005882,
+      "crps": 0.38564008474349976,
+      "rmse": 0.7362816222012043,
+      "context_only_crps": 0.55519874766469,
+      "context_median_rmse": 1.0065319314599037
+    },
+    {
+      "model": "combined_v2_1000",
+      "source": "generic",
+      "spearman": 0.0664365510854725,
+      "crps": 0.48857549973763525,
+      "rmse": 0.9660229124128819,
+      "context_only_crps": 0.49108519684523344,
+      "context_median_rmse": 0.9737222269177437
+    },
+    {
+      "model": "combined_v2_3000",
+      "source": "EPIT",
+      "spearman": 0.42724106458891237,
+      "crps": 0.38378637935966253,
+      "rmse": 0.915760912001133,
+      "context_only_crps": 0.5173765514045954,
+      "context_median_rmse": 1.01381890848279
+    },
+    {
+      "model": "combined_v2_3000",
+      "source": "Soccol",
+      "spearman": 0.6732902913806025,
+      "crps": 0.30326015828177333,
+      "rmse": 0.71146335080266,
+      "context_only_crps": 0.55519874766469,
+      "context_median_rmse": 1.0065319314599037
+    },
+    {
+      "model": "combined_v2_3000",
+      "source": "generic",
+      "spearman": 0.07047244456525084,
+      "crps": 0.4213266595033929,
+      "rmse": 0.9610533509403467,
+      "context_only_crps": 0.49108519684523344,
+      "context_median_rmse": 0.9737222269177437
+    },
+    {
+      "model": "epit_shared_1000",
+      "source": "EPIT",
+      "spearman": 0.4111017099326512,
+      "crps": 0.45619489811360836,
+      "rmse": 0.9272856153547764,
+      "context_only_crps": 0.5173765514045954,
+      "context_median_rmse": 1.01381890848279
+    },
+    {
+      "model": "epit_shared_1000",
+      "source": "Soccol",
+      "spearman": 0.6119752525333597,
+      "crps": 0.4164103139191866,
+      "rmse": 0.7815688475966454,
+      "context_only_crps": 0.55519874766469,
+      "context_median_rmse": 1.0065319314599037
+    },
+    {
+      "model": "epit_shared_1000",
+      "source": "generic",
+      "spearman": 0.06993113643736736,
+      "crps": 0.4841664042323828,
+      "rmse": 0.9618652649223804,
+      "context_only_crps": 0.49108519684523344,
+      "context_median_rmse": 0.9737222269177437
+    },
+    {
+      "model": "soccol_shared_1000",
+      "source": "EPIT",
+      "spearman": 0.34835181650616265,
+      "crps": 0.4905065046623349,
+      "rmse": 0.9635437875986099,
+      "context_only_crps": 0.5173765514045954,
+      "context_median_rmse": 1.01381890848279
+    },
+    {
+      "model": "soccol_shared_1000",
+      "source": "Soccol",
+      "spearman": 0.6536953765580604,
+      "crps": 0.3790621506050229,
+      "rmse": 0.7263937890529633,
+      "context_only_crps": 0.55519874766469,
+      "context_median_rmse": 1.0065319314599037
+    },
+    {
+      "model": "soccol_shared_1000",
+      "source": "generic",
+      "spearman": 0.036069104220806295,
+      "crps": 0.5370906377211213,
+      "rmse": 1.001390103250742,
+      "context_only_crps": 0.49108519684523344,
+      "context_median_rmse": 0.9737222269177437
+    }
+  ]
+}

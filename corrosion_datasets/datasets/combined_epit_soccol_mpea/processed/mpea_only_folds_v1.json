@@ -1,0 +1,1434 @@
+{
+  "schema_version": "mpea_only_outer_fivefold_v1",
+  "scope": "Exploratory MPEA adaptation benchmark; separate from combined final evaluation.",
+  "n_folds": 5,
+  "split_seed": 42,
+  "input_sha256": {
+    "mpea_queries.csv": "8f57ef0653d9a638414c108608ce2ce2986b9b5e1247289601488b48950ea46a",
+    "mpea_scoring_targets.csv": "db0bb8f5948755158515c65a59886cdeb97e97cddcd369cbb02b4a0711b6b0d4",
+    "shared_feature_registry.json": "8181a068616112011c709d77ee04e3bdd54aa7bce5f0a698d9171c3976e2aed7"
+  },
+  "feature_columns": [
+    "B",
+    "C",
+    "N",
+    "Mg",
+    "Al",
+    "Si",
+    "P",
+    "S",
+    "Ti",
+    "V",
+    "Cr",
+    "Mn",
+    "Fe",
+    "Co",
+    "Ni",
+    "Cu",
+    "Y",
+    "Nb",
+    "Mo",
+    "Ce",
+    "Gd",
+    "Ta",
+    "W",
+    "Re",
+    "Prep_grinding_grit",
+    "Prep_Ra_micron",
+    "Prep_pH",
+    "Prep_redox",
+    "Prep_time",
+    "CP_time",
+    "CP_temp",
+    "CP_pH",
+    "Test_area_cm2",
+    "scan_rate",
+    "CP_Cl",
+    "CP_Br",
+    "CP_OH",
+    "CP_SO4",
+    "CP_CO3",
+    "CP_NO3",
+    "CP_PO4",
+    "CP_MoO4",
+    "CP_CrO4",
+    "CP_ion_other",
+    "Prep_medium",
+    "CP_aeration",
+    "CP_agitation",
+    "CP_anions_info",
+    "test_method",
+    "reference_type"
+  ],
+  "grouping": {
+    "columns": [
+      "B",
+      "C",
+      "N",
+      "Mg",
+      "Al",
+      "Si",
+      "P",
+      "S",
+      "Ti",
+      "V",
+      "Cr",
+      "Mn",
+      "Fe",
+      "Co",
+      "Ni",
+      "Cu",
+      "Y",
+      "Nb",
+      "Mo",
+      "Ce",
+      "Gd",
+      "Ta",
+      "W",
+      "Re"
+    ],
+    "round_decimals": 2,
+    "missing_fill_for_grouping_only": 0,
+    "l1_threshold_wt_percent": 1.0,
+    "method": "threshold_connected_components"
+  },
+  "assignment": "descending_group_size_greedy_row_balance_seeded_ties_v1",
+  "targets_used_for_assignment": false,
+  "rows": [
+    {
+      "row_id": "mpea_v1_r000003",
+      "composition_group": 0,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000004",
+      "composition_group": 1,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000005",
+      "composition_group": 2,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000007",
+      "composition_group": 0,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000008",
+      "composition_group": 1,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000009",
+      "composition_group": 2,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000011",
+      "composition_group": 0,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000012",
+      "composition_group": 1,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000013",
+      "composition_group": 2,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000014",
+      "composition_group": 3,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000015",
+      "composition_group": 3,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000016",
+      "composition_group": 3,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000021",
+      "composition_group": 4,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000022",
+      "composition_group": 5,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000023",
+      "composition_group": 6,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000024",
+      "composition_group": 7,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000025",
+      "composition_group": 8,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000026",
+      "composition_group": 9,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000037",
+      "composition_group": 10,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000038",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000039",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000040",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000041",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000042",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000043",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000044",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000045",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000046",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000047",
+      "composition_group": 12,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000048",
+      "composition_group": 12,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000049",
+      "composition_group": 12,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000050",
+      "composition_group": 12,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000051",
+      "composition_group": 12,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000052",
+      "composition_group": 12,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000053",
+      "composition_group": 10,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000054",
+      "composition_group": 13,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000055",
+      "composition_group": 14,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000056",
+      "composition_group": 15,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000057",
+      "composition_group": 16,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000070",
+      "composition_group": 17,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000071",
+      "composition_group": 18,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000072",
+      "composition_group": 19,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000073",
+      "composition_group": 20,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000074",
+      "composition_group": 10,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000075",
+      "composition_group": 21,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000076",
+      "composition_group": 22,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000077",
+      "composition_group": 23,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000078",
+      "composition_group": 24,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000079",
+      "composition_group": 25,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000080",
+      "composition_group": 26,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000081",
+      "composition_group": 27,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000082",
+      "composition_group": 28,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000083",
+      "composition_group": 29,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000084",
+      "composition_group": 30,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000085",
+      "composition_group": 31,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000086",
+      "composition_group": 32,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000087",
+      "composition_group": 33,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000088",
+      "composition_group": 34,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000089",
+      "composition_group": 35,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000090",
+      "composition_group": 18,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000091",
+      "composition_group": 18,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000092",
+      "composition_group": 10,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000093",
+      "composition_group": 36,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000094",
+      "composition_group": 37,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000095",
+      "composition_group": 38,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000096",
+      "composition_group": 39,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000097",
+      "composition_group": 40,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000098",
+      "composition_group": 41,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000099",
+      "composition_group": 42,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000104",
+      "composition_group": 43,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000105",
+      "composition_group": 5,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000106",
+      "composition_group": 6,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000107",
+      "composition_group": 7,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000108",
+      "composition_group": 8,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000109",
+      "composition_group": 9,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000115",
+      "composition_group": 44,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000116",
+      "composition_group": 44,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000117",
+      "composition_group": 45,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000118",
+      "composition_group": 46,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000119",
+      "composition_group": 47,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000120",
+      "composition_group": 48,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000121",
+      "composition_group": 49,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000122",
+      "composition_group": 50,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000123",
+      "composition_group": 51,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000124",
+      "composition_group": 52,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000125",
+      "composition_group": 53,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000126",
+      "composition_group": 54,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000127",
+      "composition_group": 52,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000128",
+      "composition_group": 53,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000129",
+      "composition_group": 54,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000130",
+      "composition_group": 55,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000131",
+      "composition_group": 55,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000132",
+      "composition_group": 55,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000135",
+      "composition_group": 56,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000137",
+      "composition_group": 57,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000138",
+      "composition_group": 58,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000139",
+      "composition_group": 59,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000140",
+      "composition_group": 60,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000141",
+      "composition_group": 61,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000142",
+      "composition_group": 61,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000143",
+      "composition_group": 61,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000144",
+      "composition_group": 61,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000145",
+      "composition_group": 62,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000146",
+      "composition_group": 62,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000147",
+      "composition_group": 62,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000148",
+      "composition_group": 62,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000149",
+      "composition_group": 63,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000150",
+      "composition_group": 63,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000151",
+      "composition_group": 63,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000152",
+      "composition_group": 63,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000155",
+      "composition_group": 64,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000156",
+      "composition_group": 64,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000157",
+      "composition_group": 64,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000160",
+      "composition_group": 65,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000161",
+      "composition_group": 65,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000162",
+      "composition_group": 65,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000187",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000188",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000189",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000190",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000191",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000192",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000193",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000194",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000195",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000196",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000197",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000198",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000199",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000200",
+      "composition_group": 66,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000211",
+      "composition_group": 67,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000212",
+      "composition_group": 67,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000213",
+      "composition_group": 67,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000214",
+      "composition_group": 67,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000215",
+      "composition_group": 67,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000230",
+      "composition_group": 68,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000231",
+      "composition_group": 69,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000232",
+      "composition_group": 70,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000233",
+      "composition_group": 71,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000236",
+      "composition_group": 72,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000277",
+      "composition_group": 73,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000293",
+      "composition_group": 13,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000294",
+      "composition_group": 12,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000295",
+      "composition_group": 74,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000297",
+      "composition_group": 36,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000303",
+      "composition_group": 18,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000304",
+      "composition_group": 75,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000312",
+      "composition_group": 32,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000313",
+      "composition_group": 31,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000314",
+      "composition_group": 33,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000323",
+      "composition_group": 67,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000324",
+      "composition_group": 76,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000325",
+      "composition_group": 77,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000326",
+      "composition_group": 78,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000327",
+      "composition_group": 79,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000328",
+      "composition_group": 80,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000329",
+      "composition_group": 36,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000330",
+      "composition_group": 36,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000331",
+      "composition_group": 36,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000332",
+      "composition_group": 81,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000333",
+      "composition_group": 81,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000334",
+      "composition_group": 81,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000335",
+      "composition_group": 81,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000351",
+      "composition_group": 82,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000352",
+      "composition_group": 75,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000358",
+      "composition_group": 36,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000359",
+      "composition_group": 36,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000360",
+      "composition_group": 10,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000361",
+      "composition_group": 37,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000362",
+      "composition_group": 67,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000363",
+      "composition_group": 76,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000366",
+      "composition_group": 75,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000379",
+      "composition_group": 13,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000389",
+      "composition_group": 52,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000390",
+      "composition_group": 53,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000391",
+      "composition_group": 54,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000392",
+      "composition_group": 83,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000393",
+      "composition_group": 83,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000394",
+      "composition_group": 84,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000395",
+      "composition_group": 85,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000396",
+      "composition_group": 86,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000397",
+      "composition_group": 87,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000398",
+      "composition_group": 10,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000399",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000400",
+      "composition_group": 37,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000401",
+      "composition_group": 12,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000402",
+      "composition_group": 88,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000403",
+      "composition_group": 89,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000415",
+      "composition_group": 90,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000416",
+      "composition_group": 90,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000417",
+      "composition_group": 90,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000418",
+      "composition_group": 90,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000419",
+      "composition_group": 90,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000420",
+      "composition_group": 90,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000421",
+      "composition_group": 90,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000422",
+      "composition_group": 90,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000423",
+      "composition_group": 90,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000424",
+      "composition_group": 90,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000425",
+      "composition_group": 90,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000426",
+      "composition_group": 90,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000427",
+      "composition_group": 39,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000428",
+      "composition_group": 91,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000429",
+      "composition_group": 92,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000430",
+      "composition_group": 10,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000431",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000432",
+      "composition_group": 37,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000433",
+      "composition_group": 93,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000434",
+      "composition_group": 0,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000435",
+      "composition_group": 1,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000436",
+      "composition_group": 2,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000438",
+      "composition_group": 94,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000439",
+      "composition_group": 95,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000440",
+      "composition_group": 96,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000441",
+      "composition_group": 97,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000442",
+      "composition_group": 98,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000443",
+      "composition_group": 99,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000444",
+      "composition_group": 100,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000446",
+      "composition_group": 10,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000447",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000448",
+      "composition_group": 37,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000449",
+      "composition_group": 12,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000450",
+      "composition_group": 12,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000494",
+      "composition_group": 10,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000495",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000496",
+      "composition_group": 37,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000499",
+      "composition_group": 11,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000504",
+      "composition_group": 83,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000505",
+      "composition_group": 83,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000506",
+      "composition_group": 83,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000507",
+      "composition_group": 83,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000508",
+      "composition_group": 83,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000509",
+      "composition_group": 83,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000510",
+      "composition_group": 83,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000511",
+      "composition_group": 12,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000537",
+      "composition_group": 101,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000538",
+      "composition_group": 101,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000539",
+      "composition_group": 101,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000540",
+      "composition_group": 101,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000541",
+      "composition_group": 101,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000544",
+      "composition_group": 82,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000550",
+      "composition_group": 102,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000551",
+      "composition_group": 102,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000552",
+      "composition_group": 102,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000553",
+      "composition_group": 102,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000554",
+      "composition_group": 102,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000568",
+      "composition_group": 103,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000569",
+      "composition_group": 104,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000570",
+      "composition_group": 105,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000571",
+      "composition_group": 106,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000578",
+      "composition_group": 107,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000579",
+      "composition_group": 108,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000580",
+      "composition_group": 109,
+      "outer_fold": 3
+    },
+    {
+      "row_id": "mpea_v1_r000581",
+      "composition_group": 110,
+      "outer_fold": 2
+    },
+    {
+      "row_id": "mpea_v1_r000582",
+      "composition_group": 90,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000583",
+      "composition_group": 111,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000584",
+      "composition_group": 111,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000585",
+      "composition_group": 111,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000586",
+      "composition_group": 111,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000587",
+      "composition_group": 111,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000588",
+      "composition_group": 111,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000589",
+      "composition_group": 111,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000590",
+      "composition_group": 111,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000601",
+      "composition_group": 112,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000602",
+      "composition_group": 113,
+      "outer_fold": 1
+    },
+    {
+      "row_id": "mpea_v1_r000603",
+      "composition_group": 111,
+      "outer_fold": 5
+    },
+    {
+      "row_id": "mpea_v1_r000604",
+      "composition_group": 114,
+      "outer_fold": 4
+    },
+    {
+      "row_id": "mpea_v1_r000605",
+      "composition_group": 115,
+      "outer_fold": 4
+    }
+  ]
+}

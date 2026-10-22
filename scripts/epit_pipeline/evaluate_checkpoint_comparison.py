@@ -47,6 +47,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--n-estimators", type=int, default=8)
+    parser.add_argument("--checkpoint-step-interval", type=int, default=500)
     parser.add_argument("--trial-run", type=Path, default=DEFAULT_TRIAL_RUN)
     parser.add_argument("--generic-run", type=Path, default=DEFAULT_GENERIC_RUN)
     parser.add_argument(
@@ -85,7 +86,7 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
         "--min-checkpoint-step",
         "0",
         "--checkpoint-step-interval",
-        "0",
+        str(args.checkpoint_step_interval),
         "--task",
         PITTING_TASK_ID,
         "--epit-split-manifest",

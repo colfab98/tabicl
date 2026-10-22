@@ -1,0 +1,197 @@
+{
+  "scope": "Composition-only audit of the existing CSV against DATASET_PROCESSING.md; no data, split, or model changes",
+  "threshold_wt_percent": 90,
+  "source_numeric_preservation": {
+    "EPIT": {
+      "numeric_cells": 14539,
+      "reported_zero_cells": 10155,
+      "numeric_mismatches": 0
+    },
+    "Soccol": {
+      "numeric_cells": 24479,
+      "reported_zero_cells": 186,
+      "numeric_mismatches": 0,
+      "corrected_erroneous_Ti_cells": 11
+    }
+  },
+  "epit_original_missing_cells": 3685,
+  "epit_structural_zero_cells_filled": 3668,
+  "epit_structural_zero_rows": 733,
+  "epit_limit_values_lost_on_export": [
+    {
+      "row_id": "epit_r000105",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000106",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000107",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000108",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000109",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000110",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000111",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000112",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000113",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000114",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000115",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000116",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000117",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000118",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000119",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    },
+    {
+      "row_id": "epit_r000120",
+      "element": "S",
+      "original_value": "<0.003",
+      "shared_value": "NaN",
+      "existing_epit_parser_numeric_value": 0.003
+    }
+  ],
+  "soccol_fe_basis_counts": {
+    "approximate_100_minus_zero-filled_reported_elements": 3771,
+    "not_reconstructed_when_major_composition_is_unreported": 182,
+    "explicit_Ni_Cr_Mo_ternary_sums_to_100": 51,
+    "explicit_20Cr80Ni_binary_sums_to_100": 10,
+    "approximate_known_grade_remainder": 6,
+    "not_reconstructed_for_G3_with_omitted_elements": 6,
+    "not_reconstructed_for_source-ambiguous_high-Ni_row": 1
+  },
+  "datasets": {
+    "EPIT": {
+      "rows": 760,
+      "rows_with_composition_nan": 19,
+      "composition_nan_cells": 33,
+      "all_missing_composition_rows": 0,
+      "all_missing_element_columns": [],
+      "known_total_below_90_rows": 0,
+      "known_total_min": 99.5,
+      "known_total_max": 100.52000000000001,
+      "total_within_100_plus_minus_0_1": 757,
+      "total_within_100_plus_minus_1": 760,
+      "negative_cells": 0,
+      "above_100_cells": 0
+    },
+    "Soccol": {
+      "rows": 4027,
+      "rows_with_composition_nan": 4027,
+      "composition_nan_cells": 68331,
+      "all_missing_composition_rows": 95,
+      "all_missing_element_columns": [
+        "B",
+        "Mg",
+        "Al",
+        "Co",
+        "Cu",
+        "Y",
+        "Ce",
+        "Gd",
+        "Ta",
+        "W",
+        "Re"
+      ],
+      "known_total_below_90_rows": 94,
+      "known_total_min": 0.01,
+      "known_total_max": 100.000000000038,
+      "total_within_100_plus_minus_0_1": 3838,
+      "total_within_100_plus_minus_1": 3838,
+      "negative_cells": 0,
+      "above_100_cells": 0
+    }
+  },
+  "input_sha256": {
+    "corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/epit_soccol_context.csv": "3ac7fa8730bba6084ad8f81e05c216601c724641bb1c861b701d07ae1fec247e",
+    "corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/shared_feature_registry.json": "8181a068616112011c709d77ee04e3bdd54aa7bce5f0a698d9171c3976e2aed7",
+    "corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_regression_event1.csv": "280f8ff3f89c5d47b22f46a483b9a67eb612a9cbbe0a3394685a0e3da3a0200c",
+    "corrosion_datasets/analysis/soccol_source_conventions/source_conventions.csv": "4de749294c24c9a5e442c23adcd660fe0cf9e5667e1c29c86a62c2ecff5298cb",
+    "corrosion_datasets/DATASET_PROCESSING.md": "69cf6231e518d22be6e0f7867da869d57c45bef33d5fba312ddfdb4f0965b31c",
+    "corrosion_datasets/datasets/soccol_pitting_potential/raw/Pitting_potential_dataset_2024.xlsx": "cb255c5a94d90bd207248f6e25727f965d587c29a73b2ffcef6b8c0ced6da1da",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/raw/CRA_database_Scientific_Data_Publication_12102020.xlsx": "d0ce5e9c4b42e0b5a20dbd5c4896791703c5f433ae19bc032674d5848d9d1438",
+    "corrosion_datasets/datasets/combined_epit_soccol_mpea/prepare_shared_tables.py": "219e424a7604fbd31b052cdda2928c8319815330edb55734919379f4771e86fe",
+    "scripts/epit_pipeline/split_data.py": "13192c5142fa320d44479119c20833b6b5ef4fa25660cea0aca4304edeb0b1d7",
+    "corrosion_datasets/datasets/soccol_pitting_potential/prepare_benchmark.py": "822be9f672b031f8e85529919c1e6b72beac3b6acc982ee1b2359137afaf070d"
+  }
+}

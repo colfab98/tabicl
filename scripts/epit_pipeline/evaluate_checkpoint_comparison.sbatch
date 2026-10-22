@@ -29,7 +29,7 @@ python scripts/eval_corrosion_datasets.py \
     --checkpoint-root "$CHECKPOINT_ROOT" \
     --run-prefix "/" \
     --min-checkpoint-step 0 \
-    --checkpoint-step-interval 0 \
+    --checkpoint-step-interval "${CHECKPOINT_STEP_INTERVAL:-500}" \
     --include-latest-common-checkpoint \
     --task electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg \
     --target-mode primary \

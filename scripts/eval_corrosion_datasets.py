@@ -284,7 +284,7 @@ class CachedTabICLModel:
     model_config: dict[str, Any]
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--run",
@@ -304,7 +304,8 @@ def parse_args() -> argparse.Namespace:
         default="latest",
         help=(
             "Checkpoint name/step inside the run dir: latest, 3350, step-3350, "
-            "step-3350.ckpt, or all for the step checkpoints common to all --run values."
+            "step-3350.ckpt, or all for every available step across --run values. "
+            "At each step, evaluate only models with a saved checkpoint."
         ),
     )
     parser.add_argument(
@@ -316,27 +317,27 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--checkpoint-step-interval",
         type=int,
-        default=1000,
+        default=500,
         help=(
-            "Only include common checkpoints whose step is divisible by this interval "
-            "when --checkpoint all is used. Use 0 to include every common checkpoint."
+            "Only include checkpoints whose step is divisible by this interval (default: 500) "
+            "when --checkpoint all is used. Use 0 to include every available checkpoint."
         ),
     )
     parser.add_argument(
-        "--include-latest-common-checkpoint",
+        "--include-latest-checkpoint", "--include-latest-common-checkpoint",
         dest="include_latest_common_checkpoint",
         action="store_true",
         default=True,
         help=(
-            "When --checkpoint all is interval-filtered, also include the latest common checkpoint "
-            "even if it is not on the interval."
+            "When --checkpoint all is interval-filtered, also include each run's latest checkpoint "
+            "at or above the minimum step, even if it is not on the interval."
         ),
     )
     parser.add_argument(
-        "--no-include-latest-common-checkpoint",
+        "--no-include-latest-checkpoint", "--no-include-latest-common-checkpoint",
         dest="include_latest_common_checkpoint",
         action="store_false",
-        help="Do not add the latest common checkpoint outside the interval-filtered set.",
+        help="Do not add each run's latest checkpoint outside the interval-filtered set.",
     )
     parser.add_argument(
         "--local-ckpt-path",
@@ -662,7 +663,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--print-json-lines", action="store_true", help="Print each result/error row as JSONL while running.")
     parser.add_argument("--list-tasks", action="store_true", help="List generated tasks and exit before loading any model.")
-    return parser.parse_args([arg for arg in sys.argv[1:] if arg != ""])
+    return parser.parse_args([arg for arg in (sys.argv[1:] if argv is None else argv) if arg != ""])
 
 
 def validate_args(args: argparse.Namespace) -> None:
@@ -850,6 +851,26 @@ def available_step_checkpoints(run: str, args: argparse.Namespace) -> dict[int, 
     return checkpoints
 
 
+def select_available_checkpoint_steps(
+    by_run: dict[str, dict[int, Path]],
+    *,
+    min_step: int,
+    step_interval: int,
+    include_latest: bool = True,
+) -> list[int]:
+    """Select the union of saved steps, retaining each run's endpoint when requested."""
+    selected: set[int] = set()
+    for checkpoints in by_run.values():
+        eligible = [step for step in checkpoints if step >= min_step]
+        selected.update(
+            step for step in eligible
+            if step_interval == 0 or step % step_interval == 0
+        )
+        if include_latest and eligible:
+            selected.add(max(eligible))
+    return sorted(selected)
+
+
 def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEvalSpec]:
     if args.checkpoint != "all":
         runs = expand_runs(args)
@@ -890,22 +911,13 @@ def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEv
         )
 
     by_run = {run: available_step_checkpoints(run, args) for run in runs}
-    all_common_steps = sorted(
-        step
-        for step in set.intersection(*(set(paths) for paths in by_run.values()))
-        if step >= args.min_checkpoint_step
+    selected_steps = select_available_checkpoint_steps(
+        by_run,
+        min_step=args.min_checkpoint_step,
+        step_interval=args.checkpoint_step_interval,
+        include_latest=args.include_latest_common_checkpoint,
     )
-    common_steps = [
-        step
-        for step in all_common_steps
-        if args.checkpoint_step_interval == 0 or step % args.checkpoint_step_interval == 0
-    ]
-    if args.include_latest_common_checkpoint and all_common_steps:
-        latest_common_step = all_common_steps[-1]
-        if latest_common_step not in common_steps:
-            common_steps.append(latest_common_step)
-            common_steps.sort()
-    if not common_steps:
+    if not selected_steps:
         run_list = ", ".join(runs)
         interval_note = (
             "any interval"
@@ -913,14 +925,16 @@ def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEv
             else f"interval {args.checkpoint_step_interval}"
         )
         raise FileNotFoundError(
-            f"No common step-*.ckpt checkpoints found across runs at or after "
+            f"No step-*.ckpt checkpoints found across runs at or after "
             f"step {args.min_checkpoint_step} with {interval_note}: {run_list}"
         )
 
     specs: list[CheckpointEvalSpec] = []
-    for step in common_steps:
+    for step in selected_steps:
         local_specs: list[LocalModelSpec] = []
         for index, run in enumerate(runs):
+            if step not in by_run[run]:
+                continue
             label = labels[index] if labels else short_run_label(run, args.run_prefix)
             local_specs.append(LocalModelSpec(label=slugify(label), checkpoint_path=by_run[run][step]))
         specs.append(
@@ -4325,7 +4339,18 @@ def main() -> None:
 
     checkpoint_specs = resolve_checkpoint_eval_specs(args)
     first_local_specs = checkpoint_specs[0].local_specs
-    local_model_labels = {spec.label for spec in first_local_specs}
+    representative_local_specs = {
+        spec.label: spec for checkpoint in checkpoint_specs for spec in checkpoint.local_specs
+    }
+    local_model_labels = set(representative_local_specs)
+    if args.checkpoint == "all":
+        # A requested run may start later or be entirely excluded by the step filters.
+        local_model_labels.update(
+            slugify(label) for label in (
+                args.local_model_label
+                or [short_run_label(run, args.run_prefix) for run in expand_runs(args)]
+            )
+        )
     validate_fixed_schema_model_labels(args, local_model_labels)
     validate_missing_aware_model_labels(args, local_model_labels)
     available_model_labels = set(local_model_labels)
@@ -4343,8 +4368,9 @@ def main() -> None:
     if args.checkpoint == "all":
         steps = [spec.checkpoint_step for spec in checkpoint_specs if spec.checkpoint_step is not None]
         print(
-            f"Evaluating {len(checkpoint_specs)} common checkpoints "
-            f"({min(steps)}-{max(steps)} steps) across {len(first_local_specs)} local models."
+            f"Evaluating {len(checkpoint_specs)} available checkpoint steps "
+            f"({min(steps)}-{max(steps)} steps) across {len(representative_local_specs)} local models; "
+            "models without a checkpoint at a step are skipped."
         )
 
     rows: list[dict[str, Any]] = []
@@ -4682,8 +4708,8 @@ def main() -> None:
             pretrained_tabicl_reuse_ready = True
 
     output_json, output_csv, output_wide_csv, output_summary_csv = default_output_paths(
-        first_local_specs,
-        checkpoint_part="all_common_checkpoints" if args.checkpoint == "all" else None,
+        list(representative_local_specs.values()),
+        checkpoint_part="all_available_checkpoints" if args.checkpoint == "all" else None,
         stage_tag=infer_stage_tag(args),
     )
     if args.output_json is not None:

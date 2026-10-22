@@ -17,7 +17,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.multiprocessing import set_start_method
 from torch.nn.parallel import DistributedDataParallel as DDP
-from torch.distributed import init_process_group, destroy_process_group
+from torch.distributed import init_process_group, destroy_process_group, all_gather_object
 
 from tqdm import tqdm
 import wandb
@@ -29,6 +29,7 @@ from tabicl.prior.genload import LoadPriorDataset
 from tabicl.prior.prior_config import DEFAULT_FIXED_HP
 from tabicl.train.missingness import MissingnessAugmenter
 from tabicl.train.optim import get_scheduler
+from tabicl.train.sampling import CheckpointablePriorLoader, rng_state_dict, load_rng_state_dict
 from tabicl.train.train_config import build_parser
 
 warnings.filterwarnings(
@@ -507,7 +508,10 @@ class Trainer:
             dataloader_kwargs["prefetch_factor"] = self.config.dataloader_prefetch_factor
 
         # Create dataloader for efficient loading and prefetching
-        self.dataloader = DataLoader(**dataloader_kwargs)
+        if isinstance(dataset, CombinedCorrosionPriorDataset) and self.config.prior_device == "cpu":
+            self.dataloader = CheckpointablePriorLoader(**dataloader_kwargs)
+        else:
+            self.dataloader = DataLoader(**dataloader_kwargs)
 
     def configure_missingness(self):
         """Configure empirical feature masking for missing-aware training."""
@@ -612,6 +616,8 @@ class Trainer:
         checkpoint_path = None
         if hasattr(self.config, "checkpoint_path") and self.config.checkpoint_path:
             checkpoint_path = self.config.checkpoint_path
+            if not os.path.isfile(checkpoint_path):
+                raise FileNotFoundError(f"Explicit checkpoint does not exist: {checkpoint_path}")
         elif hasattr(self.config, "checkpoint_dir") and self.config.checkpoint_dir:
             checkpoint_path = self.get_latest_checkpoint()
 
@@ -620,7 +626,9 @@ class Trainer:
             return
 
         print(f"Loading checkpoint from {checkpoint_path}")
-        checkpoint = torch.load(checkpoint_path, map_location=self.config.device, weights_only=True)
+        # Keep sampling metadata on CPU, including states sent to prior workers.
+        # Model/optimizer load_state_dict move their tensors to the model device.
+        checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
 
         # Load model state
         if "state_dict" not in checkpoint:
@@ -635,9 +643,30 @@ class Trainer:
             self.optimizer.load_state_dict(checkpoint["optimizer_state"])
             self.scheduler.load_state_dict(checkpoint["scheduler_state"])
             self.curr_step = checkpoint["curr_step"]
+            if "scaler_state" in checkpoint:
+                self.scaler.load_state_dict(checkpoint["scaler_state"])
+            sampling = checkpoint.get("sampling_state")
+            if sampling is not None:
+                if sampling["version"] != 1 or len(sampling["ranks"]) != self.ddp_world_size:
+                    raise ValueError("Sampling restore requires the saved format and distributed world size.")
+                state = sampling["ranks"][self.ddp_rank]
+                if state["loader"] is not None:
+                    if not isinstance(self.dataloader, CheckpointablePriorLoader):
+                        raise ValueError("Saved prior stream requires a checkpointable CPU prior loader.")
+                    self.dataloader.load_state_dict(state["loader"])
+                load_rng_state_dict(state["rng"])
+            elif self.master_process:
+                warnings.warn("Checkpoint has no sampling state; the old synthetic stream cannot be recovered.")
             print(f"Resuming training at step {self.curr_step}")
 
-    def save_checkpoint(self, name: str):
+    def sampling_state_dict(self):
+        return {
+            "rng": rng_state_dict(include_cuda="cuda" in self.config.device),
+            "loader": self.dataloader.state_dict()
+            if isinstance(self.dataloader, CheckpointablePriorLoader) else None,
+        }
+
+    def save_checkpoint(self, name: str, sampling_states=None):
         """Save model and training state to checkpoint file.
 
         Parameters
@@ -646,6 +675,10 @@ class Trainer:
             Filename for the checkpoint
         """
 
+        if sampling_states is None:
+            if self.ddp_world_size != 1:
+                raise ValueError("Distributed checkpoints require sampling states from every rank.")
+            sampling_states = [self.sampling_state_dict()]
         os.makedirs(self.config.checkpoint_dir, exist_ok=True)
         checkpoint_path = os.path.join(self.config.checkpoint_dir, name)
         checkpoint = {
@@ -659,6 +692,8 @@ class Trainer:
             "state_dict": self.raw_model.state_dict(),
             "optimizer_state": self.optimizer.state_dict(),
             "scheduler_state": self.scheduler.state_dict(),
+            "scaler_state": self.scaler.state_dict(),
+            "sampling_state": {"version": 1, "ranks": sampling_states},
             "curr_step": self.curr_step,
         }
         torch.save(checkpoint, checkpoint_path)
@@ -722,6 +757,14 @@ class Trainer:
             torch.cuda.empty_cache()
 
             self.curr_step = step + 1
+            is_temp_save = self.curr_step % self.config.save_temp_every == 0
+            is_perm_save = self.curr_step % self.config.save_perm_every == 0
+            if is_temp_save or is_perm_save:
+                local_sampling = self.sampling_state_dict()
+                sampling_states = [local_sampling]
+                if self.ddp_world_size > 1:
+                    sampling_states = [None] * self.ddp_world_size
+                    all_gather_object(sampling_states, local_sampling)
             if self.master_process:
                 # Add timing information to results
                 results.update({"prior_time": prior_time, "train_time": train_time})
@@ -730,12 +773,9 @@ class Trainer:
                 step_progress.set_postfix(**{k: round(v, 3) if isinstance(v, float) else v for k, v in results.items()})
 
                 # Save checkpoints
-                is_temp_save = self.curr_step % self.config.save_temp_every == 0
-                is_perm_save = self.curr_step % self.config.save_perm_every == 0
-
                 if is_temp_save or is_perm_save:
                     ckpt_name = f"step-{self.curr_step}.ckpt"
-                    self.save_checkpoint(name=ckpt_name)
+                    self.save_checkpoint(name=ckpt_name, sampling_states=sampling_states)
 
                     # Manage checkpoint limit only for temporary checkpoints
                     if is_temp_save and not is_perm_save and self.config.max_checkpoints > 0:

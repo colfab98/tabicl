@@ -1,0 +1,13 @@
+model,checkpoint,case,context_rows,query_rows,features,spearman,rmse,elapsed_seconds
+combined_v2_1000,/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_v2_seed42/step-1000.ckpt,original,4787,267,50,0.22375575776709555,769.6931454653206,5.9940274599939585
+combined_v2_1000,/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_v2_seed42/step-1000.ckpt,context_composition_filled,4787,267,50,0.29819166159937194,729.1642035835663,5.60973390401341
+combined_v2_1000,/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_v2_seed42/step-1000.ckpt,query_composition_filled,4787,267,50,0.24762612436581685,767.6636627103521,5.648079941049218
+combined_v2_1000,/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_v2_seed42/step-1000.ckpt,both_composition_filled,4787,267,50,0.304941994182153,733.0017287608124,6.003813899937086
+soccol_shared_1000,/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/soccol_shared_v2_seed42/step-1000.ckpt,original,4787,267,50,0.5699892674042368,585.4596999117899,5.883970802999102
+soccol_shared_1000,/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/soccol_shared_v2_seed42/step-1000.ckpt,context_composition_filled,4787,267,50,0.5732359475203047,600.7650264876346,5.707215207046829
+soccol_shared_1000,/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/soccol_shared_v2_seed42/step-1000.ckpt,query_composition_filled,4787,267,50,0.5762940761447334,580.7100907991486,6.244712574058212
+soccol_shared_1000,/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/soccol_shared_v2_seed42/step-1000.ckpt,both_composition_filled,4787,267,50,0.5404970394410901,599.1152419868072,6.531647798023187
+combined_v2_3000,/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_v2_seed42/step-3000.ckpt,original,4787,267,50,0.25578365645894174,688.535810075982,6.0893967560259625
+combined_v2_3000,/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_v2_seed42/step-3000.ckpt,context_composition_filled,4787,267,50,0.3614982978724713,672.6109358164911,6.21552901994437
+combined_v2_3000,/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_v2_seed42/step-3000.ckpt,query_composition_filled,4787,267,50,0.22135440632842676,657.9861714835032,6.299374233931303
+combined_v2_3000,/home/fcolanto/projects/tabicl/checkpoints/combined_epit_soccol_mpea/final_v2_seed42/step-3000.ckpt,both_composition_filled,4787,267,50,0.3555841501656552,642.728078906148,6.567606714903377

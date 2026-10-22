@@ -1,0 +1,1218 @@
+ARTICLE | Article in Press
+Scientific Reports https://doi.org/10.1038/s41598-026-75356-9
+Scientific Reports
+This Article in Press is shared early to give you faster access to new research. It is citable and carries a permanent DOI. 
+The final edited version will replace it automatically.
+Data-driven insights into stainless steel pitting 
+corrosion through large-scale literature mining and 
+database construction
+Zhen Huang · Jinyan Duan · Yupeng Liu · Changgang Wang
+Received: 10 July 2026 / Accepted: 6 October 2026
+© The Author(s) 2026
+Abstract
+Pitting corrosion is one of the most prevalent and detrimental forms of localized corrosion in stainless steels 
+exposed to chloride-containing environments. Its initiation and propagation are governed by the combined 
+effects of alloy composition, environmental conditions, and experimental parameters. Although a substantial 
+body of experimental data has been accumulated through decades of research, these data remain largely dis -
+persed across the scientific literature, limiting their accessibility for large-scale statistical analyses and data-
+driven investigations. To address this challenge, this study proposes a large language model (LLM)-based 
+framework for structured data extraction and database construction from scientific literature. By decomposing 
+the complex information extraction process into multiple subtasks, including experimental condition extraction, 
+pitting potential extraction, and data alignment, the framework enables the automated acquisition and inte -
+gration of experimental data from unstructured scientific documents. Using the proposed framework, 12,792 
+candidate publications retrieved using a broad stainless-steel pitting corrosion search strategy were processed, 
+resulting in a structured extraction output containing 36,095 experimental records. The database encompasses 
+key information, including alloy compositions, environmental parameters, and pitting potentials. Stainless-
+steel-specific descriptive and statistical analyses were subsequently conducted using material-screened subsets 
+of the extracted records. Data quality evaluation demonstrates that the proposed framework achieves strong 
+aggregate performance in structured information extraction from complex scientific texts, while stage-specific 
+validation indicates that pitting-potential extraction and normalization remain more challenging than the over -
+all field-level extraction task. Statistical analysis of the resulting database reveals that existing studies are 
+predominantly focused on room-temperature, neutral chloride environments, as well as austenitic and duplex 
+stainless steel systems. Furthermore, partial correlation analysis revealed conditional associations between the 
+investigated variables and pitting potential. Among these variables, molybdenum exhibited the strongest posi -
+tive conditional association, whereas temperature showed a negative conditional association. Chloride ion con -
+centration showed only a weak negative association. These trends were generally consistent with established 
+corrosion knowledge and therefore provided a scientific plausibility check for the statistical patterns observed 
+in the constructed database. This work highlights the potential of large language models for knowledge extrac -
+tion and automated database construction from corrosion-related scientific literature. The proposed framework 
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+provides a reusable data resource and technical pathway for corrosion informatics research, while establishing 
+a foundation for future data-driven studies on corrosion mechanism discovery, performance prediction, and 
+materials design.
+Keywords Stainless steel · Pitting corrosion · Large language models · Scientific literature mining · 
+Corrosion informatics · Structured database construction
+Introduction
+Stainless steels are widely utilized in critical sectors, including marine engineering, energy infrastructure, chemi-
+cal processing facilities, transportation systems, and nuclear power plants, owing to their excellent mechanical 
+properties, manufacturability, and corrosion resistance 1–3. In chloride-containing environments, a passive film 
+formed on the stainless steel surface effectively isolates the metallic substrate from corrosive media, thereby 
+providing the material with superior corrosion resistance. However, when the passive film is locally disrupted 
+by chloride ion attack, highly localized corrosion pits may initiate on the material surface. These pits can sub -
+sequently promote the development of more severe degradation processes, such as crevice corrosion, stress 
+corrosion cracking, and corrosion fatigue 4–6. Due to its concealed nature, rapid propagation, and potentially 
+catastrophic consequences, pitting corrosion is widely regarded as one of the most detrimental forms of localized 
+corrosion affecting stainless steels during service7,8.
+Numerous studies have demonstrated that the pitting corrosion behavior of stainless steels is governed by the 
+combined effects of alloy composition, microstructural characteristics, and environmental conditions. Among 
+these factors, alloying elements such as chromium (Cr), molybdenum (Mo), and nitrogen (N) are widely rec -
+ognized as key contributors to enhanced pitting corrosion resistance and form the basis of the classical Pitting 
+Resistance Equivalent Number (PREN) model 9–11. Meanwhile, environmental parameters, including tempera -
+ture, chloride ion concentration, pH, scan rate, and electrolyte composition, have also been shown to significantly 
+influence passive film stability and localized corrosion processes 12–14. For example, increasing temperature 
+generally reduces passive film stability and increases susceptibility to pitting corrosion, whereas elevated chlo -
+ride ion concentrations accelerate localized passive film breakdown and promote pit initiation 15–17. Although 
+extensive experimental investigations have been conducted on individual stainless steel grades or under specific 
+environmental conditions, substantial variations in experimental conditions, testing methodologies, and material 
+systems often limit the consistency and comparability of reported findings. Consequently, extracting generaliz -
+able trends from the vast body of dispersed literature data and establishing a statistical understanding that spans 
+different material systems and environmental conditions have become important research objectives in the field 
+of corrosion science.
+In recent years, the rapid development of Materials Informatics has provided new opportunities for investigat-
+ing complex material behaviors18,19. By leveraging high-throughput computation, big data analytics, and machine 
+learning techniques, researchers can uncover underlying patterns from large volumes of experimental and com -
+putational data, thereby enabling materials property prediction and design optimization 20. However, compared 
+with fields such as battery materials, catalytic materials, and structural materials, the corrosion domain remains 
+relatively data-deficient. This limitation primarily arises from the fact that corrosion-related experimental data are 
+highly fragmented across the scientific literature, with a substantial proportion of critical information embedded 
+in textual descriptions, tables, and figures. As a result, such information cannot be readily transformed into struc-
+tured datasets suitable for statistical analysis and machine learning applications. This data acquisition bottleneck 
+has significantly hindered the development of Corrosion Informatics.
+The advancement of Natural Language Processing (NLP) technologies has provided new opportunities for the 
+automated extraction of information from scientific literature. Traditional approaches typically rely on keyword 
+matching, rule-based extraction, or supervised learning models to perform data extraction tasks. However, these 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+methods often exhibit limited performance when dealing with complex table parsing, multi-variable relationship 
+identification, and cross-paragraph information integration 21. In recent years, Large Language Models (LLMs), 
+exemplified by the GPT series, have demonstrated remarkable capabilities in text comprehension, information 
+extraction, and complex reasoning tasks 22–24. Through their ability to capture and interpret contextual seman -
+tics, LLMs can automatically identify critical information from unstructured scientific documents, including 
+experimental conditions, material compositions, and performance metrics, thereby substantially reducing the cost 
+and effort associated with database construction 25–29. At the same time, considerable research efforts have been 
+devoted to addressing challenges associated with LLMs, including hallucinations, information loss in long-con -
+text processing, and the stability of structured outputs. Various optimization strategies and constraint mechanisms 
+have been proposed to mitigate these issues 30–32, thereby providing a more reliable technical foundation for the 
+automated extraction of scientific data.
+Although LLMs have demonstrated considerable potential in fields such as biomedicine, chemistry, and materi-
+als science, their application in corrosion science remains at an early stage. To date, most studies on stainless steel 
+pitting corrosion have been conducted as individual experimental investigations, with relatively limited efforts 
+devoted to large-scale analyses based on literature-derived datasets. In particular, current understanding of the 
+relationships among alloy composition, environmental conditions, and pitting potential is largely derived from 
+limited experimental datasets and empirical models, while comprehensive statistical validation across multiple 
+studies, stainless steel grades, and environmental conditions remains lacking. Furthermore, substantial variations 
+in experimental methodologies, testing conditions, and data reporting practices exist among different studies, 
+making traditional manual data curation approaches inadequate for large-scale database construction. Therefore, 
+the development of a high-quality database for stainless steel pitting corrosion, together with systematic statisti-
+cal analyses based on such a database, is important for advancing data-driven corrosion research.
+Motivated by these challenges, this study proposes an LLM-assisted data extraction framework for corrosion 
+science literature. By combining task decomposition with a structured output strategy, the framework enables 
+the automated extraction and integration of pitting-corrosion-related information from a broad literature corpus. 
+Using the proposed framework, 12,792 candidate publications retrieved using a broad stainless-steel pitting cor-
+rosion search strategy were processed, resulting in a large-scale structured extraction output containing 36,095 
+experimental records. Material-screened subsets were subsequently used for stainless-steel-specific descriptive 
+and statistical analyses. The database encompasses key variables, including alloy compositions, experimental 
+environmental parameters, and pitting potentials. Building upon this database, data quality assessment, statisti -
+cal profiling, and partial correlation analysis were further performed to systematically investigate the conditional 
+associations between alloy composition, environmental factors, and pitting potential. The present work not only 
+provides a reusable data resource and technical framework for corrosion informatics research but also dem -
+onstrates a practical application of Large Language Models for knowledge extraction from materials science 
+literature.
+Method
+In this study, a prompt-based Large Language Model (LLM) framework was employed to extract structured 
+experimental data from scientific literature (Fig. 1). Unlike conventional approaches that require training task-
+specific natural language processing models, the proposed framework leverages carefully designed prompts to 
+guide the LLM during the information extraction process. These prompts explicitly define the extraction objec -
+tives, data schema, and output constraints. By incorporating domain-specific instructions into the prompts, the 
+model is able to interpret the content of scientific publications and transform unstructured experimental descrip-
+tions into structured records.
+Prompting strategies can generally be categorized into three types:
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+(1) Zero-shot prompting33,34, in which only task instructions are provided in the prompt, without any example 
+inputs or outputs;
+(2) Few-shot prompting 35, in which several task-specific examples are included in the prompt to guide the 
+model toward generating more consistent and standardized outputs;
+(3) Chain-of-thought prompting 36, which encourages the model to perform intermediate reasoning based on 
+the input before generating the final response, thereby improving its ability to satisfy complex task requirements.
+In the present study, a zero-shot prompting strategy was adopted. As illustrated in Fig. 2, the designed prompt 
+consists of three main components:
+(1) Task instructions, which define the objectives of the information extraction task;
+(2) Rule constraints, which specify the conditions and restrictions governing the extraction process;
+(3) Output format specifications, which constrain the model to generate structured outputs suitable for subse -
+quent automated processing.
+LLMs rely on attention mechanisms to dynamically focus on relevant portions of the input text. However, 
+when processing lengthy scientific documents containing diverse types of information, the model’s attention 
+may become dispersed across irrelevant content, thereby adversely affecting the accuracy of information extrac-
+tion37,38. The fundamental principle of the attention mechanism can be expressed as follows:
+ 
+ (1)
+where Q, K, and V denote the query, key, and value matrices, respectively; 𝐾𝐾𝑇𝑇 represents the transpose of the key 
+matrix; and 𝑑𝑑𝑘𝑘 denotes the dimensionality of the key vectors. The softmax function normalizes the scaled query–
+key similarity scores into attention weights.
+To mitigate this issue, the information extraction process was decomposed into multiple subtasks rather than 
+attempting to extract all information through a single prompt. The overall workflow consists of four major stages:
+(1) Document preparation and preprocessing;
+(2) Prompt-based extraction of experimental conditions;
+Fig. 1 Architecture of the prompt-based scientific information extraction framework.
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+(3) Pitting potential extraction;
+(4) Data alignment and structured database construction.
+This task decomposition strategy helps direct the model’s attention toward information that is most relevant to 
+the current task, thereby improving the reliability and stability of the extraction results. Furthermore, decompos-
+ing the overall workflow into smaller subtasks effectively reduces the number of output tokens generated in each 
+model invocation, thereby alleviating issues associated with token limitations and incomplete responses39,40.
+Considering that this study involves large-scale automated information extraction from more than 12,000 
+corrosion-related publications, the LLM configuration was selected by jointly considering scientific literature 
+comprehension, structured information extraction capability, extraction accuracy, reliability, inference efficiency, 
+and deployment cost. To quantitatively evaluate the model selection, a comparative benchmark was conducted 
+using five model configurations: GPT-3.5, Gemini Flash, DeepSeek-v3.2, Qwen-Max, and the proposed Deep -
+Seek-v3.2–Qwen-Max hybrid configuration.
+To ensure a fair comparison, all model configurations were evaluated using the same preprocessing proce -
+dure, task-decomposition workflow, prompt instructions, output schema, and a representative validation subset 
+of 100 publications. Model performance was assessed in terms of precision, recall, F1 score, hallucination rate, 
+valid-JSON output rate, processing failure rate, average processing time, and approximate processing cost. Con-
+dition–result correspondence was additionally examined as part of the record-level correctness assessment. The 
+quantitative benchmark results are presented in Sect.  “Results and discussion”.
+Based on the comparative evaluation, DeepSeek-v3.2 and Qwen-Max were adopted in a task-specific hybrid 
+configuration for large-scale database construction. DeepSeek-v3.2 was employed for experimental-condition 
+extraction (Task A), whereas Qwen-Max was used for pitting-potential extraction (Task B) and condition–result 
+alignment (Task C). This task-specific allocation was designed to exploit the complementary capabilities of the 
+two models while maintaining a practical balance between extraction performance and computational cost.
+Fig. 2 Template of constraint-guided Zero-shot Prompt.
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+Document preparation and preprocessing
+The source literature corpus used in this study was retrieved from the ScienceDirect database using the keyword 
+query “stainless steel pitting corrosion”. The publication period was restricted to 2019–2026, and the document 
+type was restricted to research articles. Literature retrieval was completed on April 23, 2026. Based on these 
+search criteria, 12,792 publications were retrieved and acquired in Portable Document Format (PDF), and all 
+retrieved publications were directly included in the subsequent automated information-extraction workflow with-
+out additional manual material-level screening or deduplication.
+The literature retrieval stage was intentionally designed as a broad, high-recall search to minimize the risk of 
+excluding potentially relevant studies. Because the ScienceDirect keyword search is relevance-based rather than 
+an exact material-domain classification, the retrieved corpus could also include publications involving non-stain-
+less materials. Accordingly, the 12,792 publications represent the candidate literature corpus used for automated 
+information extraction rather than a manually verified set of stainless-steel-only publications.
+All publications included in the corpus were peer-reviewed articles published in SCI-indexed journals, pro -
+viding a baseline level of quality control for the extracted experimental data. Although journal-level impact and 
+ranking may vary, impact factors or journal rankings were not used to weight individual records because these 
+bibliometric indicators do not directly reflect the reliability of individual experimental measurements. Therefore, 
+all extracted records were treated equally in the subsequent analysis.
+To further characterize the application coverage of the literature corpus, the retrieved publications were classi-
+fied into broad application-oriented research fields based on application-related keywords identified from the title 
+and first-page textual content. As shown in Fig. 3, the corpus covers a diverse range of fields, including manufac-
+turing and surface engineering, nuclear and energy, marine and offshore applications, biomedical applications, 
+construction and infrastructure, and chemical and process industries, as well as general corrosion and materials 
+research. The uneven distribution across these fields reflects differences in research attention among applica -
+tion areas. Accordingly, the statistical trends derived from the complete corpus should be interpreted as overall 
+cross-literature patterns rather than as relationships that are necessarily equally generalizable to every specific 
+application field. The preprocessing workflow began with the parsing of PDF documents to extract experimental 
+information presented in both narrative text and tabular formats. The PyMuPDF library was employed to extract 
+page-level textual content, converting the original PDF layouts into machine-readable text sequences.
+Fig. 3 Distribution of the literature corpus across major application fields.
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+In addition to narrative text, experimental conditions in corrosion-related literature are frequently reported in 
+tabular form. Therefore, the pdfplumber library was further employed to extract table data from the PDF docu -
+ments. This tool is capable of identifying table structures and retrieving cell-level information. To facilitate subse-
+quent processing by Large Language Models (LLMs), each extracted table was converted into a linearized textual 
+representation that preserved both the column headers and the row-wise data entries. Under this representation, 
+each table row was treated as an individual experimental condition, enabling its direct mapping to a structured 
+database record.
+Subsequently, the extracted narrative text and the reconstructed table text blocks were merged into a unified 
+textual input, enabling the Large Language Model (LLM) to process heterogeneous information sources, includ-
+ing descriptive text and tabular data, in a consistent manner. This unified representation served as the input for 
+the subsequent prompt-based information extraction workflow. The overall preprocessing and data integration 
+procedure is illustrated in Fig. 4.
+Prompt-based experimental condition extraction (Task A)
+Experimental conditions were extracted using a prompt-based LLM framework. A zero-shot prompting strategy 
+was adopted, whereby the model was guided to perform information extraction solely through carefully designed 
+natural language instructions without the provision of task-specific examples. To ensure the accuracy and reli -
+ability of the extracted results, the prompts explicitly encoded the extraction objectives, schema constraints, and 
+extraction rules. The prompt design consisted of three main components: task instructions, rule constraints, and 
+output format specifications. This design enabled the LLM to perform controlled information extraction from 
+unstructured scientific texts.
+Task Instructions: In this study, the LLM was instructed to perform the information extraction task while assum-
+ing the role of a domain expert in corrosion science41. A predefined set of target fields was specified in the prompt 
+(Fig. 5), corresponding to the schema of the structured database. Each field was accompanied by an explicit defi-
+nition, and the model was instructed to extract a value only when the corresponding information was explicitly 
+Fig. 4 Document preparing 
+and preprocessing.
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+reported in the source text. This constraint ensured that all extracted data remained directly traceable to the origi-
+nal literature and minimized potential biases arising from implicit inference.
+All extracted information was mapped to a predefined set of output fields to ensure consistency across different 
+publications. In addition, an experimental condition-level extraction strategy was adopted in this study. When 
+multiple experimental conditions were reported within a single publication, such as variations in alloy com -
+position, solution chemistry, or testing parameters, the model was instructed to generate multiple independent 
+records. Each record corresponded to a distinct experimental condition, thereby preserving the one-to-one cor -
+respondence between experimental conditions and extracted data entries. The overall extraction workflow is 
+illustrated in Fig. 6.
+Rule Constraints: Model hallucination refers to the tendency of LLMs to generate information that is not explic-
+itly present in the input text but appears contextually plausible or coherent 42. In information extraction tasks, 
+hallucinations often manifest as the inference of missing numerical values or the generation of details that are not 
+explicitly reported, thereby significantly compromising the reliability of structured datasets.
+To mitigate this issue, a set of stringent rule constraints was incorporated into the prompt design43. The model was 
+explicitly instructed to extract only information that was explicitly reported in the source text and to avoid any 
+form of inference, estimation, or speculation. For parameters that were not reported in the original document, the 
+corresponding fields were omitted rather than populated with placeholder values. This constraint-based design 
+ensured that all extracted data were evidence-based and directly traceable to the source literature. Consequently, 
+the reliability, consistency, and transparency of the resulting dataset were substantially improved.
+Fig. 5 Target extraction field.
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+Output Format Specifications: The extraction output was defined as a JavaScript Object Notation (JSON) array, 
+in which each object represented an independent experimental condition. This design enabled multiple experi -
+mental settings reported within a single publication to be represented as separate structured records.
+To mitigate response truncation and incomplete outputs caused by excessive input–output token lengths, a sparse 
+output strategy was adopted. Under this strategy, each JSON object contained only those fields that were explicitly 
+reported in the source document, while fields corresponding to missing parameters were omitted. This approach 
+effectively reduced the number of output tokens and improved the robustness and consistency of the generated 
+results44.
+Subsequently, the generated JSON array was parsed into individual database records, and the extracted param-
+eters were standardized through unit normalization to ensure consistency across different data sources. Finally, all 
+processed records were integrated to construct the structured database of experimental conditions.
+Pitting potential extraction (Task B)
+In this study, the target parameter was the pitting potential (Epit). The pitting potential, also referred to as the criti-
+cal pitting potential, is a key electrochemical parameter used to evaluate the susceptibility of metals to localized 
+corrosion. It is defined as the potential at which the passive film undergoes stable breakdown, resulting in the 
+initiation of pitting corrosion. In potentiodynamic polarization tests, pitting potential is typically identified as the 
+potential corresponding to a pronounced and sustained increase in anodic current density, indicating the onset of 
+pit formation. In general, a higher pitting potential value corresponds to greater resistance to pitting corrosion. 
+Consequently, this parameter is widely used as an important indicator for comparing the corrosion performance 
+of different alloys under various environmental conditions.
+In this subtask, a high-recall candidate generation procedure was employed to identify potentially relevant 
+text segments, and the overall workflow is illustrated in Fig. 7. Candidate blocks were extracted from both nar -
+rative text and tabular data. For paragraph-level candidates, filtering was performed based on the co-occurrence 
+of corrosion-related trigger terms and potential-value patterns. For table-level candidates, relevant content was 
+identified using structural indicators (e.g., “Table X”) together with keyword-based filtering. This rule-based 
+strategy ensured that all potentially relevant regions were retained for subsequent analysis.
+Fig. 6 Experiment condition extraction process.
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+Subsequently, the filtered candidate blocks were processed using an LLM-based extraction module. The model 
+was instructed to identify and extract pitting-related potential values that were explicitly reported in the source 
+text and to return the results in a structured JSON format. To address ambiguity in terminology and reporting 
+conventions, the extracted results were categorized into two groups: epit_records, representing high-confidence 
+pitting potential values, and epit_candidates, representing potential candidates with weaker textual evidence or 
+whose interpretation depended on the surrounding context. These candidate entries were subjected to further 
+evaluation in subsequent processing stages.
+To ensure data reliability, an evidence-based information extraction strategy was adopted. Each extracted value 
+was required to be supported by a corresponding evidence text (*evidence_text*), which contained both the rel -
+evant terminology and the associated numerical value. The model was explicitly instructed to avoid any form of 
+inference, estimation, or speculation, thereby ensuring that all extracted data remained directly traceable to the 
+original literature.
+Finally, the extracted results underwent a post-processing stage for validation and standardization. This proce-
+dure included the removal of invalid entries, standardization of numerical representations and units, and identifi-
+cation of the reference electrodes associated with the reported pitting potentials, including SCE, Ag/AgCl, SHE, 
+and RHE. To improve comparability across studies, pitting-potential values were subsequently harmonized to 
+the saturated calomel electrode (SCE) scale. For records in which the reference electrode was not retained in the 
+structured extraction output, the corresponding source publications were re-examined to recover the reference-
+electrode information; these records were confirmed to have been measured versus SCE and were therefore 
+treated as SCE-referenced potentials. Potentials reported against other identifiable reference electrodes were 
+converted to the SCE scale using the corresponding reference-electrode potentials. Records for which a reliable 
+conversion could not be established were excluded from analyses requiring harmonized pitting-potential values.
+Fig. 7 Extraction process of pitting potential.
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+Data alignment and structured database construction (Task C)
+In corrosion studies, a single publication often investigates multiple experimental conditions and consequently 
+reports multiple corresponding experimental outcomes. Therefore, accurately aligning these results with their 
+associated experimental conditions is a critical step in the construction of a reliable structured database.
+Traditional approaches based on natural language processing or deep learning typically require large volumes 
+of annotated data or rely on complex feature engineering to capture the relationships between experimental con-
+ditions and experimental outcomes. In contrast, LLMs possess strong contextual understanding and reasoning 
+capabilities, enabling them to infer the associations between experimental conditions and their corresponding 
+results directly from the original text. These capabilities make LLMs particularly well suited for condition–out -
+come alignment tasks in scientific literature.
+In this study, an evidence-guided LLM-based alignment strategy was developed to associate the extracted 
+experimental condition records with their corresponding pitting potential values. The alignment framework con-
+sisted of the following components, as shown in Fig. 8:
+Alignment inputs and evidence construction
+The alignment process integrated three categories of inputs: (1). Structured experimental condition records 
+extracted in Task A; (2). Structured pitting potential records extracted in Task B; (3). Page-level textual evidence 
+retrieved from the original PDF documents.
+To reduce irrelevant contextual information and improve alignment efficiency, only pages located in the vicin-
+ity of the extracted pitting potential entries were selected as supporting evidence. This localized evidence retrieval 
+strategy helped focus the model’s attention on relevant content while controlling the input token length.
+Constraint-guided alignment using large language models
+A constraint-guided alignment strategy based on Large Language Models (LLMs) was employed in this study. 
+For each experimental condition record, the model was permitted to select at most one corresponding pitting 
+potential record from the outputs generated in Task B. If no reliable match could be established, a null value was 
+returned.
+Fig. 8 Evidence-guided LLM constrained alignment and structured database construction.
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+The alignment process was performed in an evidence-guided manner, requiring the model to rely on explicit 
+textual evidence to justify each mapping relationship. In particular, when pitting potential values were reported 
+in tabular form, the model was required to reconstruct the table structure from the flattened PDF text, identify the 
+relevant columns (e.g., pitting potential columns), and establish the mapping between sample identifiers and the 
+reported numerical values.
+When explicit identifiers, such as sample labels, were available, they were used as the primary matching crite-
+ria. In the absence of such identifiers, secondary attributes were utilized to infer the corresponding relationships, 
+including alloy composition, solution chemistry, temperature, scan rate, and heat-treatment conditions.
+To ensure the reliability of the alignment results, the model was restricted to selecting from existing pitting 
+potential records and was explicitly prohibited from generating new numerical values. When multiple candidate 
+matches existed and insufficient evidence was available to support a unique mapping, the alignment result was 
+conservatively assigned as null. This strategy effectively reduced the risk of erroneous associations and improved 
+the overall reliability of the constructed database.
+Post-processing and database integration
+The alignment outputs were generated in a structured format, including the index of the selected pitting potential 
+record and the confidence level associated with each mapping. Subsequently, the aligned pitting potential values, 
+together with their corresponding units and metadata, were merged back into the experimental condition records 
+obtained from Task A.
+Finally, all successfully aligned records were integrated to construct the complete structured database, in which 
+each record contained both the experimental condition information and its corresponding corrosion performance 
+parameter (Epit). Through this process, heterogeneous information extracted from scientific literature was trans -
+formed into a unified, machine-readable dataset.
+Validation and statistical evaluation
+To provide a more comprehensive assessment of the reliability of the proposed extraction framework, the manual 
+validation sample was expanded to 300 publications. The original 100-publication comparative benchmark con-
+stituted a subset of this expanded validation sample. Among these, 236 publications contained eligible experi -
+mental information for the stratified characterization summarized in Table 1. Each publication was manually 
+reviewed against the original article to establish the ground-truth extraction records. Because the literature corpus 
+was retrieved using keyword-based searches, not all retrieved publications necessarily contained experimental 
+records satisfying the predefined extraction criteria. Publications without eligible target data were retained as 
+negative cases during validation, for which an empty extraction was considered the correct outcome rather than 
+a processing failure. The validation set was further characterized according to experimental complexity, pitting-
+potential availability, and alloy family to assess extraction performance across heterogeneous experimental and 
+materials-science contexts.
+Validation dimension Category Number of publica-
+tions (N)
+Proportion (%) Total 
+(N)
+Experimental 
+complexity
+Single-condition 109 46.19% 236
+Multi-condition 127 53.81%
+Pitting-potential 
+availability
+With Epit 63 26.70% 236
+Without Epit 173 73.30%
+Alloy family Aluminum alloys 62 26.27% 236
+Stainless steels 98 41.53%
+Carbon/low-alloy steels 41 17.37%
+Other / Unclassified 35 14.83%
+Table 1 Composition and 
+characteristics of the manu-
+ally validated publication 
+set.
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+The material-family distribution of the eligible publications also reflects the intentionally broad retrieval strat-
+egy described in Sect.  “Document preparation and preprocessing ”. Although the search query was centered 
+on “stainless steel pitting corrosion”, material identity was not used as an inclusion criterion during the initial 
+literature retrieval. Consequently, some retrieved publications contained eligible pitting-corrosion experiments 
+involving non-stainless materials, including aluminum alloys and carbon/low-alloy steels. These publications 
+were retained in the validation sample because the validation was intended to evaluate the extraction framework 
+on the actual candidate corpus. Thus, the non-stainless publications in Table 1 represent valid extraction cases 
+rather than negative retrieval cases. Material-domain filtering was subsequently applied at the record level for 
+stainless-steel-specific downstream analyses.
+Extraction performance was evaluated at the value level using precision, recall, and F1 score. True positives 
+(TP) were defined as extracted values that correctly matched the manually established ground-truth values, false 
+positives (FP) as extracted values that were incorrect or unsupported by the source publication, and false nega -
+tives (FN) as ground-truth values that were not successfully extracted. Accordingly, precision, recall, and F1 
+score were calculated as follows:
+ 
+  (2)
+ 
+  (3)
+ 
+  (4)
+To quantify the statistical uncertainty of the performance estimates while accounting for the non-independence of 
+multiple records extracted from the same publication, 95% confidence intervals (CIs) for precision, recall, and F1 
+score were estimated using publication-level bootstrap resampling. In each bootstrap iteration, publications were 
+sampled with replacement, and all records associated with each selected publication were retained as a cluster. 
+Precision, recall, and F1 score were recalculated for each resampled dataset. The 2.5th and 97.5th percentiles of 
+the resulting bootstrap distributions were used as the lower and upper bounds of the 95% CIs.
+To provide a more diagnostic assessment of extraction reliability beyond conventional precision, recall, and F1 
+score, extraction errors were further classified into eight mutually exclusive categories according to their primary 
+error mechanism: (1) hallucinated value, (2) wrong field assignment, (3) incorrect unit, (4) incorrect reference-
+electrode representation, (5) table row or column misalignment, (6) incorrect condition–result association, (7) 
+duplicated record, and (8) missed value. Each identified error was assigned to a single category according to a 
+predefined priority-based classification scheme to avoid double counting.
+The error counts used in this diagnostic taxonomy are distinct from the value-level FP and FN events used to 
+calculate precision and recall. A single underlying extraction error may contribute to both an FP and an FN in the 
+value-level evaluation. For example, when an incorrect value is extracted in place of the corresponding ground-
+truth value, the incorrect prediction contributes an FP, while the unmatched ground-truth value contributes an 
+FN. In contrast, the same underlying error is counted only once in the diagnostic error taxonomy and is assigned 
+to a single primary error category. Consequently, the sum of FP and FN events is not expected to equal the total 
+number of errors reported in the error-attribution analysis.
+Accordingly, the “missed value” category in the diagnostic taxonomy represents omission-type errors and is 
+not numerically equivalent to the total number of FN events. FN events may also arise when a value is extracted 
+but fails to match the corresponding ground-truth value because of an incorrect extraction, representation, or 
+association (see Table 2).
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+Stage-specific performance and error attribution: To further identify the sources of errors throughout the extrac-
+tion pipeline, validation was performed at the component level. The workflow was evaluated across PDF/table 
+parsing and reconstruction, Task A experimental-condition extraction, Task B pitting-potential extraction, unit 
+and reference-electrode representation, Task C condition–result alignment, and final database construction. Com-
+ponent-specific metrics were used according to the corresponding processing function. Precision, recall, and F1 
+score were calculated for Tasks A and B and for the final structured database, whereas exact accuracy was used 
+for unit representation, pitting-potential normalization, reference-electrode representation, and condition–result 
+alignment. Because independent intermediate ground-truth outputs were not retained for PDF/table parsing, pre-
+processing errors were assessed through retrospective error attribution rather than a standalone accuracy met -
+ric. Stage-specific error attribution was conducted at the component level to characterize where errors arose or 
+became identifiable across the processing pipeline. The resulting stage-level counts represent component-level 
+error occurrences rather than unique underlying extraction errors. Because a single underlying extraction error 
+may manifest at, or be attributable to, more than one processing stage, the total number of stage-level error occur-
+rences is not expected to equal the number of unique underlying errors classified by error type in Table 7. The 
+resulting error-attribution percentages therefore describe the distribution of component-level error occurrences 
+across the pipeline and should not be interpreted as component-specific error rates, because the number of eligible 
+evaluation opportunities differed among components.
+Treatment of missing outputs: To distinguish genuine source-level missingness from extraction failure, missing 
+outputs were evaluated against the manually verified source during validation. When the corresponding informa-
+tion was not explicitly reported in the source, the missing field was treated as source not reported rather than as an 
+extraction error. When the information was explicitly reported but was not captured or was incorrectly extracted 
+by the pipeline, the case was classified as not detected or wrong extraction, respectively. Parsing- and alignment-
+related failures were separately identified through the stage-specific error-attribution analysis described above. 
+This distinction ensured that source-level absence was not conflated with missingness or errors introduced by the 
+extraction pipeline.
+The unsupported-extraction rate was defined as the proportion of extracted values that could not be verified against 
+the manually established ground truth. Values attributable to identifiable extraction errors, such as incorrect field 
+assignment, unit errors, reference-electrode representation errors, table misalignment, or condition–result mis -
+match, were distinguished from unsupported extractions. The unsupported-extraction rate was calculated as:
+Error category Definition
+Hallucinated value An extracted value that could not be verified anywhere in the corre-
+sponding source publication or manually established ground truth
+Wrong field assignment A value explicitly reported in the source and present in the ground truth 
+but assigned to an incorrect parameter field (e.g., Ecorr assigned as Epit)
+Incorrect unit The extracted numerical value and corresponding experimental condi-
+tion were correct, but the associated unit was incorrect
+Incorrect reference-electrode 
+representation
+The source potential was identified, but the converted potential value or 
+reference-electrode assignment was incorrect
+Table row or column 
+misalignment
+A group of extracted fields was systematically associated with an incor-
+rect table row or column
+Incorrect condition–result 
+association
+The extracted parameter and numerical value were correct but were 
+associated with an incorrect alloy, specimen, or experimental condition
+Duplicated record A record identical to an existing correctly extracted record was gener-
+ated more than once
+Missed value A value explicitly present in the ground truth was not extracted in the 
+corresponding field or record
+Table 2 Definition and clas-
+sification criteria for extrac-
+tion errors.
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+ 
+  (5)
+The omission rate was defined as the proportion of explicitly reported eligible ground-truth values that were not 
+captured by the extraction pipeline:
+ 
+  (6)
+Evidence-grounding accuracy was defined as the proportion of extracted values for which the corresponding sup-
+porting evidence passage contained both the correct parameter and the correct numerical value. During execution 
+of the framework, supporting evidence passages were generated at the relevant subtasks to guide extraction and 
+condition–result association; however, these intermediate outputs were not persistently retained after completion 
+of the full extraction workflow. Consequently, a retrospective field-level evidence-grounding accuracy could 
+not be consistently calculated for the expanded validation set. Grounding reliability was therefore additionally 
+assessed through manual comparison with the source-verified ground truth and the unsupported-extraction analy-
+sis described above.
+Condition–result alignment accuracy was defined as the proportion of eligible condition– Epit pairs in which 
+the extracted pitting potential was associated with the correct alloy, specimen, and experimental condition. This 
+metric was calculated for the 140 eligible condition–result pairs in the expanded validation set. Because the num-
+ber of eligible cases was relatively limited, the resulting accuracy estimate was interpreted cautiously and was 
+supplemented by the separate error-attribution analysis of incorrect condition–result associations.
+Statistical analysis of the constructed database : For the stainless-steel-specific statistical analysis, mate -
+rial-domain screening was performed at the experimental-record level before complete-case selection. Records 
+explicitly identifiable from the extracted material information as non-stainless materials, including carbon/low-
+alloy steels, aluminum alloys, Ni-based alloys, and other clearly non-stainless metallic materials, were excluded. 
+A conservative exclusion strategy was adopted: records were excluded only when the available material infor -
+mation explicitly indicated a non-stainless material; otherwise, they were retained for subsequent analysis. Fol -
+lowing material-domain screening and reference-electrode harmonization, complete-case selection was applied. 
+Records were included only when the SCE-harmonized pitting potential and all variables included in the partial-
+correlation analysis contained valid numerical values; records containing missing values in any of these fields 
+were excluded. This resulted in 1,379 records from 448 publications for the final partial-correlation analysis.
+Individual experimental records were retained as the analytical units, while the dependence among multiple 
+records originating from the same publication was accounted for using publication-clustered bootstrap resam -
+pling. In each of 2,000 bootstrap iterations, publications were sampled with replacement, and all records associ-
+ated with each selected publication were retained as a cluster. Partial correlation coefficients were recalculated 
+for each resampled dataset, and the 2.5th and 97.5th percentiles of the resulting distributions were used to obtain 
+publication-clustered 95% confidence intervals. No additional observations were excluded solely on the basis of 
+statistical outlier thresholds.
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+Reproducibility details: Complete prompts for Tasks A–C, exact model and API configurations, decoding set -
+tings, software versions, field definitions, normalization rules, and reference-electrode handling procedures are 
+provided in the Supplementary Information.
+Results and discussion
+Comparative benchmark and model selection
+To quantitatively determine the LLM configuration for large-scale database construction, five model configura -
+tions were comparatively evaluated using a representative validation subset of 100 publications. The same pre -
+processing procedures, task-decomposition workflow, prompt instructions, output schema, and evaluation criteria 
+were applied to all configurations to ensure a controlled comparison. The benchmark results are summarized in 
+Table 3.
+As shown in Table 3, the proposed hybrid configuration achieved the highest overall extraction performance, 
+with a precision of 91.30%, recall of 91.14%, and F1 score of 91.22%. Among the individual models, Qwen-
+Max showed the highest F1 score (88.43%), followed by DeepSeek-v3.2 (87.00%), Gemini Flash (84.81%), and 
+GPT-3.5 (78.63%). Compared with Qwen-Max and DeepSeek-v3.2 used independently, the hybrid configuration 
+improved the F1 score by 2.79 and 4.22% points, respectively. The improvement was also accompanied by a 
+reduction in unsupported extractions, with the unsupported-extraction rate decreasing to 5.01%, compared with 
+6.72% for Qwen-Max and 7.83% for DeepSeek-v3.2.
+The improved extraction performance of the hybrid configuration was achieved at the expense of longer pro -
+cessing time. Its average processing time was approximately 50 s per publication, compared with 28 s for Qwen-
+Max and 30 s for DeepSeek-v3.2. Nevertheless, the processing cost remained competitive at ¥0.05 per publication, 
+which was lower than that of Qwen-Max (¥0.07), Gemini Flash (¥0.09), and GPT-3.5 (¥0.08), and only slightly 
+higher than that of DeepSeek-v3.2 (¥0.04). These results indicate that the proposed hybrid configuration does not 
+provide an advantage in inference speed but offers a favorable trade-off between extraction accuracy, hallucina -
+tion control, and processing cost. Accordingly, the DeepSeek-v3.2–Qwen-Max hybrid configuration was selected 
+for the subsequent large-scale database construction.
+Condition–result alignment accuracy was not reported as a standalone quantitative metric because this metric 
+is only applicable to publications containing multiple experimental conditions with independently distinguishable 
+condition–Epit pairs. Such cases were relatively limited in the 100-publication benchmark subset, and the result-
+ing percentage would therefore be highly sensitive to a small number of individual mismatches. Instead, condi -
+tion–result correspondence was incorporated into the record-level correctness assessment, whereby an extracted 
+Epit value was considered correct only when it was assigned to the corresponding experimental condition.
+In addition to the performance metrics reported in Table 3, the operational reliability of the evaluated con -
+figurations was assessed in terms of structured-output validity and processing stability. Across all five model 
+configurations evaluated on the 100-publication benchmark, the valid-JSON output rate was 100%, defined as the 
+proportion of model responses that could be successfully parsed and conformed to the predefined JSON schema. 
+Table 3 Comparative performance of different LLM configurations.
+Precision Recall F1 Unsupported extraction Time (s/publication) Cost (¥/publication)
+GPT-3.5 77.69% 79.60% 78.63% 14.39% 25 0.08
+Gemini Flash 84.53% 85.68% 84.81% 9.46% 16 0.09
+DeepSeek-v3.2 86.95% 87.05% 87.00% 7.83% 30 0.04
+Qwen-Max 88.58% 88.29% 88.43% 6.72% 28 0.07
+Hybrid 91.30% 91.14% 91.22% 5.01% 50 0.05
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+No invalid JSON responses were observed during the benchmark. This high structured-output reliability is con -
+sistent with the constraint-guided zero-shot prompting strategy, in which the expected output schema and format-
+ting requirements were explicitly specified. The processing failure rate was 0%, where processing failures were 
+defined as unsuccessful extraction attempts caused by request timeout, context-length overflow, or incomplete 
+responses resulting from token truncation. No such failures were observed across the 100 benchmark publications. 
+This result suggests that the adopted input-length control mechanisms, including localized evidence retrieval and 
+sparse output generation, were effective in maintaining stable processing within the evaluated dataset.
+Stage-specific performance and error analysis
+Stage-specific performance differed across the individual components of the extraction pipeline. Task A achieved 
+a precision of 94.64%, recall of 93.79%, and F1 score of 94.21%, indicating reliable extraction of experimental 
+conditions, material composition, and microstructural information. In comparison, Task B showed lower perfor-
+mance for pitting-potential extraction, with a precision of 66.88%, recall of 69.54%, and F1 score of 68.18%. 
+For subsequent post-processing, the exact accuracies of unit representation, Epit value/unit normalization, and 
+reference-electrode representation were 94.39%, 66.43%, and 90.21%, respectively. Condition–result alignment 
+achieved an accuracy of 75.00% among 140 eligible records. After integration of all extracted and processed 
+fields, the final database achieved an aggregate precision of 93.83%, recall of 93.26%, and F1 score of 93.54%, 
+indicating strong overall field-level extraction performance. However, this aggregate performance should not be 
+interpreted as representing equivalent accuracy for each individual variable. In particular, the lower Task B F1 
+score, normalization accuracy, and condition–result alignment accuracy indicate that pitting-potential extraction 
+and processing remain more challenging than the overall field-level extraction task. This distinction is particularly 
+relevant because pitting potential serves as the outcome variable in the subsequent corrosion-statistical analysis. 
+Because the evaluation units and eligible denominators differed among components, the stage-specific metrics 
+were used to characterize the performance of individual processing functions rather than for direct numerical 
+comparison across stages (see Table 4 and Table 5).
+Error attribution further identified the primary sources of errors within the pipeline. Among the identified 
+errors, 2.13% were attributed to PDF/table parsing and reconstruction, 82.89% to Task A experimental-condition 
+extraction, 1.96% to Task B pitting-potential extraction, 5.53% to unit/reference-electrode representation, and 
+7.49% to condition–result alignment. The predominance of Task A in the absolute error count primarily reflects 
+its substantially larger number of evaluated fields and extraction opportunities. Therefore, these percentages 
+Stage_ID Stage Attributed_Error_Count Percentage_of_All_Errors
+1 PDF/table parsing and reconstruction 25 2.13
+2 Task A: Experimental-condition extraction 974 82.89
+3 Task B: Pitting-potential extraction 23 1.96
+4 Unit/reference-electrode representation 65 5.53
+5 Task C: Condition–result alignment 88 7.49
+Table 5 Distribution of iden-
+tified errors across pipeline 
+components.
+ 
+Pipeline stage Component Metric N Performance (%)
+I PDF/table parsing Error attribution - -
+I Task A: condition extraction P/R/F1 31,500 94.64 / 93.79 / 94.21
+II Task B: Epit extraction P/R/F1 900 66.88 / 69.54 / 68.18
+II Unit representation Accuracy 1195 94.39
+II Epit normalization Accuracy 140 66.43
+II Reference-electrode representation Accuracy 194 90.21
+III Condition–result alignment Accuracy 140 75.00
+III Final database P/R/F1 38,700 93.83 / 93.26 / 93.54
+Table 4 Stage-specific per-
+formance of the extraction 
+and database-construction 
+pipeline.
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+represent the distribution of identified errors across pipeline components rather than component-specific error 
+rates.
+The source-level missingness audit showed that low database coverage did not necessarily indicate extraction 
+failure. Dissolved oxygen was explicitly reported in only 89 of 900 evaluated opportunities (9.89%), of which 
+83 were correctly detected, whereas flow rate was reported in only 68 of 900 opportunities (7.56%), of which 62 
+were correctly detected. Similarly, microstructural descriptors were reported in 651 of 2,700 field-level oppor -
+tunities (24.11%), with 597 correctly detected. These results indicate that the low coverage of these variables 
+was predominantly associated with limited reporting in the source literature rather than failure of the extraction 
+pipeline. Pitting potential showed a different pattern: it was reported in 140 of 900 evaluated records (15.56%), of 
+which 99 were correctly extracted, 10 were not detected, and 31 were incorrectly extracted. Thus, the relatively 
+low coverage of pitting-potential information reflects both source-level sparsity and greater extraction difficulty.
+Database construction and characteristics
+Using the proposed extraction framework, 36,095 structured experimental records were obtained from the broad 
+candidate corpus of 12,792 publications. Table 6 summarizes the number of available entries and the correspond-
+ing coverage rate for each extracted field within the complete extraction output.
+Field Name Number of Records Coverage Rate (%) Variable Type
+Epit 3756 10.41% Numerical
+scan_rate 17,717 49.08% Numerical
+Chloride_Concentration 25,798 71.47% Numerical
+Temperature 25,645 71.05% Numerical
+pH 9630 26.68% Numerical
+Other_anion_concentration 8229 22.80% mixed-type
+Cations 6132 16.99% mixed-type
+dissolved_oxygen_value 2766 7.66% Numerical
+Flow_Rate 821 2.27% Numerical
+Pre_immersion_Time 8218 22.77% mixed-type
+comp_Fe_wt 20,704 57.36% Numerical
+comp_Cr_wt 17,436 48.31% Numerical
+comp_Ni_wt 16,772 46.47% Numerical
+comp_Mo_wt 10,912 30.23% Numerical
+comp_Mn_wt 15,944 44.17% Numerical
+comp_Si_wt 14,878 41.22% Numerical
+comp_C_wt 14,653 40.60% Numerical
+comp_N_wt 4877 13.51% Numerical
+comp_P_wt 8908 24.68% Numerical
+comp_S_wt 9032 25.02% Numerical
+comp_Cu_wt 7958 22.05% Numerical
+comp_Ti_wt 5700 15.79% Numerical
+comp_Nb_wt 2999 8.31% Numerical
+comp_La_wt 63 0.17% Numerical
+comp_Ce_wt 267 0.74% Numerical
+comp_Te_wt 22 0.06% Numerical
+comp_V_wt 2610 7.23% Numerical
+other_composition(name) 16,315 45.20% mixed-type
+matrix_phase 7837 21.71% categorical
+inclusion_description 1542 4.27% mixed-type
+precipitate_description 2134 5.91% mixed-type
+Heat_Treatment_Process 6053 16.77% mixed-type
+Table 6 The final extraction 
+quantity and coverage rate 
+of each field.
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+For the stainless-steel-specific descriptive analysis, records were screened according to material identity before 
+the distributions of key environmental factors and alloying elements were analyzed. For the pitting-potential dis-
+tribution, reference-electrode harmonization was additionally applied to improve comparability across studies. 
+Records corresponding to non-stainless materials were excluded from these analyses. The resulting distributions 
+are presented in Figs. 9, 10 and 11.
+Overall, the database exhibits clear research-preference characteristics, indicating that existing studies are 
+predominantly focused on room-temperature, neutral chloride-containing environments and conventional aus -
+tenitic and duplex stainless steel systems, whereas investigations under extreme environmental conditions or 
+involving specialized alloy compositions remain relatively limited. With respect to environmental parameters, 
+the temperature distribution is highly concentrated within the range of 20–40 °C, accounting for the vast major-
+ity of the collected records. This observation suggests that most pitting corrosion studies have been conducted 
+under room-temperature or near-room-temperature conditions, which is consistent with common practices in 
+laboratory-based electrochemical testing and marine environment simulation studies. The pH distribution exhib-
+its a similarly concentrated pattern, with more than 80% of the data falling within the pH range of 7–8. This 
+finding indicates that the majority of studies in the database were performed in neutral or mildly alkaline chloride-
+containing environments, such as natural seawater, artificial seawater, and NaCl-based electrolyte systems. In 
+contrast, the chloride ion concentration distribution displays a pronounced right-skewed pattern. Approximately 
+two-thirds of the records are concentrated within the range of 0.35–0.70 M, corresponding to a 3.5 wt% NaCl 
+solution (approximately 0.6 M). This result further confirms that marine corrosion environments constitute the 
+primary application scenario in contemporary pitting corrosion research, whereas studies conducted under highly 
+concentrated chloride environments represent only a relatively small proportion of the available data.
+From the perspective of alloy composition, the chromium (Cr) content is predominantly concentrated within 
+the range of 14–22 wt%, with a peak occurring between 14 and 18 wt%. This distribution is highly consistent with 
+the chemical compositions of widely used corrosion-resistant stainless steels, including 304, 316, and duplex 
+stainless steels, indicating that the material systems represented in the database are broadly representative of those 
+commonly investigated in the literature. The nickel (Ni) content exhibits a substantially broader distribution, with 
+Fig. 9 Distribution of pH, tempera-
+ture, and Cl concentration (non-
+missing records: N = 1409, 1493, 
+and 1466, respectively).
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+most records falling within the range of 0–12 wt%. This pattern reflects the inclusion of diverse stainless steel 
+families within the database, including low-nickel ferritic stainless steels, high-nickel austenitic stainless steels, 
+and various duplex stainless steels. In contrast, the molybdenum (Mo) content displays a pronounced right-
+skewed distribution, with the majority of samples concentrated between 0 and 4 wt%. The intervals of 0–2 wt% 
+and 2–4 wt% account for the largest proportion of records, corresponding closely to the prevalence of 304 stain-
+less steel (typically containing little or no Mo) and 316 stainless steel (typically containing approximately 2–3 
+wt% Mo), respectively.
+Fig. 10 Distribution of Cr, Ni, Mo, N, and Mn contents (non-missing records: N = 1409, 1258, 1035, 515, and 1232, 
+respectively).
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+For the minor alloying elements, the nitrogen (N) content is primarily distributed within the range of 0–0.3 
+wt%, while samples containing more than 0.4 wt% N are relatively scarce. This distribution is consistent with the 
+typical nitrogen addition levels employed in austenitic and duplex stainless steels. The manganese (Mn) content 
+exhibits a pronounced low-concentration clustering pattern, with the majority of records containing less than 
+2.5 wt% Mn. This observation is in agreement with the compositional characteristics of conventional stainless 
+steel systems. Only a limited number of samples exhibit elevated Mn contents, which may correspond to high-
+manganese stainless steels or specialized alloy systems. Overall, the distributions of both N and Mn are consistent 
+with established alloy design principles, and no obvious accumulation of anomalous values is observed within 
+the database.
+The distribution of pitting potential exhibits an approximately unimodal pattern, with the majority of records 
+concentrated within the range of 0–0.6 V and a peak occurring between 0.1 and 0.4 V . This distribution is gen-
+erally consistent with the typical pitting potential ranges reported in the literature for 304 stainless steel, 316 
+stainless steel, and duplex stainless steels. A limited number of records with negative pitting potentials likely cor-
+respond to materials with relatively poor corrosion resistance or to testing conditions involving more aggressive 
+corrosive environments. In contrast, samples exhibiting Epit values greater than 1 V are likely associated with 
+high-PREN super duplex stainless steels or specialized corrosion-resistant alloy systems.
+Overall, the distribution of Epit spans a broad range of corrosion resistance levels, covering material systems 
+from relatively low pitting resistance to highly corrosion-resistant alloys.
+Collectively, the above results indicate that the experimental conditions and material systems represented in 
+the constructed database are highly consistent with those that dominate contemporary research on stainless steel 
+pitting corrosion. Overall, the database exhibits a characteristic distribution pattern centered on room-tempera -
+ture, neutral chloride-containing environments and conventional austenitic and duplex stainless steel systems. At 
+the same time, a proportion of records associated with less frequently represented environmental conditions and 
+specialized alloy systems has also been retained, reflecting the diversity of research contexts represented in the 
+literature corpus. These distribution characteristics not only reflect the prevailing research interests within the 
+current literature but also provide a reliable data foundation for subsequent studies on pitting potential prediction, 
+key influencing factor analysis, and data-driven materials design.
+Fig. 11 Distribution of pitting potential 
+(N = 1409 non-missing records).
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+Validation of extraction performance
+The extraction performance of the proposed framework was evaluated using the expanded manually validated 
+dataset described in Sect.  “Validation and statistical evaluation”. Across the validation set, 10,828 true-positive 
+(TP) values, 712 false-positive (FP) values, and 783 false-negative (FN) values were identified based on com -
+parison with the manually established ground truth. These counts resulted in a precision of 93.83%, a recall of 
+93.26%, and an F1 score of 93.54%.
+Publication-level bootstrap resampling was further used to quantify the uncertainty associated with these per-
+formance estimates. The resulting 95% confidence intervals were 93.14–94.49% for precision, 92.68–93.80% for 
+recall, and 92.98–94.06% for the F1 score. The relatively narrow confidence intervals indicate limited uncertainty 
+in the estimated extraction performance across the validated publications.
+To further characterize extraction reliability beyond the aggregate precision, recall, and F1 score, all identified 
+extraction errors were analyzed according to the eight predefined error categories described in Sect.  “Validation 
+and statistical evaluation”. The resulting error distribution is summarized in Table 7.
+A total of 1,125 underlying extraction errors were identified and classified according to their primary error 
+mechanism. Hallucinated values constituted the largest error category, accounting for 596 cases (52.98% of all 
+errors) and affecting 125 publications. Missed values represented the second-largest category, with 463 cases 
+(41.16%) across 108 publications. Together, hallucinated and missed values accounted for 94.13% of all identi -
+fied errors, indicating that the dominant failure modes were unsupported extraction and omission rather than 
+formatting or unit-related errors.
+Errors related to condition–result association were substantially less frequent, with 46 cases (4.09%) identi -
+fied across 20 publications. Incorrect units, table row or column misalignment, and incorrect reference-electrode 
+representation accounted for 1.07%, 0.62%, and 0.09% of the errors, respectively. No wrong-field assignments or 
+duplicated records were identified in the validated sample.
+In addition to the error composition, unsupported-extraction and omission rates were calculated separately to 
+distinguish unsupported generation and complete omission from other extraction errors. Among 11,540 extracted 
+values, 596 could not be verified against the manually established ground truth, corresponding to an unsup -
+ported-extraction rate of 5.16%. Among 11,611 eligible ground-truth values, 463 explicitly reported values were 
+completely omitted by the pipeline and were therefore classified as “missed value” errors, corresponding to an 
+omission rate of 3.99%. This omission count represents complete extraction failures and is therefore lower than 
+the total number of FN events, which also includes ground-truth values that were not correctly matched because 
+of other extraction errors. A standalone evidence-grounding accuracy was not retrospectively reported because 
+the intermediate supporting evidence passages generated during extraction were not persistently retained after 
+completion of the pipeline.
+The observed reduction in recall can be attributed to several factors. First, to ensure the reliability of the 
+constructed database, the prompting strategy employed stringent extraction constraints. When encountering 
+ambiguous or insufficiently supported information, the model tended to adopt a conservative extraction behav -
+ior, prioritizing precision over recall. Consequently, potentially relevant data were occasionally omitted rather 
+Error Count % all errors Publications
+Hallucinated value 596 52.98% 125
+Wrong field assignment 0 0 0
+Incorrect unit 12 1.07% 11
+Incorrect reference-electrode representation 1 0.09% 1
+Table row or column misalignment 7 0.62% 6
+Incorrect condition–result association 46 4.09% 20
+Duplicated record 0 0 0
+Missed value 463 41.16% 108
+Table 7 Distribution of 
+extraction errors in the 
+manual validation set.
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+than extracted with uncertainty. Second, experimental information is often dispersed across lengthy scientific 
+documents, making it challenging for the model to establish long-range associations between related pieces of 
+information. Third, limitations in the available token context may lead to attention dispersion, causing relevant 
+information to be overlooked during the extraction process.
+The extraction errors can likewise be attributed to several factors. First, numerical values located in close prox-
+imity to one another may be incorrectly associated with the target variable, resulting in erroneous value matching. 
+Second, extraction errors may arise from failures in table reconstruction. In particular, when processing flattened 
+PDF tables, the model may incorrectly associate values with the wrong columns or rows, leading to inaccurate 
+data assignments. Third, although hallucination has been substantially reduced in modern Large Language Mod-
+els (LLMs), it cannot be completely eliminated in large-scale literature processing. In rare cases, the model may 
+generate outputs influenced by implicit assumptions, prior knowledge, or default reasoning patterns rather than 
+strictly adhering to the source text.
+Overall, the evaluation results demonstrate that the proposed LLM-based framework achieves strong aggre -
+gate performance in large-scale structured data extraction from scientific literature. However, the stage-specific 
+evaluation also reveals heterogeneous performance across different components of the extraction pipeline, with 
+pitting-potential extraction, normalization, and condition–result alignment remaining more challenging than the 
+overall field-level extraction task. These results support the utility of the framework for automated database 
+construction in corrosion informatics while also highlighting the need to account for field-specific extraction 
+uncertainty when interpreting downstream analyses.
+To clarify the material scope of the complete extraction output, the extracted records were additionally screened 
+at the record level based on the available material information. Approximately 34% of the records were identifi-
+able as stainless steels, 44% as non-stainless materials, while the remaining 22% could not be unambiguously 
+classified based on the available information. Stainless-steel-specific downstream analyses were conducted using 
+material-screened datasets, as described in Sect.  “Validation and statistical evaluation”.
+Following material-domain screening, reference-electrode harmonization, and complete-case selection, 1,379 
+records from 448 publications were included in the final partial-correlation analysis. Partial correlation analy -
+sis was performed to evaluate the conditional associations between the investigated environmental parameters, 
+alloying elements, and pitting potential. The results are presented in Fig. 12.
+The partial correlation analysis revealed varying conditional associations between the investigated environ -
+mental factors, alloying elements, and pitting potential. Among the investigated variables, molybdenum (Mo), 
+Fig. 12 Partial correlation analy-
+sis (N = 1,379 records from 448 
+publications).
+ 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+nitrogen (N), and chromium (Cr), which are widely recognized as key pitting-resistance-enhancing elements, 
+exhibited positive conditional associations with pitting potential. In contrast, temperature showed a negative 
+conditional association. These statistical patterns characterize the relationships observed within the constructed 
+cross-literature dataset and should be interpreted as conditional associations rather than causal effects.
+Publication-clustered bootstrap analysis was further performed to account for dependence among records 
+originating from the same publication. The positive conditional associations of Mo ( r = 0.300, 95% CI: 0.173–
+0.418), N ( r = 0.284, 95% CI: 0.191–0.362), Cr ( r = 0.147, 95% CI: 0.033–0.286), and Ni ( r = 0.101, 95% CI: 
+0.030–0.186) remained directionally robust, with their 95% confidence intervals excluding zero. Temperature 
+(r = − 0.139, 95% CI: −0.242 to − 0.031) and Mn (r = − 0.105, 95% CI: −0.185 to − 0.017) showed negative condi-
+tional associations with confidence intervals excluding zero. In contrast, the confidence intervals of the remaining 
+variables included zero. Chloride concentration showed only a weak negative partial correlation (r = − 0.031), and 
+its publication-clustered 95% confidence interval (− 0.147 to 0.070) included zero.
+Among all investigated variables, the molybdenum (Mo) content exhibited the highest positive partial cor -
+relation coefficient (r = 0.300), representing the strongest positive conditional association with pitting potential. 
+Molybdenum is widely recognized as a key alloying element for enhancing pitting corrosion resistance, primarily 
+through improving passive film stability and increasing resistance to localized corrosion in chloride-containing 
+environments. Its beneficial effects are generally attributed to the stabilization of Cr-rich passive films, the sup -
+pression of anodic dissolution within corrosion pits, and the promotion of repassivation processes45,46.
+Notably, the statistical association of Mo observed in this study is greater than that of nitrogen (N), which 
+differs to some extent from the weighting assigned to N in the classical Pitting Resistance Equivalent Number 
+(PREN) formulation, as shown in Eq. (7):
+ PREN = Cr + 3.3 Mo + 16 N (7)
+This discrepancy may arise from the fundamental difference between statistical relationships derived from large-
+scale literature data and the assumptions underlying idealized alloy design frameworks. The PREN equation is 
+essentially an empirical formulation developed for specific stainless steel grades and representative chloride-
+containing environments, emphasizing the theoretical strengthening effects of alloying elements on pitting cor -
+rosion resistance. In contrast, the present study is based on a large collection of literature data spanning multiple 
+stainless steel grades, experimental systems, and testing conditions. Consequently, the observed correlations 
+reflect the overall statistical associations of alloying elements at a cross-study level rather than their idealized 
+theoretical weighting. In addition, the database coverage of nitrogen (N) is relatively limited (13.51%), whereas 
+molybdenum (Mo) exhibits substantially higher coverage (30.23%). As a result, high-nitrogen stainless steels 
+constitute only a relatively small fraction of the overall dataset, which may partially reduce the apparent statisti-
+cal association of N in the correlation analysis. Furthermore, the influence of N on pitting corrosion resistance 
+is often strongly dependent on its metallurgical state, heat-treatment history, and nitride precipitation behavior. 
+Consequently, its effect may vary considerably across different material systems and experimental conditions. 
+In contrast, the beneficial effect of Mo on pitting corrosion resistance tends to be more consistent across a wide 
+range of stainless steel systems. This greater stability may explain why Mo exhibits a stronger overall association 
+in the large-scale cross-system statistical analysis performed in this study.
+Nitrogen (N) nevertheless exhibits a strong positive partial correlation coefficient (0.284), indicating that it 
+remains an important factor influencing the pitting corrosion resistance of stainless steels. Nitrogen is generally 
+recognized for its ability to enhance austenite stability, promote chromium enrichment within the passive film, 
+and improve local repassivation capability. Consequently, high-nitrogen stainless steels often exhibit elevated pit-
+ting potential values47. The results of this study suggest that, although the statistical association of N is lower than 
+that of Mo in the large-scale literature-based analysis, it remains one of the most influential alloying elements for 
+enhancing pitting corrosion resistance.
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+Chromium (Cr) exhibits a moderate positive partial correlation coefficient (0.147). As the principal alloying 
+element responsible for the formation of the passive film, Cr plays a fundamental role in determining the pitting 
+corrosion resistance of stainless steels 48. However, because most stainless steels inherently contain relatively 
+high Cr contents, the variation in Cr concentration across the database is comparatively limited. As a result, its 
+statistical association in the partial correlation analysis is lower than those of Mo and N.
+The observed effects of the major alloying elements are generally consistent with previous experimental stud-
+ies on stainless steel pitting corrosion. In particular, the positive association of Mo with pitting potential agrees 
+with its well-established role in enhancing passive-film stability and suppressing localized dissolution during pit 
+initiation and propagation46,49–50. Similarly, the effects observed for Cr and N are broadly consistent with their 
+established contributions to passivation and pitting resistance, which also form the basis of conventional pitting-
+resistance indices such as PREN51. However, the magnitudes of the associations observed in the present database 
+are relatively modest compared with trends often reported under controlled experimental conditions. This differ-
+ence is expected because the present analysis integrates heterogeneous stainless-steel grades, alloy compositions, 
+solution chemistries, temperatures, and electrochemical testing conditions across a large number of independent 
+studies. Therefore, the present results should be regarded as cross-literature statistical tendencies rather than 
+direct substitutes for relationships derived from controlled experiments.
+Among the environmental variables, temperature exhibits a clear negative partial correlation coefficient 
+(− 0.139), indicating that increasing temperature is associated with a reduction in pitting potential. This observa-
+tion is consistent with established theories of pitting corrosion. Elevated temperatures can accelerate chloride ion 
+(Cl⁻) transport and anodic dissolution processes while reducing the stability of the passive film, thereby facilitat-
+ing the initiation and stabilization of corrosion pits52.
+Manganese (Mn) also exhibits a negative partial correlation with pitting potential (− 0.105). This observa -
+tion may be closely associated with the presence of MnS inclusions. MnS inclusions are widely recognized as 
+important initiation sites for pitting corrosion in stainless steels. Their preferential dissolution can promote local 
+acidification and chloride ion (Cl⁻) enrichment, thereby inducing localized destabilization of the passive film and 
+facilitating pit initiation53.
+Notably, scan rate exhibited only a weak partial correlation with pitting potential (r = − 0.042, 95% CI: −0.160 
+to 0.056), with the confidence interval spanning zero. From an electrochemical testing perspective, scan rate 
+is generally considered an important experimental parameter that can influence the measured pitting potential. 
+However, the present result indicates that no robust independent linear association between scan rate and pitting 
+potential was evident in the heterogeneous cross-literature dataset. Higher scan rates may cause the polariza -
+tion process to bypass certain stages of metastable pit development, thereby resulting in artificially elevated Epit 
+values. However, in the present large-scale cross-literature statistical analysis, the overall association of scan 
+rate remains relatively limited. This observation may be attributed to the fact that scan rate primarily reflects 
+methodological variations in experimental procedures rather than the intrinsic pitting corrosion resistance of the 
+material itself. Furthermore, substantial differences often exist among studies with respect to electrode dimen -
+sions, potential scan ranges, IR compensation procedures, stabilization times, and test termination criteria. The 
+combined influence of these factors may reduce the independent statistical association of scan rate within the 
+overall dataset. Consequently, compared with experimental parameters, alloy composition and environmental 
+conditions remain the dominant factors governing the pitting corrosion behavior of stainless steels.
+In addition, chloride ion concentration exhibits only a weak negative partial correlation with pitting potential 
+(r = − 0.031, 95% CI: −0.147 to 0.070), with the confidence interval spanning zero. This result should not be 
+interpreted as evidence that chloride ions (Cl⁻) play an insignificant role in pitting corrosion. Rather, it suggests 
+that pitting behavior is governed by the coupled effects of multiple interacting factors rather than by chloride con-
+centration alone. Within the large-scale literature dataset, chloride concentration often varies simultaneously with 
+other influential parameters, including temperature, pH, cation species, and buffering systems. Consequently, its 
+independent association may be partially diminished in the partial correlation analysis. Furthermore, the influence 
+of chloride concentration on pitting corrosion may exhibit a threshold-like behavior. Once a critical concentration 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+is exceeded, further increases in chloride concentration may produce a progressively smaller effect on the pitting 
+potential. As a result, chloride concentration does not exhibit a particularly strong independent correlation in the 
+cross-system statistical analysis conducted in this study.
+It should be noted that the observed partial correlations were generally weak in magnitude, with the largest 
+absolute coefficient being 0.300. Therefore, these results should not be interpreted as evidence of strong predic -
+tive or causal relationships. Rather, they indicate modest conditional associations within a heterogeneous cross-
+literature dataset involving diverse alloy systems and experimental conditions. The publication-clustered 95% 
+confidence intervals further characterize the uncertainty associated with these estimates.
+Overall, the partial correlation analysis results are broadly consistent with established theories of pitting cor -
+rosion in stainless steels, while also highlighting the differences between large-scale cross-literature statistical 
+observations and idealized experimental systems. Although the observed associations are modest in magnitude, 
+their general consistency with established corrosion knowledge provides a scientific plausibility check for the 
+statistical patterns captured by the constructed database.
+Conclusion
+This study developed an LLM-based framework for structured data extraction and database construction from 
+scientific literature and validated its effectiveness using stainless steel pitting corrosion research as a case study. 
+By decomposing the complex information extraction process into multiple subtasks, including experimental con-
+dition extraction, pitting potential extraction, and data alignment, the proposed framework enabled the automated 
+acquisition and integration of experimental data from large-scale unstructured scientific literature.
+Using a broad candidate corpus of 12,792 publications, the framework generated a structured extraction out -
+put containing 36,095 experimental records, from which material-screened subsets were subsequently used for 
+stainless-steel-specific analyses. The results demonstrate that the proposed framework is capable of effectively 
+performing structured information extraction from complex scientific texts, with strong aggregate field-level 
+performance but variable accuracy across individual extraction tasks. In particular, stage-specific validation iden-
+tified pitting-potential extraction and normalization as comparatively challenging components of the workflow. 
+These findings indicate that the framework provides a practical and scalable approach for high-throughput data -
+base construction in corrosion science, while emphasizing the importance of considering field-specific extraction 
+uncertainty in downstream analyses.
+Building upon the constructed database, statistical analyses were subsequently conducted. The results indicate 
+that the material-screened stainless-steel dataset is predominantly characterized by room-temperature, neutral 
+chloride-containing environments and austenitic and duplex stainless steel systems. Partial correlation analysis 
+further revealed conditional associations between alloy composition, environmental factors, and pitting potential. 
+Among the investigated variables, molybdenum (Mo) exhibited the strongest positive conditional association, 
+whereas temperature showed a negative conditional association. In contrast, chloride ion concentration showed 
+only a weak negative association. These statistical patterns are generally consistent with established corrosion 
+knowledge, providing a scientific plausibility check while also highlighting differences between large-scale 
+cross-literature statistical associations and traditional empirical models.
+Overall, this study demonstrates the capability of LLMs for knowledge extraction and automated database 
+construction from materials science literature and confirms their feasibility for applications in corrosion infor -
+matics. The proposed framework provides an effective pathway for transforming large volumes of unstructured 
+scientific literature into structured, machine-readable data resources, thereby facilitating large-scale data analysis 
+and knowledge discovery in corrosion science. The primary objective of the present study is database construc -
+tion and validation, with the partial correlation analysis serving as an initial demonstration of the analytical 
+utility of the resulting database. Future studies may further exploit this data resource using advanced data-
+driven approaches, such as clustering, machine learning, and other multivariate techniques, to identify complex 
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+corrosion patterns and develop predictive models for pitting behavior. In addition, advances in multimodal LLMs, 
+knowledge graphs, and materials ontology technologies may further enhance the capabilities of the proposed 
+framework and enable the integration of diverse corrosion-related data sources, including polarization curves, 
+electrochemical impedance spectroscopy (EIS) data, microstructural information, and surface morphology char-
+acterization results. These developments would support more comprehensive corrosion knowledge integration 
+and data-driven discovery, providing new opportunities for materials design, performance prediction, and intel -
+ligent scientific research.
+Supplementary Information  The online version contains supplementary material available at https://doi.org/10.1038/
+s41598-026-75356-9.
+Author contributions Z.H. conceived the study, designed the methodology, developed the large language model-based in-
+formation extraction framework, performed data extraction, database construction, statistical analysis, and drafted the manu-
+script. J.D. contributed to methodology development, data analysis, and manuscript revision. Y .L. supervised the research, 
+contributed to the study design, provided scientific guidance, and revised the manuscript. C.W. supervised the project, pro -
+vided expertise in corrosion science, interpreted the results, and critically revised the manuscript. All authors reviewed and 
+approved the final manuscript.
+Data availability The datasets generated and analyzed during the current study are available from the corresponding author 
+on reasonable request.
+Declarations
+Competing interests The authors declare no competing interests.
+Open Access  This article is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 Interna-
+tional License, which permits any non-commercial use, sharing, distribution and reproduction in any medium or format, as 
+long as you give appropriate credit to the original author(s) and the source, provide a link to the Creative Commons licence, 
+and indicate if you modified the licensed material. You do not have permission under this licence to share adapted material 
+derived from this article or parts of it. The images or other third party material in this article are included in the article’s Cre-
+ative Commons licence, unless indicated otherwise in a credit line to the material. If material is not included in the article’s 
+Creative Commons licence and your intended use is not permitted by statutory regulation or exceeds the permitted use, you 
+will need to obtain permission directly from the copyright holder. To view a copy of this licence, visit  h t t p : / / c r e a t i v e c o m m o 
+n s . o r g / l i c e n s e s / b y - n c - n d / 4 . 0 /     .  
+References
+ 1. Davis, J. R. (ed) Stainless steels (ASM international, 1994).
+ 2. Di Schino, A. (ed) Manufacturing and application of stainless steels (MDPI, 2020).
+ 3. Maziasz, P. J. & Busby, J. T. Properties of austenitic stainless steels for nuclear reactor applications (Oak Ridge National 
+Laboratory (ORNL), 2011). Oak Ridge, TN (United States).
+ 4. Frankel, G. S. Pitting corrosion of metals: a review of the critical factors. J. Electrochem. Soc.145 (6), 2186–2198 (1998).
+ 5. Sedriks, A. J. Corrosion of stainless steels (Wiley, 1996).
+ 6. Liu, M., Du, C., Liu, Z., Wang, L., Zhong, R., Cheng, X., … Li, X. (2023). A review on pitting corrosion and 
+environmentally assisted cracking on duplex stainless steel.
+ 7. Bhandari, J., Khan, F., Abbassi, R., Garaniya, V . & Ojeda, R. Modelling of pitting corrosion in marine and offshore steel 
+structures–A technical review. J. Loss Prev. Process Ind.37, 39–62 (2015).
+ 8. Frankel, G. S. Pitting corrosion of metals: a review of the critical factors. J. Electrochem. Soc.145 (6), 2186–2198 (1998).
+ 9. Chen, D. et al. Revealing the inner rules of PREN from electronic aspect by first-principles calculations. Corros. Sci.189, 
+109561 (2021).
+ 10. Soccol, D. An updated Pitting Resistance Equivalent Number by proportional hazard survival models of reported pitting 
+potentials. Electrochim. Acta. 511, 145355 (2025).
+ 11. Li, B. et al. Studies on the cooperative influence of Cr and Mo on the pitting corrosion resistance of super austenitic 
+stainless steels. Materials16 (23), 7397 (2023).
+ 12. Frankel, G. S. Pitting corrosion of metals: a review of the critical factors. J. Electrochem. Soc.145 (6), 2186–2198 (1998).
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+ 13. Pardo, A. et al. Influence of pH and chloride concentration on the pitting and crevice corrosion behavior of high-alloy 
+stainless steels. Corrosion56 (4), 411–418 (2000).
+ 14. Dastgerdi, A. A., Brenna, A., Ormellese, M., Pedeferri, M. & Bolzoni, F. Experimental design to study the influence of 
+temperature, pH, and chloride concentration on the pitting and crevice corrosion of UNS S30403 stainless steel. Corros. 
+Sci.159, 108160 (2019).
+ 15. Tan, H. et al. Effect of annealing temperature on the pitting corrosion resistance of super duplex stainless steel UNS 
+S32750. Mater. Charact.60 (9), 1049–1054 (2009).
+ 16. Meng, G. et al. Effect of Cl – on the properties of the passive films formed on 316L stainless steel in acidic solution. 
+Journal Mater. Science Technology. 30 (3), 253–258 (2014).
+ 17. Dastgerdi, A. A., Brenna, A., Ormellese, M., Pedeferri, M. & Bolzoni, F. Experimental design to study the influence of 
+temperature, pH, and chloride concentration on the pitting and crevice corrosion of UNS S30403 stainless steel. Corros. 
+Sci.159, 108160 (2019).
+ 18. Ramprasad, R., Batra, R., Pilania, G., Mannodi-Kanakkithodi, A. & Kim, C. Machine learning in materials informatics: 
+recent applications and prospects. npj Comput. Mater.3 (1), 54 (2017).
+ 19. Hill, J. et al. Materials science with large-scale data and informatics: Unlocking new opportunities. MRS Bull.41 (5), 
+399–409 (2016).
+ 20. Ramakrishna, S. et al. Materials informatics. J. Intell. Manuf.30 (6), 2307–2326 (2019).
+ 21. Kononova, O. et al. Opportunities and challenges of text mining in materials research. Iscience, 24(3). (2021).
+ 22. Brown, T. et al. Language models are few-shot learners. Adv. Neural. Inf. Process. Syst.33, 1877–1901 (2020).
+ 23. Chowdhery, A. et al. Palm: Scaling language modeling with pathways. J. Mach. Learn. Res.24 (240), 1–113 (2023).
+ 24. Achiam, J., Adler, S., Agarwal, S., Ahmad, L., Akkaya, I., Aleman, F. L., … McGrew,B. (2023). Gpt-4 technical report. 
+arXiv preprint arXiv:2303.08774.
+ 25. Dagdelen, J. et al. Structured information extraction from scientific text with large language models. Nat. Commun.15 
+(1), 1418 (2024).
+ 26. Foppiano, L., Lambard, G., Amagasa, T. & Ishii, M. Mining experimental data from materials science literature with 
+large language models: an evaluation study. Sci. Technol. Adv. Materials: Methods. 4 (1), 2356506 (2024).
+ 27. Gupta, S., Mahmood, A., Shetty, P., Adeboye, A. & Ramprasad, R. Data extraction from polymer literature using large 
+language models. Commun. Mater.5 (1), 269 (2024).
+ 28. Dreger, M., Malek, K. & Eikerling, M. Large language models for knowledge graph extraction from tables in materials 
+science. Digit. Discovery. 4 (5), 1221–1231 (2025).
+ 29. Schilling-Wilhelmi, M. et al. From text to insight: large language models for chemical data extraction. Chem. Soc. Rev.54 
+(3), 1125–1150 (2025).
+ 30. Han, R. et al. An empirical study on information extraction using large language models. arXiv preprintarXiv:2305.14450. 
+(2023).
+ 31. Xu, D. et al. Large language models for generative information extraction: A survey. Front. Comput. Sci.18 (6), 186357 
+(2024).
+ 32. Jiang, X. et al. Applications of natural language processing and large language models in materials discovery. npj Comput. 
+Mater.11 (1), 79 (2025).
+ 33. Brown, T. et al. Language models are few-shot learners. Adv. Neural. Inf. Process. Syst.33, 1877–1901 (2020).
+ 34. Kojima, T., Gu, S. S., Reid, M., Matsuo, Y . & Iwasawa, Y . Large language models are zero-shot reasoners. Adv. Neural. 
+Inf. Process. Syst.35, 22199–22213 (2022).
+ 35. Schick, T. & Schütze, H. Exploiting cloze-questions for few-shot text classification and natural language inference. 
+In Proceedings of the 16th conference of the European chapter of the association for computational linguistics: main 
+volume (pp. 255–269). (2021), April.
+ 36. Wei, J. et al. Chain-of-thought prompting elicits reasoning in large language models. Adv. Neural. Inf. Process. Syst.35, 
+24824–24837 (2022).
+ 37. Jain, S. & Wallace, B. C. Attention is not explanation. In Proceedings of the 2019 Conference of the North American 
+Chapter of the Association for Computational Linguistics: Human Language Technologies, Volume 1 (Long and Short 
+Papers) (pp. 3543–3556). (2019), June.
+ 38. Liu, N. F. et al. Lost in the middle: How language models use long contexts. Trans. association Comput. linguistics. 12, 
+157–173 (2024).
+ 39. Khot, T. et al. Decomposed prompting: A modular approach for solving complex tasks. arXiv preprintarXiv:2210.02406. 
+(2022).
+ 40. Wang, L. et al. Plan-and-solve prompting: Improving zero-shot chain-of-thought reasoning by large language models. 
+In Proceedings of the 61st annual meeting of the association for computational linguistics (volume 1: long papers) (pp. 
+2609–2634). (2023), July.
+ 41. Chen, Y . C. et al. Enhancing responses from large language models with role-playing prompts:a comparative study on 
+answering frequently asked questions about total knee arthroplasty. BMC Med. Inf. Decis. Mak.25 (1), 196 (2025).
+
+Article in Press
+Scientific Reports
+https://doi.org/10.1038/s41598-026-75356-9
+ 42. Huang, L. et al. A survey on hallucination in large language models: Principles, taxonomy, challenges, and open questions. 
+ACM Trans. Inform. Syst.43 (2), 1–55 (2025).
+ 43. Béchard, P. & Ayala, O. M. Reducing hallucination in structured outputs via Retrieval-Augmented Generation. arXiv 
+preprintarXiv:2404.08189. (2024).
+ 44. Liu, M. X. et al. we need structured output: Towards user-centered constraints on large language model output. In 
+Extended Abstracts of the CHI Conference on Human Factors in Computing Systems (pp. 1–9). (2024), May.
+ 45. Ha, H. Y ., Lee, T. H., Bae, J. H. & Chun, D. W. Molybdenum effects on pitting corrosion resistance of FeCrMnMoNC 
+austenitic stainless steels. Metals8 (8), 653 (2018).
+ 46. Pardo, A. et al. Pitting corrosion behaviour of austenitic stainless steels–combining effects of Mn and Mo additions. 
+Corros. Sci.50 (6), 1796–1806 (2008).
+ 47. Sun, J., Tang, H., Wang, C., Han, Z. & Li, S. Effects of alloying elements and microstructure on stainless steel corrosion: 
+a review. Steel Res. Int.93 (5), 2100450 (2022).
+ 48. Yu, Y ., Shironita, S., Souma, K. & Umeda, M. Effect of chromium content on the corrosion resistance of ferritic stainless 
+steels in sulfuric acid solution. Heliyon, 4(11). (2018).
+ 49. Ilevbare, G. O. & Burstein, G. T. The role of alloyed molybdenum in the inhibition of pitting corrosion in stainless steels. 
+Corros. Sci.43 (3), 485–513. https://doi.org/10.1016/S0010-938X(00)00086-X (2001).
+ 50. Kaneko, M. & Isaacs, H. S. Effects of molybdenum on the pitting of ferritic- and austenitic-stainless steels in bromide 
+and chloride solutions. Corros. Sci.44 (8), 1825–1834. https://doi.org/10.1016/S0010-938X(02)00003-3 (2002).
+ 51. Jargelius-Pettersson, R. Electrochemical investigation of the influence of nitrogen alloying on pitting corrosion of 
+austenitic stainless steels. Corros. Sci.41 (8), 1639–1664. https://doi.org/10.1016/S0010-938X(99)00013-X (1999).
+ 52. Dastgerdi, A. A., Brenna, A., Ormellese, M., Pedeferri, M. & Bolzoni, F. Experimental design to study the influence of 
+temperature, pH, and chloride concentration on the pitting and crevice corrosion of UNS S30403 stainless steel. Corros. 
+Sci.159, 108160 (2019).
+ 53. Pardo, A. et al. Pitting corrosion behaviour of austenitic stainless steels–combining effects of Mn and Mo additions. 
+Corros. Sci.50 (6), 1796–1806 (2008).
+Publisher’s note Springer Nature remains neutral with regard to jurisdictional claims in published maps and institutional 
+affiliations.
+Authors and Affiliations
+Zhen Huang1 · Jinyan Duan2 · Yupeng Liu1 · Changgang Wang3
+ Yupeng Liu
+liuyupeng@hit.edu.cn
+ Changgang Wang
+cgwang@imr.ac.cn
+1 School of Economics and Management, Harbin Institute of Technology, 2, West Wenhua Rd., Weihai 264209, China
+2 School of Economics and Management, Harbin Institute of Technology, 13 Fayuan Street, Nangang District,  
+Harbin 150001, China
+3 Institute of Metal Research, Chinese Academy of Sciences, Shenyang 110016, PR China

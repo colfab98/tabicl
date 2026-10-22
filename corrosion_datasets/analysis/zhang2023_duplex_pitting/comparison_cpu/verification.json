@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "all_jobs_complete": 87,
+  "errors": 0,
+  "checkpoint_steps": 24,
+  "metric_rows": 133,
+  "prediction_rows": 7448,
+  "context_rows": 4787,
+  "query_rows": 56,
+  "distinct_query_input_vectors": 7,
+  "feature_columns": 50,
+  "max_recomputed_metric_difference": 0.0,
+  "artifact_hashes_verified": true,
+  "original_context_unchanged": true,
+  "prediction_ids_and_target_values_verified_for_every_job": true,
+  "matched_comparison_step": 5000,
+  "focused_tests_passed": 16
+}

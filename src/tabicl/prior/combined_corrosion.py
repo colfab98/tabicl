@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -227,6 +228,40 @@ class CombinedCorrosionPriorDataset(IterableDataset):
         )
         train_sizes = torch.full((batch_size,), train_size, dtype=torch.long, device=self.device)
         return X, y, d, seq_lens, train_sizes, source_ids
+
+    def sampling_config(self):
+        """Settings which must agree to continue an existing synthetic stream."""
+        return {
+            "provenance": {key: value for key, value in self.provenance.items() if key != "config_path"},
+            "batch_size": self.batch_size,
+            "batch_size_per_gp": self.batch_size_per_gp,
+            "max_seq_len": self.max_seq_len,
+            "min_train_size": self.min_train_size,
+            "max_train_size": self.max_train_size,
+        }
+
+    def sampling_state_dict(self):
+        """Private coefficient generators supplement the process-global RNGs."""
+        return {
+            name: {
+                "coefficient_rng": copy.deepcopy(prior._coefficient_rng.bit_generator.state)
+                if prior._coefficient_rng is not None else None,
+                "coefficient_worker_seed": prior._coefficient_worker_seed,
+            }
+            for name, prior in self.priors.items()
+        }
+
+    def load_sampling_state_dict(self, state):
+        if set(state) != set(self.priors):
+            raise ValueError("Saved sampling state does not match the prior regimes.")
+        for name, prior in self.priors.items():
+            saved = state[name]
+            rng_state = saved["coefficient_rng"]
+            if (rng_state is None) != (prior._coefficient_rng is None):
+                raise ValueError(f"Coefficient RNG configuration changed for {name}.")
+            if rng_state is not None:
+                prior._coefficient_rng.bit_generator.state = copy.deepcopy(rng_state)
+            prior._coefficient_worker_seed = saved["coefficient_worker_seed"]
 
     def __iter__(self) -> "CombinedCorrosionPriorDataset":
         return self

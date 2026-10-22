@@ -74,7 +74,7 @@ def test_combined_final_wrapper_uses_shared_evaluator_and_all_baselines() -> Non
     assert command[command.index("--fixed-schema-model") + 1] == "combined_corrpfn"
     assert command[command.index("--missing-aware-model") + 1] == "combined_corrpfn"
     assert command[command.index("--checkpoint") + 1] == "all"
-    assert command[command.index("--checkpoint-step-interval") + 1] == "0"
+    assert command[command.index("--checkpoint-step-interval") + 1] == "500"
     assert "--native-tabicl-baselines" in command
     assert "--compare-pretrained-tabicl" in command
     assert "--compare-catboost" in command

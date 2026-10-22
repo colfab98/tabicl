@@ -1622,3 +1622,161 @@ input-handling diagnostics. V2 was motivated after that inspection, so a later
 comparison on the same MPEA rows is a follow-up result, not independent
 confirmation on a previously untouched test set. No checkpoint or input
 treatment is promoted as the final model from the diagnostic maxima above.
+
+## 16. Zhang 2023 composition-bearing external queries (2026-10-21)
+
+The new external dataset is [Zhang et al., Nature Communications 14, 7869](https://doi.org/10.1038/s41467-023-43752-8).
+Its source workbook, Supplementary Figure 6a--c, supplies 56 individual pitting
+potentials in mV versus SCE. Supplementary Tables 3 and 6 supply seven
+experimental compositions in wt%; each has eight replicate measurements in
+one environment. The 16 industrial measurements in Figure 6d are excluded
+because a separately verified industrial composition table was not located.
+Theoretical compositions are excluded.
+
+The [preparation script](corrosion_datasets/datasets/zhang2023_duplex_pitting/prepare_evaluation.py)
+uses the existing 50-feature registry without changing its order or units.
+Fe is reconstructed from the explicitly reported balance; unreported trace
+elements remain NaN, and explicit Nb zeros remain zero. The conditions are
+72 degrees C, pH 8.2, 1 cm2, 2000 grit and 0.333 mV/s. The double-concentration
+seawater recipe is taken from the paper's reference 65, Xin and Li (2014),
+Table 1. Summing all chloride salts yields approximately 1.118999 mol/L Cl;
+sulfate and bromide are approximately 0.057589 and 0.001697 mol/L.
+Bicarbonate is not treated as carbonate. Unverified timing/redox units remain
+missing in model inputs, with the original seconds/volts retained as audit
+metadata. Reference type remains SCE; no target conversion is applied.
+
+The original 4,787 EPIT/Soccol context rows are copied byte-for-byte. All 56
+new rows are frozen external queries, with labels in a separate scoring file.
+No new labels enter context or preprocessing fits. Composition IDs and the
+source's target-sorted replicate indices are excluded from predictors.
+
+The [evaluation driver](scripts/combined_corrosion/evaluate_zhang2023.py)
+reuses the MPEA model factories, native versus fixed-schema inference settings,
+metrics and plots. It compares the local generic model, official pretrained
+TabICL V2, both shared-schema specialists, COMB V2 and the 50/25/25 COMB model,
+plus CatBoost. Settings remain eight estimators, seed 42, median predictions,
+and the original CatBoost hyperparameters. Checkpoint files and the complete
+evaluation protocol are hashed before evaluation. The direct comparison is
+fixed at step 5,000, the latest 500-step checkpoint available for all five
+local models, selected by availability before inspecting its results.
+Other checkpoint trajectories remain diagnostics and do not select a model.
+
+Artifacts and commands are documented in the [dataset README](corrosion_datasets/datasets/zhang2023_duplex_pitting/README.md).
+Results are saved in [comparison_cpu](corrosion_datasets/analysis/zhang2023_duplex_pitting/comparison_cpu/).
+The 56 observations represent only seven distinct input vectors. This is a
+small, single-study external check, and the Nb-dependent inclusion changes
+are not explicitly represented by the feature schema.
+
+The CPU run completed all 87 distinct model/checkpoint jobs across 24 saved
+steps without errors. Static baseline results are reused across steps.
+At the predeclared common step 5,000:
+
+| Model | Spearman | RMSE (mV) |
+| --- | ---: | ---: |
+| Local generic TabICL | 0.9871 | 280.92 |
+| Official pretrained TabICL V2 | 0.8048 | 221.85 |
+| COMB V2 | 0.9164 | 250.56 |
+| EPIT shared-schema specialist | 0.7667 | 201.05 |
+| Soccol shared-schema specialist | 0.8402 | 247.16 |
+| COMB 50% generic / 25% EPIT / 25% Soccol | 0.8430 | 349.08 |
+| CatBoost | 0.9871 | 138.60 |
+
+CatBoost has the lowest absolute error in this matched comparison. COMB V2
+has better rank correlation than either specialist, while EPIT has lower
+absolute error than COMB V2. These metrics distinguish ranking from numerical
+accuracy; they do not by themselves identify the cause of the MPEA failures.
+
+## 17. Frozen MPEA specialist split (2026-10-22)
+
+The new MPEA specialist workflow uses the existing 267 source-screened rows
+and the unchanged 50-column shared schema. It follows the EPIT/Soccol split
+procedure: round composition values to 0.01 wt.%, join pairs within L1 distance
+1.0 wt.%, keep connected composition groups intact, and reserve approximately
+20% of rows as the fixed final test. The EPIT grouping, optimization, and fold
+refinement functions are reused with an explicit MPEA final-test size; their
+EPIT defaults remain unchanged.
+
+| Partition | Rows | Role |
+| --- | ---: | --- |
+| Development | 214 | Formula checks, coefficient fitting, prior construction, Optuna and model selection |
+| Final test | 53 | Queries for evaluation of the frozen chosen model |
+| Development validation folds | 43 / 43 / 43 / 43 / 42 | Five grouped rotations within development only |
+
+There are 116 composition groups. No group or composition pair within the
+distance threshold crosses the outer boundary or a development fold.
+The assignment uses the established target, isolation, environment and source
+balance terms; unavailable material-family and test-method classifications are
+omitted. There is no rebalancing between datasets for the later three-context,
+three-query merge. Missing values and reported mV SCE targets are unchanged.
+
+The [split folder](corrosion_datasets/datasets/mpea_corrosion/processed/splits_v1/)
+contains the manifest, row assignments, report, hash lock, labeled development
+table, target-free final queries, separate final scoring targets, and shared
+feature registry. Final-test labels are absent from the development table and
+public assignments. No formulas or models were fitted in this step.
+
+The original external MPEA-query protocol and exploratory MPEA-only fivefold
+assignments are unchanged. These 267 rows have already been inspected in those
+experiments; the new partition defines the specialist task, not a new independent
+dataset. Future MPEA operations must remain aligned with EPIT/Soccol and reuse
+the frozen split, with final models always evaluated on its 53 outer queries.
+
+## 18. MPEA development-only formula investigation (2026-10-22)
+
+The MPEA comparison reuses EPIT's `calibrate_family` and constrained coefficient
+fitter on the frozen 214 development rows. For each of the five folds, means,
+scales and coefficients are fitted on the other four folds. Coefficients remain
+nonnegative, sum to one, retain the source bounds, and use anchor strength 0.1.
+Each candidate also receives a coefficient center fitted on all development
+rows for possible later training. The 53 final-test rows are never parsed into
+the fitting data or scored.
+
+All 18 production source/rule combinations require fields absent from MPEA.
+Nitrogen, sulfur, pH, scan rate and the additional anion fields are unrecorded;
+temperature has only four development observations. Chloride has 151 observed
+rows and three distinct values. Missing chloride is imputed from the current
+context mean, following EPIT. Missing composition or pH is not invented as zero.
+
+Eleven explicit reductions and eight matching composition-only controls were
+defined before inspecting their scores. Original formulas that differ only in
+unavailable terms collapse to one reduced hypothesis. EPIT variants retain W;
+Soccol variants preserve their original material expressions without W.
+
+| Reduced candidate | Mean fold Spearman | Before coefficient fitting |
+| --- | ---: | ---: |
+| EPIT Cr-Mo-W plus chloride | 0.2334 | 0.2424 |
+| EPIT Cr-Mo-W synergy plus chloride interaction | 0.2314 | 0.2205 |
+| EPIT Cr-Mo-W plus chloride interaction | 0.2205 | 0.2110 |
+| EPIT coupled material/chloride breakdown | 0.2174 | 0.2129 |
+| Best composition-only control | 0.2064 | 0.2064 |
+
+These are direct analytical ranking scores, not transformer predictions or
+final-test scores. Fitting coefficients does not resolve the weak ranking.
+The leading fitted rule improves over its own composition-only control by
+0.0292 mean Spearman, but improves only two of five folds.
+
+Its fold scores are 0.3862, 0.3103, 0.3973, 0.5019 and -0.4288. The weakest
+fold contains a 13-row composition group, Al2NbTi3V2Zr in nitric acid, with
+median reported potential 1,856 mV SCE. This group has no Cr, Mo or W and about
+48.91 wt.% Ti+Nb. The inherited material expressions cannot respond to these
+other composition contributions. They assign the group low scores despite its
+high reported potentials. Composition-only controls also fail in this fold.
+
+On rows with recorded chloride, the same leading rule's mean fold Spearman is
+0.5320. This is a diagnostic subset with different alloy/environment coverage;
+it does not show that chloride imputation alone caused the failure. No rows
+were excluded from the principal scores and the frozen folds were not changed.
+These results identify a limitation of the inherited formulas on MPEA; they do
+not establish the cause of COMB's trained-model performance.
+
+The decision is to retain the simple Cr-Mo-W/chloride formula as a reference
+and investigate MPEA material/environment coverage before promoting formulas
+for Optuna. Unrecorded N, Mn-S, acid-pH and extra-ion effects cannot be fitted
+independently here. No production registry, synthetic generator, training run
+or Optuna study was changed.
+
+The [report and artifacts](corrosion_datasets/analysis/mpea_target_rules_v1/README.md)
+include feature coverage, original-rule applicability, all fold and pooled
+scores, predictions, full-development coefficient centers, preprocessing states,
+and the failure-group audit. The output hashes and implementation hashes were
+verified; 17 focused MPEA/EPIT calibration and split tests passed.

@@ -9,6 +9,7 @@ import numpy as np
 
 from scripts.epit_pipeline.split_data import (
     INNER_FOLD_COUNT,
+    OUTER_TEST_ROWS,
     CompositionGrouping,
     EpitDataset,
     OptimizerRecord,
@@ -49,6 +50,7 @@ def refine_inner_folds(
     random_seed: int = DEFAULT_REFINEMENT_SEED,
     max_proposals: int = DEFAULT_MAX_PROPOSALS,
     stale_proposals: int = DEFAULT_STALE_PROPOSALS,
+    outer_test_rows: int = OUTER_TEST_ROWS,
 ) -> SplitAssignment:
     """Improve balance without changing any fold's exact number of rows.
 
@@ -161,5 +163,5 @@ def refine_inner_folds(
         validation_fold_by_group=fold_by_group,
         inner_optimizer=refined_record,
     )
-    validate_split_assignment(dataset, grouping, refined)
+    validate_split_assignment(dataset, grouping, refined, outer_test_rows=outer_test_rows)
     return refined

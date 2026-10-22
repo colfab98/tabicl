@@ -140,7 +140,13 @@ class TransformToNumerical(TransformerMixin, BaseEstimator):
             unknown_value=-1,
             encoded_missing_value=np.nan if self.preserve_missing_values else -1,
         )
-        num_tfm = FunctionTransformer() if self.preserve_missing_values else SimpleImputer()
+        # Restore column order below before any estimator-level feature filtering.
+        # Dropping empty context columns here invalidates those positional indices.
+        num_tfm = (
+            FunctionTransformer()
+            if self.preserve_missing_values
+            else SimpleImputer(keep_empty_features=True)
+        )
 
         if not hasattr(X, "columns"):  # proxy way to check whether X is a dataframe without importing pandas
             # no dataframe

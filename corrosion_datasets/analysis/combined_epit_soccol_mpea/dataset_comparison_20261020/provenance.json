@@ -1,0 +1,15 @@
+{
+  "scope": "Post-hoc descriptive analysis, no fitting to MPEA labels or checkpoint selection.",
+  "seed": 20261020,
+  "study_bootstrap_replicates": 399,
+  "bootstrap_limit": "Pointwise exploratory intervals; not corrected for feature screening.",
+  "projection_limit": "Composition distance fills unknowns with zero only for projection diagnostics.",
+  "source_reference_limit": "Source IDs approximate study groups; separate IDs may share provenance.",
+  "input_sha256": {
+    "epit_soccol_context.csv": "3ac7fa8730bba6084ad8f81e05c216601c724641bb1c861b701d07ae1fec247e",
+    "mpea_queries.csv": "8f57ef0653d9a638414c108608ce2ce2986b9b5e1247289601488b48950ea46a",
+    "mpea_scoring_targets.csv": "db0bb8f5948755158515c65a59886cdeb97e97cddcd369cbb02b4a0711b6b0d4",
+    "combined_prior_config.json": "b19a0faa33d28387c02486d1a1e088160dc5ce043912a7f125d8fffb32bbdbf9",
+    "shared_feature_registry.json": "8181a068616112011c709d77ee04e3bdd54aa7bce5f0a698d9171c3976e2aed7"
+  }
+}

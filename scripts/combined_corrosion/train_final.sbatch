@@ -39,7 +39,7 @@ CHECKPOINT_DIR="${CHECKPOINT_DIR:-checkpoints/combined_epit_soccol_mpea/final_se
 [[ -f "$PRIOR_CONFIG" ]] || { echo "Missing prior config: $PRIOR_CONFIG" >&2; exit 1; }
 [[ -f "$MISSINGNESS_PROFILE" ]] || { echo "Missing missingness profile: $MISSINGNESS_PROFILE" >&2; exit 1; }
 
-torchrun --standalone --nproc_per_node="$NPROC_PER_NODE" src/tabicl/train/run.py \
+TRAIN_ARGS=(
   --device cuda \
   --dtype float32 \
   --amp True \
@@ -93,3 +93,43 @@ torchrun --standalone --nproc_per_node="$NPROC_PER_NODE" src/tabicl/train/run.py
   --checkpoint_dir "$CHECKPOINT_DIR" \
   --save_temp_every "$SAVE_TEMP_EVERY" \
   --save_perm_every "$SAVE_PERM_EVERY"
+)
+
+# All launches through this script share one writer lock per checkpoint directory.
+# A dry run validates and prints the command without creating files or training.
+if [[ "${COMBINED_DRY_RUN:-False}" != True ]]; then
+  mkdir -p "$CHECKPOINT_DIR"
+  exec 9>"$CHECKPOINT_DIR/.training.lock"
+  flock -n 9 || { echo "Another training process holds the run lock: $CHECKPOINT_DIR" >&2; exit 1; }
+fi
+
+if [[ -n "${EPIT_CONTINUATION_ARM:-}" ]]; then
+  [[ "$NPROC_PER_NODE" == 1 ]] || { echo "EPIT continuation requires one training process." >&2; exit 1; }
+  CONTINUATION_ARGS=(--arm "$EPIT_CONTINUATION_ARM" --mode "$COMBINED_V2_RUN_MODE"
+    --parent-checkpoint "$EPIT_CONTINUATION_PARENT")
+  if [[ "${COMBINED_DRY_RUN:-False}" == True ]]; then
+    CONTINUATION_ARGS+=(--dry-run)
+  fi
+  CHECKPOINT_PATH="$(python -m scripts.combined_corrosion.continue_epit_v2 \
+    "${CONTINUATION_ARGS[@]}" -- "${TRAIN_ARGS[@]}")"
+  TRAIN_ARGS+=(--checkpoint_path "$CHECKPOINT_PATH")
+elif [[ -n "${COMBINED_V2_RUN_MODE:-}" ]]; then
+  if [[ "$COMBINED_V2_RUN_MODE" == resume && "$NPROC_PER_NODE" != 1 ]]; then
+    echo "V2 resume requires the original single-process training configuration." >&2
+    exit 1
+  fi
+  CHECKPOINT_PATH="$(python -m scripts.combined_corrosion.validate_v2_run \
+    --mode "$COMBINED_V2_RUN_MODE" -- "${TRAIN_ARGS[@]}")"
+  if [[ -n "$CHECKPOINT_PATH" ]]; then
+    TRAIN_ARGS+=(--checkpoint_path "$CHECKPOINT_PATH")
+  fi
+fi
+
+COMMAND=(torchrun --standalone --nproc_per_node="$NPROC_PER_NODE" src/tabicl/train/run.py "${TRAIN_ARGS[@]}")
+if [[ "${COMBINED_DRY_RUN:-False}" == True ]]; then
+  printf '%q ' "${COMMAND[@]}"
+  printf '\n'
+  exit 0
+fi
+
+exec "${COMMAND[@]}"

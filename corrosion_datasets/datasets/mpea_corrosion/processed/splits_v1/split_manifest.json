@@ -1,0 +1,3551 @@
+{
+  "schema_version": "mpea_composition_split_manifest_v1",
+  "created_utc": "2026-10-22T10:58:21.433020+00:00",
+  "dataset": {
+    "dataset_id": "mpea_corrosion",
+    "usable_rows": 267,
+    "source_file": "corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/mpea_queries.csv",
+    "source_sha256": "8f57ef0653d9a638414c108608ce2ce2986b9b5e1247289601488b48950ea46a",
+    "target_column": "reported_pitting_potential_mV",
+    "target_unit": "mV vs SCE",
+    "feature_columns_in_order": [
+      "B",
+      "C",
+      "N",
+      "Mg",
+      "Al",
+      "Si",
+      "P",
+      "S",
+      "Ti",
+      "V",
+      "Cr",
+      "Mn",
+      "Fe",
+      "Co",
+      "Ni",
+      "Cu",
+      "Y",
+      "Nb",
+      "Mo",
+      "Ce",
+      "Gd",
+      "Ta",
+      "W",
+      "Re",
+      "Prep_grinding_grit",
+      "Prep_Ra_micron",
+      "Prep_pH",
+      "Prep_redox",
+      "Prep_time",
+      "CP_time",
+      "CP_temp",
+      "CP_pH",
+      "Test_area_cm2",
+      "scan_rate",
+      "CP_Cl",
+      "CP_Br",
+      "CP_OH",
+      "CP_SO4",
+      "CP_CO3",
+      "CP_NO3",
+      "CP_PO4",
+      "CP_MoO4",
+      "CP_CrO4",
+      "CP_ion_other",
+      "Prep_medium",
+      "CP_aeration",
+      "CP_agitation",
+      "CP_anions_info",
+      "test_method",
+      "reference_type"
+    ],
+    "model_visible_composition_columns": [
+      "B",
+      "C",
+      "N",
+      "Mg",
+      "Al",
+      "Si",
+      "P",
+      "S",
+      "Ti",
+      "V",
+      "Cr",
+      "Mn",
+      "Fe",
+      "Co",
+      "Ni",
+      "Cu",
+      "Y",
+      "Nb",
+      "Mo",
+      "Ce",
+      "Gd",
+      "Ta",
+      "W",
+      "Re"
+    ]
+  },
+  "inputs": {
+    "queries": {
+      "path": "corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/mpea_queries.csv",
+      "sha256": "8f57ef0653d9a638414c108608ce2ce2986b9b5e1247289601488b48950ea46a"
+    },
+    "targets": {
+      "path": "corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/mpea_scoring_targets.csv",
+      "sha256": "db0bb8f5948755158515c65a59886cdeb97e97cddcd369cbb02b4a0711b6b0d4"
+    },
+    "registry": {
+      "path": "corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/shared_feature_registry.json",
+      "sha256": "8181a068616112011c709d77ee04e3bdd54aa7bce5f0a698d9171c3976e2aed7"
+    }
+  },
+  "composition_grouping": {
+    "normalization": "none",
+    "round_decimal_places": 2,
+    "blank_handling_for_distance": "zero for grouping only; exported missing values unchanged",
+    "distance": "sum_absolute_difference_wt_percent",
+    "clustering": "threshold_connected_components",
+    "maximum_link_distance": 1.0,
+    "composition_groups": 116,
+    "rounded_composition_keys": 129,
+    "maximum_component_diameter": 4.300000000000001,
+    "minimum_between_component_distance": 1.4500000000000006
+  },
+  "split_design": {
+    "development_rows": 214,
+    "final_test_rows": 53,
+    "optuna_validation_folds": 5,
+    "fold_meaning": "Fold N is an Optuna/development validation query; the other development folds are context.",
+    "final_evaluation": "All development rows are context; the frozen outer final-test rows are queries.",
+    "balance_block_weights": {
+      "target_decile": 3.0,
+      "composition_isolation": 2.0,
+      "temperature": 1.0,
+      "chloride": 1.0,
+      "pH": 1.0,
+      "reference": 0.5
+    },
+    "omitted_balance_blocks": {
+      "material_class": "No comparable recorded material-family classification in the MPEA inputs.",
+      "test_method_family": "No recorded test-method values in the MPEA inputs."
+    },
+    "target_balance": "global target deciles, as in EPIT and Soccol",
+    "source_role": "balance and audit only, not composition grouping",
+    "environment_balance_bins": {
+      "CP_temp": [
+        10.0,
+        35.0,
+        70.0
+      ],
+      "CP_Cl": [
+        0.0,
+        0.01,
+        0.1,
+        0.6,
+        1.0
+      ],
+      "CP_pH": [
+        3.0,
+        6.0,
+        8.0
+      ]
+    },
+    "cross_dataset_rebalancing": false
+  },
+  "usage": {
+    "development": "Formula checks, coefficient fitting, prior construction, Optuna and checkpoint selection only on development rows.",
+    "final_test": "Scoring the frozen chosen model; never used as context or for fitting or selection.",
+    "prior_exposure": "These 267 rows were previously used in external and MPEA-only exploratory evaluations; this is not a newly collected untouched dataset.",
+    "previous_protocols": "The original 267 external queries and exploratory fivefold assignments are separate and unchanged."
+  },
+  "optimizer": {
+    "outer": {
+      "message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)",
+      "objective": 0.4442795574857906,
+      "mip_gap": 0.00850837206626734,
+      "node_count": 112,
+      "time_limit_seconds": 20.0
+    },
+    "inner": {
+      "message": "Time limit reached. (HiGHS Status 13: Time limit reached); deterministic bundle refinement accepted 5 of 116243 proposals",
+      "objective": 7.462834166485547,
+      "mip_gap": null,
+      "node_count": 2046,
+      "time_limit_seconds": 60.0
+    }
+  },
+  "implementation_sha256": {
+    "corrosion_datasets/datasets/mpea_corrosion/prepare_composition_split.py": "d8ac51c8a01a00480ae4c71aa485bfc48bd01838f741f98b07cc78f81dbf69ef",
+    "scripts/epit_pipeline/split_data.py": "13192c5142fa320d44479119c20833b6b5ef4fa25660cea0aca4304edeb0b1d7",
+    "scripts/epit_pipeline/split_refinement.py": "bd9b1c01216fb0ca3f7a301683256e1060105306d1d842945e20354ed3ed9131"
+  },
+  "checks": {
+    "development_row_count": 214,
+    "final_test_row_count": 53,
+    "optuna_validation_row_counts": {
+      "1": 43,
+      "2": 43,
+      "3": 43,
+      "4": 43,
+      "5": 42
+    },
+    "outer_composition_overlap": 0,
+    "inner_composition_overlap_each_fold": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "outer_close_composition_pair_crossings": 0,
+    "inner_close_composition_pair_crossings_each_fold": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "source_overlap": {
+      "development_sources": 54,
+      "final_test_sources": 29,
+      "shared_sources": 23
+    }
+  },
+  "groups": [
+    {
+      "composition_group": "composition_0001",
+      "row_count": 4,
+      "task_row_indices": [
+        0,
+        3,
+        6,
+        207
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0002",
+      "row_count": 4,
+      "task_row_indices": [
+        1,
+        4,
+        7,
+        208
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0003",
+      "row_count": 4,
+      "task_row_indices": [
+        2,
+        5,
+        8,
+        209
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0004",
+      "row_count": 3,
+      "task_row_indices": [
+        9,
+        10,
+        11
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0005",
+      "row_count": 1,
+      "task_row_indices": [
+        12
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0006",
+      "row_count": 2,
+      "task_row_indices": [
+        13,
+        70
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0007",
+      "row_count": 2,
+      "task_row_indices": [
+        14,
+        71
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0008",
+      "row_count": 2,
+      "task_row_indices": [
+        15,
+        72
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0009",
+      "row_count": 2,
+      "task_row_indices": [
+        16,
+        73
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0010",
+      "row_count": 2,
+      "task_row_indices": [
+        17,
+        74
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0011",
+      "row_count": 9,
+      "task_row_indices": [
+        18,
+        34,
+        43,
+        61,
+        167,
+        182,
+        203,
+        217,
+        222
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0012",
+      "row_count": 14,
+      "task_row_indices": [
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        183,
+        204,
+        218,
+        223,
+        225
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0013",
+      "row_count": 11,
+      "task_row_indices": [
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        142,
+        185,
+        220,
+        221,
+        233
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0014",
+      "row_count": 3,
+      "task_row_indices": [
+        35,
+        141,
+        172
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0015",
+      "row_count": 1,
+      "task_row_indices": [
+        36
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0016",
+      "row_count": 1,
+      "task_row_indices": [
+        37
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0017",
+      "row_count": 1,
+      "task_row_indices": [
+        38
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0018",
+      "row_count": 1,
+      "task_row_indices": [
+        39
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0019",
+      "row_count": 4,
+      "task_row_indices": [
+        40,
+        59,
+        60,
+        145
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0020",
+      "row_count": 1,
+      "task_row_indices": [
+        41
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0021",
+      "row_count": 1,
+      "task_row_indices": [
+        42
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0022",
+      "row_count": 1,
+      "task_row_indices": [
+        44
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0023",
+      "row_count": 1,
+      "task_row_indices": [
+        45
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0024",
+      "row_count": 1,
+      "task_row_indices": [
+        46
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0025",
+      "row_count": 1,
+      "task_row_indices": [
+        47
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0026",
+      "row_count": 1,
+      "task_row_indices": [
+        48
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0027",
+      "row_count": 1,
+      "task_row_indices": [
+        49
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0028",
+      "row_count": 1,
+      "task_row_indices": [
+        50
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0029",
+      "row_count": 1,
+      "task_row_indices": [
+        51
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0030",
+      "row_count": 1,
+      "task_row_indices": [
+        52
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0031",
+      "row_count": 1,
+      "task_row_indices": [
+        53
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0032",
+      "row_count": 2,
+      "task_row_indices": [
+        54,
+        148
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0033",
+      "row_count": 2,
+      "task_row_indices": [
+        55,
+        147
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0034",
+      "row_count": 2,
+      "task_row_indices": [
+        56,
+        149
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0035",
+      "row_count": 1,
+      "task_row_indices": [
+        57
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0036",
+      "row_count": 1,
+      "task_row_indices": [
+        58
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0037",
+      "row_count": 7,
+      "task_row_indices": [
+        62,
+        144,
+        156,
+        157,
+        158,
+        165,
+        166
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0038",
+      "row_count": 6,
+      "task_row_indices": [
+        63,
+        168,
+        184,
+        205,
+        219,
+        224
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0039",
+      "row_count": 1,
+      "task_row_indices": [
+        64
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0040",
+      "row_count": 2,
+      "task_row_indices": [
+        65,
+        200
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0041",
+      "row_count": 1,
+      "task_row_indices": [
+        66
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0042",
+      "row_count": 1,
+      "task_row_indices": [
+        67
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0043",
+      "row_count": 1,
+      "task_row_indices": [
+        68
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0044",
+      "row_count": 1,
+      "task_row_indices": [
+        69
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0045",
+      "row_count": 2,
+      "task_row_indices": [
+        75,
+        76
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0046",
+      "row_count": 1,
+      "task_row_indices": [
+        77
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0047",
+      "row_count": 1,
+      "task_row_indices": [
+        78
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0048",
+      "row_count": 1,
+      "task_row_indices": [
+        79
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0049",
+      "row_count": 1,
+      "task_row_indices": [
+        80
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0050",
+      "row_count": 1,
+      "task_row_indices": [
+        81
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0051",
+      "row_count": 1,
+      "task_row_indices": [
+        82
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0052",
+      "row_count": 1,
+      "task_row_indices": [
+        83
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0053",
+      "row_count": 3,
+      "task_row_indices": [
+        84,
+        87,
+        173
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0054",
+      "row_count": 3,
+      "task_row_indices": [
+        85,
+        88,
+        174
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0055",
+      "row_count": 3,
+      "task_row_indices": [
+        86,
+        89,
+        175
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0056",
+      "row_count": 3,
+      "task_row_indices": [
+        90,
+        91,
+        92
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0057",
+      "row_count": 1,
+      "task_row_indices": [
+        93
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0058",
+      "row_count": 1,
+      "task_row_indices": [
+        94
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0059",
+      "row_count": 1,
+      "task_row_indices": [
+        95
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0060",
+      "row_count": 1,
+      "task_row_indices": [
+        96
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0061",
+      "row_count": 1,
+      "task_row_indices": [
+        97
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0062",
+      "row_count": 4,
+      "task_row_indices": [
+        98,
+        99,
+        100,
+        101
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0063",
+      "row_count": 4,
+      "task_row_indices": [
+        102,
+        103,
+        104,
+        105
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0064",
+      "row_count": 4,
+      "task_row_indices": [
+        106,
+        107,
+        108,
+        109
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0065",
+      "row_count": 3,
+      "task_row_indices": [
+        110,
+        111,
+        112
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0066",
+      "row_count": 3,
+      "task_row_indices": [
+        113,
+        114,
+        115
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0067",
+      "row_count": 14,
+      "task_row_indices": [
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0068",
+      "row_count": 7,
+      "task_row_indices": [
+        130,
+        131,
+        132,
+        133,
+        134,
+        150,
+        169
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0069",
+      "row_count": 1,
+      "task_row_indices": [
+        135
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0070",
+      "row_count": 1,
+      "task_row_indices": [
+        136
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0071",
+      "row_count": 1,
+      "task_row_indices": [
+        137
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0072",
+      "row_count": 1,
+      "task_row_indices": [
+        138
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0073",
+      "row_count": 1,
+      "task_row_indices": [
+        139
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0074",
+      "row_count": 1,
+      "task_row_indices": [
+        140
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0075",
+      "row_count": 1,
+      "task_row_indices": [
+        143
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0076",
+      "row_count": 3,
+      "task_row_indices": [
+        146,
+        164,
+        171
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0077",
+      "row_count": 2,
+      "task_row_indices": [
+        151,
+        170
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0078",
+      "row_count": 1,
+      "task_row_indices": [
+        152
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0079",
+      "row_count": 1,
+      "task_row_indices": [
+        153
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0080",
+      "row_count": 1,
+      "task_row_indices": [
+        154
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0081",
+      "row_count": 1,
+      "task_row_indices": [
+        155
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0082",
+      "row_count": 4,
+      "task_row_indices": [
+        159,
+        160,
+        161,
+        162
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0083",
+      "row_count": 2,
+      "task_row_indices": [
+        163,
+        239
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0084",
+      "row_count": 9,
+      "task_row_indices": [
+        176,
+        177,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0085",
+      "row_count": 1,
+      "task_row_indices": [
+        178
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0086",
+      "row_count": 1,
+      "task_row_indices": [
+        179
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0087",
+      "row_count": 1,
+      "task_row_indices": [
+        180
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0088",
+      "row_count": 1,
+      "task_row_indices": [
+        181
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0089",
+      "row_count": 1,
+      "task_row_indices": [
+        186
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0090",
+      "row_count": 1,
+      "task_row_indices": [
+        187
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0091",
+      "row_count": 13,
+      "task_row_indices": [
+        188,
+        189,
+        190,
+        191,
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        253
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0092",
+      "row_count": 1,
+      "task_row_indices": [
+        201
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0093",
+      "row_count": 1,
+      "task_row_indices": [
+        202
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0094",
+      "row_count": 1,
+      "task_row_indices": [
+        206
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0095",
+      "row_count": 1,
+      "task_row_indices": [
+        210
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0096",
+      "row_count": 1,
+      "task_row_indices": [
+        211
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0097",
+      "row_count": 1,
+      "task_row_indices": [
+        212
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0098",
+      "row_count": 1,
+      "task_row_indices": [
+        213
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0099",
+      "row_count": 1,
+      "task_row_indices": [
+        214
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0100",
+      "row_count": 1,
+      "task_row_indices": [
+        215
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0101",
+      "row_count": 1,
+      "task_row_indices": [
+        216
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0102",
+      "row_count": 5,
+      "task_row_indices": [
+        234,
+        235,
+        236,
+        237,
+        238
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "composition_group": "composition_0103",
+      "row_count": 5,
+      "task_row_indices": [
+        240,
+        241,
+        242,
+        243,
+        244
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "composition_group": "composition_0104",
+      "row_count": 1,
+      "task_row_indices": [
+        245
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0105",
+      "row_count": 1,
+      "task_row_indices": [
+        246
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "composition_group": "composition_0106",
+      "row_count": 1,
+      "task_row_indices": [
+        247
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0107",
+      "row_count": 1,
+      "task_row_indices": [
+        248
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0108",
+      "row_count": 1,
+      "task_row_indices": [
+        249
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0109",
+      "row_count": 1,
+      "task_row_indices": [
+        250
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0110",
+      "row_count": 1,
+      "task_row_indices": [
+        251
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0111",
+      "row_count": 1,
+      "task_row_indices": [
+        252
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "composition_group": "composition_0112",
+      "row_count": 9,
+      "task_row_indices": [
+        254,
+        255,
+        256,
+        257,
+        258,
+        259,
+        260,
+        261,
+        264
+      ],
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "composition_group": "composition_0113",
+      "row_count": 1,
+      "task_row_indices": [
+        262
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0114",
+      "row_count": 1,
+      "task_row_indices": [
+        263
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0115",
+      "row_count": 1,
+      "task_row_indices": [
+        265
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "composition_group": "composition_0116",
+      "row_count": 1,
+      "task_row_indices": [
+        266
+      ],
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    }
+  ],
+  "rows": [
+    {
+      "task_row_index": 0,
+      "row_id": "mpea_v1_r000003",
+      "source_reference": "10.1016/j.corsci.2010.04.005",
+      "composition_group": "composition_0001",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 1,
+      "row_id": "mpea_v1_r000004",
+      "source_reference": "10.1016/j.corsci.2010.04.006",
+      "composition_group": "composition_0002",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 2,
+      "row_id": "mpea_v1_r000005",
+      "source_reference": "10.1016/j.corsci.2010.04.007",
+      "composition_group": "composition_0003",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 3,
+      "row_id": "mpea_v1_r000007",
+      "source_reference": "10.1016/j.corsci.2010.04.005",
+      "composition_group": "composition_0001",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 4,
+      "row_id": "mpea_v1_r000008",
+      "source_reference": "10.1016/j.corsci.2010.04.006",
+      "composition_group": "composition_0002",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 5,
+      "row_id": "mpea_v1_r000009",
+      "source_reference": "10.1016/j.corsci.2010.04.007",
+      "composition_group": "composition_0003",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 6,
+      "row_id": "mpea_v1_r000011",
+      "source_reference": "10.1016/j.corsci.2010.04.005",
+      "composition_group": "composition_0001",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 7,
+      "row_id": "mpea_v1_r000012",
+      "source_reference": "10.1016/j.corsci.2010.04.006",
+      "composition_group": "composition_0002",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 8,
+      "row_id": "mpea_v1_r000013",
+      "source_reference": "10.1016/j.corsci.2010.04.007",
+      "composition_group": "composition_0003",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 9,
+      "row_id": "mpea_v1_r000014",
+      "source_reference": "10.1016/j.addma.2018.10.023",
+      "composition_group": "composition_0004",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 10,
+      "row_id": "mpea_v1_r000015",
+      "source_reference": "10.1016/j.addma.2018.10.023",
+      "composition_group": "composition_0004",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 11,
+      "row_id": "mpea_v1_r000016",
+      "source_reference": "10.1016/j.addma.2018.10.023",
+      "composition_group": "composition_0004",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 12,
+      "row_id": "mpea_v1_r000021",
+      "source_reference": "10.1016/j.jallcom.2019.07.100",
+      "composition_group": "composition_0005",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 13,
+      "row_id": "mpea_v1_r000022",
+      "source_reference": "10.1016/j.jallcom.2019.07.101",
+      "composition_group": "composition_0006",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 14,
+      "row_id": "mpea_v1_r000023",
+      "source_reference": "10.1016/j.jallcom.2019.07.102",
+      "composition_group": "composition_0007",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 15,
+      "row_id": "mpea_v1_r000024",
+      "source_reference": "10.1016/j.jallcom.2019.07.103",
+      "composition_group": "composition_0008",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 16,
+      "row_id": "mpea_v1_r000025",
+      "source_reference": "10.1016/j.jallcom.2019.07.104",
+      "composition_group": "composition_0009",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 17,
+      "row_id": "mpea_v1_r000026",
+      "source_reference": "10.1016/j.jallcom.2019.07.105",
+      "composition_group": "composition_0010",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 18,
+      "row_id": "mpea_v1_r000037",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0011",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 19,
+      "row_id": "mpea_v1_r000038",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 20,
+      "row_id": "mpea_v1_r000039",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 21,
+      "row_id": "mpea_v1_r000040",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 22,
+      "row_id": "mpea_v1_r000041",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 23,
+      "row_id": "mpea_v1_r000042",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 24,
+      "row_id": "mpea_v1_r000043",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 25,
+      "row_id": "mpea_v1_r000044",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 26,
+      "row_id": "mpea_v1_r000045",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 27,
+      "row_id": "mpea_v1_r000046",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 28,
+      "row_id": "mpea_v1_r000047",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0013",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 29,
+      "row_id": "mpea_v1_r000048",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0013",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 30,
+      "row_id": "mpea_v1_r000049",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0013",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 31,
+      "row_id": "mpea_v1_r000050",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0013",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 32,
+      "row_id": "mpea_v1_r000051",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0013",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 33,
+      "row_id": "mpea_v1_r000052",
+      "source_reference": "10.3390/e16020895",
+      "composition_group": "composition_0013",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 34,
+      "row_id": "mpea_v1_r000053",
+      "source_reference": "10.1016/j.matdes.2019.107698",
+      "composition_group": "composition_0011",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 35,
+      "row_id": "mpea_v1_r000054",
+      "source_reference": "10.1016/j.matdes.2019.107698",
+      "composition_group": "composition_0014",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 36,
+      "row_id": "mpea_v1_r000055",
+      "source_reference": "10.1016/j.matdes.2019.107698",
+      "composition_group": "composition_0015",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 37,
+      "row_id": "mpea_v1_r000056",
+      "source_reference": "10.1016/j.matdes.2019.107698",
+      "composition_group": "composition_0016",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 38,
+      "row_id": "mpea_v1_r000057",
+      "source_reference": "10.1016/j.matdes.2019.107698",
+      "composition_group": "composition_0017",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 39,
+      "row_id": "mpea_v1_r000070",
+      "source_reference": "10.1016/j.jallcom.2020.155824",
+      "composition_group": "composition_0018",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 40,
+      "row_id": "mpea_v1_r000071",
+      "source_reference": "10.1016/j.jallcom.2020.155824",
+      "composition_group": "composition_0019",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 41,
+      "row_id": "mpea_v1_r000072",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0020",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 42,
+      "row_id": "mpea_v1_r000073",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0021",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 43,
+      "row_id": "mpea_v1_r000074",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0011",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 44,
+      "row_id": "mpea_v1_r000075",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0022",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 45,
+      "row_id": "mpea_v1_r000076",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0023",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 46,
+      "row_id": "mpea_v1_r000077",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0024",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 47,
+      "row_id": "mpea_v1_r000078",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0025",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 48,
+      "row_id": "mpea_v1_r000079",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0026",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 49,
+      "row_id": "mpea_v1_r000080",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0027",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 50,
+      "row_id": "mpea_v1_r000081",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0028",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 51,
+      "row_id": "mpea_v1_r000082",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0029",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 52,
+      "row_id": "mpea_v1_r000083",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0030",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 53,
+      "row_id": "mpea_v1_r000084",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0031",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 54,
+      "row_id": "mpea_v1_r000085",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0032",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 55,
+      "row_id": "mpea_v1_r000086",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0033",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 56,
+      "row_id": "mpea_v1_r000087",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0034",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 57,
+      "row_id": "mpea_v1_r000088",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0035",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 58,
+      "row_id": "mpea_v1_r000089",
+      "source_reference": "10.1016/j.corsci.2019.108315",
+      "composition_group": "composition_0036",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 59,
+      "row_id": "mpea_v1_r000090",
+      "source_reference": "10.3390/met9101029",
+      "composition_group": "composition_0019",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 60,
+      "row_id": "mpea_v1_r000091",
+      "source_reference": "10.3390/met9101029",
+      "composition_group": "composition_0019",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 61,
+      "row_id": "mpea_v1_r000092",
+      "source_reference": "10.1016/j.corsci.2020.108740",
+      "composition_group": "composition_0011",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 62,
+      "row_id": "mpea_v1_r000093",
+      "source_reference": "10.1016/j.corsci.2020.108740",
+      "composition_group": "composition_0037",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 63,
+      "row_id": "mpea_v1_r000094",
+      "source_reference": "10.1016/j.corsci.2020.108740",
+      "composition_group": "composition_0038",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 64,
+      "row_id": "mpea_v1_r000095",
+      "source_reference": "10.1016/j.corsci.2020.108740",
+      "composition_group": "composition_0039",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 65,
+      "row_id": "mpea_v1_r000096",
+      "source_reference": "10.1016/j.jallcom.2020.155825",
+      "composition_group": "composition_0040",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 66,
+      "row_id": "mpea_v1_r000097",
+      "source_reference": "10.1016/j.jallcom.2020.155825",
+      "composition_group": "composition_0041",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 67,
+      "row_id": "mpea_v1_r000098",
+      "source_reference": "10.1016/j.jallcom.2020.155825",
+      "composition_group": "composition_0042",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 68,
+      "row_id": "mpea_v1_r000099",
+      "source_reference": "10.1016/j.intermet.2019.106599",
+      "composition_group": "composition_0043",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 69,
+      "row_id": "mpea_v1_r000104",
+      "source_reference": "10.1016/j.jallcom.2019.07.100",
+      "composition_group": "composition_0044",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 70,
+      "row_id": "mpea_v1_r000105",
+      "source_reference": "10.1016/j.jallcom.2019.07.100",
+      "composition_group": "composition_0006",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 71,
+      "row_id": "mpea_v1_r000106",
+      "source_reference": "10.1016/j.jallcom.2019.07.100",
+      "composition_group": "composition_0007",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 72,
+      "row_id": "mpea_v1_r000107",
+      "source_reference": "10.1016/j.jallcom.2019.07.100",
+      "composition_group": "composition_0008",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 73,
+      "row_id": "mpea_v1_r000108",
+      "source_reference": "10.1016/j.jallcom.2019.07.100",
+      "composition_group": "composition_0009",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 74,
+      "row_id": "mpea_v1_r000109",
+      "source_reference": "10.1016/j.jallcom.2019.07.100",
+      "composition_group": "composition_0010",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 75,
+      "row_id": "mpea_v1_r000115",
+      "source_reference": "10.1016/j.surfcoat.2020.126351",
+      "composition_group": "composition_0045",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 76,
+      "row_id": "mpea_v1_r000116",
+      "source_reference": "10.1016/j.surfcoat.2020.126351",
+      "composition_group": "composition_0045",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 77,
+      "row_id": "mpea_v1_r000117",
+      "source_reference": "10.1016/j.surfcoat.2020.126351",
+      "composition_group": "composition_0046",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 78,
+      "row_id": "mpea_v1_r000118",
+      "source_reference": "10.1016/j.surfcoat.2020.126351",
+      "composition_group": "composition_0047",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 79,
+      "row_id": "mpea_v1_r000119",
+      "source_reference": "10.1007/s40195-018-0812-7",
+      "composition_group": "composition_0048",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 80,
+      "row_id": "mpea_v1_r000120",
+      "source_reference": "10.1007/s40195-018-0812-7",
+      "composition_group": "composition_0049",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 81,
+      "row_id": "mpea_v1_r000121",
+      "source_reference": "10.1007/s40195-018-0812-7",
+      "composition_group": "composition_0050",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 82,
+      "row_id": "mpea_v1_r000122",
+      "source_reference": "10.1007/s40195-018-0812-7",
+      "composition_group": "composition_0051",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 83,
+      "row_id": "mpea_v1_r000123",
+      "source_reference": "10.1007/s40195-018-0812-7",
+      "composition_group": "composition_0052",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 84,
+      "row_id": "mpea_v1_r000124",
+      "source_reference": "10.1016/j.jallcom.2019.152139",
+      "composition_group": "composition_0053",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 85,
+      "row_id": "mpea_v1_r000125",
+      "source_reference": "10.1016/j.jallcom.2019.152139",
+      "composition_group": "composition_0054",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 86,
+      "row_id": "mpea_v1_r000126",
+      "source_reference": "10.1016/j.jallcom.2019.152139",
+      "composition_group": "composition_0055",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 87,
+      "row_id": "mpea_v1_r000127",
+      "source_reference": "10.1016/j.jallcom.2019.152139",
+      "composition_group": "composition_0053",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 88,
+      "row_id": "mpea_v1_r000128",
+      "source_reference": "10.1016/j.jallcom.2019.152139",
+      "composition_group": "composition_0054",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 89,
+      "row_id": "mpea_v1_r000129",
+      "source_reference": "10.1016/j.jallcom.2019.152139",
+      "composition_group": "composition_0055",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 90,
+      "row_id": "mpea_v1_r000130",
+      "source_reference": "10.3389/fmats.2020.566336",
+      "composition_group": "composition_0056",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 91,
+      "row_id": "mpea_v1_r000131",
+      "source_reference": "10.3389/fmats.2020.566336",
+      "composition_group": "composition_0056",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 92,
+      "row_id": "mpea_v1_r000132",
+      "source_reference": "10.3389/fmats.2020.566336",
+      "composition_group": "composition_0056",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 93,
+      "row_id": "mpea_v1_r000135",
+      "source_reference": "10.3389/fmats.2020.566336",
+      "composition_group": "composition_0057",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 94,
+      "row_id": "mpea_v1_r000137",
+      "source_reference": "10.1016/j.apsusc.2019.03.173",
+      "composition_group": "composition_0058",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 95,
+      "row_id": "mpea_v1_r000138",
+      "source_reference": "10.1016/j.apsusc.2019.03.173",
+      "composition_group": "composition_0059",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 96,
+      "row_id": "mpea_v1_r000139",
+      "source_reference": "10.1016/j.apsusc.2019.03.173",
+      "composition_group": "composition_0060",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 97,
+      "row_id": "mpea_v1_r000140",
+      "source_reference": "10.1016/j.apsusc.2019.03.173",
+      "composition_group": "composition_0061",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 98,
+      "row_id": "mpea_v1_r000141",
+      "source_reference": "10.3390/met4040597",
+      "composition_group": "composition_0062",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 99,
+      "row_id": "mpea_v1_r000142",
+      "source_reference": "10.3390/met4040597",
+      "composition_group": "composition_0062",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 100,
+      "row_id": "mpea_v1_r000143",
+      "source_reference": "10.3390/met4040597",
+      "composition_group": "composition_0062",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 101,
+      "row_id": "mpea_v1_r000144",
+      "source_reference": "10.3390/met4040597",
+      "composition_group": "composition_0062",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 102,
+      "row_id": "mpea_v1_r000145",
+      "source_reference": "10.3390/met4040597",
+      "composition_group": "composition_0063",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 103,
+      "row_id": "mpea_v1_r000146",
+      "source_reference": "10.3390/met4040597",
+      "composition_group": "composition_0063",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 104,
+      "row_id": "mpea_v1_r000147",
+      "source_reference": "10.3390/met4040597",
+      "composition_group": "composition_0063",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 105,
+      "row_id": "mpea_v1_r000148",
+      "source_reference": "10.3390/met4040597",
+      "composition_group": "composition_0063",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 106,
+      "row_id": "mpea_v1_r000149",
+      "source_reference": "10.3390/met4040597",
+      "composition_group": "composition_0064",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 107,
+      "row_id": "mpea_v1_r000150",
+      "source_reference": "10.3390/met4040597",
+      "composition_group": "composition_0064",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 108,
+      "row_id": "mpea_v1_r000151",
+      "source_reference": "10.3390/met4040597",
+      "composition_group": "composition_0064",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 109,
+      "row_id": "mpea_v1_r000152",
+      "source_reference": "10.3390/met4040597",
+      "composition_group": "composition_0064",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 110,
+      "row_id": "mpea_v1_r000155",
+      "source_reference": "10.1016/j.jallcom.2018.10.081",
+      "composition_group": "composition_0065",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 111,
+      "row_id": "mpea_v1_r000156",
+      "source_reference": "10.1016/j.jallcom.2018.10.081",
+      "composition_group": "composition_0065",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 112,
+      "row_id": "mpea_v1_r000157",
+      "source_reference": "10.1016/j.jallcom.2018.10.081",
+      "composition_group": "composition_0065",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 113,
+      "row_id": "mpea_v1_r000160",
+      "source_reference": "10.1179/1743284715y.0000000025",
+      "composition_group": "composition_0066",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 114,
+      "row_id": "mpea_v1_r000161",
+      "source_reference": "10.1179/1743284715y.0000000025",
+      "composition_group": "composition_0066",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 115,
+      "row_id": "mpea_v1_r000162",
+      "source_reference": "10.1179/1743284715y.0000000025",
+      "composition_group": "composition_0066",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 116,
+      "row_id": "mpea_v1_r000187",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 117,
+      "row_id": "mpea_v1_r000188",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 118,
+      "row_id": "mpea_v1_r000189",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 119,
+      "row_id": "mpea_v1_r000190",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 120,
+      "row_id": "mpea_v1_r000191",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 121,
+      "row_id": "mpea_v1_r000192",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 122,
+      "row_id": "mpea_v1_r000193",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 123,
+      "row_id": "mpea_v1_r000194",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 124,
+      "row_id": "mpea_v1_r000195",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 125,
+      "row_id": "mpea_v1_r000196",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 126,
+      "row_id": "mpea_v1_r000197",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 127,
+      "row_id": "mpea_v1_r000198",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 128,
+      "row_id": "mpea_v1_r000199",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 129,
+      "row_id": "mpea_v1_r000200",
+      "source_reference": "10.1179/1743284714y.0000000730",
+      "composition_group": "composition_0067",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 130,
+      "row_id": "mpea_v1_r000211",
+      "source_reference": "10.1016/j.jallcom.2022.165602",
+      "composition_group": "composition_0068",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 131,
+      "row_id": "mpea_v1_r000212",
+      "source_reference": "10.1016/j.jallcom.2022.165602",
+      "composition_group": "composition_0068",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 132,
+      "row_id": "mpea_v1_r000213",
+      "source_reference": "10.1016/j.jallcom.2022.165602",
+      "composition_group": "composition_0068",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 133,
+      "row_id": "mpea_v1_r000214",
+      "source_reference": "10.1016/j.jallcom.2022.165602",
+      "composition_group": "composition_0068",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 134,
+      "row_id": "mpea_v1_r000215",
+      "source_reference": "10.1016/j.jallcom.2022.165602",
+      "composition_group": "composition_0068",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 135,
+      "row_id": "mpea_v1_r000230",
+      "source_reference": "10.1016/j.jallcom.2022.164383",
+      "composition_group": "composition_0069",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 136,
+      "row_id": "mpea_v1_r000231",
+      "source_reference": "10.1016/j.jallcom.2022.164383",
+      "composition_group": "composition_0070",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 137,
+      "row_id": "mpea_v1_r000232",
+      "source_reference": "10.1016/j.jallcom.2022.164383",
+      "composition_group": "composition_0071",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 138,
+      "row_id": "mpea_v1_r000233",
+      "source_reference": "10.1016/j.jallcom.2022.164383",
+      "composition_group": "composition_0072",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 139,
+      "row_id": "mpea_v1_r000236",
+      "source_reference": "10.1016/j.intermet.2021.107421",
+      "composition_group": "composition_0073",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 140,
+      "row_id": "mpea_v1_r000277",
+      "source_reference": "10.1016/j.corsci.2021.109880",
+      "composition_group": "composition_0074",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 141,
+      "row_id": "mpea_v1_r000293",
+      "source_reference": "10.1016/j.corsci.2017.02.019",
+      "composition_group": "composition_0014",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 142,
+      "row_id": "mpea_v1_r000294",
+      "source_reference": "10.1016/j.corsci.2017.02.019",
+      "composition_group": "composition_0013",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 143,
+      "row_id": "mpea_v1_r000295",
+      "source_reference": "10.1016/j.corsci.2017.02.019",
+      "composition_group": "composition_0075",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 144,
+      "row_id": "mpea_v1_r000297",
+      "source_reference": "10.1016/j.optlastec.2016.04.011",
+      "composition_group": "composition_0037",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 145,
+      "row_id": "mpea_v1_r000303",
+      "source_reference": "10.1016/j.matchemphys.2017.07.031",
+      "composition_group": "composition_0019",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 146,
+      "row_id": "mpea_v1_r000304",
+      "source_reference": "10.1016/j.matchemphys.2017.07.031",
+      "composition_group": "composition_0076",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 147,
+      "row_id": "mpea_v1_r000312",
+      "source_reference": "10.1016/j.matdes.2016.06.100",
+      "composition_group": "composition_0033",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 148,
+      "row_id": "mpea_v1_r000313",
+      "source_reference": "10.1016/j.matdes.2016.06.100",
+      "composition_group": "composition_0032",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 149,
+      "row_id": "mpea_v1_r000314",
+      "source_reference": "10.1016/j.matdes.2016.06.100",
+      "composition_group": "composition_0034",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 150,
+      "row_id": "mpea_v1_r000323",
+      "source_reference": "10.1016/j.matdes.2016.12.076",
+      "composition_group": "composition_0068",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 151,
+      "row_id": "mpea_v1_r000324",
+      "source_reference": "10.1016/j.matdes.2016.12.076",
+      "composition_group": "composition_0077",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 152,
+      "row_id": "mpea_v1_r000325",
+      "source_reference": "10.1016/j.matdes.2018.01.007",
+      "composition_group": "composition_0078",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 153,
+      "row_id": "mpea_v1_r000326",
+      "source_reference": "10.1016/j.matdes.2018.01.007",
+      "composition_group": "composition_0079",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 154,
+      "row_id": "mpea_v1_r000327",
+      "source_reference": "10.1016/j.matdes.2018.01.007",
+      "composition_group": "composition_0080",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 155,
+      "row_id": "mpea_v1_r000328",
+      "source_reference": "10.1016/j.matdes.2018.01.007",
+      "composition_group": "composition_0081",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 156,
+      "row_id": "mpea_v1_r000329",
+      "source_reference": "10.1016/j.jallcom.2016.10.138",
+      "composition_group": "composition_0037",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 157,
+      "row_id": "mpea_v1_r000330",
+      "source_reference": "10.1016/j.jallcom.2016.10.138",
+      "composition_group": "composition_0037",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 158,
+      "row_id": "mpea_v1_r000331",
+      "source_reference": "10.1016/j.jallcom.2016.10.138",
+      "composition_group": "composition_0037",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 159,
+      "row_id": "mpea_v1_r000332",
+      "source_reference": "10.1016/j.jallcom.2022.164641",
+      "composition_group": "composition_0082",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 160,
+      "row_id": "mpea_v1_r000333",
+      "source_reference": "10.1016/j.jallcom.2022.164641",
+      "composition_group": "composition_0082",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 161,
+      "row_id": "mpea_v1_r000334",
+      "source_reference": "10.1016/j.jallcom.2022.164641",
+      "composition_group": "composition_0082",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 162,
+      "row_id": "mpea_v1_r000335",
+      "source_reference": "10.1016/j.jallcom.2022.164641",
+      "composition_group": "composition_0082",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 163,
+      "row_id": "mpea_v1_r000351",
+      "source_reference": "10.1016/j.msec.2016.12.057",
+      "composition_group": "composition_0083",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 164,
+      "row_id": "mpea_v1_r000352",
+      "source_reference": "10.1016/j.ultsonch.2017.09.044",
+      "composition_group": "composition_0076",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 165,
+      "row_id": "mpea_v1_r000358",
+      "source_reference": "10.1016/j.addma.2018.06.006",
+      "composition_group": "composition_0037",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 166,
+      "row_id": "mpea_v1_r000359",
+      "source_reference": "10.1016/j.addma.2018.06.006",
+      "composition_group": "composition_0037",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 167,
+      "row_id": "mpea_v1_r000360",
+      "source_reference": "10.1016/j.surfin.2017.06.012",
+      "composition_group": "composition_0011",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 168,
+      "row_id": "mpea_v1_r000361",
+      "source_reference": "10.1016/j.surfin.2017.06.012",
+      "composition_group": "composition_0038",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 169,
+      "row_id": "mpea_v1_r000362",
+      "source_reference": "10.1016/j.surfin.2017.06.012",
+      "composition_group": "composition_0068",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 170,
+      "row_id": "mpea_v1_r000363",
+      "source_reference": "10.1016/j.surfin.2017.06.012",
+      "composition_group": "composition_0077",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 171,
+      "row_id": "mpea_v1_r000366",
+      "source_reference": "10.1002/adem.201700946",
+      "composition_group": "composition_0076",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 172,
+      "row_id": "mpea_v1_r000379",
+      "source_reference": "10.3390/coatings7100156",
+      "composition_group": "composition_0014",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 173,
+      "row_id": "mpea_v1_r000389",
+      "source_reference": "10.3390/e20120908",
+      "composition_group": "composition_0053",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 174,
+      "row_id": "mpea_v1_r000390",
+      "source_reference": "10.3390/e20120908",
+      "composition_group": "composition_0054",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 175,
+      "row_id": "mpea_v1_r000391",
+      "source_reference": "10.3390/e20120908",
+      "composition_group": "composition_0055",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 176,
+      "row_id": "mpea_v1_r000392",
+      "source_reference": "10.3390/e20120915",
+      "composition_group": "composition_0084",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 177,
+      "row_id": "mpea_v1_r000393",
+      "source_reference": "10.3390/e20120915",
+      "composition_group": "composition_0084",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 178,
+      "row_id": "mpea_v1_r000394",
+      "source_reference": "10.1002/maco.201709833",
+      "composition_group": "composition_0085",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 179,
+      "row_id": "mpea_v1_r000395",
+      "source_reference": "10.1002/maco.201709833",
+      "composition_group": "composition_0086",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 180,
+      "row_id": "mpea_v1_r000396",
+      "source_reference": "10.1002/maco.201709833",
+      "composition_group": "composition_0087",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 181,
+      "row_id": "mpea_v1_r000397",
+      "source_reference": "10.1002/maco.201709833",
+      "composition_group": "composition_0088",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 182,
+      "row_id": "mpea_v1_r000398",
+      "source_reference": "10.1002/maco.201709833",
+      "composition_group": "composition_0011",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 183,
+      "row_id": "mpea_v1_r000399",
+      "source_reference": "10.1002/maco.201709833",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 184,
+      "row_id": "mpea_v1_r000400",
+      "source_reference": "10.1002/maco.201709833",
+      "composition_group": "composition_0038",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 185,
+      "row_id": "mpea_v1_r000401",
+      "source_reference": "10.1002/maco.201709833",
+      "composition_group": "composition_0013",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 186,
+      "row_id": "mpea_v1_r000402",
+      "source_reference": "10.1002/maco.201709833",
+      "composition_group": "composition_0089",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 187,
+      "row_id": "mpea_v1_r000403",
+      "source_reference": "10.1002/maco.201709833",
+      "composition_group": "composition_0090",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 188,
+      "row_id": "mpea_v1_r000415",
+      "source_reference": "10.1002/maco.201709472",
+      "composition_group": "composition_0091",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 189,
+      "row_id": "mpea_v1_r000416",
+      "source_reference": "10.1002/maco.201709472",
+      "composition_group": "composition_0091",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 190,
+      "row_id": "mpea_v1_r000417",
+      "source_reference": "10.1002/maco.201709472",
+      "composition_group": "composition_0091",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 191,
+      "row_id": "mpea_v1_r000418",
+      "source_reference": "10.1002/maco.201709472",
+      "composition_group": "composition_0091",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 192,
+      "row_id": "mpea_v1_r000419",
+      "source_reference": "10.1002/maco.201709472",
+      "composition_group": "composition_0091",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 193,
+      "row_id": "mpea_v1_r000420",
+      "source_reference": "10.1002/maco.201709472",
+      "composition_group": "composition_0091",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 194,
+      "row_id": "mpea_v1_r000421",
+      "source_reference": "10.1002/maco.201709472",
+      "composition_group": "composition_0091",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 195,
+      "row_id": "mpea_v1_r000422",
+      "source_reference": "10.1002/maco.201709472",
+      "composition_group": "composition_0091",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 196,
+      "row_id": "mpea_v1_r000423",
+      "source_reference": "10.1002/maco.201709472",
+      "composition_group": "composition_0091",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 197,
+      "row_id": "mpea_v1_r000424",
+      "source_reference": "10.1002/maco.201709472",
+      "composition_group": "composition_0091",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 198,
+      "row_id": "mpea_v1_r000425",
+      "source_reference": "10.1002/maco.201709472",
+      "composition_group": "composition_0091",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 199,
+      "row_id": "mpea_v1_r000426",
+      "source_reference": "10.1002/maco.201709472",
+      "composition_group": "composition_0091",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 200,
+      "row_id": "mpea_v1_r000427",
+      "source_reference": "10.3390/met7020043",
+      "composition_group": "composition_0040",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 201,
+      "row_id": "mpea_v1_r000428",
+      "source_reference": "10.3390/met7020043",
+      "composition_group": "composition_0092",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 202,
+      "row_id": "mpea_v1_r000429",
+      "source_reference": "10.3390/met7020043",
+      "composition_group": "composition_0093",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 203,
+      "row_id": "mpea_v1_r000430",
+      "source_reference": "10.3390/met7020043",
+      "composition_group": "composition_0011",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 204,
+      "row_id": "mpea_v1_r000431",
+      "source_reference": "10.3390/met7020043",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 205,
+      "row_id": "mpea_v1_r000432",
+      "source_reference": "10.3390/met7020043",
+      "composition_group": "composition_0038",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 206,
+      "row_id": "mpea_v1_r000433",
+      "source_reference": "10.3390/met7020043",
+      "composition_group": "composition_0094",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 207,
+      "row_id": "mpea_v1_r000434",
+      "source_reference": "10.3390/met7020043",
+      "composition_group": "composition_0001",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 208,
+      "row_id": "mpea_v1_r000435",
+      "source_reference": "10.3390/met7020043",
+      "composition_group": "composition_0002",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 209,
+      "row_id": "mpea_v1_r000436",
+      "source_reference": "10.3390/met7020043",
+      "composition_group": "composition_0003",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 210,
+      "row_id": "mpea_v1_r000438",
+      "source_reference": "10.1149/07711.0741ecst",
+      "composition_group": "composition_0095",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 211,
+      "row_id": "mpea_v1_r000439",
+      "source_reference": "10.1149/07711.0741ecst",
+      "composition_group": "composition_0096",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 212,
+      "row_id": "mpea_v1_r000440",
+      "source_reference": "10.1149/07711.0741ecst",
+      "composition_group": "composition_0097",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 213,
+      "row_id": "mpea_v1_r000441",
+      "source_reference": "10.1149/07711.0741ecst",
+      "composition_group": "composition_0098",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 214,
+      "row_id": "mpea_v1_r000442",
+      "source_reference": "10.1149/07711.0741ecst",
+      "composition_group": "composition_0099",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 215,
+      "row_id": "mpea_v1_r000443",
+      "source_reference": "10.1149/07711.0741ecst",
+      "composition_group": "composition_0100",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 216,
+      "row_id": "mpea_v1_r000444",
+      "source_reference": "10.1149/07711.0741ecst",
+      "composition_group": "composition_0101",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 217,
+      "row_id": "mpea_v1_r000446",
+      "source_reference": "10.1007/s10853-018-2652-2",
+      "composition_group": "composition_0011",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 218,
+      "row_id": "mpea_v1_r000447",
+      "source_reference": "10.1007/s10853-018-2652-2",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 219,
+      "row_id": "mpea_v1_r000448",
+      "source_reference": "10.1007/s10853-018-2652-2",
+      "composition_group": "composition_0038",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 220,
+      "row_id": "mpea_v1_r000449",
+      "source_reference": "10.1007/s10853-018-2652-2",
+      "composition_group": "composition_0013",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 221,
+      "row_id": "mpea_v1_r000450",
+      "source_reference": "10.1007/s10853-018-2652-2",
+      "composition_group": "composition_0013",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 222,
+      "row_id": "mpea_v1_r000494",
+      "source_reference": "10.1038/s41529-017-0009-y",
+      "composition_group": "composition_0011",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 223,
+      "row_id": "mpea_v1_r000495",
+      "source_reference": "10.1038/s41529-017-0009-y",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 224,
+      "row_id": "mpea_v1_r000496",
+      "source_reference": "10.1038/s41529-017-0009-y",
+      "composition_group": "composition_0038",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 225,
+      "row_id": "mpea_v1_r000499",
+      "source_reference": "10.1038/s41529-017-0009-y",
+      "composition_group": "composition_0012",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 226,
+      "row_id": "mpea_v1_r000504",
+      "source_reference": "10.1038/s41529-017-0009-y",
+      "composition_group": "composition_0084",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 227,
+      "row_id": "mpea_v1_r000505",
+      "source_reference": "10.1038/s41529-017-0009-y",
+      "composition_group": "composition_0084",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 228,
+      "row_id": "mpea_v1_r000506",
+      "source_reference": "10.1038/s41529-017-0009-y",
+      "composition_group": "composition_0084",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 229,
+      "row_id": "mpea_v1_r000507",
+      "source_reference": "10.1038/s41529-017-0009-y",
+      "composition_group": "composition_0084",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 230,
+      "row_id": "mpea_v1_r000508",
+      "source_reference": "10.1038/s41529-017-0009-y",
+      "composition_group": "composition_0084",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 231,
+      "row_id": "mpea_v1_r000509",
+      "source_reference": "10.1038/s41529-017-0009-y",
+      "composition_group": "composition_0084",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 232,
+      "row_id": "mpea_v1_r000510",
+      "source_reference": "10.1038/s41529-017-0009-y",
+      "composition_group": "composition_0084",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 233,
+      "row_id": "mpea_v1_r000511",
+      "source_reference": "10.1038/s41529-017-0009-y",
+      "composition_group": "composition_0013",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 234,
+      "row_id": "mpea_v1_r000537",
+      "source_reference": "10.1080/01411594.2022.2041636",
+      "composition_group": "composition_0102",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 235,
+      "row_id": "mpea_v1_r000538",
+      "source_reference": "10.1080/01411594.2022.2041636",
+      "composition_group": "composition_0102",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 236,
+      "row_id": "mpea_v1_r000539",
+      "source_reference": "10.1080/01411594.2022.2041636",
+      "composition_group": "composition_0102",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 237,
+      "row_id": "mpea_v1_r000540",
+      "source_reference": "10.1080/01411594.2022.2041636",
+      "composition_group": "composition_0102",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 238,
+      "row_id": "mpea_v1_r000541",
+      "source_reference": "10.1080/01411594.2022.2041636",
+      "composition_group": "composition_0102",
+      "outer_split": "development",
+      "optuna_validation_fold": 4
+    },
+    {
+      "task_row_index": 239,
+      "row_id": "mpea_v1_r000544",
+      "source_reference": "10.3390/ma15082931",
+      "composition_group": "composition_0083",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 240,
+      "row_id": "mpea_v1_r000550",
+      "source_reference": "10.1007/s12633-022-01779-4",
+      "composition_group": "composition_0103",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 241,
+      "row_id": "mpea_v1_r000551",
+      "source_reference": "10.1007/s12633-022-01779-4",
+      "composition_group": "composition_0103",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 242,
+      "row_id": "mpea_v1_r000552",
+      "source_reference": "10.1007/s12633-022-01779-4",
+      "composition_group": "composition_0103",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 243,
+      "row_id": "mpea_v1_r000553",
+      "source_reference": "10.1007/s12633-022-01779-4",
+      "composition_group": "composition_0103",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 244,
+      "row_id": "mpea_v1_r000554",
+      "source_reference": "10.1007/s12633-022-01779-4",
+      "composition_group": "composition_0103",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    },
+    {
+      "task_row_index": 245,
+      "row_id": "mpea_v1_r000568",
+      "source_reference": "10.1002/maco.202112851",
+      "composition_group": "composition_0104",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 246,
+      "row_id": "mpea_v1_r000569",
+      "source_reference": "10.1002/maco.202112851",
+      "composition_group": "composition_0105",
+      "outer_split": "development",
+      "optuna_validation_fold": 3
+    },
+    {
+      "task_row_index": 247,
+      "row_id": "mpea_v1_r000570",
+      "source_reference": "10.1002/maco.202112851",
+      "composition_group": "composition_0106",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 248,
+      "row_id": "mpea_v1_r000571",
+      "source_reference": "10.1002/maco.202112851",
+      "composition_group": "composition_0107",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 249,
+      "row_id": "mpea_v1_r000578",
+      "source_reference": "10.1007/s11665-021-06571-w",
+      "composition_group": "composition_0108",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 250,
+      "row_id": "mpea_v1_r000579",
+      "source_reference": "10.1007/s11665-021-06571-w",
+      "composition_group": "composition_0109",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 251,
+      "row_id": "mpea_v1_r000580",
+      "source_reference": "10.1007/s11665-021-06571-w",
+      "composition_group": "composition_0110",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 252,
+      "row_id": "mpea_v1_r000581",
+      "source_reference": "10.1007/s11665-021-06571-w",
+      "composition_group": "composition_0111",
+      "outer_split": "development",
+      "optuna_validation_fold": 1
+    },
+    {
+      "task_row_index": 253,
+      "row_id": "mpea_v1_r000582",
+      "source_reference": "10.1007/s11665-021-06571-w",
+      "composition_group": "composition_0091",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 254,
+      "row_id": "mpea_v1_r000583",
+      "source_reference": "10.1007/s13369-022-07041-8",
+      "composition_group": "composition_0112",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 255,
+      "row_id": "mpea_v1_r000584",
+      "source_reference": "10.1007/s13369-022-07041-8",
+      "composition_group": "composition_0112",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 256,
+      "row_id": "mpea_v1_r000585",
+      "source_reference": "10.1007/s13369-022-07041-8",
+      "composition_group": "composition_0112",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 257,
+      "row_id": "mpea_v1_r000586",
+      "source_reference": "10.1007/s13369-022-07041-8",
+      "composition_group": "composition_0112",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 258,
+      "row_id": "mpea_v1_r000587",
+      "source_reference": "10.1007/s13369-022-07041-8",
+      "composition_group": "composition_0112",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 259,
+      "row_id": "mpea_v1_r000588",
+      "source_reference": "10.1007/s13369-022-07041-8",
+      "composition_group": "composition_0112",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 260,
+      "row_id": "mpea_v1_r000589",
+      "source_reference": "10.1007/s13369-022-07041-8",
+      "composition_group": "composition_0112",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 261,
+      "row_id": "mpea_v1_r000590",
+      "source_reference": "10.1007/s13369-022-07041-8",
+      "composition_group": "composition_0112",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 262,
+      "row_id": "mpea_v1_r000601",
+      "source_reference": "10.1002/adem.202200224",
+      "composition_group": "composition_0113",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 263,
+      "row_id": "mpea_v1_r000602",
+      "source_reference": "10.1002/adem.202200224",
+      "composition_group": "composition_0114",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 264,
+      "row_id": "mpea_v1_r000603",
+      "source_reference": "10.1002/adem.202200224",
+      "composition_group": "composition_0112",
+      "outer_split": "final_test",
+      "optuna_validation_fold": null
+    },
+    {
+      "task_row_index": 265,
+      "row_id": "mpea_v1_r000604",
+      "source_reference": "10.1002/adem.202200224",
+      "composition_group": "composition_0115",
+      "outer_split": "development",
+      "optuna_validation_fold": 5
+    },
+    {
+      "task_row_index": 266,
+      "row_id": "mpea_v1_r000605",
+      "source_reference": "10.1002/adem.202200224",
+      "composition_group": "composition_0116",
+      "outer_split": "development",
+      "optuna_validation_fold": 2
+    }
+  ]
+}

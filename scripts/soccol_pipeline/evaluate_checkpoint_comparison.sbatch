@@ -42,7 +42,7 @@ python scripts/eval_corrosion_datasets.py \
   --checkpoint-root "$CHECKPOINT_ROOT" \
   --run-prefix / \
   --min-checkpoint-step 0 \
-  --checkpoint-step-interval 0 \
+  --checkpoint-step-interval "${CHECKPOINT_STEP_INTERVAL:-500}" \
   --include-latest-common-checkpoint \
   --task soccol_pitting_potential__event1__epit_mv_agagcl_3m_kcl \
   --target-mode primary \

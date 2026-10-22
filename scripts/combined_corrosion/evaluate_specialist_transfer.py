@@ -85,7 +85,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--combined-data-dir", type=Path, default=DEFAULT_DATA_DIR)
     parser.add_argument("--checkpoint", default="all")
     parser.add_argument("--min-checkpoint-step", type=int, default=0)
-    parser.add_argument("--checkpoint-step-interval", type=int, default=0)
+    parser.add_argument("--checkpoint-step-interval", type=int, default=500)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--n-estimators", type=int, default=8)
     parser.add_argument("--random-state", type=int, default=42)
@@ -127,24 +127,20 @@ def select_checkpoint_pairs(
     checkpoint: str,
     min_step: int,
     step_interval: int,
-) -> list[tuple[int, Path, Path]]:
+) -> list[tuple[int, Path | None, Path | None]]:
     epit = available_checkpoints(epit_run)
     soccol = available_checkpoints(soccol_run)
     common = sorted(set(epit).intersection(soccol))
-    if not common:
-        raise FileNotFoundError("EPIT and Soccol runs have no common checkpoint steps.")
-
     normalized = checkpoint.removeprefix("step-").removesuffix(".ckpt")
     if checkpoint == "all":
-        eligible = [step for step in common if step >= min_step]
-        selected = [
-            step
-            for step in eligible
-            if step_interval == 0 or step % step_interval == 0
-        ]
-        if eligible and eligible[-1] not in selected:
-            selected.append(eligible[-1])
+        selected = corrosion_eval.select_available_checkpoint_steps(
+            {"epit": epit, "soccol": soccol},
+            min_step=min_step,
+            step_interval=step_interval,
+        )
     elif checkpoint == "latest":
+        if not common:
+            raise FileNotFoundError("EPIT and Soccol runs have no common checkpoint steps.")
         selected = [common[-1]]
     elif normalized.isdigit():
         step = int(normalized)
@@ -158,9 +154,9 @@ def select_checkpoint_pairs(
 
     if not selected:
         raise FileNotFoundError(
-            "No common checkpoints satisfy the minimum-step and interval filters."
+            "No checkpoints satisfy the minimum-step and interval filters."
         )
-    return [(step, epit[step], soccol[step]) for step in selected]
+    return [(step, epit.get(step), soccol.get(step)) for step in selected]
 
 
 def _project_epit_features(X: pd.DataFrame) -> pd.DataFrame:
@@ -282,6 +278,8 @@ def main() -> None:
             (EPIT_MODEL_LABEL, epit_checkpoint),
             (SOCCOL_MODEL_LABEL, soccol_checkpoint),
         ):
+            if checkpoint_path is None:
+                continue
             task = tasks[model]
             try:
                 row = corrosion_eval.evaluate_estimator(
@@ -360,6 +358,14 @@ def main() -> None:
         "combined_data_dir": str(args.combined_data_dir.expanduser().resolve()),
         "checkpoint": args.checkpoint,
         "checkpoint_steps": [step for step, _, _ in checkpoint_pairs],
+        "checkpoint_evaluations": [
+            {"step": step, "models": {
+                model: str(path) for model, path in (
+                    (EPIT_MODEL_LABEL, epit), (SOCCOL_MODEL_LABEL, soccol),
+                ) if path is not None
+            }}
+            for step, epit, soccol in checkpoint_pairs
+        ],
         "epit_run": str(args.epit_run.expanduser().resolve()),
         "soccol_run": str(args.soccol_run.expanduser().resolve()),
         "device": args.device,

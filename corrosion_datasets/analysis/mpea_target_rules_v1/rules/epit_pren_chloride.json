@@ -1,0 +1,345 @@
+{
+  "schema_version": "mpea_target_rule_screening_v1",
+  "rule_family": "epit_pren_chloride",
+  "description": "EPIT pren hypothesis; chloride",
+  "evaluation_role": "MPEA development candidate",
+  "applicability": "all alloy classes",
+  "formula": {
+    "source": "epit",
+    "source_rules": [
+      "pren_n_improved_environment",
+      "mns_inclusion_penalty",
+      "mo_n_acid_repassivation"
+    ],
+    "material_formula": "Cr + 3.3*(Mo + 0.5*W)",
+    "environment": "chloride",
+    "signed_terms": {
+      "material_passivity": "tanh(z(material))",
+      "chloride_aggressiveness": "-sigmoid(z(log10(max(CP_Cl,1e-12))))",
+      "material_chloride_interaction": "-sigmoid(-z(material))*sigmoid(z(log10(max(CP_Cl,1e-12))))",
+      "coupled_chloride_breakdown": "-sigmoid(0.65*z(log10(max(CP_Cl,1e-12)))-0.75*z(material))"
+    },
+    "required_columns": [
+      "Cr",
+      "Mo",
+      "W",
+      "CP_Cl"
+    ],
+    "adaptation": "Omit unrecorded N/S/pH/extra-ion/method effects and very sparse temperature effects; no physical-zero substitutions.",
+    "scope": "Borrowed Fe/Ni-alloy hypotheses tested on MPEA development rows; applicability to MPEA is being tested, not assumed.",
+    "missing_chloride": "Mean of observed chloride in the current context only, before log transform, matching EPIT numeric imputation.",
+    "scaling": "Context-only standardization of material/log-chloride, followed by context-only standardization of each signed term.",
+    "bounds": "Inherited bounds for retained terms; anchors renormalized after removing terms."
+  },
+  "term_names": [
+    "material_passivity",
+    "chloride_aggressiveness"
+  ],
+  "coefficient_constraints": "nonnegative; sum to one",
+  "coefficient_anchor": {
+    "material_passivity": 0.6363636363636365,
+    "chloride_aggressiveness": 0.36363636363636365
+  },
+  "coefficient_upper_bounds": {
+    "material_passivity": 1.0,
+    "chloride_aggressiveness": 0.65
+  },
+  "anchor_strength": 0.1,
+  "calibration_target": "standardized EPIT ranks",
+  "fold_calibrations": [
+    {
+      "fold": 1,
+      "context_rows": 171,
+      "validation_rows": 43,
+      "coefficients": {
+        "material_passivity": 0.6051244930695681,
+        "chloride_aggressiveness": 0.394875506930432
+      },
+      "objective": 1.2408840797749063,
+      "spearman": 0.38623647209923806,
+      "standardized_mae": 0.7718519229953129,
+      "standardized_rmse": 1.1452538211041596,
+      "feature_state": {
+        "imputation_means": {
+          "Cr": 13.875334914414973,
+          "Mo": 4.20978364752304,
+          "W": 0.7042654122450294,
+          "CP_Cl": 0.6907563025210078
+        },
+        "signal_scaling": {
+          "material": {
+            "mean": 28.929658881445302,
+            "std": 33.78636793088331
+          },
+          "chloride_log10": {
+            "mean": -0.17414947344176274,
+            "std": 0.09486710154509426
+          }
+        },
+        "term_scaling": {
+          "material_passivity": {
+            "mean": -0.14434914881097993,
+            "std": 0.5331181510766178
+          },
+          "chloride_aggressiveness": {
+            "mean": -0.4764361266932044,
+            "std": 0.15668108188526056
+          }
+        }
+      },
+      "anchor_spearman_before_coefficient_fit": 0.3934229781121693
+    },
+    {
+      "fold": 2,
+      "context_rows": 171,
+      "validation_rows": 43,
+      "coefficients": {
+        "material_passivity": 0.6363976513624271,
+        "chloride_aggressiveness": 0.3636023486375729
+      },
+      "objective": 1.214758894883935,
+      "spearman": 0.3102928850455245,
+      "standardized_mae": 0.9557300586443236,
+      "standardized_rmse": 1.234199808803097,
+      "feature_state": {
+        "imputation_means": {
+          "Cr": 13.598409875279883,
+          "Mo": 3.4828877397745615,
+          "W": 2.5428887524485377,
+          "CP_Cl": 0.7008264462809916
+        },
+        "signal_scaling": {
+          "material": {
+            "mean": 29.287705858076023,
+            "std": 32.748656557998636
+          },
+          "chloride_log10": {
+            "mean": -0.16996928149211474,
+            "std": 0.10185773366684478
+          }
+        },
+        "term_scaling": {
+          "material_passivity": {
+            "mean": -0.1311253656841902,
+            "std": 0.5705431919544139
+          },
+          "chloride_aggressiveness": {
+            "mean": -0.47636791791798505,
+            "std": 0.15847968938914822
+          }
+        }
+      },
+      "anchor_spearman_before_coefficient_fit": 0.3102928850455245
+    },
+    {
+      "fold": 3,
+      "context_rows": 171,
+      "validation_rows": 43,
+      "coefficients": {
+        "material_passivity": 0.5709840188766552,
+        "chloride_aggressiveness": 0.42901598112334494
+      },
+      "objective": 1.2893383279364183,
+      "spearman": 0.3972571502804477,
+      "standardized_mae": 0.8783628748480528,
+      "standardized_rmse": 1.0346779847744467,
+      "feature_state": {
+        "imputation_means": {
+          "Cr": 14.368889419224914,
+          "Mo": 3.6859934843360818,
+          "W": 2.3689485733941518,
+          "CP_Cl": 0.7008264462809914
+        },
+        "signal_scaling": {
+          "material": {
+            "mean": 30.44143306363433,
+            "std": 32.646333911834006
+          },
+          "chloride_log10": {
+            "mean": -0.1699692814921148,
+            "std": 0.10185773366684477
+          }
+        },
+        "term_scaling": {
+          "material_passivity": {
+            "mean": -0.14367970940544558,
+            "std": 0.5557795494213696
+          },
+          "chloride_aggressiveness": {
+            "mean": -0.47636791791798505,
+            "std": 0.15847968938914817
+          }
+        }
+      },
+      "anchor_spearman_before_coefficient_fit": 0.4569824984289618
+    },
+    {
+      "fold": 4,
+      "context_rows": 171,
+      "validation_rows": 43,
+      "coefficients": {
+        "material_passivity": 0.6099088540680458,
+        "chloride_aggressiveness": 0.3900911459319542
+      },
+      "objective": 1.3128138487891152,
+      "spearman": 0.5019152711063102,
+      "standardized_mae": 0.6600209910002329,
+      "standardized_rmse": 0.8889207439378479,
+      "feature_state": {
+        "imputation_means": {
+          "Cr": 13.619215741667603,
+          "Mo": 3.5660588290542687,
+          "W": 2.0125635192578946,
+          "CP_Cl": 0.705882352941176
+        },
+        "signal_scaling": {
+          "material": {
+            "mean": 28.707939684322213,
+            "std": 32.0459556516626
+          },
+          "chloride_log10": {
+            "mean": -0.16693359123104973,
+            "std": 0.10258114681429074
+          }
+        },
+        "term_scaling": {
+          "material_passivity": {
+            "mean": -0.1331633495990986,
+            "std": 0.5618878355626049
+          },
+          "chloride_aggressiveness": {
+            "mean": -0.47694987528376886,
+            "std": 0.1617005383843278
+          }
+        }
+      },
+      "anchor_spearman_before_coefficient_fit": 0.5019152711063102
+    },
+    {
+      "fold": 5,
+      "context_rows": 172,
+      "validation_rows": 42,
+      "coefficients": {
+        "material_passivity": 0.698113735510766,
+        "chloride_aggressiveness": 0.30188626448923406
+      },
+      "objective": 0.9141280958556489,
+      "spearman": -0.42881201194413554,
+      "standardized_mae": 1.4675380055579712,
+      "standardized_rmse": 1.6963158198132262,
+      "feature_state": {
+        "imputation_means": {
+          "Cr": 14.491201579291863,
+          "Mo": 4.675349209973489,
+          "W": 2.5281045155156976,
+          "CP_Cl": 0.7048387096774189
+        },
+        "signal_scaling": {
+          "material": {
+            "mean": 34.09122642280527,
+            "std": 35.42662619477594
+          },
+          "chloride_log10": {
+            "mean": -0.16778379129719245,
+            "std": 0.10335340751742943
+          }
+        },
+        "term_scaling": {
+          "material_passivity": {
+            "mean": -0.13198126677741126,
+            "std": 0.5937112370515094
+          },
+          "chloride_aggressiveness": {
+            "mean": -0.4768397267722809,
+            "std": 0.1628665353086164
+          }
+        }
+      },
+      "anchor_spearman_before_coefficient_fit": -0.4505448534018534
+    }
+  ],
+  "direct_evaluation": {
+    "scope": "out-of-fold eligible development rows only; applicability=all alloy classes",
+    "rows": 214,
+    "minimum_validation_rows": 42,
+    "small_sample_warning": false,
+    "mean_fold_spearman": 0.233377953317477,
+    "standard_deviation_fold_spearman": 0.3366736894449903,
+    "minimum_fold_spearman": -0.42881201194413554,
+    "maximum_fold_spearman": 0.5019152711063102,
+    "pooled_out_of_fold_spearman": 0.19811344225064823,
+    "mean_fold_anchor_spearman": 0.2424137558582225
+  },
+  "final_development_calibration": {
+    "purpose": "coefficient center for final training; not final evaluation",
+    "rows": 214,
+    "coefficients": {
+      "material_passivity": 0.625211802367483,
+      "chloride_aggressiveness": 0.37478819763251714
+    },
+    "objective": 1.1972636261598841,
+    "in_sample_spearman_diagnostic": 0.20819244805958825,
+    "feature_state": {
+      "imputation_means": {
+        "Cr": 13.991195108865234,
+        "Mo": 3.9248923095012613,
+        "W": 2.0319344704144857,
+        "CP_Cl": 0.700662251655629
+      },
+      "signal_scaling": {
+        "material": {
+          "mean": 30.2960316064033,
+          "std": 33.41403964771805
+        },
+        "chloride_log10": {
+          "mean": -0.1697355635108967,
+          "std": 0.10097086758158952
+        }
+      },
+      "term_scaling": {
+        "material_passivity": {
+          "mean": -0.13734365711020233,
+          "std": 0.5630225116858659
+        },
+        "chloride_aggressiveness": {
+          "mean": -0.4765897146198602,
+          "std": 0.1596861163004675
+        }
+      }
+    }
+  },
+  "final_test_targets_used": false,
+  "observed_chloride_subset_diagnostic": {
+    "scope": "Same full-development OOF fits; score only rows with recorded chloride, without refitting or resplitting.",
+    "rows": 151,
+    "folds": [
+      {
+        "fold": 1,
+        "rows": 32,
+        "spearman": 0.6181449943677436
+      },
+      {
+        "fold": 2,
+        "rows": 30,
+        "spearman": 0.19288997911441835
+      },
+      {
+        "fold": 3,
+        "rows": 30,
+        "spearman": 0.7359973502399484
+      },
+      {
+        "fold": 4,
+        "rows": 32,
+        "spearman": 0.7685929238612041
+      },
+      {
+        "fold": 5,
+        "rows": 27,
+        "spearman": 0.34415290017971023
+      }
+    ],
+    "mean_fold_spearman": 0.5319556295526049
+  },
+  "production_registry_changed": false
+}

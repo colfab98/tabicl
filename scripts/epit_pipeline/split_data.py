@@ -536,23 +536,24 @@ def optimize_outer_split(
     features: list[BalanceFeature],
     *,
     time_limit_seconds: float,
+    outer_test_rows: int = OUTER_TEST_ROWS,
 ) -> tuple[np.ndarray, OptimizerRecord]:
     n_groups = grouping.n_groups
     n_slack = len(features)
     n_variables = n_groups + n_slack
     sizes = grouping.sizes.astype(float)
-    final_fraction = OUTER_TEST_ROWS / sizes.sum()
+    final_fraction = outer_test_rows / sizes.sum()
     final_group_count = round(n_groups * final_fraction)
 
     objective = np.zeros(n_variables, dtype=float)
     objective[:n_groups] = np.arange(n_groups) * 1e-10 / max(n_groups, 1)
-    objective[n_groups:] = np.asarray([feature.weight for feature in features]) / OUTER_TEST_ROWS
+    objective[n_groups:] = np.asarray([feature.weight for feature in features]) / outer_test_rows
 
     constraint_rows: list[np.ndarray] = []
     lower: list[float] = []
     upper: list[float] = []
     for coefficients, target in (
-        (sizes, OUTER_TEST_ROWS),
+        (sizes, outer_test_rows),
         (np.ones(n_groups), final_group_count),
     ):
         row = np.zeros(n_variables, dtype=float)
@@ -600,11 +601,13 @@ def optimize_inner_folds(
     outer_split_by_group: np.ndarray,
     *,
     time_limit_seconds: float,
+    outer_test_rows: int = OUTER_TEST_ROWS,
 ) -> tuple[np.ndarray, OptimizerRecord]:
     development_groups = np.flatnonzero(outer_split_by_group == "development")
     development_rows = int(grouping.sizes[development_groups].sum())
-    if development_rows != EXPECTED_ROW_COUNT - OUTER_TEST_ROWS:
-        raise RuntimeError(f"Expected 608 development rows, found {development_rows}.")
+    expected_rows = int(grouping.sizes.sum()) - outer_test_rows
+    if development_rows != expected_rows:
+        raise RuntimeError(f"Expected {expected_rows} development rows, found {development_rows}.")
 
     fold_rows = _balanced_integer_targets(development_rows, INNER_FOLD_COUNT)
     fold_groups = _balanced_integer_targets(len(development_groups), INNER_FOLD_COUNT)
@@ -711,14 +714,16 @@ def validate_split_assignment(
     dataset: EpitDataset,
     grouping: CompositionGrouping,
     assignment: SplitAssignment,
+    *,
+    outer_test_rows: int = OUTER_TEST_ROWS,
 ) -> None:
     sizes = grouping.sizes
     final_groups = assignment.final_test_groups
     development_groups = assignment.development_groups
-    if int(sizes[final_groups].sum()) != OUTER_TEST_ROWS:
-        raise RuntimeError("Final-test split does not contain exactly 152 rows.")
-    if int(sizes[development_groups].sum()) != dataset.n_rows - OUTER_TEST_ROWS:
-        raise RuntimeError("Development split does not contain exactly 608 rows.")
+    if int(sizes[final_groups].sum()) != outer_test_rows:
+        raise RuntimeError(f"Final-test split does not contain exactly {outer_test_rows} rows.")
+    if int(sizes[development_groups].sum()) != dataset.n_rows - outer_test_rows:
+        raise RuntimeError("Development split has an unexpected row count.")
     if set(final_groups) & set(development_groups):
         raise RuntimeError("A composition group crosses the outer split boundary.")
     if np.any(assignment.validation_fold_by_group[final_groups] != -1):
@@ -726,7 +731,7 @@ def validate_split_assignment(
     development_folds = assignment.validation_fold_by_group[development_groups]
     if set(development_folds) != set(range(INNER_FOLD_COUNT)):
         raise RuntimeError("Development groups are not assigned to all five Optuna folds.")
-    expected_rows = sorted(_balanced_integer_targets(dataset.n_rows - OUTER_TEST_ROWS, INNER_FOLD_COUNT))
+    expected_rows = sorted(_balanced_integer_targets(dataset.n_rows - outer_test_rows, INNER_FOLD_COUNT))
     observed_rows = sorted(
         int(sizes[assignment.validation_fold_by_group == fold].sum())
         for fold in range(INNER_FOLD_COUNT)

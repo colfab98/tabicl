@@ -1,0 +1,9 @@
+{
+  "draws_per_source": 128,
+  "source": "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/combined_prior_config.json",
+  "label_use": "Scores only; no target-dependent coefficient, family, or imputation selection.",
+  "missing_input_policy": "Source-generated feature means; categorical procedure fixed at mean code.",
+  "sensitivity": "All temperature/pH/chloride held at 25C/7/0.6M, N/S/Br/sulfate/nitrate zero.",
+  "limit": "Diagnostic surrogates for unreported inputs, not measured chemistry or model predictions.",
+  "standardization": "Per diagnostic table, following synthetic generator; no fitting to labels."
+}

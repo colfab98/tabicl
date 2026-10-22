@@ -1,0 +1,5 @@
+{
+  "comparison_step": 5000,
+  "rule": "Largest available 500-step checkpoint shared by all five local models; chosen from file availability before inspecting new evaluation results.",
+  "checkpoint_selection_from_query_performance": false
+}

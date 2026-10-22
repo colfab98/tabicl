@@ -1,0 +1,7 @@
+{
+  "bootstrap_replicates": 1499,
+  "bootstrap_unit": "source_reference",
+  "bootstrap_limit": "Conditional on existing fitted predictions; no refitting; exploratory pointwise intervals.",
+  "subgroup_limit": "Pooled cross-fold correlations; not equal-fold means; subsets are descriptive, not matched causal controls.",
+  "checkpoint_choice": "Step 5000 was fixed as latest checkpoint shared by all trained models, not chosen for best score."
+}

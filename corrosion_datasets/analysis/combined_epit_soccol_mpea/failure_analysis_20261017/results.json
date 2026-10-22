@@ -1,0 +1,169 @@
+{
+  "scope": "Exploratory reanalysis of existing predictions on all 267 frozen outer MPEA queries; no model changes or checkpoint selection.",
+  "input_sha256": {
+    "corrosion_datasets/analysis/combined_epit_soccol_mpea/context_label_diagnostic_20261016/predictions.csv": "692cc34714087e491f29f440f46fe9c4107dca5d28664bf8fbeb8e125493c605",
+    "corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/mpea_queries.csv": "8f57ef0653d9a638414c108608ce2ce2986b9b5e1247289601488b48950ea46a",
+    "corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/mpea_scoring_targets.csv": "db0bb8f5948755158515c65a59886cdeb97e97cddcd369cbb02b4a0711b6b0d4"
+  },
+  "query_rows": 267,
+  "study_groups": 60,
+  "unique_model_visible_query_rows": 154,
+  "observed_query_feature_counts": {
+    "B": 267,
+    "C": 0,
+    "N": 0,
+    "Mg": 267,
+    "Al": 267,
+    "Si": 267,
+    "P": 0,
+    "S": 0,
+    "Ti": 267,
+    "V": 267,
+    "Cr": 267,
+    "Mn": 267,
+    "Fe": 267,
+    "Co": 267,
+    "Ni": 267,
+    "Cu": 267,
+    "Y": 267,
+    "Nb": 267,
+    "Mo": 267,
+    "Ce": 0,
+    "Gd": 0,
+    "Ta": 267,
+    "W": 267,
+    "Re": 0,
+    "Prep_grinding_grit": 0,
+    "Prep_Ra_micron": 0,
+    "Prep_pH": 0,
+    "Prep_redox": 0,
+    "Prep_time": 0,
+    "CP_time": 0,
+    "CP_temp": 5,
+    "CP_pH": 0,
+    "Test_area_cm2": 0,
+    "scan_rate": 0,
+    "CP_Cl": 188,
+    "CP_Br": 0,
+    "CP_OH": 4,
+    "CP_SO4": 0,
+    "CP_CO3": 0,
+    "CP_NO3": 0,
+    "CP_PO4": 0,
+    "CP_MoO4": 0,
+    "CP_CrO4": 0,
+    "CP_ion_other": 0,
+    "Prep_medium": 0,
+    "CP_aeration": 0,
+    "CP_agitation": 0,
+    "CP_anions_info": 0,
+    "test_method": 0,
+    "reference_type": 267
+  },
+  "mean_observed_composition_count": {
+    "EPIT": 23.95657894736842,
+    "Soccol": 7.031785448224484,
+    "MPEA": 17.0
+  },
+  "rank_decomposition_definition": "Standardize global target/prediction ranks to mean zero and population variance one. Between = mean(product of study mean ranks); within = mean(product of study-centered ranks). These covariance contributions sum exactly to global Spearman. They are not independent within/between correlations or causal effects.",
+  "rank_decomposition": [
+    {
+      "model": "combined_v2_1000",
+      "case": "original_labels",
+      "spearman": 0.22375575776709555,
+      "between_study_rank_covariance": 0.12041328038517934,
+      "within_study_rank_covariance": 0.10334247738191622,
+      "prediction_mean_mV": 77.28790932434458,
+      "prediction_std_mV": 279.5154219852215,
+      "rmse_mV": 769.6931453768357
+    },
+    {
+      "model": "combined_v2_1000",
+      "case": "mean_of_three_shuffled_predictions",
+      "spearman": 0.4479759575863392,
+      "between_study_rank_covariance": 0.36018799331658563,
+      "within_study_rank_covariance": 0.08778796426975344,
+      "prediction_mean_mV": 206.0832316529338,
+      "prediction_std_mV": 63.15368590820429,
+      "rmse_mV": 672.4800780925436
+    },
+    {
+      "model": "combined_v2_3000",
+      "case": "original_labels",
+      "spearman": 0.25578365645894174,
+      "between_study_rank_covariance": 0.14270374273532782,
+      "within_study_rank_covariance": 0.11307991372361395,
+      "prediction_mean_mV": 180.5195505848689,
+      "prediction_std_mV": 184.25193938818947,
+      "rmse_mV": 688.5358100643327
+    },
+    {
+      "model": "combined_v2_3000",
+      "case": "mean_of_three_shuffled_predictions",
+      "spearman": 0.4933017812947107,
+      "between_study_rank_covariance": 0.3928600432910349,
+      "within_study_rank_covariance": 0.10044173800367583,
+      "prediction_mean_mV": 304.77358641697884,
+      "prediction_std_mV": 57.243772663702,
+      "rmse_mV": 638.6338121748339
+    },
+    {
+      "model": "soccol_shared_1000",
+      "case": "original_labels",
+      "spearman": 0.5699892674042368,
+      "between_study_rank_covariance": 0.5272536323386879,
+      "within_study_rank_covariance": 0.04273563506554885,
+      "prediction_mean_mV": 363.9413651835206,
+      "prediction_std_mV": 135.36320115028772,
+      "rmse_mV": 585.4597001477923
+    },
+    {
+      "model": "soccol_shared_1000",
+      "case": "mean_of_three_shuffled_predictions",
+      "spearman": 0.46044116606537444,
+      "between_study_rank_covariance": 0.3871769815177011,
+      "within_study_rank_covariance": 0.0732641845476734,
+      "prediction_mean_mV": 332.94208308364546,
+      "prediction_std_mV": 47.6001852581346,
+      "rmse_mV": 638.5888277960514
+    },
+    {
+      "model": "epit_shared_1000",
+      "case": "original_labels",
+      "spearman": 0.3950677153646919,
+      "between_study_rank_covariance": 0.27918893782391574,
+      "within_study_rank_covariance": 0.11587877754077612,
+      "prediction_mean_mV": 209.03065856928842,
+      "prediction_std_mV": 173.1374648341186,
+      "rmse_mV": 649.9667262452753
+    },
+    {
+      "model": "epit_shared_1000",
+      "case": "mean_of_three_shuffled_predictions",
+      "spearman": -0.06133567410882424,
+      "between_study_rank_covariance": -0.0887431574480441,
+      "within_study_rank_covariance": 0.027407483339219836,
+      "prediction_mean_mV": 267.4514222097378,
+      "prediction_std_mV": 27.959373956497036,
+      "rmse_mV": 672.0876386794607
+    }
+  ],
+  "cluster_bootstrap_combined_3000": {
+    "contrast": "Mean of three saved shuffled-label predictions minus original-label prediction",
+    "resampling_unit": "source_reference; keep all rows of each sampled study",
+    "replicates": 2000,
+    "seed": 20261017,
+    "spearman_difference": 0.23751812483576895,
+    "percentile_95_interval": [
+      -0.033153669183963834,
+      0.54798862254267
+    ],
+    "limitations": "Conditional on these checkpoints and three shuffle draws; no training-seed or shuffle-population uncertainty. Source references are available grouping proxies, not proof of independent studies."
+  },
+  "duplicate_input_group_sensitivity_combined_3000": {
+    "description": "Average targets and predictions within identical 50-feature query rows, then give each unique input equal weight. Sensitivity analysis only, not a replacement evaluation set.",
+    "groups": 154,
+    "original_spearman": 0.3781579632785347,
+    "shuffled_mean_spearman": 0.5088030729023126
+  }
+}
