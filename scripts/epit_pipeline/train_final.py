@@ -657,6 +657,7 @@ def validate_fold_evaluation_payload(
     rules: search.TargetRuleConfig,
     use_magpie: bool,
     n_estimators: int,
+    expanded_schema: bool | None = None,
 ) -> None:
     if payload.get("settings", {}).get("tabicl_norm_methods") != ["none"]:
         raise RuntimeError("Checkpoint evaluation did not disable power.")
@@ -678,6 +679,8 @@ def validate_fold_evaluation_payload(
     if source.get("local_ckpt_sha256") != sha256_file(checkpoint):
         raise RuntimeError("Checkpoint evaluation model hash changed.")
     settings = payload.get("settings", {})
+    if expanded_schema is not None and bool(settings.get("epit_expanded_features", False)) != expanded_schema:
+        raise RuntimeError("Checkpoint evaluation changed the EPIT feature schema.")
     if int(settings.get("n_estimators", -1)) != n_estimators:
         raise RuntimeError("Checkpoint evaluation changed n_estimators.")
     if settings.get("tabicl_feat_shuffle_method") != "none":
@@ -726,6 +729,7 @@ def evaluation_record(
         rules=rules,
         use_magpie=params.use_magpie,
         n_estimators=args.eval_n_estimators,
+        expanded_schema=search.uses_expanded_schema(args),
     )
     summary = search.original.search_utils.load_eval_summary(
         summary_csv,
@@ -849,7 +853,8 @@ def run(args: argparse.Namespace) -> Path:
             flush=True,
         )
     selected_params = search.trial_params_from_mapping(
-        dict(trial.params), composition_mode=composition_mode
+        dict(trial.params), composition_mode=composition_mode,
+        fixed_informed_prior_ratio=fixed_prior.get("informed_prior_ratio"),
     )
     try:
         trial_eval = verify_selected_trial_evaluation(
@@ -989,11 +994,8 @@ def run(args: argparse.Namespace) -> Path:
         "regression_output": "median",
         "regression_uncertainty": False,
         "pitting_magpie_features": bool(params.use_magpie),
-        "expected_n_features": (
-            search.EPIT_MAGPIE_TOTAL_FEATURE_COUNT
-            if params.use_magpie
-            else search.EPIT_BASE_FEATURE_COUNT
-        ),
+        "epit_expanded_features": search.uses_expanded_schema(evaluation_args),
+        "expected_n_features": search.model_feature_count(evaluation_args, params.use_magpie),
         "max_samples_per_task": 0,
     }
     manifest = {

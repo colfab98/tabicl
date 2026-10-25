@@ -10,6 +10,11 @@ from pathlib import Path
 
 import numpy as np
 
+from tabicl.prior.epit_expanded_schema import (
+    EPIT_EXPANDED_FEATURE_PROFILE, EPIT_EXPANDED_FEATURE_COLUMNS,
+    EPIT_EXPANDED_ENVIRONMENT_COLUMNS, EPIT_EXPANDED_CATEGORICAL_COLUMNS,
+)
+
 from tabicl.prior.epit_composition_profile import (
     EPIT_COMPOSITION_PROFILE,
     EpitCompositionProfile,
@@ -17,10 +22,16 @@ from tabicl.prior.epit_composition_profile import (
 )
 
 
-EPIT_FEATURE_PROFILE = "epit_fe_nicrmo_features_v1"
+EPIT_FEATURE_PROFILE = EPIT_EXPANDED_FEATURE_PROFILE
+EPIT_FEATURE_COMPOSITION_PROFILES = {
+    "epit_fe_nicrmo_features_v1": "epit_dataset_v2",
+    "epit_fe_nicrmo_features_v2": "epit_dataset_v3",
+    "epit_fe_nicrmo_features_v3": "epit_dataset_v4",
+    EPIT_EXPANDED_FEATURE_PROFILE: "epit_dataset_v4",
+}
 EPIT_FEATURE_FAMILIES = ("fe_alloy", "nicrmo_alloy")
-EPIT_FEATURE_FAMILY_ENVIRONMENT_COUNTS = (514, 51)
-EPIT_FEATURE_FAMILY_TEMPLATE_COUNTS = (298, 17)
+EPIT_FEATURE_FAMILY_ENVIRONMENT_COUNTS = (411, 41)
+EPIT_FEATURE_FAMILY_TEMPLATE_COUNTS = (241, 14)
 EPIT_ENVIRONMENT_COLUMNS = (
     "temperature_celsius",
     "chloride_molar",
@@ -63,6 +74,12 @@ class EpitFeatureProfile:
     test_method_categories: tuple[str, ...]
     test_method_mapping: dict[str, int]
     metadata: dict[str, object]
+    expanded_environment_values: np.ndarray | None = None
+    expanded_environment_latent_values: np.ndarray | None = None
+
+    @property
+    def feature_count(self) -> int:
+        return len(self.metadata.get("feature_columns", ())) or len(self.composition_profile.observed_elements) + 4
 
     @property
     def n_environment_rows(self) -> int:
@@ -79,7 +96,7 @@ def _readonly(values: np.ndarray) -> np.ndarray:
 
 
 def _asset_files(profile_name: str, asset_dir: str | None):
-    if profile_name != EPIT_FEATURE_PROFILE:
+    if profile_name not in EPIT_FEATURE_COMPOSITION_PROFILES:
         raise ValueError(f"Unknown EPIT feature profile: {profile_name!r}")
     if asset_dir is None:
         root = resources.files("tabicl.prior.assets")
@@ -151,8 +168,13 @@ def _load_epit_feature_profile(
     composition_counts = tuple(
         int(np.sum(composition_family_indices == index)) for index in range(len(families))
     )
-    if composition_counts != EPIT_FEATURE_FAMILY_TEMPLATE_COUNTS:
+    expected_composition_counts = tuple(
+        int(composition_metadata["allowed_family_template_counts"][family]) for family in families
+    )
+    if composition_counts != expected_composition_counts:
         raise ValueError(f"Unexpected restricted composition-template counts: {composition_counts}")
+    if profile_name == EPIT_FEATURE_PROFILE and composition_counts != EPIT_FEATURE_FAMILY_TEMPLATE_COUNTS:
+        raise ValueError("Default EPIT feature-family constants do not match its asset.")
 
     environment_ids: list[str] = []
     source_task_row_indices: list[int] = []
@@ -162,6 +184,14 @@ def _load_epit_feature_profile(
     test_methods: list[str] = []
     test_method_families: list[str] = []
     test_method_codes: list[int] = []
+    expanded_rows: list[list[float]] = []
+    expanded = profile_name == EPIT_EXPANDED_FEATURE_PROFILE
+    if expanded and (
+        tuple(metadata.get("feature_columns", ())) != EPIT_EXPANDED_FEATURE_COLUMNS
+        or tuple(metadata.get("expanded_environment_columns", ())) != EPIT_EXPANDED_ENVIRONMENT_COLUMNS
+        or tuple(metadata.get("categorical_columns", ())) != EPIT_EXPANDED_CATEGORICAL_COLUMNS
+    ):
+        raise ValueError("Expanded EPIT feature schema differs from the reviewed schema.")
     expected_columns = [
         "environment_id",
         "task_row_index",
@@ -172,6 +202,8 @@ def _load_epit_feature_profile(
         "test_method_family",
         "test_method_category",
     ]
+    if expanded:
+        expected_columns.extend(EPIT_EXPANDED_ENVIRONMENT_COLUMNS)
     with csv_path.open("r", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle)
         if reader.fieldnames != expected_columns:
@@ -193,6 +225,11 @@ def _load_epit_feature_profile(
                 raise ValueError(f"Unknown EPIT test-method family: {method_family!r}")
             test_method_families.append(method_family)
             test_method_codes.append(int(row["test_method_category"]))
+            if expanded:
+                expanded_rows.append([
+                    float(row[column]) if row[column] != "" else np.nan
+                    for column in EPIT_EXPANDED_ENVIRONMENT_COLUMNS
+                ])
 
     environment_values = np.asarray(environment_rows, dtype=np.float64)
     expected_rows = int(metadata["environment_rows"])
@@ -209,10 +246,24 @@ def _load_epit_feature_profile(
     environment_counts = tuple(
         int(np.sum(environment_family_array == index)) for index in range(len(families))
     )
-    if environment_counts != EPIT_FEATURE_FAMILY_ENVIRONMENT_COUNTS:
+    expected_environment_counts = tuple(int(metadata["family_environment_counts"][family]) for family in families)
+    if environment_counts != expected_environment_counts:
         raise ValueError(f"Unexpected EPIT environment family counts: {environment_counts}")
+    if profile_name == EPIT_FEATURE_PROFILE and environment_counts != EPIT_FEATURE_FAMILY_ENVIRONMENT_COUNTS:
+        raise ValueError("Default EPIT environment-family constants do not match its asset.")
 
     preprocessing = metadata["evaluator_preprocessing"]
+    if profile_name in {"epit_fe_nicrmo_features_v3", EPIT_EXPANDED_FEATURE_PROFILE}:
+        scope = metadata["sampling_scope"]
+        development_ids = set(composition.metadata["sampling_scope"]["source_row_ids"])
+        if (
+            scope["outer_partition"] != "development" or scope["final_query_rows_used"] != 0
+            or scope["source_task_row_indices"] != source_task_row_indices
+            or len(scope["source_row_ids"]) != 452
+            or not set(scope["source_row_ids"]).issubset(development_ids)
+            or set(preprocessing["source_row_ids"]) != development_ids
+        ):
+            raise ValueError("EPIT development feature provenance is inconsistent.")
     raw_mapping = preprocessing["category_mapping"]
     method_mapping = {str(category): int(code) for category, code in raw_mapping.items()}
     method_categories = tuple(
@@ -243,6 +294,32 @@ def _load_epit_feature_profile(
     if not np.isfinite(environment_imputed).all():
         raise ValueError("Imputed EPIT environment profile contains non-finite values.")
 
+    expanded_values = expanded_latent = None
+    if expanded:
+        expanded_values = np.asarray(expanded_rows, dtype=np.float64)
+        if expanded_values.shape != (expected_rows, len(EPIT_EXPANDED_ENVIRONMENT_COLUMNS)) or np.isinf(expanded_values).any():
+            raise ValueError("Invalid expanded EPIT environment values.")
+        fill_values = np.asarray([metadata["latent_fill_values"][c] for c in EPIT_EXPANDED_ENVIRONMENT_COLUMNS])
+        expanded_latent = np.where(np.isnan(expanded_values), fill_values, expanded_values)
+        if not np.isfinite(expanded_latent).all():
+            raise ValueError("Invalid expanded EPIT latent fill values.")
+        for column in EPIT_EXPANDED_CATEGORICAL_COLUMNS:
+            mapping = metadata["category_mappings"][column]
+            if list(mapping) != sorted(mapping) or list(mapping.values()) != list(range(len(mapping))):
+                raise ValueError(f"Invalid expanded EPIT category mapping: {column}")
+            values = expanded_values[:, EPIT_EXPANDED_ENVIRONMENT_COLUMNS.index(column)]
+            if not set(values[np.isfinite(values)]).issubset(mapping.values()):
+                raise ValueError(f"Invalid expanded EPIT category codes: {column}")
+        for i, column in enumerate(EPIT_EXPANDED_ENVIRONMENT_COLUMNS):
+            if int(np.isnan(expanded_values[:, i]).sum()) != metadata["expanded_missing_counts"][column]:
+                raise ValueError(f"Expanded EPIT missingness count changed: {column}")
+        # The formula adapter must refer to the same corrected environment row.
+        indices = [EPIT_EXPANDED_ENVIRONMENT_COLUMNS.index(c) for c in ("CP_temp", "CP_Cl", "CP_pH")]
+        if not np.array_equal(expanded_values[:, indices], environment_values, equal_nan=True):
+            raise ValueError("EPIT formula environment is not aligned with the expanded inputs.")
+        _readonly(expanded_values)
+        _readonly(expanded_latent)
+
     return EpitFeatureProfile(
         name=profile_name,
         families=families,
@@ -262,13 +339,15 @@ def _load_epit_feature_profile(
         test_method_categories=method_categories,
         test_method_mapping=method_mapping,
         metadata=metadata,
+        expanded_environment_values=expanded_values,
+        expanded_environment_latent_values=expanded_latent,
     )
 
 
 def load_epit_feature_profile(
     profile_name: str = EPIT_FEATURE_PROFILE,
     *,
-    composition_profile_name: str = EPIT_COMPOSITION_PROFILE,
+    composition_profile_name: str | None = None,
     asset_dir: str | Path | None = None,
 ) -> EpitFeatureProfile:
     """Load and validate the static target-free Fe/Ni--Cr--Mo feature profile.
@@ -278,6 +357,8 @@ def load_epit_feature_profile(
     """
 
     normalized_asset_dir = None if asset_dir is None else str(Path(asset_dir).resolve())
+    if composition_profile_name is None:
+        composition_profile_name = EPIT_FEATURE_COMPOSITION_PROFILES.get(profile_name, EPIT_COMPOSITION_PROFILE)
     return _load_epit_feature_profile(
         str(profile_name),
         str(composition_profile_name),

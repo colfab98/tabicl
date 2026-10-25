@@ -86,8 +86,8 @@ EPIT_BASE_FEATURE_COUNT: Final[int] = (
     + EPIT_PROCESS_FEATURE_COUNT
 )
 
-# Missing elemental values are structural zeros only when the sum of all
-# reported elemental values already closes to 100 wt.% within this tolerance.
+# Historical raw-workbook policy only. Current reviewed rows and sampling
+# assets carry their own acceptance decisions and do not use this threshold.
 EPIT_COMPOSITION_CLOSURE_TOLERANCE_WT_PERCENT: Final[float] = 0.1
 
 

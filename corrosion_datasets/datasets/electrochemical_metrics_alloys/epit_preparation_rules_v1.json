@@ -1,0 +1,2231 @@
+{
+  "schema_version": "epit_preparation_rules_v1",
+  "scope": "Six preparation/procedure columns from reviewed clauses in the existing EPIT source fields. Two ion columns were derived separately from the reviewed v1 solution recipes. Old features, targets and composition were not changed.",
+  "policy": {
+    "grit": "Numeric reported grades were retained; mesh, slash and ambiguous emery notations were left unconverted. Abrasive particle size did not imply Ra.",
+    "durations": "Minutes/seconds were converted to hours. Bounds, different steps and post-pitting observation durations were not collapsed to one exact duration.",
+    "method_combinations": "The output listed distinct explicitly named operations, not inferred chronology. Earlier processing operations and final sample preparation were both retained when reported.",
+    "preparation_solutions": "Active chemical/electrochemical baths or explicitly named cleaning liquids; carrier/rinse water was not added to an active mixture. Different incompatible bath reports stayed unresolved.",
+    "agitation": "Explicit nonzero electrode rotation established 1. Gas bubbling, fixed electrode mounting and stationary current did not establish zero or one.",
+    "outcomes": "Only the listed procedure evidence clauses supplied features. No target, composition or outcome-dependent quantity was extracted."
+  },
+  "fields": {
+    "Heat treatment": [
+      {
+        "source_text": "The laboratory heats were processed to produce fully solution-annealed steel ranging from 0.8 to 6.4 mm thick and having an ASTM 5 to 6 grain size. These alloys were in the mill-annealed condition.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Ingots were cast and hot rolled to 20 mm diameter bars which were heat treated at ll00°c for 30 min and cooled in still air",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Ingots were cast and hot rolled to 20 mm diameter bars which were heat treated at 1100°c for 30 min and cooled in still air",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Solution treatment was performed by heating in nitrogen at 1150 C for 30 minutes followed by water quenching.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "AISI SS304, as -recieved",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Alloy 800, as-recieved",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Alloy 600, as-recieved",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "low nitrogen contents was attained by denitriding in hydrogen for 72h at 1200C, followed by cold rolling to reduce the grain size and final annealing for 20 min at 1100C",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "produced as laboratory heats, then forged, hot rolled and cold rolled to produce 2 mm strip, annealed for 20 min at 1100C and brine-quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Melted in the laboratory. The ingots were forged, hot rolled to plates of 5 mm in thickness, and then solution heat treated at 1050 C for 30 min, followed by water quenching",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Melted in the laboratory. The ingots were forged, hot rolled to plates of 5 mm in thickness, and then solution heat treated at 1050 C for 30 min, followed by water quenching, then 500 C heated for 1 h",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Melted in the laboratory. The ingots were forged, hot rolled to plates of 5 mm in thickness, and then solution heat treated at 1050 C for 30 min, followed by water quenching, then 600 C heated for 1 h",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Melted in the laboratory. The ingots were forged, hot rolled to plates of 5 mm in thickness, and then solution heat treated at 1050 C for 30 min, followed by water quenching, then 700 C heated for 1 h",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Melted in the laboratory. The ingots were forged, hot rolled to plates of 5 mm in thickness, and then solution heat treated at 1050 C for 30 min, followed by water quenching, then 800 C heated for 1 h",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Melted in the laboratory. The ingots were forged, hot rolled to plates of 5 mm in thickness, and then solution heat treated at 1050 C for 30 min, followed by water quenching, then 900 C heated for 1 h",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "annealled at 1020C for 2h, then water quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "annealled at 1060C for 2h, then water quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "annealled at 1100C for 2h, then water quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "annealled at 1140C for 2h, then water quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "solution-treated (1 h, 1120 C, water quench)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "soution-annealed at 1100C for 20 min and water quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "0.25 um diamond finish, annealed at 1100C for 3h and water quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "solution-annealed",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "denitrided in a hydrogen atmosphere for three days at 1300C quenched. Then annealled at 1100C for 20min, brine quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "annealled at 1100C for 20min, brine quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "1300C 58h",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "annealed at 1100 C for 3 h followed by a water quench",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Alloys were prepared by vacuum melting in dense alumina crucibles decarburized electrolytic Fe, electrolytic Cr and carbonyl Ni, the latter supplied by courtesy of the International Nickel Company. Re containing 15 ppm Fe but less than I ppm of any other detectable impurity was supplied by courtesy of Ledgemont Laboratory,Kennecott Copper Corporation. The melt was cast in a purified argon atmosphere by drawing into 7mm dia. Vycor tubes and quenching in water. The alloys were homogenized at 1050°C for 17h, swaged to 0.4cm diameter rods, annealed at 1050°C and water quenched.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "The stainless steels evaluated in this study were prepared from commercially pure grades of Fe, Ni, ferrochrome, Mn, Mo, Si, manganese or chromium nitride, and chromium carbide. Melting was done in a vacuum induction furnace.The melting procedure consisted of: (1) melting Fe, Ni, Mo, Mn, and ferrochrome in a vacuum; (2) bleeding nitrogen into the furnace; and (3) introducing Mn4N or CrN, wrapped in iron foil, into the melt, as needed. After casting, only solid sections of the ingots were taken to prepare test specimens. The sections were first soaked for 30 minutes and hot rolled. The temperatures were 1205 C and 1095 C, depending upon hot ductility of the heats. The hot rolled specimens were pickled in a solution containing 10% HNO3 and 2% HF at 65 C to remove the hot working scale, cold rolled to 2 mm, annealed at 1065 C for 5 minutes, water quenched, and pickled again in the same HNO3-HF solution at 65 C. A small section was cut from each heat and used for chemical analysis.",
+        "features": {
+          "surface_preparation_method": "pickling",
+          "preparation_solution_type": "HF + HNO3"
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "pickled in a solution containing 10% HNO3 and 2% HF at 65 C",
+          "pickled again in the same HNO3-HF solution at 65 C"
+        ],
+        "notes": [
+          "The repeated pickling bath was identified as HF + HNO3. Percentage bases and pickling duration were not established. Heating/annealing durations did not become Prep_time, and bath temperature did not become CP_temp."
+        ]
+      },
+      {
+        "source_text": "5 kg melts were made at atmospheric pressure in an induction furnace using Japanese iron, nickel pellets, electrolytic chromium, ferro-molybdenum, refined manganese, and high-nitrogen ferro-chromium. Ingots were cast and hot rolled to 20 mm diameter bars which were heat treated at 1100°c for 30 min and cooled in still air.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Steels used for this study were kindly supplied by the Institute of Iron Metallurgy in Gliwice, Poland. They were in the form of hot forged rods, 18 mm in diameter. The steels were tested in the as-received and quenched after 1 hour of heaing in air at 1120oC",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Steels used for this study were kindly supplied by the Institute of Iron Metallurgy in Gliwice, Poland. They were in the form of hot forged rods, 18 mm in diameter. Quenching in water occurered after either (1) heating 1h in air at 1050C, (2) heating 0.5h in air at 1050C",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "The alloys were induction melted in a vacuum furnace and cast into ingots. The ingots were hot-rolled in a controlled atmosphere, and then cold-rolled to 2.154 mm thick sheets. Before the experiments, all specimens were solution annealed for 20 min at 1150°C, and then water quenched.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "The steels were heat treated at 1100 and 1250°C followed by quenching in water in order to homogenize the structure.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "2h at 1120 celcius, water quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "annealed",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "sensitized",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "solution treat at 1120 celcius",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "as cast",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "as rolled",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "solution treat at 1120 celcius, water quench",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "The ingots were homogenized in A or He, usually at 1050-1100 oC for several hours. Ingots of Ni-Cr, Ni-Mo, and Cr-Fe were cold rolled to 0.25 cm, then annealed at 1000-1050 oC and water quenched. The Cr-Fe alloys containing more than 40% Cr were difficult to roll or swage, hence electrodes were machined directly from the homogenized ingot. Ingots of the lower % Cr-Fe alloys and of the stainless steels were swaged to about 0.45 cm diam rods, annealed at 1050 oC and water quenched. All electrodes measured approximately 2 cm long and were either 0.4 cm diam or 0.5 cm wide by 0.2 cm thick.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Two sets of laboratory-prepared ferritic alloys and two commercial ferritic stainless steels (Types 430 and 4341) were investigated. The high-purity 17% chromium, 17% Cr-l% Mo, and 17% Cr-3% Mo laboratory alloys were prepared by melting and casting in vacuum. The resulting ingots were hot-rolled to 0.64-cmthick sheet, which was cold-rolled to a 0.32-cm thickness, annealed for 1 hr at 815~ and water-quenched. The 18% Cr-2% Mo alloys modified by titanium and Type 434 is the proposed designation for stainless steel conraining 17% chromium and 1% molybdenum. nickel additions were produced by induction melting in an argon atmosphere, using the split-heat technique. In this technique, the base composition is melted, and part of the melt is poured off to produce an ingot; then to the balance of the melt, the required alloying additions are made and the next ingot is cast. This process is repeated until a series of the desired compositions is cast. The 18% Cr-2% Mo ingots were hotforged, hot-rolled to 0.76-cm-thick strips, and coldrolled to 0.38-cm-thick strips. The 18% Cr-2% Mo alloys containing titanium were annealed for 1 hr at 104O~ the minimum temperature that prevented formation of a second phase in the high titanium alloy, and then water-quenched. The rest of the 18% Cr-2% Mo materials and the hot-rolled, commercial Types 430 and 434 steels were annealed at 815~ for 1 hr and water-quenched.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "The ingots were forged, rooled into bars 2 mm thick, then tempered at 1150 C (heating for 15mins) and quenched in water.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Annealed 2 hours at 650 C",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "In this technique, the base composition is melted and part of the melt is cast into an ingot. To the balance of the melt, the required molybdenum addition is made and the next ingot is cast. This process is repeated until a series of the desired positions is cast. By this procedure, the residual and impurity elements, which were intended to be in the range commonly present in commercial stainless steels, were held essentially constant within each series. The ingots were hot-forged and hot-rolled to a thickness of 0.76 cm and then cold-rolled to 0.38 cm. The 13% nickel steels were annealed at 1120C for 1 hr and water-quenched. The 39% nickel steels and the high-purity alloys were annealed at 1150C for 1 hr and water-quenched.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "All surfaces of the cast slabs were ground to remove imperfections and provide good rolling surfaces before annealing 16 hours at 1200C in argon atmosphere. The slabs were hot rolled at 1090C to 1/16 inch thickness. Oxide scale was subsequently removed by sand blasting before a final annealing treatment. Following preparation, each alloy was hot rolled to 0.1 inch sheet and water quenched. Hot rolling temperatures were restricted to a maximum of 982C and a minimum of 816C. The hot rolled sheet was electropolished in an aqueous 15wt% NaCl/ 30wt%H2SO4 electrolyte to remove surface scale and sheared into 1 inch wide strips running parallel to the hot rolling direction. The 1 inch wide hot rolled strips were subsequently cold rolled from 0.1 inch to a final thickness of 0.0625inch.",
+        "features": {
+          "surface_preparation_method": "grinding + sand_blasting + electropolishing",
+          "preparation_solution_type": "H2SO4 + NaCl"
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "All surfaces of the cast slabs were ground",
+          "Oxide scale was subsequently removed by sand blasting",
+          "electropolished in an aqueous 15wt% NaCl/ 30wt%H2SO4 electrolyte"
+        ],
+        "notes": [
+          "Reported surface operations during processing were retained along with later sample preparation. The electropolishing bath was a preparation mixture, not a test solution. Its mass percentages remained in the original description; no preparation concentration columns were added."
+        ]
+      },
+      {
+        "source_text": "This one received a final heat treatment of 1h at 1049C followed by water quenching comepared to the one above",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "815C annealed then water quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "925C annealed then water quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "1035C annealed then water quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "heat-treated for 1 hr at 1500F followed by water quenching",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "heat-treated for 1 hr at 1800F followed by water quenching",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "annealed at 1200C for 24hr and water quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Solution treatment was performed by heating in nitrogen at 1150 C for 30 minutes followed by water quenching",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "annealing in air for 1 h at 850° C (recrystallization) plus 7 days at 500°C (ordering) followed by cooling in air,which produced the DO3 -ordered structure",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "The casts were homogenized for 2 h at I250 C. and then hot-rolled into 5 mm thick plates. The specimen prepared by cold rolling the hot rolled plates into 2mm thick sheets and solution annealing for 20 min at 1050C, followed by water quenching",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "annealed UNS S30100 austenitic stainless steel",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "annealed UNS S30100 austenitic stainless steel, ion implanted with Mo implanted with 5.55*1016 molybdenum ions/cm2",
+        "features": {
+          "surface_preparation_method": "ion_implantation"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "ion implanted with Mo implanted"
+        ],
+        "notes": [
+          "Only explicit ion implantation was recorded; implanted dose was not interpreted as alloy composition or solution concentration."
+        ]
+      },
+      {
+        "source_text": "The binary Fe-Cr alloys were furnished by Climax Molybdenum. They were subsequently hot forged. The other alloys were prepared in our laboratory by alloying to the original Fe-Cr alloys the elements Mo, W, V or Si using a vacuum induction furnace under an argon atmosphere.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "solution-annealed for 2 h at 1,050°C and then aged at 850°C for 30 min, 1 h, and 10 h.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "as-cast",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Aged in Ar for 24 hrs @ 350C",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Aged in Ar for 24 hrs @ 500C",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Aged in Ar for 24 hrs @ 650C",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Aged in Ar for 24 hrs @ 950C",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Aged in Ar for 24 hrs @ 800C",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "as-milled powders consolidated by SPS @520C for 10 min, heating rate 40C/min, 80MPa in Ar, cooled freely",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Annealed at 1250C for 1000hr, water quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "550 °C for1 Hrs",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "150 °C for 25 Hrs",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Rapid Solidification by deposition of molten alloys on a cooled wheel",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "150 °C for 25 hours",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "550 °C for 1 hour",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "551 °C for 1 hour",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "150 °C for 25 hrs and H2O quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "550 °C for 1 hrs and H2O quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Annealed at 600 °C for 2h H2O quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "550 °C for 2 hrs and H2O quenched",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      }
+    ],
+    "[Cl-] Test Method": [
+      {
+        "source_text": "Potentiodynamic Polarization with exposed area of 1 cm2. Potentiodynamic polarization experiments were carried out using a scan rate of 0.1 mV/s commencing at a potential about 250 mV more active than the stable OCP. Before starting the polarization scan, the specimen in the sample holder (WE) was left in the cell for about 1 h to attain a steady state which is shown by a constant potential and current at the beginning of the experiment. The potcntiodynamic runs were programmed such that upon attaining a current density of 25μA/cm^2, the scan direction was reversed and the potentials were scanned back to the starting potential.",
+        "features": {
+          "CP_time": 1
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "Before starting the polarization scan",
+          "left in the cell for about 1 h"
+        ],
+        "notes": [
+          "About one hour was retained as the reported nominal pre-scan equilibration duration."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Following pretreatment for 5 min at -1.5 V, the potential was increased-rapidly to -0.5V and thereafter at a steady rate of 1V in 50 min. In this work the critical pitting potential was taken as that at which there was an anodic current flow of 10^-5 A/cm^2.",
+        "features": {
+          "surface_preparation_method": "potentiostatic_treatment",
+          "Prep_time": 0.08333333333333333
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "pretreatment for 5 min at -1.5 V"
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "Polarization curves were obtained potentiodynamically at a scan rate of 20 mV/min, using a Tacussel electrochemical set composed of a potentiostat, a current recorder, and a high impedance electronic millivoltmeter.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. The potential was controlled by a Wenkingt potentiostat (Model 68 TS-3) and changed in steps of 10 mV with a Wenking SMP 69 scanning potentiometer every hour for the positive polarization direction until the onset of pitting or appearance of pits, and every 100 s for the reverse scan until zero current. The potential was initially held at 150 mV for 1 h to attain stable current, whereupon the scanning potentiometer was activated.",
+        "features": {
+          "surface_preparation_method": "potentiostatic_treatment",
+          "Prep_time": 1
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "initially held at 150 mV for 1 h to attain stable current"
+        ],
+        "notes": [
+          "The explicit initial potential hold supplied preparation duration. Later hour-long potential steps did not supply CP_time."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. For pitting tests, specimens were allowed to passivate in air for at least 18 h prior to testing.",
+        "features": {
+          "surface_preparation_method": "air_passivation"
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "passivate in air for at least 18 h"
+        ],
+        "notes": [
+          "Air passivation was retained as a preparation method. Its lower-bound air-exposure duration was not chemical/electrochemical Prep_time or test-bath CP_time."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. Potentiodynamic sweeps in hot 3.5% NaCl solution were carried out at a rate of 1 mV s-1. The tests were carried out in a glass three-electrode cell held in a water bath at 65 °C. In all experiments the rod under test was supported in a holder on the lid of the cell such that the end face just touched the surface of the test solution as described above. The counter electrode was a platinum wire, the reference electrode a saturated calomel electrode (SCE) at the same solution temperature; all potentials are given against the SCE. The potential at which the current density exceeded 50 uA cm-2 was defined as the pitting potential.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. the sample was kept immersed in the experimental solution for 5 min at open-circuit potential (OCP). The anodic potential was increased in steps of 20 mVSCE, and the current readings were recorded after waiting at each set potential for 1 min.",
+        "features": {
+          "CP_time": 0.08333333333333333
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "immersed in the experimental solution for 5 min at open-circuit potential"
+        ],
+        "notes": [
+          "The five-minute initial open-circuit wait was retained; subsequent one-minute waits at each applied potential were measurement steps, not additional CP_time."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. All solutions used were deaerated with high-purity argon for at least 2 h before analysis. Potentials were measured against a saturated calomel electrode (SCE). Cathodic pretreatments were performed in 0.1 M hydrochloric acid (HCl) for 15 min at –700 mV SCE , while the current was monitored, in order to remove the air-formed oxide film.",
+        "features": {
+          "surface_preparation_method": "cathodic_reduction",
+          "preparation_solution_type": "HCl",
+          "Prep_time": 0.25
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "Cathodic pretreatments were performed in 0.1 M hydrochloric acid (HCl) for 15 min"
+        ],
+        "notes": [
+          "The preparation bath was HCl. The separate two-hour argon purge was not specimen equilibration time. No preparation concentration or redox column was added."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. Before the test, the sample remain in contact with the solution for 30 min. at -0.3 to -0.1 V to passivate or reach equilibrium.",
+        "features": {
+          "surface_preparation_method": "potentiostatic_treatment",
+          "Prep_time": 0.5
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "Before the test, the sample remain in contact with the solution for 30 min. at -0.3 to -0.1 V"
+        ],
+        "notes": [
+          "The prescribed-potential conditioning interval was preparation time, not an open-circuit waiting time. The voltage range was not averaged or exported."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. Gound to 600 grit at least 18 h before the test",
+        "features": {
+          "Prep_grinding_grit": 600,
+          "surface_preparation_method": "grinding"
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "Gound to 600 grit at least 18 h before the test"
+        ],
+        "notes": [
+          "The typo Gound was interpreted as ground. The elapsed interval after grinding was not the duration of grinding, a chemical treatment or immersion in the test bath."
+        ]
+      },
+      {
+        "source_text": "Potentiostatic Polarization at different potentials. The working electrode was a rotating disk, the rotation rate was 3000 rpm in all experiments.",
+        "features": {
+          "CP_agitation": 1
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "The working electrode was a rotating disk, the rotation rate was 3000 rpm in all experiments"
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. The specimens were activated at the cathodic potential of 2700 mV saturated calomel electrode (SCE) for 10 min.",
+        "features": {
+          "surface_preparation_method": "cathodic_reduction",
+          "Prep_time": 0.16666666666666666
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "activated at the cathodic potential of 2700 mV saturated calomel electrode (SCE) for 10 min"
+        ],
+        "notes": [
+          "Only the explicitly stated cathodic treatment and ten-minute duration were retained. The questionable voltage sign remained in the original text; no redox value was inferred or corrected."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. Before athe test, specimens were cathodically polarized at - 1.150 V(SCE) for 15 min to reduce the polish-formed film.",
+        "features": {
+          "surface_preparation_method": "cathodic_reduction",
+          "Prep_time": 0.25
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "cathodically polarized at - 1.150 V(SCE) for 15 min"
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "Potentiostatic Polarization, Potentiostatic polarization curves were obtained at 25°C and at 0°C in N,-saturated 0.1N NaCl and O*lN NaBr. The electrode totally immersed was first polarized in the least noble passive region for 15min, then the potential was moved in the noble direction 50mV every Smin until the pitting potential was approximated and the current showed a marked increase. This was followed by longer-time runs of 12-15h at a single potential in the neighbourhood of the critical potential in order to establish the steady state value. The least noble potential at which the current did not continuously increase with time and at which no pits could be observed under a low power microscope was taken as the final value.",
+        "features": {
+          "surface_preparation_method": "potentiostatic_treatment",
+          "Prep_time": 0.25
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "first polarized in the least noble passive region for 15min"
+        ],
+        "notes": [
+          "The initial conditioning interval was 15 minutes. Later potential steps and 12-15 hour measurements were not preparation or equilibration durations."
+        ]
+      },
+      {
+        "source_text": "Polarization test, strips of 1.25 cm x 1.25 cm of the experimental alloys, as well as the commercial alloys, were subjected to anodic polarization in dearated 1 N NaCI solution at 30 C. A Type 308 rod was welded to one side of each specimen and covered with rubber tubing, except the tip for electrical connection to a potentiostat. The specimens were then mounted in epoxy, ground to 600 grit, and rinsed with distilled water. The specimen/mount interface was covered with a thin film of lacquer, and approximately 1 cm 2 of the specimen was exposed. They were then kept in a desiccator until testing. The testing procedure consisted of: (1) introduction of the solution to a one liter polarization cell; (2) setting the temperature of the solution; (3) deoxygenating the solution with prepurified nitrogen at the rate of 90 ml/min starting 30 minutes before immersion of the specimen; (4) cleaning the specimen with distilled water just prior to transferring to the cel]; and (5) anodic polarization 50 minutes after the immersion at a scanning rate of 20 mV/min, using a PAR Model 173 potentiostat and ELSCINT Model ABA-26 Automatic Baseline Advance.",
+        "features": {
+          "Prep_grinding_grit": 600,
+          "surface_preparation_method": "grinding + rinsing",
+          "CP_time": 0.8333333333333334
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "ground to 600 grit, and rinsed with distilled water",
+          "anodic polarization 50 minutes after the immersion"
+        ],
+        "notes": [
+          "600 was retained as the reported grade, without asserting a grading standard. Fifty minutes of specimen immersion became 50/60 h; the separate 30-minute gas purge before immersion was not CP_time. Rinse water was not added to the active pickling bath described elsewhere."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization, the specimen surface was ground to a 120 grit finish and 5 cm2 was exposed to the corrodent. The potential was controlled, relative to a standard saturated calomel electrode, by a potentiostat. Following. pretreatment for 5 min at -1.5 V, the -potential was increased-rapidly to -0.5V and thereafter at a steady rate of 1V in 50 min. In this work the critical pitting potential was taken as that at which there was an anodic current flow of 10^-5 A/cm2.",
+        "features": {
+          "Prep_grinding_grit": 120,
+          "surface_preparation_method": "grinding + potentiostatic_treatment",
+          "Prep_time": 0.08333333333333333
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "ground to a 120 grit finish",
+          "pretreatment for 5 min at -1.5 V"
+        ],
+        "notes": [
+          "Preparation duration was converted from minutes to hours. The preparation voltage remained in the original text because voltage-reference alignment was deferred."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization, the specimens were cut from rods and mounted in epoxy resin so that the exposed surface area was about 0.8 cm^2. This surface was coarse-ground with silicon-carbide papers and then fine-ground with alumina paste.",
+        "features": {
+          "surface_preparation_method": "grinding"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "coarse-ground with silicon-carbide papers and then fine-ground with alumina paste"
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization, the electrochemical experiments were carried out in an inert gas glove box by using a 0.5 M H2SO4 solution which was de-aerated by purging with N2. Sample disks of 10 mm diameter were mounted in the electrochemical glass cell equipped with a platinum counter electrode and a mercurous sulfate reference electrode.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization, Cu-wire was spot-welded to one side of each specimen, mounted in epoxy resin, and ground to 2000 grade silicon carbide. To avoid crevice corrosion, the specimenmount interface was carefully coated with a thin ®lm of silicone sealant. Approximately 1 cm2 of the surface was exposed to the test solution.",
+        "features": {
+          "Prep_grinding_grit": 2000,
+          "surface_preparation_method": "grinding"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "ground to 2000 grade silicon carbide"
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. Potentiodynamic polarization tests were performed using a three-electrode cell system consisting of a saturated calomel electrode (SCE) as a reference, a platinum electrode as a counter, and a specimen as the working electrode. The sample was kept immersed in the test solution for 2 h at open-circuit potential. After obtaining the stable corrosion potential (Ecorr), the potential was raised in the anodic direction, from ±100 mV below Ecorr, at a scan rate of 0.2 mV/s.",
+        "features": {
+          "CP_time": 2
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "kept immersed in the test solution for 2 h at open-circuit potential"
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. Polarization was performed in an electrochemical cell attached to the ESCA instrument. The arrangement allows the samples to be transferred to the analyser without air exposure. The electrolyte was de-aerated by Ar bubbling for 2 h before exposure. The samples were activated at - 700 mV for 10 min. The sweep rate at the potentiodynamic tests was 1 mVs_‘. The samples prepared for the ESCA analyses were polarized by stepping the potential from the activation potential to the potentials - 75, 500 and 800 mV (SCE). The potentials were maintained for 10 min and 2 h.",
+        "features": {
+          "surface_preparation_method": "cathodic_reduction",
+          "Prep_time": 0.16666666666666666
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "The samples were activated at - 700 mV for 10 min"
+        ],
+        "notes": [
+          "The activation interval was retained. Two-hour electrolyte deaeration and holds of other ESCA-analysis samples did not supply preparation/equilibration durations for these pitting rows."
+        ]
+      },
+      {
+        "source_text": "ASTM G1",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "ASTMG1",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "ASTMG!",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiostatic Polarization. The experimental procedure was to first polarize the electrode potentiostatically at the least noble potential within the passive region for at least 15 min in order to achieve steady-state passivity. The potential was then advanced in stages of 50 mV, allowing 5 min between each change. Initially the current decreased or remained constant after each potential adjustment, but eventually a steadily increasing current at some potential V'c indicated the onset of pitting (or of transpassivity). Steady-state values Vc were obtained subsequently by holding the potential for long times at a fixed value and then observing pitting or the lack of it under a low power microscope. The lowest potential for which pitting could not be observed after a 10-hr or longer period of constant polarization was considered to be the steady-state value Vc. Reproducibility was in the order of ±5 mv.",
+        "features": {
+          "surface_preparation_method": "potentiostatic_treatment"
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "first polarize the electrode potentiostatically",
+          "for at least 15 min in order to achieve steady-state passivity"
+        ],
+        "notes": [
+          "At least 15 minutes was a lower bound, not an exact preparation duration. Any different earlier pickling time was not substituted for this conditioning duration. Later 5-minute steps and >=10-hour pitting observations were excluded."
+        ],
+        "ambiguous_columns": [
+          "Prep_time"
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. The onset of pitting was marked by a sharp and sudden increase in polarization current. The potential scanning was stopped at the pitting potential, and the electrode was allowed to pit for 20 to 30 min. It was then removed from the solution, the tape was stripped, and its surface was examined for pitting and possible crevice corrosion. The potential scanning was usually started at -0.7 to -0.6v, with respect to the saturated calomel electrode (SCE); the scanning was always into the passive potential region. In some experiments, the potential of an actively corroding electrode was changed almost instantaneously to a selected potential in a passive range by switching on a potentiostat, with a potential preset at a desired value.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Scratch",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. The electrodes for the potentiodynamic studies were mounted in epoxy plastic with a single exposed surface parallel to the rolling plane. Electrical contact was made by soft-soldering a nickel wire to the back of the electrode. Contact between the solder or lead wire and the electrolyte was excluded by the plastic and glass tube. The 0.5 by 0.6 cm exposed surface was polished by using standard metallographic techniques, finishing with a distilled water slurry of 0.3 mu alumina. The edges of the electrode were masked with clear Glyptal varnish to prevent crevice corrosion. The coupons for the exposure tests, 2.5 by 2.5 by 0.3 cm, were surface ground and then polished through No. 600 wet silicon carbide paper. They were solvent degreased and rinsed in methanol before exposure.",
+        "features": {
+          "surface_preparation_method": "polishing"
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "The 0.5 by 0.6 cm exposed surface was polished",
+          "finishing with a distilled water slurry of 0.3 mu alumina"
+        ],
+        "notes": [
+          "Only the pitting-test electrode preparation was used. No. 600 paper and solvent/methanol cleaning referred to different exposure-test coupons and were not assigned to the pitting samples. Alumina particle size was not surface roughness or grit."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization, Potentiodynamic polarization commenced at the free-corrosion potential after the sample had been immersed in the solution for 30 minutes",
+        "features": {
+          "CP_time": 0.5
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "immersed in the solution for 30 minutes"
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization - pitting potentital measured by potential sweep method",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization - test electrodes were made from 0.25 mm wire looped to a diameter of 25 mm. Test solutions were prepared from reagent grade chemicals and distilled water and the pH value was adjusted using H2SO4 or NaOH as required. The oxygen content of the test solutions was reduced to a negligible value by bubbling nitrogen through them for a period of 24 h. All electrochemical measurements were carried out in conventional setup, purged with nitrogen during each experiment",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "The \"scratch\" technique was employed for the determination of pitting potentials.The electrode was first polarized potentiostatically to some potential well below the expected pitting potential.The polarization current was allowedto stabilize and then the electrode surface was scratched with a sharp silicon-carbide crystal mounted on the end of a glass tube. The scratching of the electrode surface resulted in a sharp polarization current \"blip.\" The electrode potential was manually adjusted by 20 mV steps to more and more noble potential values, until the scratch failed to repassivate, a failure which was indicated by a gradual current rise after the electrode was scratched. The pit was allowed to develop for 10 min, and then the electrode was examined visually. Only those results were considered to be valid where pits actually developed at the scratched site.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [
+          "The \"scratch\" technique",
+          "The pit was allowed to develop for 10 min"
+        ],
+        "notes": [
+          "Scratching and the ten-minute pit-development period were part of the measurement, not pre-test preparation; no Prep_time, CP_time or preparation method was inferred."
+        ]
+      },
+      {
+        "source_text": "To measure the pitting potentials, the potential was stepped upwards by 25 mV every 400 s, beginning at -300 mV(SCE).",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization- Samples were mechanically polished with emery paper up to grade 1000 under water, then degreased in absolute ethyl alcohol, washed in deionized water, and dried by warm air blowing for electrochemical tests. Polarization curves were obtained potentiodynamically at a scan rate of 20 mV/min.",
+        "features": {
+          "Prep_grinding_grit": 1000,
+          "surface_preparation_method": "polishing + degreasing + rinsing",
+          "preparation_solution_type": "ethanol"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "mechanically polished with emery paper up to grade 1000 under water",
+          "degreased in absolute ethyl alcohol, washed in deionized water"
+        ],
+        "notes": [
+          "The reported numeric grade and ethanol degreasing liquid were retained. Water used for abrasion/rinsing was not combined with ethanol into an invented bath mixture."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization - the sample was stabilized in the electrolyte, which was sparged continuously with oxygen (O2), until the potential change was < 1 mV/min, and this potential was considered as the OCP. Then, the sample was scanned potentiodynamically at a rate of 600 mV/h to a potential corresponding to a current density of 10–3 A/cm2 and then scan direction was reversed.",
+        "features": {},
+        "status": "partial",
+        "evidence_clauses": [
+          "until the potential change was < 1 mV/min"
+        ],
+        "notes": [
+          "An equilibration criterion was reported, but no duration. Oxygen sparging did not establish a binary agitation value."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization(Anodic polarization was applied to the working electrode after a stable corrosion potential had been achieved; this usually took about 2 h after immersion in the solution. As a measure of the resistance to pitting corrosion, the pitting potentials for the alloys were determined from the anodic polarization curve by the potential at which the anodic current density reached a value of 10 uA/cm2 after film breakdown.",
+        "features": {
+          "CP_time": 2
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "this usually took about 2 h after immersion in the solution"
+        ],
+        "notes": [
+          "About two hours was retained as a reported nominal equilibration duration, not an exact per-specimen observation."
+        ]
+      },
+      {
+        "source_text": "Potentiostatically-controlled anodic Polarization, test solution deaerated with N2",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic polarization. All studies were carried out with rotating disk electrodes of 0.1 cm2 (diameter 0.357 cm) insulated with a PTFE shrinkable tubing. Experiments were performed at 6000 rpm (in part at 600 rpm) in 1 M HCI at 25°C under a nitrogen atmosphere.",
+        "features": {
+          "CP_agitation": 1
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "rotating disk electrodes",
+          "Experiments were performed at 6000 rpm (in part at 600 rpm)"
+        ],
+        "notes": [
+          "Explicit nonzero electrode rotation established imposed hydrodynamic motion. A fixed surface or gas atmosphere alone would not establish an agitation value."
+        ]
+      },
+      {
+        "source_text": "Anodic Polarization - Anodic polarization tests performed in deaerated 4 M sodium chloride (NaCl) solution at 80°C. The electrochemical cell for the test consisted of a 1-L multineck flask, as specified in ASTM G 5 with a platinum counter electrode and a saturated calomel electrode (SCE) positioned in a salt bridge with a high-silica tip.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization in a three electrode flat cell, prior to anodic sweep OCP measured for 30 mins",
+        "features": {
+          "CP_time": 0.5
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "prior to anodic sweep OCP measured for 30 mins"
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization in a three electrode flat cell",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization in a three electrode flat cell until 100mA or 1.241 VSCE",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization in a the electrode flat cell, prior to swwep help at OCP then cathodically polarizes for 300s to remove surface films",
+        "features": {
+          "surface_preparation_method": "cathodic_reduction",
+          "Prep_time": 0.08333333333333333
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "cathodically polarizes for 300s to remove surface films"
+        ],
+        "notes": [
+          "300 seconds of conditioning became 300/3600 hours. The preceding OCP hold had no stated duration and did not fill CP_time."
+        ]
+      },
+      {
+        "source_text": "Potentiostatic Polarization",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization in a three electrode flat cell, prior to anodic sweep OCP measured for 1 hr",
+        "features": {
+          "CP_time": 1
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "prior to anodic sweep OCP measured for 1 hr"
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization in a three electrode flat cell, prior to anodic sweep OCP was mesured until stability for 6 mins",
+        "features": {
+          "CP_time": 0.1
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "prior to anodic sweep OCP was mesured until stability for 6 mins"
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "Potentiostatic Polarization for 24 hrs in deaerated Cl- solution",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarzation until a stable pit formed then Potentiostatic Polarization at pitting potential to monitior pit growth",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Potentiostatic Polarization. Measurements made in 10 mV steps and held until a stationary current was observed",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [
+          "held until a stationary current was observed"
+        ],
+        "notes": [
+          "Stationary current described an electrical response, not an explicitly unstirred solution; CP_agitation remained unknown."
+        ]
+      },
+      {
+        "source_text": "Potentiostatic Polarization. For most of the measurements, Al electrodes were employed measuring 1.5 cm long and 0.4 cm in diameter. One end of each electrode was drilled and tapped, allowing a threaded member attached to a nickel wire to hold the electrode firmly against a glass tube separated by a water-tight Teflon gasket. Only the electrode surface, totally immersed, Teflon, and glass made contact with the electrolyte. Specimens were polished to 3/0 emery paper followed by pickling in 2N NaOH at 80~ for 5 min and then washing in distilled water.",
+        "features": {
+          "surface_preparation_method": "polishing + pickling + rinsing",
+          "preparation_solution_type": "NaOH",
+          "Prep_time": 0.08333333333333333
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "polished to 3/0 emery paper followed by pickling in 2N NaOH at 80~ for 5 min and then washing in distilled water"
+        ],
+        "notes": [
+          "The slash emery grade was left unconverted. The active pickling bath was NaOH, distinct from rinse water and the corrosion-test solution. Its five-minute duration was retained; normality was not converted to molarity."
+        ]
+      }
+    ],
+    "Comments": [
+      {
+        "source_text": "S30403 (304L)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "S31603 (316L)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "S31703 (317L)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "N08904 (904L)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "S41000 (410)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "S17400 (17-4PH)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "S31254 (SMO 254)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "S32654 (SMO 654)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "N08925 (hMo 1925)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "N0828 (hMo 3127)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "N08020 (20 Cb3), Nb + Ta = 5%",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "S44635 (Monit 44635)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "S31803 (Duplex 2205), Nb + Ta = 0.6%",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "The specimen surface was ground to a 120 grit finish and 5 cm2 was exposed to the corrodent.",
+        "features": {
+          "Prep_grinding_grit": 120,
+          "surface_preparation_method": "grinding"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "ground to a 120 grit finish"
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "The temperature was not specified for this experiment, but was explicitely shown as 60 oC for parallel experiments. For electrochemical measurement, the surfaces studied were mechanically polished with emery paper under water up to grade 1000, then were degreased in absolute ethyl alcohol, washed in deionized water, and dried by warm air blowing.",
+        "features": {
+          "Prep_grinding_grit": 1000,
+          "surface_preparation_method": "polishing + degreasing + rinsing",
+          "preparation_solution_type": "ethanol"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "mechanically polished with emery paper under water up to grade 1000",
+          "degreased in absolute ethyl alcohol, washed in deionized water"
+        ],
+        "notes": [
+          "Only preparation clauses were used. The temperature mentioned for parallel experiments was not assigned to this sample."
+        ]
+      },
+      {
+        "source_text": "Surface finish: 4/0",
+        "features": {},
+        "status": "unresolved",
+        "evidence_clauses": [
+          "Surface finish: 4/0"
+        ],
+        "notes": [
+          "The slash surface-finish notation did not establish a directly comparable numeric grit value or a specific preparation method."
+        ]
+      },
+      {
+        "source_text": "Ground to 600 mesh SiC. The test area is 1 cm2",
+        "features": {
+          "surface_preparation_method": "grinding"
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "Ground to 600 mesh SiC"
+        ],
+        "notes": [
+          "Mesh notation was preserved in the original comment. It was not assumed equivalent to a grit standard or converted into numeric Prep_grinding_grit."
+        ]
+      },
+      {
+        "source_text": "Ground to 600",
+        "features": {
+          "Prep_grinding_grit": 600,
+          "surface_preparation_method": "grinding"
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "Ground to 600"
+        ],
+        "notes": [
+          "The bare number described a grinding grade. It was retained as reported, without asserting an abrasive material or grading standard."
+        ]
+      },
+      {
+        "source_text": "25 Cr duplex SS UNS S32550",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Cast Duplex CF-Type SS (cast equivalent of AISI 304SS), 9-µm diamond paste surface finish",
+        "features": {
+          "surface_preparation_method": "diamond_polishing"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "9-µm diamond paste surface finish"
+        ],
+        "notes": [
+          "Diamond-paste preparation was explicit. Particle size was not measured Ra or an abrasive grade."
+        ]
+      },
+      {
+        "source_text": "600 grit surface finish, 316LN (UNS S31653), exposed area 3 cm2",
+        "features": {
+          "Prep_grinding_grit": 600
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "600 grit surface finish"
+        ],
+        "notes": [
+          "A numeric abrasive grade was explicit; the description did not distinguish grinding from polishing."
+        ]
+      },
+      {
+        "source_text": "AISI 430SS, abraded through 2.0 emery paper",
+        "features": {
+          "surface_preparation_method": "abrasion"
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "abraded through 2.0 emery paper"
+        ],
+        "notes": [
+          "The emery notation 2.0 was not treated as numeric grit 2 or guessed to mean 2/0. The abrasion method was retained."
+        ]
+      },
+      {
+        "source_text": "AISI 304SS, abraded through 2.0 emery paper",
+        "features": {
+          "surface_preparation_method": "abrasion"
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "abraded through 2.0 emery paper"
+        ],
+        "notes": [
+          "The emery notation 2.0 was not treated as numeric grit 2 or guessed to mean 2/0. The abrasion method was retained."
+        ]
+      },
+      {
+        "source_text": "exposed area 1 cm2",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Since no chloride ion was present. The breakdown potential measured was likely due to transpassive dissolution. The alloys were mecanically polished and cathodically prepolarised before an experiment. The polarisation experiments were carried out in absence of air by applying a constant potential for three hours.",
+        "features": {
+          "surface_preparation_method": "polishing + cathodic_reduction"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "mecanically polished and cathodically prepolarised before an experiment"
+        ],
+        "notes": [
+          "Only the pre-experiment preparation clause supplied features. The three-hour constant-potential experiment and any comment about transpassive breakdown were excluded."
+        ]
+      },
+      {
+        "source_text": "The alloys were mecanically polished and cathodically prepolarised before an experiment. The polarisation experiments were carried out in absence of air by applying a constant potential for three hours.",
+        "features": {
+          "surface_preparation_method": "polishing + cathodic_reduction"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "mecanically polished and cathodically prepolarised before an experiment"
+        ],
+        "notes": [
+          "Only the pre-experiment preparation clause supplied features. The three-hour constant-potential experiment and any comment about transpassive breakdown were excluded."
+        ]
+      },
+      {
+        "source_text": "Specimens, with an area of 0.95 cm2, were pretreated by grinding on emery paper down to 600 grit, polished with diamond paste to 1 mm, ultrasonically cleaned in ethanol, and dried in hot air. The electrolyte was deaerated by Ar bubbling for 2 h before exposure.",
+        "features": {
+          "Prep_grinding_grit": 600,
+          "surface_preparation_method": "grinding + diamond_polishing + ultrasonic_cleaning",
+          "preparation_solution_type": "ethanol"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "grinding on emery paper down to 600 grit",
+          "polished with diamond paste",
+          "ultrasonically cleaned in ethanol"
+        ],
+        "notes": [
+          "The reported grade and ethanol cleaning were retained. The questionable 1 mm paste size was not corrected or exported, and two-hour electrolyte deaeration was not specimen CP_time."
+        ]
+      },
+      {
+        "source_text": "0.25 um diamond polish finish, cathodically polarized at - 1.150 V(SCE) for 15 min to reduce the polish-formed film",
+        "features": {
+          "surface_preparation_method": "diamond_polishing + cathodic_reduction",
+          "Prep_time": 0.25
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "diamond polish finish",
+          "cathodically polarized at - 1.150 V(SCE) for 15 min"
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "The electrode totally immersed was first polarized in the least noble passive region for 15min, then the potential was moved in the noble direction 50mV every 5min until the pitting potential was approximated and the current showed a marked increase.",
+        "features": {
+          "surface_preparation_method": "potentiostatic_treatment",
+          "Prep_time": 0.25
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "first polarized in the least noble passive region for 15min"
+        ],
+        "notes": [
+          "Only the initial conditioning time was extracted, independently of the later current increase or pitting description."
+        ]
+      },
+      {
+        "source_text": "Some compositions were provided with \"~\" and \"<\" signs in the paper",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Pitting corrosion data is collected from plain breakdown potential in table II.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "In the hot-forged condition the steels with 0.12, 0.25, and 0.35%N were austenitic, whereas those with 0.07 and 0.17% N contained austenite with a small amount of 𝛿-ferrite (with an excess of Cr and relatively less Fe, Ni, and Mn than in the , 𝛾 phase). Some small second-phase particles also occurred. Electron microprobe analysis identified these particles as carbides (Me23C6 type) and carbonitrides (Me23C6 type). Pure nitrides were very rare. The X-ray analysis did not detect any a-phase in the materials under investigation.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "In the as-received specimens of the 18Cr-5Ni-0.03Mn steel, metallographic examination revealed the presence of martensite with some inclusions of 𝛿-ferrite. As determined by X-ray analysis, the alloys with more than 5% Mn contained austenite and ferrite. No traces of 𝜎-phase were detected. The amount of 𝛿-phase depended upon the steel composition. The higher the Mn content was and the lower the C and the N contents were, the greater the amount of 𝛿-phase present. However, heat-to-heat variations also very likely influenced the phase composition of the alloys under investigation. In all specimens, small particles of a foreign phase were detected. They were identified by electron probe analysis as carbides (presumably Me23C6).",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "no major difference between different sample in fig 1",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "no major difference between different sample in fig 1, N<10ppm",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "perform at room temperature",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "no major difference between two samples",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "cast alloy, 76 mm thick section, Ferritic-Austenitic Stainless Steel",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "18Cr-10Ni Stainless Steel (likely Type-304 S)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "17Cr-0Ni Stainless Steel (likely Type 430-SK)",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "18Cr-10Ni-3Mo Stainless Steel",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "29Ni-20Cr-3Mo-3.5Cu-1Nb High Alloy Stainless Steel",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "18Cr-10Ni-3Mo-1Nb Stainless Steel",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Ferralium alloy",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Ferralium alloy 255",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Ferralium alloy 288",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Cast 20-type",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "The electrodes were abraded to a final 3/0 emery paper, and pickled usually in 15% HNO3, 5% HF at 80 oC for 5 min to remove the cold worked surface.",
+        "features": {
+          "surface_preparation_method": "abrasion + pickling",
+          "preparation_solution_type": "HF + HNO3",
+          "Prep_time": 0.08333333333333333
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "abraded to a final 3/0 emery paper",
+          "pickled usually in 15% HNO3, 5% HF at 80 oC for 5 min"
+        ],
+        "notes": [
+          "The slash emery grade was unconverted. The usual five-minute pickling duration was a nominal protocol, not an exact per-sample measurement; if a separate bounded conditioning step was reported, Prep_time remained unresolved. Percentage bases were not assumed."
+        ]
+      },
+      {
+        "source_text": "The electrodes for the potentiodynamic studies were mounted in acrylic plastic, the exposed surface (0.5 by 0.6 cm) always being a longitudinal section parallel to the rolled surface. The exposed surface was polished using standard metallographic techniques, ending with a distilled water slurry of 0.3~ alumina. For the pitting potential measurements, the electrode surface was masked with electroplaters tape (Scotch 470), except for a circular area 0.36 cm in diameter.",
+        "features": {
+          "surface_preparation_method": "polishing"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "polished using standard metallographic techniques",
+          "ending with a distilled water slurry of 0.3~ alumina"
+        ],
+        "notes": [
+          "Polishing was explicit. Alumina particle notation was not converted to roughness or grit."
+        ]
+      },
+      {
+        "source_text": "18%Cr-2%Mo-0.11%Ni. The Cr, Mo, C, Si, and N content was not analyzed, but assumed to be in the range of the series. The electrodes for the potentiodynamic studies were mounted in acrylic plastic, the exposed surface (0.5 by 0.6 cm) always being a longitudinal section parallel to the rolled surface. The exposed surface was polished using standard metallographic techniques, ending with a distilled water slurry of 0.3~ alumina. For the pitting potential measurements, the electrode surface was masked with electroplaters tape (Scotch 470), except for a circular area 0.36 cm in diameter.",
+        "features": {
+          "surface_preparation_method": "polishing"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "polished using standard metallographic techniques",
+          "ending with a distilled water slurry of 0.3~ alumina"
+        ],
+        "notes": [
+          "Only the polishing clause supplied an added feature; composition assumptions, specimen masking and alumina size did not populate the new columns."
+        ]
+      },
+      {
+        "source_text": "18%Cr-2%Mo-0.62%Ni. The Cr, Mo, C, Si, and N content was not analyzed, but assumed to be in the range of the series. The electrodes for the potentiodynamic studies were mounted in acrylic plastic, the exposed surface (0.5 by 0.6 cm) always being a longitudinal section parallel to the rolled surface. The exposed surface was polished using standard metallographic techniques, ending with a distilled water slurry of 0.3~ alumina. For the pitting potential measurements, the electrode surface was masked with electroplaters tape (Scotch 470), except for a circular area 0.36 cm in diameter.",
+        "features": {
+          "surface_preparation_method": "polishing"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "polished using standard metallographic techniques",
+          "ending with a distilled water slurry of 0.3~ alumina"
+        ],
+        "notes": [
+          "Only the polishing clause supplied an added feature; composition assumptions, specimen masking and alumina size did not populate the new columns."
+        ]
+      },
+      {
+        "source_text": "18%Cr-2%Mo-1.08%Ni. The electrodes for the potentiodynamic studies were mounted in acrylic plastic, the exposed surface (0.5 by 0.6 cm) always being a longitudinal section parallel to the rolled surface. The exposed surface was polished using standard metallographic techniques, ending with a distilled water slurry of 0.3~ alumina. For the pitting potential measurements, the electrode surface was masked with electroplaters tape (Scotch 470), except for a circular area 0.36 cm in diameter.",
+        "features": {
+          "surface_preparation_method": "polishing"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "polished using standard metallographic techniques",
+          "ending with a distilled water slurry of 0.3~ alumina"
+        ],
+        "notes": [
+          "Only the polishing clause supplied an added feature; composition assumptions, specimen masking and alumina size did not populate the new columns."
+        ]
+      },
+      {
+        "source_text": "18%Cr-2%Mo-0.47%Ti. The electrodes for the potentiodynamic studies were mounted in acrylic plastic, the exposed surface (0.5 by 0.6 cm) always being a longitudinal section parallel to the rolled surface. The exposed surface was polished using standard metallographic techniques, ending with a distilled water slurry of 0.3~ alumina. For the pitting potential measurements, the electrode surface was masked with electroplaters tape (Scotch 470), except for a circular area 0.36 cm in diameter.",
+        "features": {
+          "surface_preparation_method": "polishing"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "polished using standard metallographic techniques",
+          "ending with a distilled water slurry of 0.3~ alumina"
+        ],
+        "notes": [
+          "Only the polishing clause supplied an added feature; composition assumptions, specimen masking and alumina size did not populate the new columns."
+        ]
+      },
+      {
+        "source_text": "18%Cr-2%Mo-1.86%Ti. The Cr, Mo, C, Si, and N content was not analyzed, but assumed to be in the range of the series. The electrodes for the potentiodynamic studies were mounted in acrylic plastic, the exposed surface (0.5 by 0.6 cm) always being a longitudinal section parallel to the rolled surface. The exposed surface was polished using standard metallographic techniques, ending with a distilled water slurry of 0.3~ alumina. For the pitting potential measurements, the electrode surface was masked with electroplaters tape (Scotch 470), except for a circular area 0.36 cm in diameter.",
+        "features": {
+          "surface_preparation_method": "polishing"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "polished using standard metallographic techniques",
+          "ending with a distilled water slurry of 0.3~ alumina"
+        ],
+        "notes": [
+          "Only the polishing clause supplied an added feature; composition assumptions, specimen masking and alumina size did not populate the new columns."
+        ]
+      },
+      {
+        "source_text": "18%Cr-2%Mo-0.91%Ti-0.57%Ni. The electrodes for the potentiodynamic studies were mounted in acrylic plastic, the exposed surface (0.5 by 0.6 cm) always being a longitudinal section parallel to the rolled surface. The exposed surface was polished using standard metallographic techniques, ending with a distilled water slurry of 0.3~ alumina. For the pitting potential measurements, the electrode surface was masked with electroplaters tape (Scotch 470), except for a circular area 0.36 cm in diameter.",
+        "features": {
+          "surface_preparation_method": "polishing"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "polished using standard metallographic techniques",
+          "ending with a distilled water slurry of 0.3~ alumina"
+        ],
+        "notes": [
+          "Only the polishing clause supplied an added feature; composition assumptions, specimen masking and alumina size did not populate the new columns."
+        ]
+      },
+      {
+        "source_text": "18%Cr-2%Mo-1.75%Ti-2.08%Ni. The Cr, Mo, C, Si, and N content was not analyzed, but assumed to be in the range of the series. The electrodes for the potentiodynamic studies were mounted in acrylic plastic, the exposed surface (0.5 by 0.6 cm) always being a longitudinal section parallel to the rolled surface. The exposed surface was polished using standard metallographic techniques, ending with a distilled water slurry of 0.3~ alumina. For the pitting potential measurements, the electrode surface was masked with electroplaters tape (Scotch 470), except for a circular area 0.36 cm in diameter.",
+        "features": {
+          "surface_preparation_method": "polishing"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "polished using standard metallographic techniques",
+          "ending with a distilled water slurry of 0.3~ alumina"
+        ],
+        "notes": [
+          "Only the polishing clause supplied an added feature; composition assumptions, specimen masking and alumina size did not populate the new columns."
+        ]
+      },
+      {
+        "source_text": "test area 0.07 cm2; 0.3 um surface finish",
+        "features": {},
+        "status": "unresolved",
+        "evidence_clauses": [
+          "0.3 um surface finish"
+        ],
+        "notes": [
+          "The description did not establish whether the micrometre amount was abrasive size or roughness. Neither Ra nor a grit number was inferred."
+        ]
+      },
+      {
+        "source_text": "Data was extracted fromTable VI",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "UNS S30100, Test solutions were deaerated by nitrogen",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "UNS S31600, Test solutions were deaerated by nitrogen",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "UNS N08904, Test solutions were deaerated by nitrogen",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "UNS S31254 Heat 2, Test solutions were deaerated by nitrogen, Two heats of UNS S31254 materials were tested because Heat 1 material was found to contain a significant quantity of titanium-rich inclusions, and was thus metallographically less clean than Heat 2 material. Nominal values for all in composition.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "28% Cr Duplex stainless steel, pitting potentital measured by potential sweep method, Cl conc is estimated",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Super-ferritic stainless steel,pitting potentital measured by potential sweep method, Cl conc is estimated",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Super-austenitic stainless steel,pitting potentital measured by potential sweep method, Cl conc is estimated",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "25% Cr Duplex stainless steel, pitting potentital measured by potential sweep method, Cl conc is estimated",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "25% Cr Duplex stainless steel, pitting potentital measured by potential sweep method,Cl conc is estimated",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "test electrodes were made from 0.25 mm wire looped to a diameter of 25 mm. Test solutions were prepared from reagent grade chemicals and distilled water and the pH value was adjusted using H2SO4 or NaOH as required. The oxygen content of the test solutions was reduced to a negligible value by bubbling nitrogen through them for a period of 24 h. All electrochemical measurements were carried out in conventional setup, purged with nitrogen during each experiment.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "polished only through 600-grit SiC metallographic paper.",
+        "features": {
+          "Prep_grinding_grit": 600,
+          "surface_preparation_method": "polishing"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "polished only through 600-grit SiC metallographic paper."
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "Pitting potentials were measured in 1M KCI, using mechanically polished 0.4 cm2 coupons of the experimental alloys. To measure the pitting potentials, the potential was stepped upwards by 25 mV every 400 s, beginning at -300 mV(SCE).",
+        "features": {
+          "surface_preparation_method": "polishing"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "using mechanically polished 0.4 cm2 coupons"
+        ],
+        "notes": [
+          "Mechanical polishing was explicit. The subsequent 400-second potential steps were part of measurement, not preparation duration."
+        ]
+      },
+      {
+        "source_text": "Samples were mechanically polished with emery paper up to grade 1000 under water, then degreased in absolute ethyl alcohol, washed in deionized water, and dried by warm air blowing for electrochemical tests.",
+        "features": {
+          "Prep_grinding_grit": 1000,
+          "surface_preparation_method": "polishing + degreasing + rinsing",
+          "preparation_solution_type": "ethanol"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "mechanically polished with emery paper up to grade 1000 under water",
+          "degreased in absolute ethyl alcohol, washed in deionized water"
+        ],
+        "notes": [
+          "Only the quoted preparation/procedure clauses supplied the added features."
+        ]
+      },
+      {
+        "source_text": "To prevent the initiation of crevice corrosion between the epoxy and specimen, the epoxy-specimen interface was painted with Amercoat 90 epoxy leaving an exposed area of 1 cm2 on the material surface. The painted sample was cured in an oven for 10 h at 70C. Just before introduction into the polarization cell, the exposed metal surface was polished by hand with cloth and a 9-microm diamond paste to remove the air-formed oxide film created during the epoxy curing process. The interface seal was abraded slightly but not damaged. Polarization tests were conducted in an aerated electrolyte.",
+        "features": {
+          "surface_preparation_method": "diamond_polishing"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "polished by hand with cloth and a 9-microm diamond paste"
+        ],
+        "notes": [
+          "Only the exposed metal polishing was extracted. Oven curing of epoxy was not alloy heat treatment or chemical preparation duration, and abrasive particle size was not Ra or grit."
+        ]
+      },
+      {
+        "source_text": "The solutions were deaerated by purging with high-purity nitrogen throughout the test, starting from 1 h before the test.",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "O2 in composition 0.012, the unimplanted alloy exhibits relatively large irregular pits, exhibiting a \"lacy\" surround, test solution deaerated with N2",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "O2 in composition 0.012 ,ion implanted with Mo implanted with 5.55*10^16 molybdenum ions/cm2,test solution deaerated with N2",
+        "features": {
+          "surface_preparation_method": "ion_implantation"
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "ion implanted with Mo implanted"
+        ],
+        "notes": [
+          "Only explicit implantation was retained, independently of composition or any corrosion-outcome comments."
+        ]
+      },
+      {
+        "source_text": "Pretreatment of the electrodes included grinding with emery papcr and polishing with alumina powder in water to 1/4 μm finish. They were rinsed and cathodically polarized in the working electrolyte at -700 mV(SHE) for 10 min.",
+        "features": {
+          "surface_preparation_method": "grinding + polishing + cathodic_reduction",
+          "Prep_time": 0.16666666666666666
+        },
+        "status": "extracted",
+        "evidence_clauses": [
+          "grinding with emery papcr and polishing with alumina powder",
+          "cathodically polarized in the working electrolyte at -700 mV(SHE) for 10 min"
+        ],
+        "notes": [
+          "Explicit conditioning duration and preparation operations were retained. Working electrolyte did not name a preparation chemical; SHE voltage and abrasive size were not exported."
+        ]
+      },
+      {
+        "source_text": "HEA",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "NiCrMo Alloy",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Al Alloy",
+        "features": {},
+        "status": "no_added_detail",
+        "evidence_clauses": [],
+        "notes": [
+          "No additional approved preparation feature was established by this description; existing environment/history fields were preserved."
+        ]
+      },
+      {
+        "source_text": "Al Alloy, For most of the measurements, Al electrodes were employed measuring 1.5 cm long and 0.4 cm in diameter. One end of each electrode was drilled and tapped, allowing a threaded member attached to a nickel wire to hold the electrode firmly against a glass tube separated by a water-tight Teflon gasket. Only the electrode surface, totally immersed, Teflon, and glass made contact with the electrolyte. Specimens were polished to 3/0 emery paper followed by pickling in 2N NaOH at 80~ for 5 min and then washing in distilled water.",
+        "features": {
+          "surface_preparation_method": "polishing + pickling + rinsing",
+          "preparation_solution_type": "NaOH",
+          "Prep_time": 0.08333333333333333
+        },
+        "status": "partial",
+        "evidence_clauses": [
+          "polished to 3/0 emery paper followed by pickling in 2N NaOH at 80~ for 5 min and then washing in distilled water"
+        ],
+        "notes": [
+          "The active preparation bath and five-minute pickling duration were retained. The slash grade stayed unconverted; rinse water was not combined with NaOH into a different recipe."
+        ]
+      }
+    ]
+  }
+}

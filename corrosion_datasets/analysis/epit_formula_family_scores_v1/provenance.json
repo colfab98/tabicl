@@ -1,0 +1,36 @@
+{
+  "source_predictions": "corrosion_datasets/analysis/epit_pipeline/target_rules_v3/direct_evaluation_predictions.csv",
+  "scope": "Existing out-of-fold predictions on development rows, regrouped by alloy family. No refitting and no final-query evaluation. Predictions predate the reviewed-composition pipeline migration.",
+  "metric": "Unweighted mean within-family, within-fold Spearman; constant predictions/targets score zero as in the original evaluation. Folds with no members of a family are absent, not scored.",
+  "active_formula_count": 9,
+  "source_predictions_sha256": "3836fda1cf2efb8eef5d0262f4dacbb3cde868968e98b5a105da1be883feb8ff",
+  "constant_correlation_policy": "Undefined correlations from constant values were scored as zero, matching scripts/epit_pipeline/calibrate_target_rules.py.",
+  "coverage": {
+    "Fe Alloy": {
+      "all_rows": 514,
+      "development": 411,
+      "final_query": 103
+    },
+    "NiCrMo Alloy": {
+      "all_rows": 51,
+      "development": 41,
+      "final_query": 10
+    },
+    "Al Alloy": {
+      "all_rows": 118,
+      "development": 94,
+      "final_query": 24
+    },
+    "HEA": {
+      "all_rows": 27,
+      "development": 22,
+      "final_query": 5
+    },
+    "Other": {
+      "all_rows": 50,
+      "development": 40,
+      "final_query": 10
+    }
+  },
+  "limitation": "The nine selected Fe/Ni-Cr-Mo formulas have no saved out-of-fold predictions on Al, HEA or Other. These missing combinations are not zero scores."
+}

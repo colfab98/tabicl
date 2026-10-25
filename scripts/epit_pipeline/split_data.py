@@ -139,11 +139,17 @@ def _numeric(table: Table, row: dict[str, Any], column: str) -> float:
     )
 
 
-def load_epit_dataset() -> EpitDataset:
+def load_epit_dataset(*, reviewed_composition: bool = True) -> EpitDataset:
     tables = [table for table in load_electrochemical_metrics() if table.table == TABLE_NAME]
     if len(tables) != 1:
         raise RuntimeError(f"Expected one {TABLE_NAME!r} table, found {len(tables)}.")
     table = tables[0]
+    reviewed = None
+    if reviewed_composition:
+        from scripts.epit_pipeline.composition_data import apply_reviewed_compositions, load_reviewed_compositions
+
+        reviewed = load_reviewed_compositions()
+        table = apply_reviewed_compositions(table, reviewed)
     source_rows = [
         row
         for row in table.rows
@@ -167,6 +173,22 @@ def load_epit_dataset() -> EpitDataset:
         raise RuntimeError(
             "The EPIT 24-element schema does not match the source table: "
             f"missing={missing_columns}, non_material={wrong_group}."
+        )
+
+    if reviewed is not None:
+        if [str(row["No."]) for row in source_rows] != reviewed.rows["No."].tolist():
+            raise RuntimeError("EPIT target-filtered row order differs from the frozen reviewed export.")
+        # The export already contains all filling and review decisions. Keep
+        # its values and acceptance instead of running the legacy rule below.
+        return EpitDataset(
+            table=table,
+            rows=source_rows,
+            target=np.asarray([_numeric(table, row, TARGET_COLUMN) for row in source_rows]),
+            composition_columns=composition_columns,
+            composition_reported_sums=reviewed.audit.composition_sum_wt_percent.to_numpy(float),
+            composition_missing_counts=reviewed.audit.assumed_zero_count.to_numpy(int),
+            composition_structural_zero_counts=reviewed.audit.assumed_zero_count.to_numpy(int),
+            pretraining_template_eligible=np.ones(len(source_rows), dtype=bool),
         )
 
     rows: list[dict[str, Any]] = []

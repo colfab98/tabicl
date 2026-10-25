@@ -135,6 +135,10 @@ def validate_frozen_model(frozen: FrozenFinalModel) -> dict[str, Any]:
         if config.get("pitting_magpie_features")
         else search.EPIT_BASE_FEATURE_COUNT
     )
+    if config.get("epit_expanded_features", False):
+        expected_n_features = search.EPIT_EXPANDED_FEATURE_COUNT + (
+            len(search.EPIT_MAGPIE_DESCRIPTOR_NAMES) if config.get("pitting_magpie_features") else 0
+        )
     if int(config.get("expected_n_features", -1)) != expected_n_features:
         raise RuntimeError("Frozen EPIT feature count is inconsistent.")
     if int(config.get("max_samples_per_task", -1)) != 0:
@@ -198,6 +202,8 @@ def final_evaluation_command(
         command.extend(["--epit-final-context-fold", str(context_fold)])
     if bool(config["pitting_magpie_features"]):
         command.extend(["--pitting-magpie-model", FINAL_MODEL_LABEL])
+    if config.get("epit_expanded_features", False):
+        command.extend(["--epit-expanded-features", "--missing-aware-model", FINAL_MODEL_LABEL])
     return command
 
 

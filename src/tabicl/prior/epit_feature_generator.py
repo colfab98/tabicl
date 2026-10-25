@@ -19,7 +19,7 @@ from tabicl.prior.epit_feature_profile import (
 
 @dataclass(frozen=True)
 class EpitFeatureBatch:
-    """A complete physical 28-column EPIT feature batch."""
+    """Physical EPIT inputs, with finite auxiliary inputs for target generation."""
 
     profile_name: str
     compositions: EpitCompositionBatch
@@ -30,6 +30,8 @@ class EpitFeatureBatch:
     test_method_codes: np.ndarray
     test_methods: tuple[str, ...]
     features: np.ndarray
+    latent_features: np.ndarray
+    formula_features: np.ndarray
 
     @property
     def n_rows(self) -> int:
@@ -76,9 +78,9 @@ def sample_epit_feature_rows(
     """Sample complete Fe/Ni--Cr--Mo physical inputs for the fixed EPIT schema.
 
     Composition templates and environment records are sampled independently.
-    Each environment draw keeps temperature, chloride, pH, and test method from
-    one observed row. Missing numeric environment values use the exact means
-    recorded from the direct evaluator in the versioned profile.
+    Each environment draw keeps all environment/history fields and missingness
+    from one observed row. The expanded schema preserves NaNs in model inputs;
+    separate finite values are used internally to calculate synthetic targets.
     """
 
     if int(n_samples) != n_samples or int(n_samples) <= 0:
@@ -119,15 +121,19 @@ def sample_epit_feature_rows(
     )
     environment_values = profile.environment_imputed_values[environment_indices].copy()
     test_method_codes = profile.test_method_codes[environment_indices].copy()
-    features = np.column_stack(
+    formula_features = np.column_stack(
         (
             compositions.observed_compositions,
             environment_values,
             test_method_codes.astype(np.float64),
         )
     ).astype(np.float64, copy=False)
-    expected_feature_count = len(profile.composition_profile.observed_elements) + 4
-    if features.shape != (int(n_samples), expected_feature_count) or not np.isfinite(features).all():
+    features = formula_features
+    latent_features = features
+    if profile.expanded_environment_values is not None:
+        features = np.column_stack((compositions.observed_compositions, profile.expanded_environment_values[environment_indices]))
+        latent_features = np.column_stack((compositions.observed_compositions, profile.expanded_environment_latent_values[environment_indices]))
+    if features.shape != (int(n_samples), profile.feature_count) or not np.isfinite(latent_features).all():
         raise ValueError(f"Sampled EPIT feature rows have invalid shape or values: {features.shape}")
 
     return EpitFeatureBatch(
@@ -140,6 +146,8 @@ def sample_epit_feature_rows(
         test_method_codes=_readonly(test_method_codes),
         test_methods=tuple(profile.test_methods[index] for index in environment_indices),
         features=_readonly(features),
+        latent_features=_readonly(latent_features),
+        formula_features=_readonly(formula_features),
     )
 
 

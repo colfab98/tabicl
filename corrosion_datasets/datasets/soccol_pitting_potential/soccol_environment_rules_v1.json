@@ -1,0 +1,1216 @@
+{
+  "schema_version": "soccol_environment_rules_v1",
+  "policy": "Exact reviewed descriptions only. Missing stays unknown; explicit numeric/text disagreements become missing. CP_ion_other and other-ion expansion were excluded.",
+  "evidence": [
+    {
+      "source": "Soccol author manuscript",
+      "location": "raw/Soccol_updated_PREN_author_manuscript.pdf",
+      "pages": "7-9 (PDF pages)",
+      "meaning": "Preparation potential in V, preparation and test equilibration times in hours. The stated Ag/AgCl reference concerned E_corr and E_pit; it was not assumed for Prep_redox."
+    },
+    {
+      "source": "2019Ha",
+      "url": "https://www.sciencedirect.com/science/article/pii/S0010938X17313847",
+      "section": "Materials",
+      "meaning": "Six source-specific annealing temperatures in degrees Celsius; 1 h and water quenching."
+    }
+  ],
+  "fields": {
+    "CP_aeration": [
+      {
+        "source_text": "deaerated",
+        "features": {
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": [
+          "Natural aeration, forced aeration, deaeration and ozonation remained distinct; agitation was not inferred."
+        ]
+      },
+      {
+        "source_text": "natural",
+        "features": {
+          "CP_aeration": "naturally_aerated"
+        },
+        "status": "extracted",
+        "notes": [
+          "Natural aeration, forced aeration, deaeration and ozonation remained distinct; agitation was not inferred."
+        ]
+      },
+      {
+        "source_text": "aerated",
+        "features": {
+          "CP_aeration": "aerated"
+        },
+        "status": "extracted",
+        "notes": [
+          "Natural aeration, forced aeration, deaeration and ozonation remained distinct; agitation was not inferred."
+        ]
+      },
+      {
+        "source_text": "ozonated",
+        "features": {
+          "CP_aeration": "ozonated"
+        },
+        "status": "extracted",
+        "notes": [
+          "Natural aeration, forced aeration, deaeration and ozonation remained distinct; agitation was not inferred."
+        ]
+      }
+    ],
+    "CP_agitation": [
+      {
+        "source_text": "yes",
+        "features": {
+          "CP_agitation": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit yes/no became 1/0; blank entries remained unknown."
+        ]
+      },
+      {
+        "source_text": "no",
+        "features": {
+          "CP_agitation": 0
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit yes/no became 1/0; blank entries remained unknown."
+        ]
+      }
+    ],
+    "CP_anions_info": [
+      {
+        "source_text": "none",
+        "features": {},
+        "status": "no_additional_detail",
+        "notes": [
+          "No additional anion note; did not infer pure water, a full recipe or zero concentrations."
+        ]
+      },
+      {
+        "source_text": "oxyanions",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "No specific identity or amount was supplied by this note."
+        ]
+      },
+      {
+        "source_text": "pure chloride",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "Chloride-only description did not identify a counterion or imply NaCl; the dedicated chloride column was retained."
+        ]
+      },
+      {
+        "source_text": "dichromate",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "Dichromate was not silently treated as chromate; this note had no amount."
+        ]
+      },
+      {
+        "source_text": "pH",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "This note supplied no numeric pH."
+        ]
+      },
+      {
+        "source_text": "sulfate",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "No sulfate amount was supplied by this note; the dedicated column was retained."
+        ]
+      },
+      {
+        "source_text": "(phosphate)",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "No phosphate amount was supplied by this note; the dedicated column was retained."
+        ]
+      },
+      {
+        "source_text": "nitrate",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "No nitrate amount was supplied by this note; the dedicated column was retained."
+        ]
+      },
+      {
+        "source_text": "0.2M borate",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "Other-ion expansion was excluded for this export. The original note was preserved; CP_ion_other was not used and no borate/citrate feature was created."
+        ]
+      },
+      {
+        "source_text": "borate buffer",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "Other-ion expansion was excluded for this export. The original note was preserved; CP_ion_other was not used and no borate/citrate feature was created."
+        ]
+      },
+      {
+        "source_text": "1M borate",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "Other-ion expansion was excluded for this export. The original note was preserved; CP_ion_other was not used and no borate/citrate feature was created."
+        ]
+      },
+      {
+        "source_text": "0.05M  borate",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "Other-ion expansion was excluded for this export. The original note was preserved; CP_ion_other was not used and no borate/citrate feature was created."
+        ]
+      },
+      {
+        "source_text": "0.01M borate",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "Other-ion expansion was excluded for this export. The original note was preserved; CP_ion_other was not used and no borate/citrate feature was created."
+        ]
+      },
+      {
+        "source_text": "citrate",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "Other-ion expansion was excluded for this export. The original note was preserved; CP_ion_other was not used and no borate/citrate feature was created."
+        ]
+      },
+      {
+        "source_text": "0.06M SO4",
+        "features": {
+          "CP_SO4": 0.06
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "0.6M SO4",
+        "features": {
+          "CP_SO4": 0.6
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "0.15M SO4",
+        "features": {
+          "CP_SO4": 0.15
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "0.5M SO4",
+        "features": {
+          "CP_SO4": 0.5
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "0.1M SO4",
+        "features": {
+          "CP_SO4": 0.1
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "0.6mM SO4",
+        "features": {
+          "CP_SO4": 0.0006
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "5M SO4",
+        "features": {
+          "CP_SO4": 5
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "2M SO4",
+        "features": {
+          "CP_SO4": 2
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "1M SO4",
+        "features": {
+          "CP_SO4": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "0.01M SO4",
+        "features": {
+          "CP_SO4": 0.01
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "0.8mM SO4",
+        "features": {
+          "CP_SO4": 0.0008
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "0.1M OH",
+        "features": {
+          "CP_OH": 0.1
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "0.05M OH",
+        "features": {
+          "CP_OH": 0.05
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "0.015M CO3",
+        "features": {
+          "CP_CO3": 0.015
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "0.01M nitrate",
+        "features": {
+          "CP_NO3": 0.01
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "0.025M nitrate",
+        "features": {
+          "CP_NO3": 0.025
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "5mM nitrate",
+        "features": {
+          "CP_NO3": 0.005
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "2mM nitrate",
+        "features": {
+          "CP_NO3": 0.002
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly named ion amount was expressed in mol/L (mM divided by 1000). Existing numeric values were cross-checked, not silently overwritten; contradictions became missing."
+        ]
+      },
+      {
+        "source_text": "2x25mM HCO3+CO3",
+        "features": {
+          "CP_CO3": 0.025
+        },
+        "status": "partial",
+        "notes": [
+          "The text reported 25 mM each of bicarbonate and carbonate. The carbonate amount was checked separately; their sum was not interpreted as carbonate alone. Bicarbonate remained in the original note, without an additional feature in this export."
+        ]
+      },
+      {
+        "source_text": "sea water",
+        "features": {
+          "test_solution_type": "seawater"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit seawater medium; natural/synthetic origin and full recipe were not invented."
+        ]
+      },
+      {
+        "source_text": "artificial sea water",
+        "features": {
+          "test_solution_type": "synthetic_seawater"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit artificial seawater; concentrations were retained only from the original numeric columns."
+        ]
+      },
+      {
+        "source_text": "1% Al2SO43 + 0.1M H2SO4",
+        "features": {
+          "H2SO4_mol_L": 0.1
+        },
+        "status": "partial",
+        "notes": [
+          "The explicitly reported acid molarity was retained in the existing EPIT chemical column. The additive note was not a complete test-solution recipe. Salt percentages had no stated mass/volume basis and remained in the original text. Free sulfate was not calculated from acid concentration."
+        ]
+      },
+      {
+        "source_text": "0.5% MgSO4 + 0.1M H2SO4",
+        "features": {
+          "H2SO4_mol_L": 0.1
+        },
+        "status": "partial",
+        "notes": [
+          "The explicitly reported acid molarity was retained in the existing EPIT chemical column. The additive note was not a complete test-solution recipe. Salt percentages had no stated mass/volume basis and remained in the original text. Free sulfate was not calculated from acid concentration."
+        ]
+      },
+      {
+        "source_text": "0.5% MgSO4",
+        "features": {},
+        "status": "partial",
+        "notes": [
+          "The percentage basis was unspecified; no wt.% or mol/L value was invented. The salt addition remained in the original note."
+        ]
+      }
+    ],
+    "Prep_medium": [
+      {
+        "source_text": "none",
+        "features": {},
+        "status": "no_additional_detail",
+        "notes": [
+          "The description did not establish a positive preparation method, chemical recipe or absence of earlier treatment; the original text was preserved."
+        ]
+      },
+      {
+        "source_text": "as-delivered",
+        "features": {},
+        "status": "no_additional_detail",
+        "notes": [
+          "The description did not establish a positive preparation method, chemical recipe or absence of earlier treatment; the original text was preserved."
+        ]
+      },
+      {
+        "source_text": "(as received)",
+        "features": {},
+        "status": "no_additional_detail",
+        "notes": [
+          "The description did not establish a positive preparation method, chemical recipe or absence of earlier treatment; the original text was preserved."
+        ]
+      },
+      {
+        "source_text": "(tabulated data)",
+        "features": {},
+        "status": "no_additional_detail",
+        "notes": [
+          "The description did not establish a positive preparation method, chemical recipe or absence of earlier treatment; the original text was preserved."
+        ]
+      },
+      {
+        "source_text": "(extracted from cyclopol)",
+        "features": {},
+        "status": "no_additional_detail",
+        "notes": [
+          "The description did not establish a positive preparation method, chemical recipe or absence of earlier treatment; the original text was preserved."
+        ]
+      },
+      {
+        "source_text": "(uncharged)",
+        "features": {},
+        "status": "unresolved",
+        "notes": [
+          "The description did not establish a positive preparation method, chemical recipe or absence of earlier treatment; the original text was preserved."
+        ]
+      },
+      {
+        "source_text": "air",
+        "features": {
+          "surface_preparation_method": "air_exposure"
+        },
+        "status": "extracted",
+        "notes": [
+          "Pre-test air exposure was retained as preparation, not test-bath aeration. Desiccator details, where present, remained in the original text."
+        ]
+      },
+      {
+        "source_text": "+ air",
+        "features": {
+          "surface_preparation_method": "air_exposure"
+        },
+        "status": "extracted",
+        "notes": [
+          "Pre-test air exposure was retained as preparation, not test-bath aeration. Desiccator details, where present, remained in the original text."
+        ]
+      },
+      {
+        "source_text": "desiccator / air",
+        "features": {
+          "surface_preparation_method": "air_exposure"
+        },
+        "status": "extracted",
+        "notes": [
+          "Pre-test air exposure was retained as preparation, not test-bath aeration. Desiccator details, where present, remained in the original text."
+        ]
+      },
+      {
+        "source_text": "(24h air)",
+        "features": {
+          "surface_preparation_method": "air_exposure"
+        },
+        "status": "partial",
+        "notes": [
+          "The text reported 24 h in air. It was not assigned to Prep_time because that column can describe another preparation step, and it was not assigned to test-bath CP_time; the air duration remained in the original text."
+        ]
+      },
+      {
+        "source_text": "24h air",
+        "features": {
+          "surface_preparation_method": "air_exposure"
+        },
+        "status": "partial",
+        "notes": [
+          "The text reported 24 h in air. It was not assigned to Prep_time because that column can describe another preparation step, and it was not assigned to test-bath CP_time; the air duration remained in the original text."
+        ]
+      },
+      {
+        "source_text": "air (24h)",
+        "features": {
+          "surface_preparation_method": "air_exposure"
+        },
+        "status": "partial",
+        "notes": [
+          "The text reported 24 h in air. It was not assigned to Prep_time because that column can describe another preparation step, and it was not assigned to test-bath CP_time; the air duration remained in the original text."
+        ]
+      },
+      {
+        "source_text": "(air passivated 2h)",
+        "features": {
+          "surface_preparation_method": "air_passivation"
+        },
+        "status": "partial",
+        "notes": [
+          "Explicit air passivation was retained. Its duration remained in the original text to avoid conflating air exposure with the separate electrochemical pretreatment represented by Prep_redox/Prep_time."
+        ]
+      },
+      {
+        "source_text": "air passivation (12h)",
+        "features": {
+          "surface_preparation_method": "air_passivation"
+        },
+        "status": "partial",
+        "notes": [
+          "Explicit air passivation was retained. Its duration remained in the original text to avoid conflating air exposure with the separate electrochemical pretreatment represented by Prep_redox/Prep_time."
+        ]
+      },
+      {
+        "source_text": "pickled",
+        "features": {
+          "surface_preparation_method": "pickling"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "(pickled)",
+        "features": {
+          "surface_preparation_method": "pickling"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "HNO3",
+        "features": {
+          "preparation_solution_type": "HNO3"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "pickling HNO3 + HF",
+        "features": {
+          "surface_preparation_method": "pickling",
+          "preparation_solution_type": "HF + HNO3"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "HNO3 pass",
+        "features": {
+          "surface_preparation_method": "chemical_passivation",
+          "preparation_solution_type": "HNO3"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "(+ HNO3)",
+        "features": {
+          "preparation_solution_type": "HNO3"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "citric",
+        "features": {
+          "preparation_solution_type": "citric_acid"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "sulfuric",
+        "features": {
+          "preparation_solution_type": "H2SO4"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "H2O",
+        "features": {
+          "preparation_solution_type": "H2O"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "distilled water",
+        "features": {
+          "preparation_solution_type": "H2O"
+        },
+        "status": "extracted",
+        "notes": [
+          "The preparation liquid was water; its reported distilled condition remained in the original text."
+        ]
+      },
+      {
+        "source_text": "+ sulfuric + anodized",
+        "features": {
+          "surface_preparation_method": "anodizing",
+          "preparation_solution_type": "H2SO4"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "+ nitric (20% - 50degC)",
+        "features": {
+          "preparation_solution_type": "HNO3"
+        },
+        "status": "partial",
+        "notes": [
+          "The preparation chemical was nitric acid. The 20% basis was unspecified; the preparation temperature 50 degC was retained in text and was not copied to test-bath temperature or heat-treatment temperature."
+        ]
+      },
+      {
+        "source_text": "wet ground",
+        "features": {
+          "surface_preparation_method": "wet_grinding"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "as-ground",
+        "features": {
+          "surface_preparation_method": "grinding"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "as-ground + pickled",
+        "features": {
+          "surface_preparation_method": "grinding + pickling"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "(fine grain sandpaper)",
+        "features": {
+          "surface_preparation_method": "grinding"
+        },
+        "status": "partial",
+        "notes": [
+          "Grinding was reported, but no numeric grit or standard was inferred from fine grain."
+        ]
+      },
+      {
+        "source_text": "diamond polish",
+        "features": {
+          "surface_preparation_method": "diamond_polishing"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "(electropolished)",
+        "features": {
+          "surface_preparation_method": "electropolishing"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "(surface remelted)",
+        "features": {
+          "surface_preparation_method": "surface_remelting"
+        },
+        "status": "partial",
+        "notes": [
+          "Surface remelting was retained as processing; no annealing schedule was invented."
+        ]
+      },
+      {
+        "source_text": "(1200 = 600 US grit)",
+        "features": {
+          "surface_preparation_method": "grinding",
+          "Prep_grinding_grit": 600
+        },
+        "status": "extracted",
+        "notes": [
+          "The workbook already recorded 600 for the explicitly stated US grade. The 1200 alternative was not applied as a second conversion; no standard was inferred for other rows."
+        ]
+      },
+      {
+        "source_text": "wet grind + 1%HNO3",
+        "features": {
+          "surface_preparation_method": "wet_grinding + acid_treatment",
+          "preparation_solution_type": "HNO3"
+        },
+        "status": "partial",
+        "notes": [
+          "Grinding and nitric-acid treatment were retained. Percentage basis was unspecified; no weight-percent or molar amount was invented."
+        ]
+      },
+      {
+        "source_text": "wet grind + 10%HNO3",
+        "features": {
+          "surface_preparation_method": "wet_grinding + acid_treatment",
+          "preparation_solution_type": "HNO3"
+        },
+        "status": "partial",
+        "notes": [
+          "Grinding and nitric-acid treatment were retained. Percentage basis was unspecified; no weight-percent or molar amount was invented."
+        ]
+      },
+      {
+        "source_text": "wet grind + 60%HNO3",
+        "features": {
+          "surface_preparation_method": "wet_grinding + acid_treatment",
+          "preparation_solution_type": "HNO3"
+        },
+        "status": "partial",
+        "notes": [
+          "Grinding and nitric-acid treatment were retained. Percentage basis was unspecified; no weight-percent or molar amount was invented."
+        ]
+      },
+      {
+        "source_text": "reduced -0.2V",
+        "features": {
+          "surface_preparation_method": "cathodic_reduction",
+          "Prep_redox": -0.2
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit reduction potential was checked against the numeric column, without assigning an unverified voltage reference."
+        ]
+      },
+      {
+        "source_text": "reduced -1.0V",
+        "features": {
+          "surface_preparation_method": "cathodic_reduction",
+          "Prep_redox": -1
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit reduction potential was checked against the numeric column, without assigning an unverified voltage reference."
+        ]
+      },
+      {
+        "source_text": "reduced -1.3V",
+        "features": {
+          "surface_preparation_method": "cathodic_reduction",
+          "Prep_redox": -1.3
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit reduction potential was checked against the numeric column, without assigning an unverified voltage reference."
+        ]
+      },
+      {
+        "source_text": "reduced -1.5V",
+        "features": {
+          "surface_preparation_method": "cathodic_reduction",
+          "Prep_redox": -1.5
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit reduction potential was checked against the numeric column, without assigning an unverified voltage reference."
+        ]
+      },
+      {
+        "source_text": "reduced -1V",
+        "features": {
+          "surface_preparation_method": "cathodic_reduction",
+          "Prep_redox": -1
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit reduction potential was checked against the numeric column, without assigning an unverified voltage reference."
+        ]
+      },
+      {
+        "source_text": "0.1 V - 30'",
+        "features": {
+          "surface_preparation_method": "potentiostatic_treatment",
+          "Prep_redox": 0.1,
+          "Prep_time": 0.5
+        },
+        "status": "extracted",
+        "notes": [
+          "30 minutes was expressed as 0.5 h and checked against the numeric preparation duration. Potential was retained without inventing its reference."
+        ]
+      },
+      {
+        "source_text": "0.2 V - 30'",
+        "features": {
+          "surface_preparation_method": "potentiostatic_treatment",
+          "Prep_redox": 0.2,
+          "Prep_time": 0.5
+        },
+        "status": "extracted",
+        "notes": [
+          "30 minutes was expressed as 0.5 h and checked against the numeric preparation duration. Potential was retained without inventing its reference."
+        ]
+      },
+      {
+        "source_text": "0.3 V - 30'",
+        "features": {
+          "surface_preparation_method": "potentiostatic_treatment",
+          "Prep_redox": 0.3,
+          "Prep_time": 0.5
+        },
+        "status": "extracted",
+        "notes": [
+          "30 minutes was expressed as 0.5 h and checked against the numeric preparation duration. Potential was retained without inventing its reference."
+        ]
+      },
+      {
+        "source_text": "0.4 V - 30'",
+        "features": {
+          "surface_preparation_method": "potentiostatic_treatment",
+          "Prep_redox": 0.4,
+          "Prep_time": 0.5
+        },
+        "status": "extracted",
+        "notes": [
+          "30 minutes was expressed as 0.5 h and checked against the numeric preparation duration. Potential was retained without inventing its reference."
+        ]
+      },
+      {
+        "source_text": "0.5 V - 30'",
+        "features": {
+          "surface_preparation_method": "potentiostatic_treatment",
+          "Prep_redox": 0.5,
+          "Prep_time": 0.5
+        },
+        "status": "extracted",
+        "notes": [
+          "30 minutes was expressed as 0.5 h and checked against the numeric preparation duration. Potential was retained without inventing its reference."
+        ]
+      },
+      {
+        "source_text": "oxidizing 0.001 Cu2+",
+        "features": {
+          "surface_preparation_method": "oxidizing_treatment",
+          "preparation_solution_type": "Cu2+_counterion_unspecified"
+        },
+        "status": "partial",
+        "notes": [
+          "A copper-ion preparation treatment was explicit, but the counterion and concentration unit were not stated. No named salt or molar concentration was invented."
+        ]
+      },
+      {
+        "source_text": "oxidizing 0.005 Cu2+",
+        "features": {
+          "surface_preparation_method": "oxidizing_treatment",
+          "preparation_solution_type": "Cu2+_counterion_unspecified"
+        },
+        "status": "partial",
+        "notes": [
+          "A copper-ion preparation treatment was explicit, but the counterion and concentration unit were not stated. No named salt or molar concentration was invented."
+        ]
+      },
+      {
+        "source_text": "oxidizing 0.01 Cu2+",
+        "features": {
+          "surface_preparation_method": "oxidizing_treatment",
+          "preparation_solution_type": "Cu2+_counterion_unspecified"
+        },
+        "status": "partial",
+        "notes": [
+          "A copper-ion preparation treatment was explicit, but the counterion and concentration unit were not stated. No named salt or molar concentration was invented."
+        ]
+      },
+      {
+        "source_text": "oxidizing 0.05 Cu2+",
+        "features": {
+          "surface_preparation_method": "oxidizing_treatment",
+          "preparation_solution_type": "Cu2+_counterion_unspecified"
+        },
+        "status": "partial",
+        "notes": [
+          "A copper-ion preparation treatment was explicit, but the counterion and concentration unit were not stated. No named salt or molar concentration was invented."
+        ]
+      },
+      {
+        "source_text": "oxidizing 0.5 Cu2+",
+        "features": {
+          "surface_preparation_method": "oxidizing_treatment",
+          "preparation_solution_type": "Cu2+_counterion_unspecified"
+        },
+        "status": "partial",
+        "notes": [
+          "A copper-ion preparation treatment was explicit, but the counterion and concentration unit were not stated. No named salt or molar concentration was invented."
+        ]
+      },
+      {
+        "source_text": "oxidizing 0.005 CuCl2",
+        "features": {
+          "surface_preparation_method": "oxidizing_treatment",
+          "preparation_solution_type": "CuCl2"
+        },
+        "status": "partial",
+        "notes": [
+          "Copper chloride was explicitly identified as a preparation chemical; the amount had no stated unit and was not converted."
+        ]
+      },
+      {
+        "source_text": "pre-oxidation",
+        "features": {
+          "surface_preparation_method": "oxidizing_treatment"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "(+ H-charged)",
+        "features": {
+          "surface_preparation_method": "hydrogen_charging"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "(+ H + left standing)",
+        "features": {
+          "surface_preparation_method": "hydrogen_charging + standing"
+        },
+        "status": "partial",
+        "notes": [
+          "Charging and subsequent standing were explicit; medium and duration remained unknown."
+        ]
+      },
+      {
+        "source_text": "(+ HNO3 + H-charged)",
+        "features": {
+          "surface_preparation_method": "acid_treatment + hydrogen_charging",
+          "preparation_solution_type": "HNO3"
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit preparation details were kept separate from test-solution features."
+        ]
+      },
+      {
+        "source_text": "(+ left standing)",
+        "features": {
+          "surface_preparation_method": "standing"
+        },
+        "status": "partial",
+        "notes": [
+          "Standing was reported without a duration or exposure medium."
+        ]
+      },
+      {
+        "source_text": "(CPT held 1h prior)",
+        "features": {},
+        "status": "unresolved",
+        "notes": [
+          "The note referred to a previous CPT hold. Its timing was not assumed to be a heat treatment or another preparation duration; existing numeric fields were retained separately."
+        ]
+      },
+      {
+        "source_text": "(e-pol - heated only)",
+        "features": {},
+        "status": "unresolved",
+        "notes": [
+          "The abbreviated description did not unambiguously establish the performed treatment sequence; no heating schedule or electropolishing was inferred."
+        ]
+      },
+      {
+        "source_text": "sensitized + polished",
+        "features": {
+          "surface_preparation_method": "polishing",
+          "heat_treatment_type": "sensitization"
+        },
+        "status": "partial",
+        "notes": [
+          "Sensitization and polishing were explicit; thermal temperature and duration were not supplied."
+        ]
+      },
+      {
+        "source_text": "(anneal+quench)",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_cooling": "quench_unspecified"
+        },
+        "status": "partial",
+        "notes": [
+          "Annealing followed by quenching was explicit; quench medium, temperature and duration were not supplied. Quenching was recorded as cooling of the same stage."
+        ]
+      },
+      {
+        "source_text": "(annealed 1040)",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1040,
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "The 2019Ha Materials section explicitly reported all six annealing temperatures in degC, 1 h duration and water quenching. The source-specific interpretation used no corrosion outcomes."
+        ],
+        "source": "2019Ha",
+        "evidence_url": "https://www.sciencedirect.com/science/article/pii/S0010938X17313847"
+      },
+      {
+        "source_text": "(annealed 1080)",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1080,
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "The 2019Ha Materials section explicitly reported all six annealing temperatures in degC, 1 h duration and water quenching. The source-specific interpretation used no corrosion outcomes."
+        ],
+        "source": "2019Ha",
+        "evidence_url": "https://www.sciencedirect.com/science/article/pii/S0010938X17313847"
+      },
+      {
+        "source_text": "(annealed 1110)",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1110,
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "The 2019Ha Materials section explicitly reported all six annealing temperatures in degC, 1 h duration and water quenching. The source-specific interpretation used no corrosion outcomes."
+        ],
+        "source": "2019Ha",
+        "evidence_url": "https://www.sciencedirect.com/science/article/pii/S0010938X17313847"
+      },
+      {
+        "source_text": "(annealed 1140)",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1140,
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "The 2019Ha Materials section explicitly reported all six annealing temperatures in degC, 1 h duration and water quenching. The source-specific interpretation used no corrosion outcomes."
+        ],
+        "source": "2019Ha",
+        "evidence_url": "https://www.sciencedirect.com/science/article/pii/S0010938X17313847"
+      },
+      {
+        "source_text": "(annealed 1170)",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1170,
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "The 2019Ha Materials section explicitly reported all six annealing temperatures in degC, 1 h duration and water quenching. The source-specific interpretation used no corrosion outcomes."
+        ],
+        "source": "2019Ha",
+        "evidence_url": "https://www.sciencedirect.com/science/article/pii/S0010938X17313847"
+      },
+      {
+        "source_text": "(annealed 1200)",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1200,
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "The 2019Ha Materials section explicitly reported all six annealing temperatures in degC, 1 h duration and water quenching. The source-specific interpretation used no corrosion outcomes."
+        ],
+        "source": "2019Ha",
+        "evidence_url": "https://www.sciencedirect.com/science/article/pii/S0010938X17313847"
+      },
+      {
+        "source_text": "0.01cm2 wire",
+        "features": {
+          "Test_area_cm2": 0.01
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly reported exposed area was checked against the numeric column; mm2 was divided by 100 to obtain cm2. Edge treatment remained distinguishable from whole-surface preparation. A disagreement was left missing, not silently corrected."
+        ]
+      },
+      {
+        "source_text": "0.436mm2 wire",
+        "features": {
+          "Test_area_cm2": 0.00436
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly reported exposed area was checked against the numeric column; mm2 was divided by 100 to obtain cm2. Edge treatment remained distinguishable from whole-surface preparation. A disagreement was left missing, not silently corrected."
+        ]
+      },
+      {
+        "source_text": "0.05cm2 discs edge epol",
+        "features": {
+          "surface_preparation_method": "edge_electropolishing",
+          "Test_area_cm2": 0.05
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly reported exposed area was checked against the numeric column; mm2 was divided by 100 to obtain cm2. Edge treatment remained distinguishable from whole-surface preparation. A disagreement was left missing, not silently corrected."
+        ]
+      },
+      {
+        "source_text": "0.05cm2 discs edge grind",
+        "features": {
+          "surface_preparation_method": "edge_grinding",
+          "Test_area_cm2": 0.05
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly reported exposed area was checked against the numeric column; mm2 was divided by 100 to obtain cm2. Edge treatment remained distinguishable from whole-surface preparation. A disagreement was left missing, not silently corrected."
+        ]
+      },
+      {
+        "source_text": "0.01cm2 wire edge epol",
+        "features": {
+          "surface_preparation_method": "edge_electropolishing",
+          "Test_area_cm2": 0.01
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly reported exposed area was checked against the numeric column; mm2 was divided by 100 to obtain cm2. Edge treatment remained distinguishable from whole-surface preparation. A disagreement was left missing, not silently corrected."
+        ]
+      }
+    ]
+  }
+}

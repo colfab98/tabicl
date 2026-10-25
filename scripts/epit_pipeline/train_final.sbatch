@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=epit_final_empirical_scm_v8
+#SBATCH --job-name=epit_final_empirical_scm_v10
 #SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=96:00:00
@@ -11,12 +11,12 @@ set -euo pipefail
 cd /home/fcolanto/projects/tabicl
 source .venv/bin/activate
 
-STUDY_NAME="${STUDY_NAME:-epit_pipeline_optuna_empirical_features_scm_target_v8}"
+STUDY_NAME="${STUDY_NAME:-epit_pipeline_optuna_empirical_features_scm_target_v10}"
 OPTUNA_STORAGE_ROOT="${OPTUNA_STORAGE_ROOT:-/home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna}"
 STUDY_DIR="${OPTUNA_STORAGE_ROOT}/${STUDY_NAME}"
 STORAGE="${STORAGE:-journal://${STUDY_DIR}/study_journal_v1.log}"
 SPLIT_MANIFEST="${SPLIT_MANIFEST:-corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json}"
-TARGET_RULE_SUMMARY="${TARGET_RULE_SUMMARY:-corrosion_datasets/analysis/epit_pipeline/target_rules_v3/calibration_summary.json}"
+TARGET_RULE_SUMMARY="${TARGET_RULE_SUMMARY:-corrosion_datasets/analysis/epit_pipeline/target_rules_v4/calibration_summary.json}"
 SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-}"
 NPROC_PER_NODE="${NPROC_PER_NODE:-1}"
 MAX_STEPS="${MAX_STEPS:-10000}"

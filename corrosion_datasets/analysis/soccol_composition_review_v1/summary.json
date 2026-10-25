@@ -1,0 +1,42 @@
+{
+  "scope": "Read-only audit of the 4027 existing regression rows. No processed data or split was changed.",
+  "rows": 4027,
+  "units": "wt.% (collection documentation); no new conversion indicated",
+  "current_supported_or_approximate_Fe_balances": 3777,
+  "complete_explicit_non_Fe_compositions": 61,
+  "under_90_rows": 189,
+  "under_90_breakdown": {
+    "all_zero_from_missing": 95,
+    "only_sulfur": 87,
+    "other_incomplete": 7
+  },
+  "under_90_outer_split": {
+    "development": 189
+  },
+  "immediate_correction_candidates": {
+    "soccol_r000112": {
+      "Ti": 1.86
+    },
+    "soccol_r000117": {
+      "Ti": 1.75
+    },
+    "soccol_r000149": {
+      "Nb": 1.0
+    },
+    "soccol_r000152": {
+      "Nb": 1.0,
+      "Cu": 3.5
+    }
+  },
+  "studied_element_omission_source_rows": 41,
+  "combined_Nb_Ta_rows": 10,
+  "named_Nb_unknown_amount_rows": 1,
+  "existing_Russell_Ti_repair_verified_regression_rows": 11,
+  "remaining_caution": "Totals of 100 from Fe balance do not verify completeness. Omitted-element source flags require row-specific checking; they are not automatic whole-source exclusions.",
+  "input_sha256": {
+    "corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_environment_v2/soccol_processed.csv": "28e21a2d37dcafc4d08864f56b435b703ab6de2d83e0e282400d685fbc93dafb",
+    "corrosion_datasets/datasets/soccol_pitting_potential/processed/splits_v1/split_assignments.csv": "d34b48ad40ae4cf03a7cdcd209c9a08879d3529f3b4dac320dff9986b641b7a8",
+    "corrosion_datasets/analysis/soccol_source_conventions/source_conventions.csv": "4de749294c24c9a5e442c23adcd660fe0cf9e5667e1c29c86a62c2ecff5298cb",
+    "corrosion_datasets/datasets/soccol_pitting_potential/raw/Pitting_potential_dataset_2024.xlsx": "cb255c5a94d90bd207248f6e25727f965d587c29a73b2ffcef6b8c0ced6da1da"
+  }
+}

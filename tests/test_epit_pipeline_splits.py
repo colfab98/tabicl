@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytest
 from scipy.spatial.distance import pdist
 
 from scripts.eval_corrosion_datasets import (
@@ -17,6 +18,8 @@ from scripts.epit_pipeline.split_data import (
 )
 from tabicl.prior.epit_schema import EPIT_COMPOSITION_COLUMNS
 from tabicl.sklearn.preprocessing import TransformToNumerical
+from scripts.epit_pipeline.composition_data import PROCESSED_DIR, load_reviewed_compositions
+from tabicl.prior.epit_schema import EPIT_COMPOSITION_ELEMENTS
 
 
 def test_threshold_components_keep_every_close_pair_together() -> None:
@@ -41,24 +44,42 @@ def test_current_epit_composition_groups() -> None:
     assert grouping.isolation_distances.min() > COMPOSITION_DISTANCE_THRESHOLD
 
 
-def test_composition_completion_retains_rows_and_marks_only_three_pretraining_exclusions() -> None:
+def test_reviewed_compositions_preserve_exact_values_and_accept_all_rows() -> None:
     dataset = load_epit_dataset()
-    excluded = np.flatnonzero(~dataset.pretraining_template_eligible)
+    source = pd.read_csv(PROCESSED_DIR / "epit_processed.csv", float_precision="round_trip")
+    actual = np.asarray([[row[c] for c in EPIT_COMPOSITION_COLUMNS] for row in dataset.rows])
+    expected = source[list(EPIT_COMPOSITION_ELEMENTS)].to_numpy()
 
     assert dataset.n_rows == 760
     assert len(dataset.composition_columns) == 24
-    assert excluded.tolist() == [567, 587, 718]
-    assert [str(dataset.rows[index].get("No.")) for index in excluded] == [
-        "581",
-        "601",
-        "773",
-    ]
+    np.testing.assert_array_equal(actual, expected)
+    assert np.isfinite(actual).all()
+    assert dataset.pretraining_template_eligible.all()
+    previously_excluded = [567, 587, 718]
     assert np.allclose(
-        dataset.composition_reported_sums[excluded],
+        actual.sum(axis=1)[previously_excluded],
         [100.52, 99.8679, 99.5],
     )
-    assert int(dataset.pretraining_template_eligible.sum()) == 757
-    assert np.all(dataset.composition_structural_zero_counts[excluded] == 0)
+    assert int(dataset.composition_structural_zero_counts[previously_excluded].sum()) == 17
+    assert dataset.rows[358]["Composition, wt.% Ti"] == 1.86
+    assert dataset.rows[358]["Composition, wt.% Fe"] == 77.612
+    legacy = load_epit_dataset(reviewed_composition=False)
+    np.testing.assert_array_equal(dataset.target, legacy.target)
+    for old, new in zip(legacy.rows, dataset.rows, strict=True):
+        assert {k:v for k,v in old.items() if k not in EPIT_COMPOSITION_COLUMNS} == {
+            k:v for k,v in new.items() if k not in EPIT_COMPOSITION_COLUMNS
+        }
+
+
+def test_reviewed_loader_rejects_changed_export_instead_of_reprocessing(tmp_path) -> None:
+    import shutil
+
+    export = tmp_path / "reviewed"
+    shutil.copytree(PROCESSED_DIR, export)
+    with (export / "epit_processed.csv").open("a") as handle:
+        handle.write("\n")
+    with pytest.raises(RuntimeError, match="checksum changed"):
+        load_reviewed_compositions(export)
 
 
 def test_direct_evaluator_exposes_all_24_composition_columns() -> None:
@@ -83,6 +104,8 @@ def test_direct_evaluator_exposes_all_24_composition_columns() -> None:
     assert len(task.X) == 760
     assert task.X.shape[1] == 28
     assert tuple(task.X.columns[:24]) == EPIT_COMPOSITION_COLUMNS
+    expected = pd.read_csv(PROCESSED_DIR / "epit_processed.csv", float_precision="round_trip")
+    np.testing.assert_array_equal(task.X.iloc[:, :24].to_numpy(), expected[list(EPIT_COMPOSITION_ELEMENTS)].to_numpy())
     assert not any(
         column in dropped
         for column in EPIT_COMPOSITION_COLUMNS

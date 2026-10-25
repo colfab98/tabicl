@@ -27,6 +27,7 @@ from tabicl.prior.combined_corrosion import CombinedCorrosionPriorDataset
 from tabicl.prior.dataset import PriorDataset
 from tabicl.prior.genload import LoadPriorDataset
 from tabicl.prior.prior_config import DEFAULT_FIXED_HP
+from tabicl.prior.epit_feature_profile import EPIT_FEATURE_COMPOSITION_PROFILES
 from tabicl.train.missingness import MissingnessAugmenter
 from tabicl.train.optim import get_scheduler
 from tabicl.train.sampling import CheckpointablePriorLoader, rng_state_dict, load_rng_state_dict
@@ -352,6 +353,9 @@ class Trainer:
                 scm_fixed_hp["pitting_composition_mode"] = self.config.pitting_composition_mode
             if self.config.pitting_composition_profile is not None:
                 scm_fixed_hp["pitting_composition_profile"] = self.config.pitting_composition_profile
+            elif self.config.pitting_feature_profile in EPIT_FEATURE_COMPOSITION_PROFILES:
+                # Keep the composition bank paired with each versioned profile.
+                scm_fixed_hp["pitting_composition_profile"] = EPIT_FEATURE_COMPOSITION_PROFILES[self.config.pitting_feature_profile]
             if self.config.pitting_feature_profile is not None:
                 scm_fixed_hp["pitting_feature_profile"] = self.config.pitting_feature_profile
             if self.config.pitting_composition_family_probs is not None:
@@ -517,7 +521,16 @@ class Trainer:
         """Configure empirical feature masking for missing-aware training."""
 
         self.missingness_augmenter = None
+        from tabicl.prior.epit_expanded_schema import EPIT_EXPANDED_FEATURE_PROFILE
+        from tabicl.prior.epit_feature_profile import EPIT_FEATURE_PROFILE
+
+        native_epit = (
+            getattr(self.config, "pitting_composition_mode", None) == "empirical_features_scm_target"
+            and (getattr(self.config, "pitting_feature_profile", None) or EPIT_FEATURE_PROFILE) == EPIT_EXPANDED_FEATURE_PROFILE
+        )
         if not bool(getattr(self.config, "col_missing_value_embedding", False)):
+            if native_epit:
+                raise ValueError("Expanded EPIT samples retain NaNs and require --col_missing_value_embedding true.")
             if getattr(self.config, "missingness_query_column_probability", 0.0) != 0.0 or getattr(
                 self.config, "missingness_preserve_observed_composition", False
             ):
@@ -525,6 +538,13 @@ class Trainer:
             return
 
         profile_path = getattr(self.config, "missingness_profile_path", None)
+        if native_epit and not profile_path and self.config.prior_dir is None:
+            if getattr(self.config, "missingness_query_column_probability", 0.0) != 0.0 or getattr(
+                self.config, "missingness_preserve_observed_composition", False
+            ):
+                raise ValueError("Extra masking options require a missingness augmentation profile.")
+            # The empirical generator supplies the original row's mask itself.
+            return
         if not profile_path:
             raise ValueError(
                 "--missingness_profile_path is required when "

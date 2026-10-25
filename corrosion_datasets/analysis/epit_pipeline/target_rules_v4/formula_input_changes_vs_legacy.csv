@@ -1,0 +1,22 @@
+row_id,task_row_index,outer_split,material_class,formula_column,reviewed_column,previous_value,reviewed_value
+epit_r000359,358,development,Fe Alloy,"Composition, wt.% Fe",Fe,77.592,77.612
+epit_r000568,567,final_test,HEA,"Composition, wt.% N",N,,0.0
+epit_r000719,718,development,Al Alloy,"Composition, wt.% N",N,,0.0
+epit_r000568,567,final_test,HEA,"Composition, wt.% C",C,,0.0
+epit_r000719,718,development,Al Alloy,"Composition, wt.% C",C,,0.0
+epit_r000568,567,final_test,HEA,"Composition, wt.% Si",Si,,0.0
+epit_r000588,587,final_test,HEA,"Composition, wt.% Si",Si,,0.0
+epit_r000719,718,development,Al Alloy,"Composition, wt.% Si",Si,,0.0
+epit_r000568,567,final_test,HEA,"Composition, wt.% Mn",Mn,,0.0
+epit_r000588,587,final_test,HEA,"Composition, wt.% Mn",Mn,,0.0
+epit_r000719,718,development,Al Alloy,"Composition, wt.% Mn",Mn,,0.0
+epit_r000588,587,final_test,HEA,"Composition, wt.% Cu",Cu,,0.0
+epit_r000719,718,development,Al Alloy,"Composition, wt.% Cu",Cu,,0.0
+epit_r000568,567,final_test,HEA,"Composition, wt.% P",P,,0.0
+epit_r000588,587,final_test,HEA,"Composition, wt.% P",P,,0.0
+epit_r000719,718,development,Al Alloy,"Composition, wt.% P",P,,0.0
+epit_r000568,567,final_test,HEA,"Composition, wt.% S",S,,0.0
+epit_r000719,718,development,Al Alloy,"Composition, wt.% S",S,,0.0
+epit_r000359,358,development,Fe Alloy,"Composition, wt.% Ti",Ti,1.88,1.86
+epit_r000148,147,development,Fe Alloy,[Cl-] M,CP_Cl,0.0,
+epit_r000756,755,development,Al Alloy,[Cl-] M,CP_Cl,0.1,

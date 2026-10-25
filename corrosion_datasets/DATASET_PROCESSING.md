@@ -1,10 +1,26 @@
 # Dataset processing guidelines
 
-These rules define how we will prepare datasets for the shared schema. They
-start with composition features. Dataset-specific decisions for EPIT, Soccol,
-MPEA, and future datasets will be documented separately after checking or fixing
-their processing. This guide does not mean that existing exports already follow
-every rule.
+The general rules below define how datasets will be prepared for the shared
+schema. The dataset-specific sections record completed processing in past
+tense. Each section identifies its processed export; it does not imply that
+older exports or model pipelines already use that version.
+
+The latest standalone exports after the composition and source-consistency reviews were
+[EPIT reference v1](datasets/electrochemical_metrics_alloys/processed/epit_reference_v1/epit_processed.csv)
+and [Soccol reference v1](datasets/soccol_pitting_potential/processed/soccol_reference_v1/soccol_processed.csv).
+Both added the [reviewed reference-type feature](#epit-and-soccol-reference-type-feature)
+to their latest composition exports without changing targets.
+The Soccol export inherited environment v2 and retained unresolved compositions
+for review. Its accepted development subset contained 2,950 rows; all 805 frozen
+queries were preserved, including 10 that still needed composition evidence.
+The [environment review](#epit-and-soccol-source-consistency-review) and
+[Soccol composition review](#soccol-composition-processing) recorded the additional
+corrections. Earlier sections described the preserved earlier versions.
+The subsequent [EPIT composition source investigation](#epit-composition-source-investigation)
+supported one Ti correction and left Re and Nb/Ta amounts unverified in 22 rows.
+The [EPIT review decision](#epit-composition-review-decision) then applied the
+Ti correction and retained all 22 uncertain rows as recorded, with explicit
+user acceptance. No EPIT rows or frozen split assignments were removed.
 
 ## Composition features
 
@@ -68,3 +84,1431 @@ every rule.
   flag for review; passing the 90 wt.% threshold is not enough to fill the gap.
 - A complete composition is mapped to a shared schema containing additional
   elements: set those additional element columns to `0`.
+
+## EPIT: composition processing
+
+- **Source and rows:** we used the `Pitting Potential` sheet of
+  `CRA_database_Scientific_Data_Publication_12102020.xlsx`. We retained the
+  existing 760 samples with a usable average pitting-potential target. The
+  source contained 810 rows; the existing target-availability rule had already
+  excluded 50 rows before this composition-processing step.
+
+- **Columns and units:** we retained all 24 composition columns in **weight
+  percent (wt.%)**. We named them using their element symbols, such as `Fe`,
+  `Cr`, and `Ni`. No unit conversion was required.
+
+- **Reported amounts:** we preserved all reported numeric amounts, including
+  explicit zeros. We did not rescale compositions to exactly 100%.
+
+- **Fe:** we retained the Fe amount already provided in the source dataset.
+  We did not perform an additional Fe-balance calculation. A later source
+  investigation established that all 23 rows reviewed for Ti, Re and Nb/Ta
+  contained an upstream Excel Fe-balance formula. Their cached Fe amounts
+  were therefore calculated remainders, not independent measurements.
+
+- **Reported limits:** we represented the 16 sulfur entries written as
+  `<0.003` by **0.003 wt.%**. We recorded these as upper-limit approximations
+  and preserved their original notation in the processing log. This matched
+  the existing standalone EPIT parser and corrected the information lost in
+  the previous shared CSV.
+
+- **Missing values:** we treated unreported elements as **0** when the
+  composition total, including the numeric upper-limit approximations, lay
+  between **99 and 101 wt.%**. We recorded these as assumed zeros, separately
+  from explicitly reported zeros. No known-omission exceptions were configured
+  for this EPIT export; the processing rule did not permit zero-filling an
+  element identified as a known omission.
+
+- **Tolerance adjustment:** for this export, we widened the earlier EPIT
+  zero-filling interval from **99.9–100.1 wt.%** to **99–101 wt.%**. We used
+  this as a practical acceptance tolerance, rather than assuming every
+  difference was caused by rounding. The three additional accepted rows had
+  totals of **99.5%, 99.8679%, and 100.52%**; we left those totals unchanged.
+
+- **Corrections:** compared with the previous shared CSV, we restored the
+  sulfur amounts in **16 rows** and filled **17 missing entries across three
+  additional rows**. In total, we corrected **33 cells across 19 rows**.
+  Across the original source data, we recorded 3,685 assumed zeros, including
+  the 3,668 already supplied by the earlier EPIT zero-filling rule.
+
+- **Exclusions and validation:** we excluded no additional samples on
+  composition grounds. All 760 processed rows contained 24 finite element
+  amounts between 0 and 100 wt.%, and every composition total lay within the
+  accepted interval. No EPIT row fell below the general 90 wt.% cutoff.
+
+- **Traceability and split:** we preserved the original workbook and existing
+  row IDs, and copied the frozen assignments without regrouping or resplitting:
+  **608 development rows and 152 final-test rows**, with the same five
+  development folds. We recorded each assumed zero and upper-limit conversion,
+  the changes from the previous shared CSV, and checksums of the inputs and
+  outputs.
+
+- **Scope:** we saved a standalone processed EPIT reference table. We copied
+  non-composition source fields without changing their values or processing
+  the environment features. We did not update the shared EPIT–Soccol CSV,
+  existing training profiles, model loaders, or evaluation paths in this step.
+
+We saved the results under
+[`datasets/electrochemical_metrics_alloys/processed/epit_composition_v1/`](datasets/electrochemical_metrics_alloys/processed/epit_composition_v1/):
+
+- [`epit_processed.csv`](datasets/electrochemical_metrics_alloys/processed/epit_composition_v1/epit_processed.csv)
+  contained the corrected composition and the original non-composition fields.
+- [`composition_processing_log.csv`](datasets/electrochemical_metrics_alloys/processed/epit_composition_v1/composition_processing_log.csv)
+  recorded the original notation and treatment of each assumed zero or upper limit.
+- [`changes_vs_previous_shared.csv`](datasets/electrochemical_metrics_alloys/processed/epit_composition_v1/changes_vs_previous_shared.csv)
+  listed the 33 corrected cells.
+- [`composition_row_audit.csv`](datasets/electrochemical_metrics_alloys/processed/epit_composition_v1/composition_row_audit.csv)
+  recorded each row's composition total and processing counts.
+- [`split_assignments.csv`](datasets/electrochemical_metrics_alloys/processed/epit_composition_v1/split_assignments.csv)
+  retained the original outer split and development-fold membership.
+- [`processing_manifest.json`](datasets/electrochemical_metrics_alloys/processed/epit_composition_v1/processing_manifest.json)
+  recorded the rules, column meanings, counts, and file checksums.
+
+We generated this export with
+[`prepare_epit_composition.py`](datasets/electrochemical_metrics_alloys/prepare_epit_composition.py).
+To reproduce it in a new directory:
+
+```bash
+.venv/bin/python -m corrosion_datasets.datasets.electrochemical_metrics_alloys.prepare_epit_composition \
+  --output-dir /tmp/epit_composition_check
+```
+
+## EPIT: retained target-value convention
+
+- **Target:** we retained the existing handling of `Epit, mV (SCE) Avg.`.
+  The source contained 13 entries written as `>800` and one as `>1256`.
+  We kept the existing numeric modelling convention of using **800** and
+  **1256 mV**, respectively. These were approximations using the reported
+  lower bounds, rather than known exact pitting potentials.
+- **Original notation:** we preserved the `>` notation in both standalone
+  processed reference tables. We did not change targets, exclude these rows,
+  or alter frozen split assignments in this review.
+- **Comparison with the other datasets:** we checked the original Soccol and
+  MPEA target columns. Soccol marked non-pitting breakdown cases separately
+  with `event=0`; its current regression export had already excluded those
+  cases and contained **4,027 rows, all with `event=1`**. MPEA's workbook
+  contained numeric or missing pitting potentials, without explicit inequality
+  target entries or a separate limit-status column. This check did not establish
+  whether individual original papers had unrecorded limits.
+- **Decision:** we kept EPIT's existing numeric-bound approximation for the
+  current workflow and documented it; we did not leave a new target-handling
+  change pending.
+
+## EPIT: environment, heat treatment and microstructure processing
+
+- **Input and scope:** we extended the corrected `epit_composition_v1` export
+  and saved the result in `epit_environment_v1`. We retained all **760 rows**,
+  their corrected compositions, original source columns and target notation.
+  We copied the frozen **608 development / 152 final-test** assignments and
+  five development folds unchanged. We did not fit parameters, use target
+  values to choose extraction rules, or exclude additional rows.
+
+- **Shared names:** we used the same names and units as the existing shared
+  schema where an equivalent column existed. We added named chemical amounts,
+  treatment stages and phase flags for later use by other datasets.
+
+- **Missing information:** we left unknown values missing. We did not fill
+  missing environment values with zero. We also left unused later treatment
+  stages missing; this did not establish that no further treatment occurred.
+  We treated source markers `NA`, blank and `None` as missing information,
+  rather than proof of no treatment or no phase.
+
+### Temperature, pH, chloride and scan rate
+
+| Original EPIT column | Processed column | Unit | Populated rows |
+|---|---|---|---:|
+| `Test Temp. oC` | `CP_temp` | °C | 677 |
+| `[Cl-] pH` | `CP_pH` | dimensionless | 712 |
+| `[Cl-] M` | `CP_Cl` | mol/L | 759 |
+| `Scan Rate mV/s` | `scan_rate` | mV/s | 604 |
+
+- **Numeric values:** we retained the reported numeric temperature, pH and
+  scan-rate values, including negative pH. We did not estimate missing values
+  from other features.
+- **Scan-rate text:** we left the numeric scan rate missing for 18 entries
+  stating `steady state` and 10 stating `20mV steps by manual increament`.
+  The original text remained available. Another 128 entries were missing in
+  the source; neither procedural description was interpreted as a zero rate.
+- **Chloride conflict:** we retained all original chloride values in the
+  source column. For `epit_r000756`, the solution text `0.1 M NaCIO4`
+  identified perchlorate after notation correction, while `[Cl-] M` reported
+  0.1. We left the new `CP_Cl` value missing and logged the conflict for source
+  verification. We did not assume zero chloride or treat perchlorate as
+  chloride. The other 759 chloride values were copied unchanged.
+
+### Test solution
+
+- **Source:** all 760 rows contained `Test Solution`, with 111 distinct written
+  descriptions. We converted these to **21 standardized solution names** in
+  `test_solution_type`. Mixture names listed the reported components in a
+  consistent alphabetical order. Natural seawater, synthetic seawater and
+  unspecified seawater retained distinct names.
+- **Separate amounts:** we recorded each reported component separately.
+  For example, `1M H2SO4 + 0.5M NaCl, H2 deaerated` produced
+  `test_solution_type = H2SO4 + NaCl`, `H2SO4_mol_L = 1`,
+  `NaCl_mol_L = 0.5`, and `CP_aeration = deaerated`.
+- **Units:** we retained molarity, normality and weight percent separately.
+  We did not assume that N meant M, or convert weight percent to mol/L without
+  sufficient information. We did not infer an unreported counterion or
+  calculate free-ion concentrations from acid amounts.
+
+| Column group created | Unit and interpretation |
+|---|---|
+| `H2SO4_mol_L`, `HCl_mol_L`, `KCl_mol_L`, `MgCl2_mol_L`, `Na2S2O3_mol_L`, `Na2SO4_mol_L`, `NaBr_mol_L`, `NaClO4_mol_L`, `NaCl_mol_L`, `NaHCO3_mol_L`, `WO4_mol_L` | Reported component amount in mol/L. `WO4` represented a reported ion with an unidentified counterion. |
+| `H2SO4_eq_L`, `HCl_eq_L`, `KCl_eq_L`, `NaBr_eq_L`, `NaCl_eq_L` | Reported normality in equivalents/L. |
+| `NaCl_wt_percent` | Explicitly reported weight percent. |
+| `H2S_partial_pressure_atm` | Reported gas partial pressure in atm; not dissolved concentration. |
+| `NaCl_percent_unspecified`, `NaCl_ppm_unspecified` | Original amounts whose concentration basis was not specified; retained for audit, excluded from the feature list. |
+
+- **Unknown units and amounts:** we preserved 25 rows reporting unspecified
+  `%` and 59 reporting unspecified `ppm` in the two audit-only columns. We
+  left corresponding model concentration fields missing. We retained unnamed
+  amounts, seawater dilution conventions and unquantified acid additions in
+  the source text. A chemical absent from a description did not automatically
+  receive a zero concentration.
+- **Chloride-only descriptions:** we used `chloride_unspecified` when the
+  solution text identified chloride without naming its source chemical.
+  We retained the existing chloride measurement without inventing NaCl.
+- **Notation corrections:** we recorded explicit corrections such as `NaCI`
+  to `NaCl`, `HCI` to `HCl`, `NaCIO4` to `NaClO4`, and `W04` to `WO4`.
+  The original strings remained unchanged in the processed reference table.
+- **Aeration:** we populated `CP_aeration` for **291 rows** from the solution
+  description or an explicit statement in the test method. We preserved named
+  gas conditions such as nitrogen saturation, oxygen sparging and nitrogen
+  atmosphere rather than inventing dissolved gas concentrations. Missing
+  aeration did not mean naturally aerated.
+
+### Heat treatment
+
+- **Source:** `Heat treatment` contained 421 nonmissing entries and 79 distinct
+  descriptions. We extracted at least one thermal-treatment detail for
+  **397 rows**. We kept unsupported or ambiguous details missing.
+- **Columns:** we created the following four columns for the first described
+  treatment, plus the same four with the `heat_treatment_2_` prefix for a
+  second explicitly described stage. **95 rows** contained extracted details
+  of a second stage. These stage numbers followed the reported sequence; they
+  did not establish a complete manufacturing history.
+
+| First-stage column | Meaning and unit |
+|---|---|
+| `heat_treatment_type` | Reported treatment, such as annealing, aging or solution treatment. |
+| `heat_treatment_temperature_C` | Treatment temperature in °C. |
+| `heat_treatment_duration_h` | Duration in hours. |
+| `heat_treatment_cooling` | Reported cooling method, such as water quench, brine quench or still-air cooling. |
+
+- **Conversions:** we converted minutes and days to hours, and the two
+  Fahrenheit descriptions to Celsius using `(F - 32) × 5/9`. We recorded
+  source notation corrections such as `ll00` to `1100` and `I250` to `1250`.
+  We retained unusual reported values, including 1000 hours, without guessing
+  corrections.
+- **Several stages:** we retained solution treatment followed by another
+  heating or aging stage separately. We attached cooling only to the stage
+  for which it was reported. We did not average temperatures or add durations
+  across stages.
+- **Alternative conditions:** descriptions listing different temperatures
+  for different alloys, or aging durations of 30 minutes, 1 hour and 10 hours,
+  did not establish a sequence. We extracted only common, clearly applicable
+  details and left unresolved temperatures or durations missing. Ten rows
+  mixed as-received and quenched conditions without identifying the applicable
+  condition; we left their treatment fields missing.
+- **Other processing:** we retained the explicitly reported thermal
+  spark-plasma-sintering stage. We did not assign melting, hot rolling,
+  pickling, electropolishing, ion implantation or rapid solidification to an
+  annealing stage. Their descriptions stayed in the source text. In particular,
+  preparation solutions and preparation temperatures were not test-bath
+  solution or temperature features. Fourteen rows contained only manufacturing
+  or as-received/as-cast/as-rolled information without extractable heat-treatment
+  details.
+
+### Microstructure
+
+- **Source:** `Microstructures` contained 217 nonmissing entries and 39 distinct
+  descriptions. We extracted phase information for **154 rows**.
+- **Columns:** we created `phase_FCC`, `phase_BCC`, `phase_HCP` and `phase_IM`.
+  Each used **1 for presence, 0 for supported absence, and missing for unknown**.
+  Several phase-presence columns could equal 1 for the same sample.
+- **Names:** we mapped austenite to FCC and ferrite to BCC using the standard
+  structures described by the [University of Cambridge Materials Algorithms
+  Project](https://www.phase-trans.msm.cam.ac.uk/map/steel/programs/dilat-b.html).
+  We mapped explicit austenite–ferrite and duplex stainless-steel descriptions
+  to both flags. We kept ambiguous alpha-phase labels unresolved.
+- **Absence:** we set absent-phase flags only when the text explicitly excluded
+  them or clearly identified a single phase. Simply naming FCC did not imply
+  that BCC, HCP or intermetallic phases were absent. Unspecified secondary
+  phases and nonmetallic inclusions did not automatically imply `phase_IM = 1`.
+- **Other text:** 30 rows contained a general discussion of nitrogen and phase
+  boundaries, rather than a sample observation. We did not assign phases from
+  it. Another 33 rows provided other information, including grain size,
+  amorphous/crystalline descriptions, an ordered DO3 structure or unspecified
+  secondary phases; we preserved that information in the source text without
+  forcing it into the four flags.
+
+| Phase column | Present (1) | Supported absent (0) | Unknown |
+|---|---:|---:|---:|
+| `phase_FCC` | 125 | 0 | 635 |
+| `phase_BCC` | 73 | 9 | 678 |
+| `phase_HCP` | 0 | 9 | 751 |
+| `phase_IM` | 1 | 31 | 728 |
+
+### Test-method text and feature boundaries
+
+- **Exposed area:** we extracted `Test_area_cm2` for **144 rows** from explicit
+  exposed-area statements in `[Cl-] Test Method`. Where the exposed face was
+  explicitly 0.5 by 0.6 cm, we calculated 0.3 cm². Approximate reported areas
+  remained nominal values and were identified in the log. We did not confuse
+  current-density units or dimensions of other specimens with exposed area.
+- **Full descriptions:** we retained test-method text, comments, references,
+  identifiers and original solution/history descriptions in the reference
+  table, but excluded them from the feature list. We did not extract features
+  from target values or comments about test outcomes.
+- **Feature list:** we registered **24 composition features and 37 environment,
+  procedure and history features**. The reference table also contained the two
+  audit-only concentration columns with unspecified bases. No targets, source
+  IDs other than the joining `row_id`, or original free-text fields appeared in
+  `epit_features.csv`.
+- **Validation:** the focused composition and environment checks passed. They
+  covered unit separation, treatment stages versus alternatives, phase presence
+  versus absence, nonnumeric scan descriptions, preserved original values and
+  frozen splits, target exclusion, checksums and refusal to overwrite an
+  existing export.
+- **Pipeline scope:** we did not modify Soccol, MPEA, the existing shared CSV,
+  trained checkpoints, synthetic generators, model loaders or evaluation paths.
+  This export completed the EPIT data-processing step; existing models did not
+  automatically start using these features.
+
+We saved the results under
+[`datasets/electrochemical_metrics_alloys/processed/epit_environment_v1/`](datasets/electrochemical_metrics_alloys/processed/epit_environment_v1/):
+
+- [`epit_processed.csv`](datasets/electrochemical_metrics_alloys/processed/epit_environment_v1/epit_processed.csv)
+  contained the preserved original columns and all extracted fields.
+- [`epit_features.csv`](datasets/electrochemical_metrics_alloys/processed/epit_environment_v1/epit_features.csv)
+  contained `row_id` and the 61 registered features, without targets.
+- [`feature_registry.json`](datasets/electrochemical_metrics_alloys/processed/epit_environment_v1/feature_registry.json)
+  listed feature names, meanings, units and excluded fields.
+- [`environment_processing_log.csv`](datasets/electrochemical_metrics_alloys/processed/epit_environment_v1/environment_processing_log.csv)
+  recorded source text, extracted values and decisions for every row and source field.
+- [`environment_review_notes.csv`](datasets/electrochemical_metrics_alloys/processed/epit_environment_v1/environment_review_notes.csv)
+  collected partial interpretations, unresolved descriptions and the chloride conflict.
+- [`environment_column_summary.csv`](datasets/electrochemical_metrics_alloys/processed/epit_environment_v1/environment_column_summary.csv)
+  recorded coverage and units for every derived column.
+- The composition audits, split assignments and composition manifest were copied
+  into this export. `processing_manifest.json` recorded counts and checksums.
+
+We stored the exact-text extraction decisions in
+[`epit_environment_rules_v1.json`](datasets/electrochemical_metrics_alloys/epit_environment_rules_v1.json).
+Unseen descriptions required review rather than a silent approximate match.
+We generated the export with
+[`prepare_epit_environment.py`](datasets/electrochemical_metrics_alloys/prepare_epit_environment.py).
+To reproduce it in a new directory:
+
+```bash
+.venv/bin/python -m corrosion_datasets.datasets.electrochemical_metrics_alloys.prepare_epit_environment \
+  --output-dir /tmp/epit_environment_check
+```
+
+## EPIT: preparation and shared-ion additions
+
+- **Input and output:** we extended `epit_environment_v1` and saved the result
+  in **`epit_environment_v2`**. We preserved every existing source and processed
+  column, including corrected composition and target notation. We retained all
+  **760 rows**, the **608 development / 152 final-test** assignments and the
+  same five development folds. The previous export remained unchanged.
+- **Added columns:** we added six preparation/procedure fields and two
+  supported ion fields. The feature table therefore contained **69 features**:
+  24 composition features and 45 environment, procedure and history features.
+  The new column names, numeric/categorical types and units matched Soccol.
+
+| Added column | Meaning and unit | Populated rows |
+|---|---|---:|
+| `Prep_grinding_grit` | Reported numeric abrasive grade | 126 |
+| `surface_preparation_method` | Explicit preparation operation or combination | 291 |
+| `preparation_solution_type` | Named preparation or cleaning liquid | 101 |
+| `Prep_time` | Chemical/electrochemical preparation duration, hours | 87 |
+| `CP_time` | Waiting in the test solution before measurement, hours | 177 |
+| `CP_agitation` | Explicit hydrodynamic motion: 1; explicit absence: 0 | 6 |
+| `CP_Br` | Nominal bromide amount from reported NaBr molarity, mol/L | 25 |
+| `CP_SO4` | Supported nominal sulfate amount from reported Na2SO4 molarity, mol/L | 2 |
+
+### Preparation descriptions and abrasive grades
+
+- **Sources:** we reviewed the 79 distinct nonmissing `Heat treatment`
+  descriptions, 51 `[Cl-] Test Method` descriptions and 80 `Comments`
+  descriptions. We recorded the specific preparation clauses supporting each
+  extraction. Comments about composition, test outcomes or parallel experiments
+  did not supply added feature values. Original full descriptions remained
+  available for checking, and were excluded from model inputs.
+- **Numeric grades:** we retained the explicitly reported numeric grade for
+  **126 rows**: 38 at grade 120, 70 at grade 600, 17 at grade 1000 and one at
+  grade 2000. These included 17 entries written simply as `Ground to 600`;
+  the context identified a grinding grade, but did not establish its standard.
+  We did not claim that all reported grades used one grading convention.
+- **Unconverted grades:** 16 rows reported `600 mesh SiC`, and 44 reported
+  slash or ambiguous emery notation such as `3/0`, `4/0` or `2.0 emery`.
+  We preserved these descriptions and left their numeric grit missing. We
+  did not interpret `3/0` as a division, `2.0` as grit 2, or mesh as an
+  automatically equivalent grit standard.
+- **Correct specimen:** three method descriptions gave a 600-grade finish
+  for separate exposure-test coupons, while the pitting-test electrode had
+  been polished with an alumina slurry. We extracted only the pitting-electrode
+  preparation and did not copy the other coupons' grade or solvent treatment.
+- **Particle size:** alumina or diamond particle sizes, and vague micrometre
+  surface-finish descriptions, did not populate a grit or roughness column.
+  The ambiguous `1 mm` diamond-paste description remained uncorrected in the
+  source text; it did not affect the extracted numeric grade.
+- **Methods:** we retained explicit operations such as grinding, polishing,
+  pickling, electropolishing, cathodic reduction and ion implantation. When
+  several operations were reported, we listed their distinct names together.
+  This represented reported operations, including earlier surface processing
+  where described, rather than an inferred complete sequence or a declaration
+  of the final surface condition. Repeated descriptions did not create
+  duplicated operations.
+
+### Preparation liquids, durations and agitation
+
+- **Separate liquids:** we populated `preparation_solution_type` with
+  `HF + HNO3` for 48 rows, `H2SO4 + NaCl` for 22, `ethanol` for 18, `NaOH`
+  for 12 and `HCl` for one. These described preparation baths or explicitly
+  named cleaning liquids, not the corrosion-test solution. Water used for
+  rinsing or as an abrasive carrier was not combined with an active bath
+  into an invented mixture. Preparation concentrations remained in the source
+  text; no additional preparation-concentration fields were created.
+- **Preparation duration:** we converted reported minutes and seconds to
+  hours. For example, five minutes and 300 seconds both became `1/12` hour.
+  A specified-potential conditioning hold populated `Prep_time`; annealing
+  time, epoxy-curing time and time spent waiting in air did not.
+- **Different stages and bounds:** 18 rows described conditioning for
+  **at least 15 minutes**, alongside a usual five-minute pickling step.
+  We left `Prep_time` missing rather than substituting the pickling duration,
+  treating the lower bound as an exact value, or adding the two durations.
+  The separate operations and both original descriptions remained recorded.
+- **Test-bath waiting:** we extracted explicit pre-scan waiting or open-circuit
+  intervals into `CP_time`. These ranged from five minutes to two hours.
+  Seventy-three rows used the source's approximate wording: 65 reported
+  about one hour and eight reported about two hours. We retained these as
+  nominal durations and noted the qualification in the extraction log.
+- **Excluded intervals:** a gas purge before specimen immersion was not
+  specimen waiting time. Nor were waits between potential steps, hours spent
+  observing pitting, or holds for separate surface-analysis specimens. In the
+  30-row description that specified a nitrogen purge beginning 30 minutes
+  before immersion and polarization 50 minutes after immersion, `CP_time`
+  became **50/60 hour**.
+- **Agitation:** six rows explicitly used rotating disk electrodes with a
+  nonzero rotation rate; we assigned `CP_agitation = 1`. The other 754 rows
+  stayed missing. We found no explicit quiescent condition to encode as zero.
+  Stationary electrical current, fixed electrode mounting and gas bubbling
+  did not establish whether the test solution was agitated.
+
+### Supported ion mappings and deferred fields
+
+- **Bromide:** 25 rows explicitly reported NaBr in mol/L. We mapped the
+  nominal bromide amount one-to-one into `CP_Br` and retained the original
+  NaBr concentration as well. The 12 entries reported in normality remained
+  in their existing `NaBr_eq_L` field; we did not introduce an automatic
+  normality-to-molarity conversion.
+- **Sulfate:** two rows reported `0.1M Na2SO4 + 0.6M NaCl`, without naming an
+  acid in the recipe. We populated `CP_SO4 = 0.1 mol/L` as a nominal amount
+  supplied by the reported sulfate salt. This was not a calculation of free-ion
+  activity or pH-dependent speciation. The six recipes combining Na2SO4 with
+  H2SO4 remained missing in `CP_SO4`; we did not add acid molarity to the salt
+  amount or equate H2SO4 concentration with free sulfate. The original chemical
+  concentration fields remained unchanged for every row.
+- **Other ions:** we did not infer ion concentrations from preparation liquids,
+  unreported counterions, or pH. Other absent Soccol ion columns were not added
+  as entirely empty fields in this standalone export.
+- **Deferred fields:** we did not add `Prep_redox`, `Prep_pH` or
+  `Prep_Ra_micron`. Preparation potentials required alignment of voltage
+  references with Soccol, and the reviewed EPIT descriptions did not establish
+  preparation-solution pH or measured surface Ra. We preserved potentially
+  useful original information without inventing these values.
+- **Missing values and validation:** all unknown added values stayed `NaN`.
+  Focused checks covered grade conventions, different specimens, preparation
+  versus measurement timing, bounds, chemical versus test liquids, rotating
+  electrodes versus stationary current, supported ion mappings, outcome
+  exclusion, compatibility with Soccol units, and preservation of all earlier
+  columns and frozen assignments. No additional rows were excluded and no
+  model parameters were fitted.
+- **Scope:** this completed the EPIT preparation extension as a standalone
+  export. We preserved Soccol, MPEA, the shared tables and all existing model,
+  synthetic-generator, training and evaluation paths.
+
+We saved the results under
+[`datasets/electrochemical_metrics_alloys/processed/epit_environment_v2/`](datasets/electrochemical_metrics_alloys/processed/epit_environment_v2/):
+
+- [`epit_processed.csv`](datasets/electrochemical_metrics_alloys/processed/epit_environment_v2/epit_processed.csv)
+  contained every previous reference column plus the eight additions.
+- [`epit_features.csv`](datasets/electrochemical_metrics_alloys/processed/epit_environment_v2/epit_features.csv)
+  contained `row_id` and the 69 registered features, without targets or free text.
+- [`preparation_processing_log.csv`](datasets/electrochemical_metrics_alloys/processed/epit_environment_v2/preparation_processing_log.csv)
+  recorded the added extraction decisions. The combined environment log and
+  review notes also retained all earlier processing records.
+- `feature_registry.json`, `environment_column_summary.csv` and
+  `processing_manifest.json` recorded definitions, coverage and checksums.
+  The composition audits and split assignments were copied unchanged.
+
+We stored the reviewed clauses in
+[`epit_preparation_rules_v1.json`](datasets/electrochemical_metrics_alloys/epit_preparation_rules_v1.json)
+and generated the export with
+[`prepare_epit_preparation.py`](datasets/electrochemical_metrics_alloys/prepare_epit_preparation.py).
+To reproduce the extension in a new directory:
+
+```bash
+.venv/bin/python -m corrosion_datasets.datasets.electrochemical_metrics_alloys.prepare_epit_preparation \
+  --output-dir /tmp/epit_preparation_check
+```
+
+## Soccol: environment and preparation processing
+
+- **Source and rows:** we read environment values from the original
+  `Pitting_potential_dataset_2024.xlsx` workbook, using exactly the existing
+  **4,027 regression rows**. We preserved the frozen **3,222 development /
+  805 final-test** split and all five development folds. We retained the shared
+  `soccol_rXXXXXX` identifiers based on original workbook row numbers.
+- **Scope:** we created a standalone environment export. We copied the legacy
+  composition, targets and other audit fields into its reference table without
+  changing them. We did **not** apply the new composition policy to Soccol in
+  this step or certify its old zero-filling and Fe reconstruction. The separate
+  environment feature table contained no composition or target columns.
+- **Unknown values:** we left blanks and whitespace-only cells as `NaN`, and
+  retained numeric zeros already recorded in the workbook. A recorded zero was
+  not evidence that the original study measured absence. We did not replace
+  missing ion concentrations with zero or with the collection paper's modelling
+  floor of `10^-5 M`. We fitted no imputation, scaling or other parameters.
+- **Original values:** we retained all selected original workbook cells in
+  `source_rows.csv`. In `soccol_processed.csv`, original environment fields
+  received a `raw_` prefix, and the processed fields used the shared names.
+  Original text therefore remained recoverable when a processed value was
+  missing or disagreed with another source field.
+- **Feature list:** we registered **33 environment, procedure and history
+  columns**. Sixteen names and units matched columns already present in the
+  updated EPIT export, including the heat-treatment stage fields. We left
+  unsupported stage fields missing. We did not infer microstructure from an
+  alloy name or from heat treatment.
+
+### Test conditions and named ions
+
+| Processed column | Meaning and unit | Populated rows |
+|---|---|---:|
+| `CP_temp` | Test temperature, °C | 3,977 |
+| `CP_pH` | Test-solution pH | 3,963 |
+| `scan_rate` | Scan rate, mV/s | 3,767 |
+| `Test_area_cm2` | Exposed test area, cm² | 2,000 |
+| `CP_time` | Time in the test medium before the scan, hours | 1,982 |
+| `CP_Cl` | Reported chloride concentration, mol/L | 4,027 |
+| `CP_Br` | Reported bromide concentration, mol/L | 4,027 |
+| `CP_OH` | Reported hydroxide concentration, mol/L | 4,005 |
+| `CP_SO4` | Reported sulfate concentration, mol/L | 3,895 |
+| `CP_CO3` | Reported carbonate concentration, mol/L | 3,985 |
+| `CP_NO3`, `CP_PO4`, `CP_MoO4`, `CP_CrO4` | Reported nitrate, phosphate, molybdate and chromate concentrations, mol/L | 4,024 each |
+
+- **Numeric values:** we retained the original units and negative pH values.
+  We did not infer chemical salts from ions: chloride did not establish NaCl,
+  and sulfate did not establish H2SO4. The term "reported concentration"
+  referred to the workbook entry, not necessarily a measured free-ion amount.
+- **Timing:** the collection paper identified `CP_time` as equilibration in
+  the test medium before measurement, rather than time until pitting. We kept
+  the raw durations in hours; we did not apply the paper's log transformation.
+- **Aeration:** we retained **2,764** reported entries in `CP_aeration`:
+  2,231 `deaerated`, 360 `naturally_aerated`, 171 `aerated`, and 2 `ozonated`.
+  Missing aeration did not imply natural aeration.
+- **Agitation:** we converted explicit `yes` to **1** for 105 rows and `no` to
+  **0** for 413 rows. The other 3,509 rows stayed missing, including 12 cells
+  containing only whitespace. We kept agitation separate from aeration.
+
+### Additional test-solution descriptions
+
+- **Text extraction:** we reviewed the 38 distinct nonblank `CP_anions_info`
+  descriptions. We used explicit amounts to fill missing matching fields or
+  check existing values. We converted mM to mol/L by dividing by 1,000.
+  We did not feed the original free-text column to the model.
+- **Named acid:** eleven notes explicitly reported **0.1 M H2SO4**. We
+  populated the existing EPIT column `H2SO4_mol_L` for these rows. We did not
+  equate this chemical amount to a free sulfate-ion concentration.
+- **Solution type:** we populated `test_solution_type` only for the explicitly
+  named whole media: 18 `seawater` and 5 `synthetic_seawater` entries, using
+  EPIT's category names. Other notes generally described additives rather
+  than complete recipes. We therefore did not label an entire mixed bath as
+  H2SO4 merely because an additive note mentioned it.
+- **Unspecified concentrations:** salt percentages without a stated basis,
+  such as `0.5% MgSO4`, remained in the original text. We did not assume wt.%
+  or convert them to mol/L. `none` meant no additional note, rather than pure
+  water or absence of every ion. Dichromate was not treated as chromate.
+- **Excluded other ions:** following the explicit decision for this export,
+  we excluded `CP_ion_other` from both extraction and model features. We also
+  deferred the proposed borate/citrate concentration columns. The 52 positive
+  original values and their accompanying notes remained available for audit;
+  they did not enter a replacement generic ion field.
+
+### Conflicting numeric values and descriptions
+
+- **Handling:** we found **192 rows** with an explicit disagreement between
+  a numeric field and its accompanying description. We left only the affected
+  processed cell missing, retained the row and both original reports, and
+  recorded the disagreement in `environment_review_notes.csv`. We did not
+  silently choose one source field over the other.
+- **Sulfate:** 132 rows disagreed. Many numeric values were twice the
+  concentration written in the note, for example **0.12 versus 0.06 M**.
+  We did not assume that every sulfate value in the workbook was expressed
+  in equivalents/L or apply a global division by two. The convention remained
+  unresolved for these cells; unchanged entries were not individually
+  revalidated against every original paper.
+- **Carbonate:** 39 rows disagreed. These included 18 notes saying 0.015 M
+  against numeric 0.02, and 21 notes reporting **25 mM each of bicarbonate
+  and carbonate** against numeric carbonate 0.05. We did not treat the sum
+  of two different ions as carbonate alone.
+- **Hydroxide:** six notes stated 0.05 M while the numeric field contained
+  approximately 0.03162 M. We left the processed hydroxide value missing.
+- **Exposed area:** 15 notes stated **0.436 mm²**, equivalent to
+  **0.00436 cm²**, while the numeric field contained **0.000436 cm²**.
+  We logged the tenfold disagreement and left the processed area missing.
+  The other 2,000 reported numeric areas were retained.
+
+### Surface preparation and preparation conditions
+
+| Processed column | Meaning and unit | Populated rows |
+|---|---|---:|
+| `Prep_grinding_grit` | Reported abrasive grade | 2,990 |
+| `Prep_Ra_micron` | Reported average surface roughness Ra, µm | 367 |
+| `Prep_pH` | Preparation-solution pH | 875 |
+| `Prep_redox` | Reported preparation potential, V; reference unresolved | 1,241 |
+| `Prep_time` | Reported preparation-treatment duration, hours | 1,006 |
+| `surface_preparation_method` | Explicit preparation method or combination | 1,600 |
+| `preparation_solution_type` | Named preparation chemical or mixture | 283 |
+
+- **Grit:** we retained the workbook's reported numeric grades. The 31 rows
+  marked `(1200 = 600 US grit)` already contained **600**; we did not convert
+  them again. We did not assume that every other entry used the same grading
+  standard, and did not undertake a full per-paper grit-standard conversion.
+  We did not convert abrasive particle size into roughness or grit.
+- **Roughness:** we kept `Prep_Ra_micron` separate from abrasive grade. We
+  copied the reported Ra values without estimating them from grit or treating
+  an abrasive particle diameter as a measured surface roughness.
+- **Preparation pH:** we kept `Prep_pH` separate from `CP_pH`. Preparation
+  liquids and corrosion-test liquids could differ; one did not fill the other.
+- **Preparation potential:** the collection paper confirmed volts for
+  `Prep_redox`, but its statement about the Ag/AgCl reference explicitly
+  concerned `E_corr` and `E_pit`. We retained the reported preparation voltages
+  and marked their reference as unresolved in the registry. We did not convert
+  them to SCE or claim that they were already comparable to future preparation
+  potentials from other datasets.
+- **Preparation duration:** we retained hours in `Prep_time`, separate from
+  `CP_time` and heat-treatment duration. Notes such as `0.5 V - 30'` supported
+  the existing 0.5-hour preparation value. Air-exposure durations stayed in
+  the original notes when assigning them to `Prep_time` could confuse two
+  different preparation steps. We did not call 24 hours in air 24 hours in
+  the corrosion-test bath.
+- **Mixed preparation text:** we reviewed the 73 distinct nonblank
+  `Prep_medium` descriptions. We replaced this model category with the two
+  new fields for method and preparation solution, plus the applicable existing
+  heat-treatment and numeric fields. For example, `pickling HNO3 + HF`
+  produced method `pickling` and preparation solution `HF + HNO3`.
+- **Preparation chemicals:** nitric acid, sulfuric acid, citric acid and
+  named mixtures populated preparation fields only. They did not populate
+  test-solution concentrations. Unspecified preparation percentages stayed
+  in the notes, and a reported preparation temperature was not copied into
+  `CP_temp` or a heat-treatment temperature.
+- **Partial descriptions:** we retained explicit combinations such as
+  `wet_grinding + acid_treatment`, and distinguished edge electropolishing
+  from whole-surface electropolishing. Unclear abbreviations, as-delivered
+  descriptions and `none` did not establish an absent treatment. Free-text
+  details without a supported mapping remained in the audit.
+
+### Heat treatment and feature boundaries
+
+- **Shared heat columns:** we used the same two sets of four heat-treatment
+  fields as EPIT: type, temperature in °C, duration in hours and cooling.
+  **89 rows** contained a first-stage treatment type: 41 sensitization
+  descriptions, 24 anneal-and-quench descriptions, and 24 source-specific
+  annealing descriptions. Quenching was cooling of the annealing stage,
+  rather than an invented second heating stage.
+- **Verified source units:** the [2019Ha Materials section](https://www.sciencedirect.com/science/article/pii/S0010938X17313847)
+  confirmed that the six temperatures written as `annealed 1040` through
+  `annealed 1200` were in °C, with one hour of treatment and water quenching.
+  We populated all four fields for its 24 rows. We restricted this additional
+  source evidence to `2019Ha`; we did not apply it to similarly worded notes
+  from other papers.
+- **Unknown heat details:** for the other 24 anneal-and-quench rows, we kept
+  the temperature, duration and quenching medium unknown. The sensitized rows
+  also lacked a temperature or duration. No description established a second
+  thermal stage, so all four second-stage columns stayed missing.
+- **Excluded predictors:** source identifiers, raw free text, `E_corr`,
+  `E_pit`, `event`, legacy composition and `CP_ion_other` did not enter the
+  environment feature table. Extraction did not use outcomes. The frozen
+  regression membership supplied the row list; we performed no new selection.
+- **Validation:** focused checks verified preparation versus test conditions,
+  explicit yes/no versus missing values, unit conversions, contradictions,
+  source-specific heat evidence, exclusion of other-ion and target values,
+  original-value preservation, unchanged frozen assignments and checksums,
+  and refusal to overwrite an existing export.
+- **Pipeline scope:** we left EPIT, MPEA, the shared datasets, synthetic
+  generators, trained models and evaluation paths unchanged. Adding grit
+  and other preparation information to EPIT was completed separately in the
+  EPIT preparation extension documented above.
+
+We saved the results under
+[`datasets/soccol_pitting_potential/processed/soccol_environment_v1/`](datasets/soccol_pitting_potential/processed/soccol_environment_v1/):
+
+- [`soccol_environment_features.csv`](datasets/soccol_pitting_potential/processed/soccol_environment_v1/soccol_environment_features.csv)
+  contained `row_id` and the 33 registered environment/history features.
+- [`soccol_processed.csv`](datasets/soccol_pitting_potential/processed/soccol_environment_v1/soccol_processed.csv)
+  included the processed environment fields, original environment values under
+  `raw_` names, and unchanged legacy composition, target and audit fields.
+- [`source_rows.csv`](datasets/soccol_pitting_potential/processed/soccol_environment_v1/source_rows.csv)
+  preserved the selected original workbook rows with their shared row IDs.
+- [`feature_registry.json`](datasets/soccol_pitting_potential/processed/soccol_environment_v1/feature_registry.json)
+  documented names, units, exclusions and qualifications.
+- [`environment_processing_log.csv`](datasets/soccol_pitting_potential/processed/soccol_environment_v1/environment_processing_log.csv)
+  recorded numeric copying, missing values, extraction and conflicts.
+- [`environment_review_notes.csv`](datasets/soccol_pitting_potential/processed/soccol_environment_v1/environment_review_notes.csv)
+  collected partial interpretations and unresolved conflicts.
+- `environment_column_summary.csv`, `split_assignments.csv` and
+  `processing_manifest.json` recorded coverage, frozen assignments and checksums.
+
+We stored the extraction decisions in
+[`soccol_environment_rules_v1.json`](datasets/soccol_pitting_potential/soccol_environment_rules_v1.json)
+and generated the export with
+[`prepare_soccol_environment.py`](datasets/soccol_pitting_potential/prepare_soccol_environment.py).
+Unreviewed descriptions failed rather than receiving an approximate match.
+To reproduce the export in a new directory:
+
+```bash
+.venv/bin/python -m corrosion_datasets.datasets.soccol_pitting_potential.prepare_soccol_environment \
+  --output-dir /tmp/soccol_environment_check
+```
+
+## EPIT and Soccol: source-consistency review
+
+- **Scope:** we rechecked the modified EPIT composition and environment
+  exports and the Soccol environment export against their source cells,
+  reviewed text rules and frozen row assignments. We reviewed solution
+  amounts, preparation versus test conditions, time and temperature
+  conversions, heat stages, phase indicators, grade descriptions, missing
+  values and feature exclusions. This did not independently verify every
+  measurement in the original literature.
+- **EPIT composition:** the 33 earlier corrections across 19 rows passed
+  the checks. The 24 composition columns remained finite, with no additional
+  balance calculation, rescaling or row removal.
+- **EPIT chloride contradiction:** `epit_r000148` named
+  `deareated (by H2) 1 M HCl` but recorded `[Cl-] M = 0`. We left the derived
+  `CP_Cl` missing instead of treating zero as reliable or silently choosing
+  the solution description. We preserved both source reports and the
+  explicitly reported HCl amount. The other explicit molar chloride recipes
+  agreed with the reported chloride within source precision. The earlier
+  perchlorate/chloride conflict also remained missing. Consequently, `CP_Cl`
+  contained 758 populated values rather than 759.
+- **Soccol preparation-time mismatch:** 217 rows contained a numeric
+  preparation duration but named only `air`, without a preparation potential
+  or pH identifying a separate solution treatment. EPIT's shared `Prep_time`
+  represented chemical/electrochemical treatment, excluding waiting in air.
+  We therefore left these 217 values missing in the processed column, while
+  preserving their original times under `raw_Prep_time`. We did not assume
+  which step they timed or move them into `CP_time`.
+- **Separate treatment was retained:** another 36 air-labelled Soccol rows
+  also reported a preparation potential and pH. We retained their preparation
+  durations; the word `air` alone did not justify removing a separately
+  described treatment. The revised `Prep_time` contained **789** populated
+  values instead of 1,006. The collection paper's description distinguished
+  passivation in solution from air exposure
+  ([author manuscript, Section 2.1](datasets/soccol_pitting_potential/raw/Soccol_updated_PREN_author_manuscript.pdf)).
+- **Consistent operation names:** 32 Soccol rows used
+  `wet_grinding + acid_treatment`. We reordered the names to
+  `acid_treatment + wet_grinding`, matching EPIT's alphabetical convention.
+  The operations were unchanged and their order did not imply chronology.
+- **Existing uncertainties:** the 192 previously identified Soccol
+  sulfate, carbonate, hydroxide and exposed-area conflicts remained missing.
+  The reference for Soccol's preparation voltage remained unverified, and
+  reported grit grades did not establish a common grading standard. We did
+  not certify every source zero as a measured absence. Soccol's legacy
+  composition remained outside this environment review and still required
+  its separate review under the new composition policy.
+- **Validation:** 22 existing focused checks and four additional review
+  checks passed. The new checks confirmed that the chloride contradiction
+  remained missing, air-only timing was separated from solution treatment,
+  separately documented conditioning survived, and the exports changed
+  exactly the logged cells. All row IDs, targets, compositions, original
+  source fields and frozen splits were preserved. The feature counts stayed
+  at **69 for EPIT** and **33 environment/history features for Soccol**.
+  An independent numeric cross-check verified 332 populated EPIT chloride
+  values against explicit molar recipes, accounted for all 409 Soccol numeric
+  differences as logged missing values, and checked the types and units of
+  all 24 shared columns. We saved the checksum and count results in
+  [the review summary](analysis/processed_epit_soccol_review_v1.json).
+- **Saved results:** we preserved the earlier exports and saved the reviewed
+  versions below. Each included `review_changes.csv`, updated coverage and
+  extraction logs, feature definitions and file checksums. Existing shared
+  CSVs and model paths were not changed.
+
+| Dataset | Reviewed reference table | Cell-level corrections |
+|---|---|---|
+| EPIT | [epit_environment_v3/epit_processed.csv](datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/epit_processed.csv) | [One chloride cell](datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/review_changes.csv) |
+| Soccol | [soccol_environment_v2/soccol_processed.csv](datasets/soccol_pitting_potential/processed/soccol_environment_v2/soccol_processed.csv) | [217 timing cells and 32 operation names](datasets/soccol_pitting_potential/processed/soccol_environment_v2/review_changes.csv) |
+
+We generated both reviewed exports with
+[`review_epit_soccol_environment.py`](datasets/review_epit_soccol_environment.py).
+The following commands reproduced them in new directories:
+
+```bash
+.venv/bin/python -m corrosion_datasets.datasets.review_epit_soccol_environment epit \
+  --output-dir /tmp/epit_environment_review_check
+.venv/bin/python -m corrosion_datasets.datasets.review_epit_soccol_environment soccol \
+  --output-dir /tmp/soccol_environment_review_check
+```
+
+## Soccol: composition processing
+
+- **Source and scope:** we reviewed the 4,027 existing regression rows from
+  the `pitting_potentials` sheet of `Pitting_potential_dataset_2024.xlsx`.
+  We read the original composition cells again, before the earlier blank-to-zero
+  conversion. We inherited all 33 reviewed environment/history features from
+  `soccol_environment_v2` without changing them.
+- **Columns and units:** we used the same 24 element columns as EPIT, in
+  **wt.%**: `Fe`, `Cr`, `Ni`, `Mo`, `W`, `N`, `Nb`, `C`, `Si`, `Mn`, `Cu`,
+  `P`, `S`, `Al`, `V`, `Ta`, `Re`, `Ce`, `Ti`, `Co`, `B`, `Mg`, `Y`, `Gd`.
+  No unit conversion was needed. Together with the environment columns,
+  the feature table contained **57 features**.
+- **Original amounts:** we retained every numeric element amount from Soccol,
+  except the already-confirmed `2000Russell.Ti` error: those cells contained
+  PRE values, not Ti amounts. The 11 affected regression rows used assumed
+  zero Ti after removal of the misfiled values. We retained explicit source
+  zeros and distinguished them from assumed zeros in the cell log.
+- **Four explicit alloy descriptions:** we recovered nominal amounts that
+  Soccol had written in the alloy name but omitted from its element columns:
+
+  | Row ID | Recovered amounts, wt.% | Recalculated Fe, wt.% |
+  |---|---|---|
+  | `soccol_r000112` | Ti = 1.86 | 77.612 |
+  | `soccol_r000117` | Ti = 1.75 | 75.47 |
+  | `soccol_r000149` | Nb = 1 | 67.93 |
+  | `soccol_r000152` | Nb = 1; Cu = 3.5 | 43.44 |
+
+- **Additional source evidence:** we recovered missing W, Cu and Nb amounts
+  from the original EPIT workbook where it described the **same paper and
+  matching composition**. We verified the paper DOI and required agreement
+  on every numeric element originally reported by Soccol. We accepted a
+  recovered amount only when the matching donors' reported amounts agreed.
+  We did not use target values, environmental conditions, row order or a
+  generic grade recipe to choose amounts. Raw EPIT blanks did not supply
+  values, and its processed zero fills were not used as evidence.
+
+  | Soccol source | EPIT reference | Recovered fields | Recovered cells, including explicit zeros |
+  |---|---|---|---:|
+  | `1969Lizlovs` | 11 | Cu | 4 |
+  | `1974Machin` | 84 | Cu, in addition to the alloy-name recovery | 5 |
+  | `1983Bui` | 73 | W | 17 |
+  | `1998Ahn` | 74 | W and Nb | 16 |
+  | `1995Malik` | 49 | Cu and separately reported Nb | 115 |
+
+- **Recovery totals:** the five nominal cells from the four alloy descriptions
+  and 157 same-paper cells supplied **162 element values across 103 rows**.
+  These comprised **105 positive amounts across 91 rows**, plus **57 explicit
+  zeros**. Some rows with recovered Cu still lacked separate Nb/Ta amounts
+  and therefore remained unresolved.
+- **Fe and missing elements:** after the recoveries, we calculated
+  `Fe = 100 - sum(other element amounts)` where the existing alloy/source
+  review supported an Fe balance and no identified omission remained.
+  We kept Fe at zero for the 61 explicitly complete non-Fe alloys. We set
+  other unreported elements to zero only in accepted compositions and logged
+  them as assumptions. We did not rescale reported amounts. Accepted totals
+  lay between 99 and 101 wt.%; a calculated total of 100 was not itself
+  evidence that the original data were complete.
+- **Unresolved compositions:** we left unknown amounts missing and withheld
+  the Fe balance where it could absorb missing alloying elements. We did not
+  replace these unknowns with zero, a mean, or a generic grade composition.
+  We retained the original rows and recorded the following unresolved cases:
+
+  | Reason | Development rows withheld | Frozen query rows preserved for review |
+  |---|---:|---:|
+  | No reported element amounts | 95 | 0 |
+  | Only sulfur reported (`2014Zhou`) | 87 | 0 |
+  | Incomplete Cr/Ni or G3 composition, without a supported balance | 7 | 0 |
+  | Missing Re (`1969Boehni`) | 12 | 0 |
+  | Missing row-to-Y-amount link (`2018Shi`) | 4 | 0 |
+  | Unrecovered source-specific Cu; also Nb for relevant grades (`1994Malik`) | 56 | 10 |
+  | Combined Nb + Ta without separate amounts (`1995Malik`) | 10 | 0 |
+  | Nb named but not quantified in `430TiNb` (`2000DiSchino`) | 1 | 0 |
+  | **Total** | **272** | **10** |
+
+- **Interpretation of exclusions:** the first three groups accounted for the
+  original **189 incomplete development compositions**. Their unsupported
+  totals remained below 90 wt.%. Additional known omissions required review
+  even where the earlier Fe calculation had made the total appear complete.
+  For `1994Malik`, we conservatively left the whole source pending because
+  it included copper-containing grades but lacked source-specific Cu amounts.
+  This did not mean that every row necessarily contained positive Cu. We did
+  not transfer chemistry from the different 1995 paper by grade name alone.
+- **Frozen split:** we copied the original assignments without resplitting.
+  Of 3,222 development rows, **2,950** were accepted and **272** were withheld
+  from the new development feature file. All **805 final-test/query rows**
+  remained in the query export. Ten remained unresolved: five `316L` rows
+  (`soccol_r001215`–`soccol_r001219`) and five `17-4PH` rows
+  (`soccol_r001235`–`soccol_r001239`), all from `1994Malik`. We marked this
+  export **not ready for final evaluation** while those queries lacked
+  verified composition. We did not substitute development rows or produce
+  an accepted-only final-query subset.
+- **Limits of the EPIT evidence:** Soccol's first Ti description said 1.86,
+  while EPIT's numeric Ti said 1.88 and its comment also said 1.86. We used
+  Soccol's explicit nominal 1.86 and recorded the disagreement. EPIT also
+  recorded zero Re throughout the Re study and split combined Nb + Ta equally
+  without independently verified justification. We did not use those entries
+  to resolve the Soccol omissions. These findings remained source-review
+  caveats for EPIT; this step did not change or certify its entire workbook.
+- **Traceability and validation:** we saved each element's original, previous
+  and processed amounts, treatment and evidence. We moved superseded balance
+  and missingness fields under `legacy_` names. Four focused checks passed:
+  reported values and recoveries were correct; unknown amounts were not
+  invented; all frozen queries and development fold assignments survived;
+  and environment values, targets, source files and input checksums remained
+  unchanged. Recovery was unchanged by donor order or altered outcomes, and
+  conflicting donor amounts remained unresolved.
+- **Pipeline scope:** we saved a new standalone export and preserved earlier
+  files. Existing shared CSVs, formula fitting, synthetic generation, training
+  and evaluation paths remained unchanged. No models were retrained or evaluated.
+
+We saved the results under
+[`datasets/soccol_pitting_potential/processed/soccol_composition_v1/`](datasets/soccol_pitting_potential/processed/soccol_composition_v1/):
+
+- [`soccol_processed.csv`](datasets/soccol_pitting_potential/processed/soccol_composition_v1/soccol_processed.csv)
+  retained all 4,027 reference rows, with accepted/unresolved status and legacy values.
+- [`soccol_development_features.csv`](datasets/soccol_pitting_potential/processed/soccol_composition_v1/soccol_development_features.csv)
+  contained the 2,950 accepted development rows, with 24 populated composition columns.
+- [`soccol_frozen_final_query_features.csv`](datasets/soccol_pitting_potential/processed/soccol_composition_v1/soccol_frozen_final_query_features.csv)
+  retained all 805 frozen queries, including unresolved compositions.
+- [`composition_review_required.csv`](datasets/soccol_pitting_potential/processed/soccol_composition_v1/composition_review_required.csv)
+  listed the 282 unresolved rows, reasons and original partitions.
+- `composition_processing_log.csv`, `composition_changes.csv` and
+  `composition_row_audit.csv` recorded cell decisions and row status.
+- `feature_registry.json`, `split_assignments.csv` and `processing_manifest.json`
+  recorded units, feature roles, unchanged assignments, readiness and checksums.
+
+We stored source decisions and literature-search results in
+[`soccol_composition_rules_v1.json`](datasets/soccol_pitting_potential/soccol_composition_rules_v1.json)
+and built the export with
+[`prepare_soccol_composition.py`](datasets/soccol_pitting_potential/prepare_soccol_composition.py).
+The following command reproduced the export in a new directory:
+
+```bash
+.venv/bin/python -m corrosion_datasets.datasets.soccol_pitting_potential.prepare_soccol_composition \
+  --output-dir /tmp/soccol_composition_check
+```
+
+## EPIT: composition source investigation
+
+- **Scope:** on 2026-10-24, we investigated the three composition concerns
+  identified during the Soccol review. We compared the original EPIT workbook,
+  including its Excel formulas, with `epit_environment_v3`, the frozen split
+  assignments and available primary-source evidence. This was a review of
+  these specific cases, not an independent verification of every EPIT row.
+
+  | Case | EPIT row IDs | Development rows | Frozen final-query rows | Finding |
+  |---|---|---:|---:|---|
+  | Ti disagreement | `epit_r000359` | 1 | 0 | Source table text supported Ti = 1.86 rather than 1.88 wt.% |
+  | Re recorded as zero | `epit_r000211`–`epit_r000222` | 0 | 12 | Exact Re amounts and their row mapping remained unresolved |
+  | Combined Nb + Ta | `epit_r000051`–`epit_r000055`; `epit_r000061`–`epit_r000065` | 5 | 5 | Separate amounts and combined totals remained unverified |
+  | **Total** | **23 rows** | **6** | **17** | |
+
+- **Ti:** EPIT reference 11 contained numeric Ti = 1.88, whereas its alloy
+  description said 1.86. The indexed text of Table I on page 575 of
+  [Lizlovs and Bond's original paper](https://citeseerx.ist.psu.edu/document?doi=5984cfb24bae9d77f62f3bb3a07ec357368db56a&repid=rep1&type=pdf)
+  also reported Ti = 1.86 for the matching titanium-series alloy, with
+  C = 0.035 and N = 0.023. This supported a transcription-error interpretation.
+  We recorded a proposed correction of **Ti 1.88 → 1.86 wt.%** and the
+  corresponding Fe remainder of **77.592 → 77.612 wt.%**. We read the
+  search-indexed table text; direct PDF access did not permit visual
+  verification of the scan. We did not apply the proposed correction in
+  this investigation.
+- **Re:** all 12 rows from EPIT reference 81 contained literal numeric
+  Re = 0 in the original workbook, rather than blanks converted by our
+  preprocessing. The workbook's heat-treatment description mentioned Re,
+  and [Böhni and Uhlig's original abstract](https://www.sciencedirect.com/science/article/abs/pii/0010938X69800077)
+  described experiments with varying Re additions. We did not recover the
+  original composition table or a verified row-to-Re mapping. A zero-Re
+  control could have been present, so the evidence did not establish that
+  every zero was wrong. All 12 rows belonged to the frozen final-query set.
+- **Nb + Ta:** ten rows from EPIT reference 49 already contained equal
+  numeric Nb and Ta amounts in the original workbook. The five N08020
+  rows had Nb = 2.5 and Ta = 2.5 alongside a comment giving a combined
+  5 wt.%; these were frozen queries. The five S31803 rows had Nb = 0.3
+  and Ta = 0.3 alongside a combined 0.6 wt.%; these were development rows.
+  We found no independent support for dividing either total equally.
+  We located [Malik et al.'s 1995 paper](https://www.sciencedirect.com/science/article/pii/0010938X9500043J)
+  but could not recover its composition table. A related 1992 author report
+  also lacked readable composition-table content in the accessible text.
+  We therefore left both the separate amounts and the combined totals
+  unverified; we did not substitute a generic composition for either grade.
+- **Fe and provenance:** every reviewed row contained the original Excel
+  formula `Fe = 100 - sum(other element columns)`. Consequently, a missing
+  or incorrect alloying amount would have changed the Fe remainder while
+  leaving the total at 100%. The suspect Ti, Re and Nb/Ta entries existed
+  upstream of our processing; our parser had not introduced them.
+- **Result and limits:** source text supported one proposed correction;
+  **22 rows remained unresolved**, including **17 frozen final queries**.
+  We recorded this limitation without dropping or replacing any queries.
+  We did not change dataset values, targets, frozen assignments or model
+  paths. Checksums confirmed that the workbook and all files in the reviewed
+  EPIT export remained unchanged.
+- **Saved evidence:** we recorded each affected row, its partition, original
+  values, Fe formula, evidence status and any proposed values in
+  [row_findings.csv](analysis/epit_composition_source_review_v1/row_findings.csv).
+  We saved source links, access limitations, counts and input checksums in
+  [summary.json](analysis/epit_composition_source_review_v1/summary.json).
+
+## EPIT: composition review decision
+
+- **Agreed treatment:** we corrected the supported Ti discrepancy and kept
+  the recorded Re and Nb/Ta amounts. The user accepted the remaining source
+  uncertainties so that every compared model could use the same rows and
+  values. This decision retained uncertain information; it did not establish
+  that those amounts were correct or that their errors affected all models
+  equally.
+- **Correction:** for `epit_r000359`, we changed **Ti from 1.88 to 1.86 wt.%**
+  and its **Fe remainder from 77.592 to 77.612 wt.%**. The total remained
+  100 wt.%. We applied these two corrections to both the reference table and
+  the feature-only CSV.
+- **Re and Nb/Ta:** we retained all 12 Re-study rows with Re = 0 and all
+  10 Nb/Ta rows with their existing equal allocations. Their amounts remained
+  unverified. We recorded the affected rows in a separate audit file; the
+  review status was not added as a model feature. We did not exclude the
+  five development rows or the 17 frozen queries involved in these cases.
+- **Rows and splits:** we retained **all 760 rows: 608 development rows and
+  152 frozen final queries**. We preserved their existing development folds.
+  No EPIT query rows had been removed, so this correction required no split
+  rebalancing. The decision applied to EPIT; it did not change Soccol's
+  separately documented exclusions or unresolved compositions.
+- **Export and validation:** we saved the new version in
+  [`epit_composition_v2/`](datasets/electrochemical_metrics_alloys/processed/epit_composition_v2/).
+  The export inherited all reviewed environment/history features from
+  `epit_environment_v3` and retained the same 69 model features. We verified
+  that only the two agreed cells changed in each data table. All other values,
+  row ordering and frozen assignments were preserved. Earlier exports and
+  source files remained unchanged. Existing shared datasets, formula fitting,
+  training and evaluation paths were not switched to this export.
+- **Records:** we saved the two changes in
+  [`composition_review_changes.csv`](datasets/electrochemical_metrics_alloys/processed/epit_composition_v2/composition_review_changes.csv)
+  and the 22 retained uncertain rows in
+  [`composition_retained_uncertainties.csv`](datasets/electrochemical_metrics_alloys/processed/epit_composition_v2/composition_retained_uncertainties.csv).
+  The processing manifest recorded this acceptance policy and file checksums.
+  Inherited logs described earlier stages; the new change log recorded this
+  additional correction.
+
+We generated the export with
+[`review_epit_composition.py`](datasets/electrochemical_metrics_alloys/review_epit_composition.py).
+The following command reproduced it in a new directory:
+
+```bash
+.venv/bin/python -m corrosion_datasets.datasets.electrochemical_metrics_alloys.review_epit_composition \
+  --output-dir /tmp/epit_composition_review_check
+```
+
+## EPIT and Soccol: reference-type feature
+
+- **Added column:** we added the categorical model input `reference_type`
+  to both standalone reference tables and their full model feature views.
+  Its populated values were **`SCE`** and **`AgAgCl`**. Unverified references
+  remained empty CSV fields, read as `NaN`; we did not introduce an
+  `unknown` category, a numeric code or an assumed reference.
+- **Target handling:** we kept every target value and its original column
+  unchanged. We applied no electrode conversion. The new column recorded
+  the reference category adopted for the reported pitting-potential target,
+  following the existing combined-dataset policy. It did not establish a
+  reference for preparation voltages such as `Prep_redox`.
+
+  | Table | SCE | AgAgCl | Missing reference | Total rows |
+  |---|---:|---:|---:|---:|
+  | EPIT, all rows | 760 | 0 | 0 | 760 |
+  | Soccol, all reference rows | 565 | 112 | 3,350 | 4,027 |
+  | Soccol, accepted development subset | 348 | 112 | 2,490 | 2,950 |
+  | Soccol, frozen final queries | 110 | 0 | 695 | 805 |
+
+- **EPIT evidence:** we checked cell `Z1` of the original `Pitting Potential`
+  sheet, which explicitly declared `Epit, mV (SCE)`. Its processed average
+  target retained this convention, so all 760 rows received `SCE`.
+- **Soccol evidence:** we retained the previous 13 source assignments and
+  checked their evidence again. Twelve source groups were supported by a
+  freshly read original paper or publisher abstract. For `1999Wegrelius`,
+  the one Soccol row matched the same paper's EPIT entry in composition,
+  test conditions and the 549.6 mV target explicitly labelled SCE. This was
+  a dataset cross-check; we did not claim to have independently re-read that
+  paper's electrode statement. Eight `1970Wilde` values also matched the
+  corresponding SCE-labelled EPIT values, and its original methods confirmed
+  SCE. We recorded source URLs, locations and evidence strength separately
+  in [source_evidence.csv](analysis/epit_soccol_reference_review_v1/source_evidence.csv).
+- **Check against the collection-wide description:** the preserved Soccol
+  manuscript described Ag/AgCl (3 M KCl), but that statement did not establish
+  a verified conversion of every workbook target. In
+  [Alar et al., Table 2](https://www.electrochemsci.org/papers/vol11/110907674.pdf),
+  the source targets were explicitly reported in mV/SCE. **64 of the 66**
+  corresponding retained Soccol values matched those numbers exactly. The
+  two already-known discrepancies remained unchanged: `2016Alar06` contained
+  777 versus the paper's 771, and `2016Alar12` contained 911 versus 977.
+  This supported retaining the source-specific policy rather than assigning
+  all Soccol rows the collection's stated reference. We saved the numerical
+  comparison in [alar_numeric_check.csv](analysis/epit_soccol_reference_review_v1/alar_numeric_check.csv).
+- **Verification limits:** checking an original paper's electrode did not
+  independently verify the transcription or conversion history of every
+  workbook target. We kept 3,350 Soccol reference categories missing where
+  the existing source audit had not established a label. For the 112
+  `2020Melia` rows, the [original methods](https://doi.org/10.1038/s41529-020-00126-5)
+  specified Ag/AgCl with **saturated KCl**. We recorded this detail in the
+  audit, while using the agreed broad `AgAgCl` feature category. That category
+  did not imply that saturated-KCl and 3-M-KCl electrodes were identical.
+- **Rows, values and feature counts:** all original predictors, target strings,
+  row ordering and frozen assignments were preserved. The existing Soccol
+  accepted-development subset and frozen-query subset were unchanged.
+  EPIT now contained **70 model features** and Soccol **58**. The added
+  measurement feature was separate from their 45 and 33 environment/history
+  features. Environment-only historical views retained their original scope.
+- **Audit and validation:** each new export included `reference_type_audit.csv`,
+  with a row's assigned value, evidence, source URL and verification status.
+  Evidence fields were not model features. We checked every populated label
+  against the frozen source rules, compared all Soccol labels with the prior
+  combined table using workbook row IDs, and verified that unknown labels
+  read back as missing. Removing the new column reproduced every prior data
+  table exactly. File checksums and split-file equality confirmed that earlier
+  exports, source files and memberships were unchanged.
+- **Saved versions:** we saved
+  [`epit_reference_v1/`](datasets/electrochemical_metrics_alloys/processed/epit_reference_v1/)
+  and [`soccol_reference_v1/`](datasets/soccol_pitting_potential/processed/soccol_reference_v1/).
+  Existing shared datasets and model paths were not switched automatically.
+  Earlier composition caveats were inherited; adding reference labels did
+  not resolve or change composition decisions.
+
+We stored the decisions in
+[`reference_type_rules_v1.json`](datasets/reference_type_rules_v1.json)
+and generated the exports with
+[`prepare_reference_types.py`](datasets/prepare_reference_types.py):
+
+```bash
+.venv/bin/python -m corrosion_datasets.datasets.prepare_reference_types epit \
+  --output-dir /tmp/epit_reference_check
+.venv/bin/python -m corrosion_datasets.datasets.prepare_reference_types soccol \
+  --output-dir /tmp/soccol_reference_check
+```
+
+## EPIT and Soccol: column-name alignment
+
+- **Inputs:** we compared the latest standalone `epit_reference_v1` and
+  `soccol_reference_v1` exports. We recorded the mapping before merging rows.
+- **Predictors:** EPIT contained 70 predictors and Soccol contained 58.
+  **49 names were shared**, including all 24 composition columns. Their
+  declared data types and units matched. **21 predictors were EPIT-only and
+  9 were Soccol-only**, giving a proposed union of **79 predictors**. We
+  retained the existing predictor names; no predictor rename was needed.
+  Shared names described schema availability, not complete data coverage:
+  Soccol's four second heat-treatment columns existed but were entirely empty.
+- **Target name:** we mapped EPIT's `Epit, mV (SCE) Avg.` and Soccol's `E_pit`
+  to the proposed shared name `reported_pitting_potential_mV`. We kept this
+  target separate from the 79 predictors and retained `reference_type` as
+  a predictor. We applied no electrode conversion. EPIT's existing numeric
+  modeling convention used 800 for `>800` and 1256 for `>1256`; the original
+  notation remained in the standalone reference table. This mapping did
+  not change or parse any source target values.
+- **Separate meanings:** we kept chemical concentrations separate from ion
+  concentrations, including `NaCl_mol_L` versus `CP_Cl` and `H2SO4_mol_L`
+  versus `CP_SO4`. We kept molarity, normality, mass percentage and gas
+  partial pressure separate. Preparation pH remained separate from test pH;
+  roughness remained separate from grit. `Prep_redox` retained its reported
+  voltage and its unresolved reference qualification; the target's
+  `reference_type` did not supply that reference.
+- **Missing data and categories:** the mapping specified missing values
+  for environment/history/reference columns absent from a dataset. Existing
+  composition decisions and categorical labels were preserved. We introduced
+  no new zero filling, phase inference or category collapsing.
+- **Exclusions:** `CP_ion_other` remained excluded. Source descriptions, row
+  identifiers, literature references and audit fields were not predictors.
+- **Outputs and checks:** we saved the full
+  [column mapping CSV](analysis/epit_soccol_column_alignment_v1/column_mapping.csv),
+  a [readable mapping table](analysis/epit_soccol_column_alignment_v1/column_mapping.md)
+  and a [summary with input checksums](analysis/epit_soccol_column_alignment_v1/summary.json).
+  We checked that every registered predictor appeared exactly once and that
+  all 49 common columns had matching declared types and units. Populated-row
+  counts described the full 760-row EPIT and 4,027-row Soccol reference
+  tables; they did not change row eligibility. Checksums confirmed that
+  source exports and frozen assignments were unchanged. We did not merge
+  datasets or switch existing model paths at this step.
+
+## EPIT pipeline: adoption of reviewed compositions
+
+- **Real-data loading:** we connected the standalone EPIT loader and direct
+  evaluator to the 24 composition columns in `epit_reference_v1`. We matched
+  the source identifiers to the reviewed export and verified the export's
+  checksums, row IDs and frozen assignments. We preserved the saved numeric
+  values, including the sulfur upper-limit approximations, assumed zeros and
+  the corrected Ti/Fe row. Loading performed no new filling, Fe balancing or
+  normalization. All 760 compositions were finite and accepted.
+- **Old tolerance:** the current path stopped applying the old
+  99.9–100.1 wt.% rule. It validated the reviewed 99–101 wt.% acceptance
+  interval instead. The compositions totaling 100.52%, 99.8679% and 99.5%
+  remained unchanged and became eligible as composition templates. The
+  historical raw-workbook path retained its previous rule for reproducibility.
+- **Sampling bank:** we created
+  [`epit_dataset_v3.csv`](../src/tabicl/prior/assets/epit_dataset_v3.csv) and its
+  [metadata](../src/tabicl/prior/assets/epit_dataset_v3.json), containing
+  **400 distinct compositions** from the 760 reviewed rows. Explicit zeros
+  replaced the former distinction between missing and zero entries, so some
+  previously separate templates became identical. The family counts were
+  296 Fe, 56 Al, 18 HEA, 17 Ni–Cr–Mo and 13 Other; all were composition-eligible.
+  We recorded the source row IDs for every template. We did not normalize
+  these stored real compositions. Generated synthetic compositions retained
+  the existing perturbation and closure to 100 wt.%.
+- **Feature sampler:** we created `epit_fe_nicrmo_features_v2`, retaining the
+  earlier environment tuples, category codes and environment imputation
+  values while referencing the corrected composition bank. Its existing
+  Fe/Ni–Cr–Mo restriction remained: it used 313 eligible distinct compositions
+  from those two families. We made the new versions the standalone EPIT
+  defaults and included both profile names explicitly in new training commands.
+- **Versioning:** old composition and feature assets were preserved. Old
+  combined configurations and training commands that explicitly selected the
+  historical feature profile retained their implicit `epit_dataset_v2` bank.
+  New EPIT study identities included the reviewed export's checksums, so an
+  existing study could not silently continue with the changed composition data.
+  Future calibration exports recorded the reviewed input identity separately
+  from the original workbook and split identity. Existing formula coefficients,
+  saved predictions and checkpoints were not refitted or overwritten.
+- **Scope:** this was a composition-only pipeline update. We retained the
+  historical 28-column layout through a column-name adapter, including the old
+  environment fields and method feature. The 70-feature environment schema,
+  missing-value treatment and development-only sampling migration remained
+  separate work. The new bank retained the historical all-760-row, feature-only
+  sampling scope; it did not store or use target values. Formula fitting and
+  model selection retained their development-only boundaries. Final-model
+  evaluation retained the frozen outer queries.
+- **Checks:** we compared every loaded composition cell with the saved export,
+  checked sampling-template values against their source rows, checked direct
+  evaluation inputs, and exercised the synthetic sampler and training command
+  builders. We verified that the same 608 development rows, 152 final queries
+  and five development folds were retained. We also checked historical profile
+  loading and combined-prior compatibility. We ran no model training or new
+  formula calibration.
+
+We generated and checked the new assets with
+[`build_epit_reviewed_composition_profile.py`](../scripts/build_epit_reviewed_composition_profile.py):
+
+```bash
+.venv/bin/python -m scripts.build_epit_reviewed_composition_profile --check
+```
+
+## EPIT pipeline: development-only sampling
+
+- **Partition:** we restricted the new sampling assets to the existing outer
+  development partition. We retained the same 608 development rows, 152 frozen
+  final queries and five development folds; we created no new split.
+- **Composition bank:** we created `epit_dataset_v4`, containing 323 distinct
+  reviewed compositions from the 608 development rows. The general composition
+  bank retained its five family labels: 241 Fe, 43 Al, 13 HEA, 14 Ni–Cr–Mo and
+  12 Other templates. Every template recorded only development source row IDs.
+  No final-query composition contributed a template or family probability.
+- **Active informed sampling:** we retained the Fe/Ni–Cr–Mo family restriction.
+  The selected rows were **411 Fe and 41 Ni–Cr–Mo**, represented by **255 distinct
+  compositions**. We created `epit_fe_nicrmo_features_v3` with **452 environment
+  tuples** from those same eligible development rows. We preserved each tuple's
+  temperature, chloride, pH and test method, and retained the existing independent
+  draws of composition and environment. Other development families remained
+  outside this active informed sampling path.
+- **Sampling statistics:** we fitted numeric imputation means and the method
+  vocabulary on the 608 development rows only, preserving the earlier role of
+  these statistics across the full real development context. The vocabulary
+  contained 50 categories, of which 39 occurred in the eligible Fe/Ni–Cr–Mo
+  environment bank. Its missing-value counts were 37 temperatures, zero chloride
+  concentrations and 38 pH values. Final-query conditions and categories did not
+  contribute to these statistics. Neither development nor final-query target
+  values were used to build the sampling assets.
+- **Defaults and compatibility:** we switched the standalone EPIT defaults and
+  generated training commands to the new profiles. Training commands obtained
+  the method-category count from the selected profile. Old profiles and their
+  composition-bank pairings remained available for historical runs. Study
+  fingerprints continued to record the selected profile identities, preventing
+  reuse of an existing study under silently changed sampling inputs.
+- **Scope:** we changed only the sampling partition and the statistics derived
+  from it. We retained the formulas, their coefficients, the family-selection
+  rule and the 28-column layout. We did not activate the expanded environment
+  schema or change model missing-value handling. This was outer final-query
+  exclusion; the sampling bank used the full development partition rather than
+  separate banks for each inner development fold. Frozen final-model evaluation
+  still used the frozen outer queries.
+- **Validation:** we checked that all composition sources, environment sources
+  and preprocessing sources belonged to development. A regression test changed
+  every final-query composition, environment value, method and family label,
+  plus all target values, and confirmed that the generated assets were identical.
+  We also checked reproducible generation, sampler output, new training commands
+  and historical profile compatibility. The relevant suite passed 111 tests.
+  Checksums confirmed that the previous assets, processed datasets, frozen split
+  and saved formula artifacts were unchanged. We ran no model training.
+
+We built the new assets with
+[`build_epit_development_profiles.py`](../scripts/build_epit_development_profiles.py)
+and checked them with:
+
+```bash
+.venv/bin/python -m scripts.build_epit_development_profiles --check
+```
+
+## EPIT pipeline: 70-column environment sampling
+
+- **Inputs:** we expanded the default EPIT SCM-plus-formula generator from 28
+  inputs to the exact **70-column order** in `epit_reference_v1/feature_registry.json`:
+  24 composition features followed by 46 environment/history/measurement features.
+  We retained the saved names and units, including separate molar, normal and
+  weight-percent solution concentrations. We kept sparse and constant columns.
+- **Sampling bank:** we created `epit_fe_nicrmo_features_v4.csv/json`, paired with
+  the existing `epit_dataset_v4` composition bank. We used the same **411 Fe and
+  41 Ni–Cr–Mo development rows** and the same 255 eligible composition templates.
+  We retained the existing composition perturbation and family-selection rules.
+- **Related fields:** we sampled all 46 non-composition fields together from
+  one development row. This kept solution identity, reported concentrations,
+  temperature, pH, preparation, heat treatment, phase flags and missingness
+  together. We retained the earlier independent draws of composition and
+  environment; we did not introduce a new composition/environment matching rule.
+- **Corrected environment:** we read the reviewed columns rather than the old
+  workbook environment fields. In particular, the contradictory chloride value
+  for `epit_r000148` remained missing. The eligible sampling bank contained
+  37 missing temperatures, one missing chloride value and 38 missing pH values.
+- **Categories:** we fitted the nine categorical vocabularies on the 608 outer
+  development rows only. Synthetic sampling and expanded real-data evaluation
+  used the same codes. Unknown or missing categories remained missing; final
+  queries did not contribute categories or statistics.
+- **Missing values:** we preserved unknown environment values as `NaN` in the
+  synthetic model inputs and enabled the model's learned missing-value embedding.
+  We retained the exact missingness pattern of the sampled environment row.
+  We added no independent missingness augmentation. Composition inputs remained
+  complete, including their accepted zeros. Entirely unknown environment columns,
+  including `WO4_mol_L` and `CP_SO4` in development, remained missing model inputs.
+- **Internal target calculation:** the SCM and formulas required finite values.
+  For those calculations only, we filled missing numeric fields with development
+  means and categorical fields with development modes. An entirely unobserved
+  field used a zero placeholder internally. We restored the observed missingness
+  before passing inputs to the model; these placeholders did not become reported
+  measurements or visible replacements for missing cells.
+- **Formulas:** we retained the existing nine formula definitions, coefficients,
+  Fe/Ni–Cr–Mo handling and SCM/formula mixing procedure. The SCM received all 70
+  fields. The formulas received a separate projection containing composition,
+  temperature, chloride, pH and the original auxiliary test-method code.
+  The raw test-method field was **not** included among the 70 model inputs.
+  We fitted no new formula coefficients during this update.
+- **Training and evaluation:** we connected the new schema to the default EPIT
+  Optuna and final-training commands. They selected 70 inputs and enabled the
+  missing-value embedding. Optional Magpie descriptors increased the input count
+  to 80. Generated evaluation commands used `--epit-expanded-features` and the
+  matching missing-aware model setting. Final-model evaluation retained all
+  **152 frozen outer queries**; development folds remained for model selection.
+- **Versioning:** we used the new default study name
+  `epit_pipeline_optuna_empirical_features_scm_target_v9`. Study fingerprints
+  recorded the expanded schema and profile identity, and evaluation checks
+  rejected a mismatched schema. We preserved earlier assets and explicit
+  legacy 28-column paths, including the previous EPIT-only empirical mode.
+  The existing combined and Soccol workflows were not migrated by this update.
+- **Validation:** 262 relevant regression tests passed, including all nine
+  formula projections, both SCM generators, optional Magpie descriptors,
+  frozen-query selection and historical Soccol/combined compatibility. One
+  small CPU training step verified that the sampled missingness reached the
+  model and produced finite training results. A mutation test changed all
+  final-query features and all target values without changing the sampling
+  assets. We verified reproducible asset generation. No full model training or
+  Optuna search was run.
+
+We built the new profile with
+[`build_epit_expanded_feature_profile.py`](../scripts/build_epit_expanded_feature_profile.py)
+and checked it with:
+
+```bash
+.venv/bin/python -m scripts.build_epit_expanded_feature_profile --check
+```
+
+## EPIT pipeline: formula refit on reviewed inputs
+
+- **Input source:** we connected formula fitting to `epit_reference_v1` through
+  `scripts/epit_pipeline/formula_data.py`. We used the saved composition values
+  and mapped `CP_temp`, `CP_Cl` and `CP_pH` to the formulas' existing temperature,
+  chloride and pH inputs. The auxiliary test-method value also came from the
+  reviewed export. The historical loader and existing sampling assets were retained.
+- **Missing values:** we preserved missing environment values during loading.
+  Within each development fold, each formula fitted its filling values and
+  scaling from its applicable context rows only. Validation rows and final
+  queries did not contribute these statistics. We retained complete composition
+  values, including zeros, without normalization.
+- **Corrections adopted:** relative to the historical loader, the input audit
+  recorded 21 changed numeric cells across six rows. The environment changes
+  were two chloride values that the reviewed dataset had left missing:
+  `epit_r000148` (Fe) and `epit_r000756` (Al). Only the Fe row belonged to the
+  nine formulas' fitting population. Temperature and pH values were unchanged.
+  The audit also recorded the existing reviewed composition corrections.
+- **Rules and fitting:** we retained the same nine formula definitions, term
+  order, coefficient anchors, bounds, regularization and alloy applicability.
+  We refitted each formula on the context portion of each of the same five
+  development folds, and scored its held-out development rows. We then fitted
+  its final coefficient center on all **452 eligible development rows: 411 Fe
+  and 41 Ni–Cr–Mo**. We masked all **152 frozen final-query targets** before
+  calibration. No final-query values were used for fitting or scoring.
+- **Outputs:** we saved the new coefficient centers, fold-specific coefficients,
+  preprocessing states, scores, predictions and HTML report in
+  [`target_rules_v4/`](analysis/epit_pipeline/target_rules_v4/).
+  We retained `target_rules_v2` and `target_rules_v3` unchanged. Each new artifact
+  recorded the reviewed input identity and frozen split hashes.
+- **Pipeline defaults:** Python and Slurm EPIT launchers were connected to
+  `target_rules_v4` and the v9 study. The generated training command passed the
+  refitted coefficients and new formula scores to the prior. Existing checks
+  continued to reject mixing incompatible studies or altered artifacts.
+- **Results:** the average Spearman scores across the five development folds
+  changed only slightly. The largest absolute change was **0.0034**.
+  `method_aware_pren_n` remained the strongest of these nine formulas, at
+  **0.5908**. These were formula scores on development folds, not final-model
+  evaluation scores.
+
+| Formula | Previous mean fold Spearman | Reviewed-input refit |
+| --- | ---: | ---: |
+| `pren_n_linear` | 0.5061 | 0.5060 |
+| `cr_mow_n_synergy` | 0.5335 | 0.5339 |
+| `threshold_saturation` | 0.5122 | 0.5101 |
+| `pren_n_improved_environment` | 0.5517 | 0.5505 |
+| `mo_n_acid_repassivation` | 0.5514 | 0.5494 |
+| `mns_inclusion_penalty` | 0.5695 | 0.5708 |
+| `coupled_breakdown` | 0.5313 | 0.5340 |
+| `fe_ni_cr_threshold` | 0.5246 | 0.5212 |
+| `method_aware_pren_n` | 0.5904 | 0.5908 |
+
+- **Validation:** 164 relevant tests passed. For each of the nine formulas,
+  changing every final-query feature and removing its target left fitted
+  coefficients and development predictions unchanged. We checked context-only
+  filling values, unchanged formula definitions, artifact loading and prior
+  integration. The three updated Slurm launchers passed shell syntax checks.
+  No Optuna search or full model training was run.
+
+We ran the refit with:
+
+```bash
+.venv/bin/python -m scripts.epit_pipeline.calibrate_target_rules
+```
+
+The command refused to overwrite existing outputs without an explicit `--force`.
+The before/after scores were saved in
+[`comparison_vs_v3.csv`](analysis/epit_pipeline/target_rules_v4/comparison_vs_v3.csv),
+and the changed input cells in
+[`formula_input_changes_vs_legacy.csv`](analysis/epit_pipeline/target_rules_v4/formula_input_changes_vs_legacy.csv).
+
+## EPIT pipeline: fixed informed share and broader Optuna ranges
+
+- **Informed share:** we fixed the current EPIT Optuna search at **100% informed**
+  and removed `informed_prior_ratio` from its sampled parameters. We recorded
+  the fixed value in the study fingerprint and generated training commands.
+- **Search ranges:** we retained the full **0–1** formula contribution range,
+  changed the MLP share from discrete choices to continuous **0–1**, and widened
+  composition perturbation strength from **0–0.15 to 0–0.30**. The tree share
+  remained one minus the MLP share. Perturbation strength remained the existing
+  sampler parameter, rather than a percentage-point change in composition.
+- **Versioning:** we changed the Python and Slurm defaults to
+  `epit_pipeline_optuna_empirical_features_scm_target_v10`. The fingerprint
+  recorded the revised ranges and rejected incompatible study reuse. Earlier
+  studies, Soccol settings and explicit historical EPIT modes were retained.
+- **Final training:** we reconstructed the selected configuration using the
+  study's saved fixed ratio. We preserved the final-training override for the
+  planned **25%, 50%, 75% and 100%** informed comparison, without changing the
+  other selected settings. Overrides were recorded separately from the selected
+  trial and received distinct default output paths.
+- **Data and evaluation:** we retained the reviewed 70-column inputs, nine
+  formulas in `target_rules_v4`, 50-trial default and 1,000-step trial budget.
+  Selection continued to use the same five development folds. Final-model
+  evaluation continued to use the **152 frozen outer queries**.
+- **Validation:** 106 relevant tests passed, including actual Optuna parameter
+  sampling, saved-trial reconstruction, the four final-training ratio overrides,
+  incompatible-study rejection and Soccol compatibility. Two preview trials
+  generated commands at 100% informed, including a perturbation strength above
+  the previous 0.15 limit. The three launchers passed shell syntax checks. No
+  Optuna training or full model training was run.

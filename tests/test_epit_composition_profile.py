@@ -17,23 +17,48 @@ from tabicl.prior.prior_config import DEFAULT_FIXED_HP
 from tabicl.train.train_config import build_parser
 
 
-def test_epit_dataset_v2_profile_exposes_all_elements_and_filters_templates():
+def test_reviewed_profile_exposes_all_elements_without_old_exclusions():
     profile = load_epit_composition_profile()
 
     assert profile.name == EPIT_COMPOSITION_PROFILE
-    assert profile.template_values.shape == (403, 24)
-    assert profile.observed_template_values.shape == (403, 24)
-    assert profile.template_missing_mask.shape == (403, 24)
-    assert profile.n_eligible_templates == 400
-    assert {
-        profile.template_ids[index]
-        for index in np.flatnonzero(~profile.template_eligible_mask)
-    } == {"epit_0314", "epit_0326", "epit_0390"}
+    assert profile.template_values.shape == (323, 24)
+    assert profile.observed_template_values.shape == (323, 24)
+    assert profile.template_missing_mask.shape == (323, 24)
+    assert profile.n_eligible_templates == 323
+    assert profile.template_eligible_mask.all()
+    assert not profile.template_missing_mask.any()
     assert tuple(np.bincount(profile.template_family_indices[profile.template_eligible_mask], minlength=len(profile.families))) == EPIT_COMPOSITION_FAMILY_COUNTS
     assert np.isclose(sum(profile.family_probabilities), 1.0)
     assert np.allclose(profile.family_probabilities, EPIT_COMPOSITION_FAMILY_PROBS)
     assert np.all((np.nansum(profile.template_values, axis=1) >= 99.0))
     assert np.all((np.nansum(profile.template_values, axis=1) <= 101.0))
+
+
+def test_reviewed_bank_contains_exact_saved_compositions_including_accepted_totals():
+    from scripts.epit_pipeline.composition_data import load_reviewed_compositions
+
+    profile = load_epit_composition_profile()
+    reviewed = load_reviewed_compositions().rows.set_index("row_id")
+    for index, template_id in enumerate(profile.template_ids):
+        source_ids = profile.metadata["template_source_row_ids"][template_id]
+        for row_id in source_ids:
+            np.testing.assert_allclose(profile.template_values[index], reviewed.loc[row_id, list(profile.elements)].to_numpy(float), rtol=0, atol=1e-12)
+    assert np.isclose(profile.template_values.sum(axis=1), 99.5).any()
+
+
+def test_epit_dataset_v3_preserves_all_reviewed_rows_for_historical_runs():
+    profile = load_epit_composition_profile("epit_dataset_v3")
+    assert profile.n_templates == 400
+    assert profile.n_eligible_templates == 400
+    for total in (100.52, 99.8679, 99.5):
+        assert np.isclose(profile.template_values.sum(axis=1), total).any()
+
+
+def test_epit_dataset_v2_remains_an_explicit_historical_profile():
+    profile = load_epit_composition_profile("epit_dataset_v2")
+    assert profile.n_templates == 403
+    assert profile.n_eligible_templates == 400
+    assert {profile.template_ids[i] for i in np.flatnonzero(~profile.template_eligible_mask)} == {"epit_0314", "epit_0326", "epit_0390"}
 
 
 def test_epit_dataset_v1_remains_an_explicit_historical_profile():

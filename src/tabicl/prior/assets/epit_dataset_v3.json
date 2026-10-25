@@ -1,0 +1,1714 @@
+{
+  "profile_name": "epit_dataset_v3",
+  "profile_version": 3,
+  "description": "Reviewed EPIT compositions kept exactly as saved, before synthetic perturbation.",
+  "source_dataset": "electrochemical_metrics_alloys",
+  "source_sheet": "Pitting Potential",
+  "reviewed_composition": {
+    "version": "epit_reference_v1",
+    "files_sha256": {
+      "epit_processed.csv": "ece0d88c8457da5e21bbaf85b7935ee6f254674eb67aa1193941c44e7800133c",
+      "composition_row_audit.csv": "8302ed82bbd289966a76b10221a2bdab924fae44e37d1807d30d2f064b9c5637",
+      "split_assignments.csv": "a16d47dd41ce77f143f868995ebf8689737a6f35fca8a98faec62d7e128290d8",
+      "feature_registry.json": "061304c1ccbb4343c98f54b02bcef01bd577301cf77119f6813c26590ac7c9e6"
+    },
+    "split_manifest_sha256": "b151505356908814729ae6027660b89739c11dc463ed3b1f10630b001d1b837c",
+    "composition_columns": [
+      "Fe",
+      "Cr",
+      "Ni",
+      "Mo",
+      "W",
+      "N",
+      "Nb",
+      "C",
+      "Si",
+      "Mn",
+      "Cu",
+      "P",
+      "S",
+      "Al",
+      "V",
+      "Ta",
+      "Re",
+      "Ce",
+      "Ti",
+      "Co",
+      "B",
+      "Mg",
+      "Y",
+      "Gd"
+    ],
+    "accepted_total_wt_percent": [
+      99.0,
+      101.0
+    ]
+  },
+  "source_rows": 810,
+  "usable_rows": 760,
+  "distinct_templates": 400,
+  "row_filter": "All 760 reviewed usable EPIT rows, retaining the historical feature-only bank scope; no targets stored or used.",
+  "deduplication": "First exact saved vector per 6-decimal key; missing and explicit zero no longer create duplicate templates.",
+  "elements": [
+    "Fe",
+    "Cr",
+    "Ni",
+    "Mo",
+    "W",
+    "N",
+    "Nb",
+    "C",
+    "Si",
+    "Mn",
+    "Cu",
+    "P",
+    "S",
+    "Al",
+    "V",
+    "Ta",
+    "Re",
+    "Ce",
+    "Ti",
+    "Co",
+    "B",
+    "Mg",
+    "Y",
+    "Gd"
+  ],
+  "observed_elements": [
+    "Fe",
+    "Cr",
+    "Ni",
+    "Mo",
+    "W",
+    "N",
+    "Nb",
+    "C",
+    "Si",
+    "Mn",
+    "Cu",
+    "P",
+    "S",
+    "Al",
+    "V",
+    "Ta",
+    "Re",
+    "Ce",
+    "Ti",
+    "Co",
+    "B",
+    "Mg",
+    "Y",
+    "Gd"
+  ],
+  "omitted_elements": [],
+  "families": [
+    "fe_alloy",
+    "al_alloy",
+    "hea",
+    "nicrmo_alloy",
+    "other"
+  ],
+  "family_display_names": {
+    "fe_alloy": "Fe Alloy",
+    "al_alloy": "Al Alloy",
+    "hea": "HEA",
+    "nicrmo_alloy": "NiCrMo Alloy",
+    "other": "Other"
+  },
+  "family_template_counts": {
+    "fe_alloy": 296,
+    "al_alloy": 56,
+    "hea": 18,
+    "nicrmo_alloy": 17,
+    "other": 13
+  },
+  "pretraining_template_policy": {
+    "closure_target_wt_percent": 100.0,
+    "closure_tolerance_wt_percent": 1.0,
+    "missing_values_for_eligible_templates": "None; all reviewed template amounts were already finite.",
+    "evaluation_rows_removed": 0,
+    "eligible_templates": 400,
+    "excluded_template_ids": [],
+    "eligible_family_template_counts": {
+      "fe_alloy": 296,
+      "al_alloy": 56,
+      "hea": 18,
+      "nicrmo_alloy": 17,
+      "other": 13
+    }
+  },
+  "default_family_probabilities": {
+    "fe_alloy": 0.74,
+    "al_alloy": 0.14,
+    "hea": 0.045,
+    "nicrmo_alloy": 0.0425,
+    "other": 0.0325
+  },
+  "template_source_row_ids": {
+    "epit_reviewed_0001": [
+      "epit_r000001",
+      "epit_r000002",
+      "epit_r000003",
+      "epit_r000004",
+      "epit_r000005"
+    ],
+    "epit_reviewed_0002": [
+      "epit_r000006",
+      "epit_r000007",
+      "epit_r000008",
+      "epit_r000009",
+      "epit_r000010"
+    ],
+    "epit_reviewed_0003": [
+      "epit_r000011",
+      "epit_r000012",
+      "epit_r000013",
+      "epit_r000014",
+      "epit_r000015"
+    ],
+    "epit_reviewed_0004": [
+      "epit_r000016",
+      "epit_r000017",
+      "epit_r000018",
+      "epit_r000019",
+      "epit_r000020"
+    ],
+    "epit_reviewed_0005": [
+      "epit_r000021",
+      "epit_r000022",
+      "epit_r000023",
+      "epit_r000024",
+      "epit_r000025"
+    ],
+    "epit_reviewed_0006": [
+      "epit_r000026",
+      "epit_r000027",
+      "epit_r000028",
+      "epit_r000029",
+      "epit_r000030"
+    ],
+    "epit_reviewed_0007": [
+      "epit_r000031",
+      "epit_r000032",
+      "epit_r000033",
+      "epit_r000034",
+      "epit_r000035"
+    ],
+    "epit_reviewed_0008": [
+      "epit_r000036",
+      "epit_r000037",
+      "epit_r000038",
+      "epit_r000039",
+      "epit_r000040"
+    ],
+    "epit_reviewed_0009": [
+      "epit_r000041",
+      "epit_r000042",
+      "epit_r000043",
+      "epit_r000044",
+      "epit_r000045"
+    ],
+    "epit_reviewed_0010": [
+      "epit_r000046",
+      "epit_r000047",
+      "epit_r000048",
+      "epit_r000049",
+      "epit_r000050"
+    ],
+    "epit_reviewed_0011": [
+      "epit_r000051",
+      "epit_r000052",
+      "epit_r000053",
+      "epit_r000054",
+      "epit_r000055"
+    ],
+    "epit_reviewed_0012": [
+      "epit_r000056",
+      "epit_r000057",
+      "epit_r000058",
+      "epit_r000059",
+      "epit_r000060"
+    ],
+    "epit_reviewed_0013": [
+      "epit_r000061",
+      "epit_r000062",
+      "epit_r000063",
+      "epit_r000064",
+      "epit_r000065"
+    ],
+    "epit_reviewed_0014": [
+      "epit_r000066"
+    ],
+    "epit_reviewed_0015": [
+      "epit_r000067"
+    ],
+    "epit_reviewed_0016": [
+      "epit_r000068"
+    ],
+    "epit_reviewed_0017": [
+      "epit_r000069",
+      "epit_r000253"
+    ],
+    "epit_reviewed_0018": [
+      "epit_r000070",
+      "epit_r000254"
+    ],
+    "epit_reviewed_0019": [
+      "epit_r000071",
+      "epit_r000255"
+    ],
+    "epit_reviewed_0020": [
+      "epit_r000072",
+      "epit_r000256"
+    ],
+    "epit_reviewed_0021": [
+      "epit_r000073",
+      "epit_r000257"
+    ],
+    "epit_reviewed_0022": [
+      "epit_r000074"
+    ],
+    "epit_reviewed_0023": [
+      "epit_r000075",
+      "epit_r000259"
+    ],
+    "epit_reviewed_0024": [
+      "epit_r000076",
+      "epit_r000260"
+    ],
+    "epit_reviewed_0025": [
+      "epit_r000077",
+      "epit_r000261"
+    ],
+    "epit_reviewed_0026": [
+      "epit_r000078",
+      "epit_r000262"
+    ],
+    "epit_reviewed_0027": [
+      "epit_r000079",
+      "epit_r000263"
+    ],
+    "epit_reviewed_0028": [
+      "epit_r000080",
+      "epit_r000264"
+    ],
+    "epit_reviewed_0029": [
+      "epit_r000081",
+      "epit_r000265"
+    ],
+    "epit_reviewed_0030": [
+      "epit_r000082",
+      "epit_r000266"
+    ],
+    "epit_reviewed_0031": [
+      "epit_r000083",
+      "epit_r000267"
+    ],
+    "epit_reviewed_0032": [
+      "epit_r000084",
+      "epit_r000268"
+    ],
+    "epit_reviewed_0033": [
+      "epit_r000085",
+      "epit_r000269"
+    ],
+    "epit_reviewed_0034": [
+      "epit_r000086",
+      "epit_r000270"
+    ],
+    "epit_reviewed_0035": [
+      "epit_r000087",
+      "epit_r000271"
+    ],
+    "epit_reviewed_0036": [
+      "epit_r000088",
+      "epit_r000530",
+      "epit_r000533",
+      "epit_r000534",
+      "epit_r000535"
+    ],
+    "epit_reviewed_0037": [
+      "epit_r000089",
+      "epit_r000091",
+      "epit_r000095",
+      "epit_r000531"
+    ],
+    "epit_reviewed_0038": [
+      "epit_r000090",
+      "epit_r000092",
+      "epit_r000096",
+      "epit_r000532"
+    ],
+    "epit_reviewed_0039": [
+      "epit_r000093",
+      "epit_r000097"
+    ],
+    "epit_reviewed_0040": [
+      "epit_r000094",
+      "epit_r000098"
+    ],
+    "epit_reviewed_0041": [
+      "epit_r000099",
+      "epit_r000102"
+    ],
+    "epit_reviewed_0042": [
+      "epit_r000100",
+      "epit_r000103"
+    ],
+    "epit_reviewed_0043": [
+      "epit_r000101",
+      "epit_r000104"
+    ],
+    "epit_reviewed_0044": [
+      "epit_r000105",
+      "epit_r000109"
+    ],
+    "epit_reviewed_0045": [
+      "epit_r000106",
+      "epit_r000110"
+    ],
+    "epit_reviewed_0046": [
+      "epit_r000107",
+      "epit_r000111"
+    ],
+    "epit_reviewed_0047": [
+      "epit_r000108",
+      "epit_r000112"
+    ],
+    "epit_reviewed_0048": [
+      "epit_r000113",
+      "epit_r000117"
+    ],
+    "epit_reviewed_0049": [
+      "epit_r000114",
+      "epit_r000118"
+    ],
+    "epit_reviewed_0050": [
+      "epit_r000115",
+      "epit_r000119"
+    ],
+    "epit_reviewed_0051": [
+      "epit_r000116",
+      "epit_r000120"
+    ],
+    "epit_reviewed_0052": [
+      "epit_r000121",
+      "epit_r000127"
+    ],
+    "epit_reviewed_0053": [
+      "epit_r000122",
+      "epit_r000128"
+    ],
+    "epit_reviewed_0054": [
+      "epit_r000123",
+      "epit_r000129"
+    ],
+    "epit_reviewed_0055": [
+      "epit_r000124",
+      "epit_r000130",
+      "epit_r000133",
+      "epit_r000134",
+      "epit_r000135",
+      "epit_r000136",
+      "epit_r000137"
+    ],
+    "epit_reviewed_0056": [
+      "epit_r000125",
+      "epit_r000131"
+    ],
+    "epit_reviewed_0057": [
+      "epit_r000126",
+      "epit_r000132"
+    ],
+    "epit_reviewed_0058": [
+      "epit_r000138",
+      "epit_r000139",
+      "epit_r000140",
+      "epit_r000141"
+    ],
+    "epit_reviewed_0059": [
+      "epit_r000142"
+    ],
+    "epit_reviewed_0060": [
+      "epit_r000143"
+    ],
+    "epit_reviewed_0061": [
+      "epit_r000144"
+    ],
+    "epit_reviewed_0062": [
+      "epit_r000145"
+    ],
+    "epit_reviewed_0063": [
+      "epit_r000146"
+    ],
+    "epit_reviewed_0064": [
+      "epit_r000147"
+    ],
+    "epit_reviewed_0065": [
+      "epit_r000148",
+      "epit_r000149",
+      "epit_r000150",
+      "epit_r000151"
+    ],
+    "epit_reviewed_0066": [
+      "epit_r000152"
+    ],
+    "epit_reviewed_0067": [
+      "epit_r000153",
+      "epit_r000154",
+      "epit_r000155",
+      "epit_r000156"
+    ],
+    "epit_reviewed_0068": [
+      "epit_r000157",
+      "epit_r000158",
+      "epit_r000159",
+      "epit_r000160"
+    ],
+    "epit_reviewed_0069": [
+      "epit_r000161"
+    ],
+    "epit_reviewed_0070": [
+      "epit_r000162"
+    ],
+    "epit_reviewed_0071": [
+      "epit_r000163"
+    ],
+    "epit_reviewed_0072": [
+      "epit_r000164"
+    ],
+    "epit_reviewed_0073": [
+      "epit_r000165"
+    ],
+    "epit_reviewed_0074": [
+      "epit_r000166"
+    ],
+    "epit_reviewed_0075": [
+      "epit_r000167"
+    ],
+    "epit_reviewed_0076": [
+      "epit_r000168"
+    ],
+    "epit_reviewed_0077": [
+      "epit_r000169"
+    ],
+    "epit_reviewed_0078": [
+      "epit_r000170"
+    ],
+    "epit_reviewed_0079": [
+      "epit_r000171"
+    ],
+    "epit_reviewed_0080": [
+      "epit_r000172"
+    ],
+    "epit_reviewed_0081": [
+      "epit_r000173"
+    ],
+    "epit_reviewed_0082": [
+      "epit_r000174"
+    ],
+    "epit_reviewed_0083": [
+      "epit_r000175"
+    ],
+    "epit_reviewed_0084": [
+      "epit_r000176"
+    ],
+    "epit_reviewed_0085": [
+      "epit_r000177"
+    ],
+    "epit_reviewed_0086": [
+      "epit_r000178"
+    ],
+    "epit_reviewed_0087": [
+      "epit_r000179"
+    ],
+    "epit_reviewed_0088": [
+      "epit_r000180"
+    ],
+    "epit_reviewed_0089": [
+      "epit_r000181",
+      "epit_r000489",
+      "epit_r000490",
+      "epit_r000491",
+      "epit_r000492",
+      "epit_r000493",
+      "epit_r000494",
+      "epit_r000495",
+      "epit_r000496",
+      "epit_r000497"
+    ],
+    "epit_reviewed_0090": [
+      "epit_r000182"
+    ],
+    "epit_reviewed_0091": [
+      "epit_r000183",
+      "epit_r000201"
+    ],
+    "epit_reviewed_0092": [
+      "epit_r000184"
+    ],
+    "epit_reviewed_0093": [
+      "epit_r000185"
+    ],
+    "epit_reviewed_0094": [
+      "epit_r000186"
+    ],
+    "epit_reviewed_0095": [
+      "epit_r000187"
+    ],
+    "epit_reviewed_0096": [
+      "epit_r000188"
+    ],
+    "epit_reviewed_0097": [
+      "epit_r000189"
+    ],
+    "epit_reviewed_0098": [
+      "epit_r000190"
+    ],
+    "epit_reviewed_0099": [
+      "epit_r000191"
+    ],
+    "epit_reviewed_0100": [
+      "epit_r000192"
+    ],
+    "epit_reviewed_0101": [
+      "epit_r000193"
+    ],
+    "epit_reviewed_0102": [
+      "epit_r000194"
+    ],
+    "epit_reviewed_0103": [
+      "epit_r000195"
+    ],
+    "epit_reviewed_0104": [
+      "epit_r000196"
+    ],
+    "epit_reviewed_0105": [
+      "epit_r000197"
+    ],
+    "epit_reviewed_0106": [
+      "epit_r000198"
+    ],
+    "epit_reviewed_0107": [
+      "epit_r000199"
+    ],
+    "epit_reviewed_0108": [
+      "epit_r000200"
+    ],
+    "epit_reviewed_0109": [
+      "epit_r000202",
+      "epit_r000204"
+    ],
+    "epit_reviewed_0110": [
+      "epit_r000203",
+      "epit_r000205"
+    ],
+    "epit_reviewed_0111": [
+      "epit_r000206",
+      "epit_r000207"
+    ],
+    "epit_reviewed_0112": [
+      "epit_r000208"
+    ],
+    "epit_reviewed_0113": [
+      "epit_r000209",
+      "epit_r000210"
+    ],
+    "epit_reviewed_0114": [
+      "epit_r000211",
+      "epit_r000214",
+      "epit_r000217",
+      "epit_r000220"
+    ],
+    "epit_reviewed_0115": [
+      "epit_r000212",
+      "epit_r000215",
+      "epit_r000218",
+      "epit_r000221"
+    ],
+    "epit_reviewed_0116": [
+      "epit_r000213",
+      "epit_r000216",
+      "epit_r000219",
+      "epit_r000222"
+    ],
+    "epit_reviewed_0117": [
+      "epit_r000223"
+    ],
+    "epit_reviewed_0118": [
+      "epit_r000224"
+    ],
+    "epit_reviewed_0119": [
+      "epit_r000225"
+    ],
+    "epit_reviewed_0120": [
+      "epit_r000226"
+    ],
+    "epit_reviewed_0121": [
+      "epit_r000227"
+    ],
+    "epit_reviewed_0122": [
+      "epit_r000228"
+    ],
+    "epit_reviewed_0123": [
+      "epit_r000229"
+    ],
+    "epit_reviewed_0124": [
+      "epit_r000230"
+    ],
+    "epit_reviewed_0125": [
+      "epit_r000231"
+    ],
+    "epit_reviewed_0126": [
+      "epit_r000232"
+    ],
+    "epit_reviewed_0127": [
+      "epit_r000233",
+      "epit_r000246"
+    ],
+    "epit_reviewed_0128": [
+      "epit_r000234",
+      "epit_r000247"
+    ],
+    "epit_reviewed_0129": [
+      "epit_r000235"
+    ],
+    "epit_reviewed_0130": [
+      "epit_r000236",
+      "epit_r000248"
+    ],
+    "epit_reviewed_0131": [
+      "epit_r000237",
+      "epit_r000249"
+    ],
+    "epit_reviewed_0132": [
+      "epit_r000238",
+      "epit_r000250"
+    ],
+    "epit_reviewed_0133": [
+      "epit_r000239"
+    ],
+    "epit_reviewed_0134": [
+      "epit_r000240"
+    ],
+    "epit_reviewed_0135": [
+      "epit_r000241"
+    ],
+    "epit_reviewed_0136": [
+      "epit_r000242"
+    ],
+    "epit_reviewed_0137": [
+      "epit_r000243"
+    ],
+    "epit_reviewed_0138": [
+      "epit_r000244"
+    ],
+    "epit_reviewed_0139": [
+      "epit_r000245"
+    ],
+    "epit_reviewed_0140": [
+      "epit_r000251"
+    ],
+    "epit_reviewed_0141": [
+      "epit_r000252"
+    ],
+    "epit_reviewed_0142": [
+      "epit_r000258"
+    ],
+    "epit_reviewed_0143": [
+      "epit_r000272",
+      "epit_r000277"
+    ],
+    "epit_reviewed_0144": [
+      "epit_r000273",
+      "epit_r000278"
+    ],
+    "epit_reviewed_0145": [
+      "epit_r000274",
+      "epit_r000279"
+    ],
+    "epit_reviewed_0146": [
+      "epit_r000275",
+      "epit_r000280"
+    ],
+    "epit_reviewed_0147": [
+      "epit_r000276",
+      "epit_r000281"
+    ],
+    "epit_reviewed_0148": [
+      "epit_r000282",
+      "epit_r000288"
+    ],
+    "epit_reviewed_0149": [
+      "epit_r000283",
+      "epit_r000289"
+    ],
+    "epit_reviewed_0150": [
+      "epit_r000284",
+      "epit_r000290"
+    ],
+    "epit_reviewed_0151": [
+      "epit_r000285",
+      "epit_r000291"
+    ],
+    "epit_reviewed_0152": [
+      "epit_r000286",
+      "epit_r000292"
+    ],
+    "epit_reviewed_0153": [
+      "epit_r000287",
+      "epit_r000293"
+    ],
+    "epit_reviewed_0154": [
+      "epit_r000294"
+    ],
+    "epit_reviewed_0155": [
+      "epit_r000295"
+    ],
+    "epit_reviewed_0156": [
+      "epit_r000296",
+      "epit_r000301"
+    ],
+    "epit_reviewed_0157": [
+      "epit_r000297",
+      "epit_r000302"
+    ],
+    "epit_reviewed_0158": [
+      "epit_r000298",
+      "epit_r000303"
+    ],
+    "epit_reviewed_0159": [
+      "epit_r000299",
+      "epit_r000304"
+    ],
+    "epit_reviewed_0160": [
+      "epit_r000300"
+    ],
+    "epit_reviewed_0161": [
+      "epit_r000305"
+    ],
+    "epit_reviewed_0162": [
+      "epit_r000306"
+    ],
+    "epit_reviewed_0163": [
+      "epit_r000307"
+    ],
+    "epit_reviewed_0164": [
+      "epit_r000308"
+    ],
+    "epit_reviewed_0165": [
+      "epit_r000309",
+      "epit_r000313"
+    ],
+    "epit_reviewed_0166": [
+      "epit_r000310"
+    ],
+    "epit_reviewed_0167": [
+      "epit_r000311",
+      "epit_r000314"
+    ],
+    "epit_reviewed_0168": [
+      "epit_r000312"
+    ],
+    "epit_reviewed_0169": [
+      "epit_r000315"
+    ],
+    "epit_reviewed_0170": [
+      "epit_r000316"
+    ],
+    "epit_reviewed_0171": [
+      "epit_r000317"
+    ],
+    "epit_reviewed_0172": [
+      "epit_r000318"
+    ],
+    "epit_reviewed_0173": [
+      "epit_r000319",
+      "epit_r000320",
+      "epit_r000321",
+      "epit_r000322",
+      "epit_r000323"
+    ],
+    "epit_reviewed_0174": [
+      "epit_r000324",
+      "epit_r000325"
+    ],
+    "epit_reviewed_0175": [
+      "epit_r000326",
+      "epit_r000327",
+      "epit_r000328"
+    ],
+    "epit_reviewed_0176": [
+      "epit_r000329",
+      "epit_r000330",
+      "epit_r000331"
+    ],
+    "epit_reviewed_0177": [
+      "epit_r000332"
+    ],
+    "epit_reviewed_0178": [
+      "epit_r000333"
+    ],
+    "epit_reviewed_0179": [
+      "epit_r000334"
+    ],
+    "epit_reviewed_0180": [
+      "epit_r000335"
+    ],
+    "epit_reviewed_0181": [
+      "epit_r000336",
+      "epit_r000342"
+    ],
+    "epit_reviewed_0182": [
+      "epit_r000337"
+    ],
+    "epit_reviewed_0183": [
+      "epit_r000338"
+    ],
+    "epit_reviewed_0184": [
+      "epit_r000339",
+      "epit_r000344"
+    ],
+    "epit_reviewed_0185": [
+      "epit_r000340",
+      "epit_r000345"
+    ],
+    "epit_reviewed_0186": [
+      "epit_r000341"
+    ],
+    "epit_reviewed_0187": [
+      "epit_r000343"
+    ],
+    "epit_reviewed_0188": [
+      "epit_r000346"
+    ],
+    "epit_reviewed_0189": [
+      "epit_r000347"
+    ],
+    "epit_reviewed_0190": [
+      "epit_r000348"
+    ],
+    "epit_reviewed_0191": [
+      "epit_r000349"
+    ],
+    "epit_reviewed_0192": [
+      "epit_r000350"
+    ],
+    "epit_reviewed_0193": [
+      "epit_r000351"
+    ],
+    "epit_reviewed_0194": [
+      "epit_r000352"
+    ],
+    "epit_reviewed_0195": [
+      "epit_r000353"
+    ],
+    "epit_reviewed_0196": [
+      "epit_r000354"
+    ],
+    "epit_reviewed_0197": [
+      "epit_r000355"
+    ],
+    "epit_reviewed_0198": [
+      "epit_r000356"
+    ],
+    "epit_reviewed_0199": [
+      "epit_r000357"
+    ],
+    "epit_reviewed_0200": [
+      "epit_r000358"
+    ],
+    "epit_reviewed_0201": [
+      "epit_r000359"
+    ],
+    "epit_reviewed_0202": [
+      "epit_r000360"
+    ],
+    "epit_reviewed_0203": [
+      "epit_r000361"
+    ],
+    "epit_reviewed_0204": [
+      "epit_r000362"
+    ],
+    "epit_reviewed_0205": [
+      "epit_r000363"
+    ],
+    "epit_reviewed_0206": [
+      "epit_r000364"
+    ],
+    "epit_reviewed_0207": [
+      "epit_r000365"
+    ],
+    "epit_reviewed_0208": [
+      "epit_r000366"
+    ],
+    "epit_reviewed_0209": [
+      "epit_r000367"
+    ],
+    "epit_reviewed_0210": [
+      "epit_r000368"
+    ],
+    "epit_reviewed_0211": [
+      "epit_r000369"
+    ],
+    "epit_reviewed_0212": [
+      "epit_r000370"
+    ],
+    "epit_reviewed_0213": [
+      "epit_r000371"
+    ],
+    "epit_reviewed_0214": [
+      "epit_r000372"
+    ],
+    "epit_reviewed_0215": [
+      "epit_r000373",
+      "epit_r000385"
+    ],
+    "epit_reviewed_0216": [
+      "epit_r000374"
+    ],
+    "epit_reviewed_0217": [
+      "epit_r000375"
+    ],
+    "epit_reviewed_0218": [
+      "epit_r000376"
+    ],
+    "epit_reviewed_0219": [
+      "epit_r000377"
+    ],
+    "epit_reviewed_0220": [
+      "epit_r000378"
+    ],
+    "epit_reviewed_0221": [
+      "epit_r000379"
+    ],
+    "epit_reviewed_0222": [
+      "epit_r000380"
+    ],
+    "epit_reviewed_0223": [
+      "epit_r000381"
+    ],
+    "epit_reviewed_0224": [
+      "epit_r000382"
+    ],
+    "epit_reviewed_0225": [
+      "epit_r000383"
+    ],
+    "epit_reviewed_0226": [
+      "epit_r000384"
+    ],
+    "epit_reviewed_0227": [
+      "epit_r000386"
+    ],
+    "epit_reviewed_0228": [
+      "epit_r000387"
+    ],
+    "epit_reviewed_0229": [
+      "epit_r000388"
+    ],
+    "epit_reviewed_0230": [
+      "epit_r000389"
+    ],
+    "epit_reviewed_0231": [
+      "epit_r000390"
+    ],
+    "epit_reviewed_0232": [
+      "epit_r000391"
+    ],
+    "epit_reviewed_0233": [
+      "epit_r000392"
+    ],
+    "epit_reviewed_0234": [
+      "epit_r000393"
+    ],
+    "epit_reviewed_0235": [
+      "epit_r000394"
+    ],
+    "epit_reviewed_0236": [
+      "epit_r000395"
+    ],
+    "epit_reviewed_0237": [
+      "epit_r000396"
+    ],
+    "epit_reviewed_0238": [
+      "epit_r000397"
+    ],
+    "epit_reviewed_0239": [
+      "epit_r000398"
+    ],
+    "epit_reviewed_0240": [
+      "epit_r000399"
+    ],
+    "epit_reviewed_0241": [
+      "epit_r000400",
+      "epit_r000401",
+      "epit_r000402"
+    ],
+    "epit_reviewed_0242": [
+      "epit_r000403",
+      "epit_r000414",
+      "epit_r000426",
+      "epit_r000441"
+    ],
+    "epit_reviewed_0243": [
+      "epit_r000404",
+      "epit_r000415",
+      "epit_r000427",
+      "epit_r000442"
+    ],
+    "epit_reviewed_0244": [
+      "epit_r000405",
+      "epit_r000416",
+      "epit_r000428",
+      "epit_r000443"
+    ],
+    "epit_reviewed_0245": [
+      "epit_r000406",
+      "epit_r000417",
+      "epit_r000444"
+    ],
+    "epit_reviewed_0246": [
+      "epit_r000407",
+      "epit_r000418",
+      "epit_r000430",
+      "epit_r000446"
+    ],
+    "epit_reviewed_0247": [
+      "epit_r000408",
+      "epit_r000419",
+      "epit_r000431",
+      "epit_r000447"
+    ],
+    "epit_reviewed_0248": [
+      "epit_r000409",
+      "epit_r000420",
+      "epit_r000433",
+      "epit_r000449"
+    ],
+    "epit_reviewed_0249": [
+      "epit_r000410",
+      "epit_r000421",
+      "epit_r000434",
+      "epit_r000450"
+    ],
+    "epit_reviewed_0250": [
+      "epit_r000411",
+      "epit_r000422",
+      "epit_r000437",
+      "epit_r000453"
+    ],
+    "epit_reviewed_0251": [
+      "epit_r000412",
+      "epit_r000423",
+      "epit_r000438",
+      "epit_r000454"
+    ],
+    "epit_reviewed_0252": [
+      "epit_r000413",
+      "epit_r000424",
+      "epit_r000439",
+      "epit_r000455"
+    ],
+    "epit_reviewed_0253": [
+      "epit_r000425",
+      "epit_r000440"
+    ],
+    "epit_reviewed_0254": [
+      "epit_r000429",
+      "epit_r000445"
+    ],
+    "epit_reviewed_0255": [
+      "epit_r000432",
+      "epit_r000448"
+    ],
+    "epit_reviewed_0256": [
+      "epit_r000435",
+      "epit_r000451"
+    ],
+    "epit_reviewed_0257": [
+      "epit_r000436",
+      "epit_r000452"
+    ],
+    "epit_reviewed_0258": [
+      "epit_r000456",
+      "epit_r000457",
+      "epit_r000458"
+    ],
+    "epit_reviewed_0259": [
+      "epit_r000459",
+      "epit_r000463"
+    ],
+    "epit_reviewed_0260": [
+      "epit_r000460",
+      "epit_r000464"
+    ],
+    "epit_reviewed_0261": [
+      "epit_r000461",
+      "epit_r000465"
+    ],
+    "epit_reviewed_0262": [
+      "epit_r000462",
+      "epit_r000466"
+    ],
+    "epit_reviewed_0263": [
+      "epit_r000467",
+      "epit_r000468",
+      "epit_r000469"
+    ],
+    "epit_reviewed_0264": [
+      "epit_r000470",
+      "epit_r000471",
+      "epit_r000472"
+    ],
+    "epit_reviewed_0265": [
+      "epit_r000473",
+      "epit_r000474",
+      "epit_r000475"
+    ],
+    "epit_reviewed_0266": [
+      "epit_r000476",
+      "epit_r000477",
+      "epit_r000478"
+    ],
+    "epit_reviewed_0267": [
+      "epit_r000479",
+      "epit_r000480",
+      "epit_r000481",
+      "epit_r000482",
+      "epit_r000483",
+      "epit_r000484",
+      "epit_r000485",
+      "epit_r000486",
+      "epit_r000487",
+      "epit_r000488"
+    ],
+    "epit_reviewed_0268": [
+      "epit_r000498",
+      "epit_r000499",
+      "epit_r000500",
+      "epit_r000501",
+      "epit_r000502",
+      "epit_r000503",
+      "epit_r000504",
+      "epit_r000505",
+      "epit_r000506",
+      "epit_r000507"
+    ],
+    "epit_reviewed_0269": [
+      "epit_r000508",
+      "epit_r000509",
+      "epit_r000510",
+      "epit_r000511",
+      "epit_r000512",
+      "epit_r000513",
+      "epit_r000514",
+      "epit_r000515",
+      "epit_r000516",
+      "epit_r000517"
+    ],
+    "epit_reviewed_0270": [
+      "epit_r000518"
+    ],
+    "epit_reviewed_0271": [
+      "epit_r000519"
+    ],
+    "epit_reviewed_0272": [
+      "epit_r000520"
+    ],
+    "epit_reviewed_0273": [
+      "epit_r000521"
+    ],
+    "epit_reviewed_0274": [
+      "epit_r000522"
+    ],
+    "epit_reviewed_0275": [
+      "epit_r000523"
+    ],
+    "epit_reviewed_0276": [
+      "epit_r000524"
+    ],
+    "epit_reviewed_0277": [
+      "epit_r000525"
+    ],
+    "epit_reviewed_0278": [
+      "epit_r000526"
+    ],
+    "epit_reviewed_0279": [
+      "epit_r000527"
+    ],
+    "epit_reviewed_0280": [
+      "epit_r000528"
+    ],
+    "epit_reviewed_0281": [
+      "epit_r000529"
+    ],
+    "epit_reviewed_0282": [
+      "epit_r000536"
+    ],
+    "epit_reviewed_0283": [
+      "epit_r000537"
+    ],
+    "epit_reviewed_0284": [
+      "epit_r000538"
+    ],
+    "epit_reviewed_0285": [
+      "epit_r000539"
+    ],
+    "epit_reviewed_0286": [
+      "epit_r000540"
+    ],
+    "epit_reviewed_0287": [
+      "epit_r000541"
+    ],
+    "epit_reviewed_0288": [
+      "epit_r000542"
+    ],
+    "epit_reviewed_0289": [
+      "epit_r000543"
+    ],
+    "epit_reviewed_0290": [
+      "epit_r000544"
+    ],
+    "epit_reviewed_0291": [
+      "epit_r000545"
+    ],
+    "epit_reviewed_0292": [
+      "epit_r000546"
+    ],
+    "epit_reviewed_0293": [
+      "epit_r000547"
+    ],
+    "epit_reviewed_0294": [
+      "epit_r000548"
+    ],
+    "epit_reviewed_0295": [
+      "epit_r000549"
+    ],
+    "epit_reviewed_0296": [
+      "epit_r000550"
+    ],
+    "epit_reviewed_0297": [
+      "epit_r000551"
+    ],
+    "epit_reviewed_0298": [
+      "epit_r000552"
+    ],
+    "epit_reviewed_0299": [
+      "epit_r000553",
+      "epit_r000554"
+    ],
+    "epit_reviewed_0300": [
+      "epit_r000555"
+    ],
+    "epit_reviewed_0301": [
+      "epit_r000556"
+    ],
+    "epit_reviewed_0302": [
+      "epit_r000557"
+    ],
+    "epit_reviewed_0303": [
+      "epit_r000558"
+    ],
+    "epit_reviewed_0304": [
+      "epit_r000559"
+    ],
+    "epit_reviewed_0305": [
+      "epit_r000560"
+    ],
+    "epit_reviewed_0306": [
+      "epit_r000561"
+    ],
+    "epit_reviewed_0307": [
+      "epit_r000562"
+    ],
+    "epit_reviewed_0308": [
+      "epit_r000563"
+    ],
+    "epit_reviewed_0309": [
+      "epit_r000564"
+    ],
+    "epit_reviewed_0310": [
+      "epit_r000565"
+    ],
+    "epit_reviewed_0311": [
+      "epit_r000566",
+      "epit_r000582",
+      "epit_r000583"
+    ],
+    "epit_reviewed_0312": [
+      "epit_r000567"
+    ],
+    "epit_reviewed_0313": [
+      "epit_r000568"
+    ],
+    "epit_reviewed_0314": [
+      "epit_r000569"
+    ],
+    "epit_reviewed_0315": [
+      "epit_r000570"
+    ],
+    "epit_reviewed_0316": [
+      "epit_r000571",
+      "epit_r000572"
+    ],
+    "epit_reviewed_0317": [
+      "epit_r000573",
+      "epit_r000574",
+      "epit_r000575",
+      "epit_r000576",
+      "epit_r000577",
+      "epit_r000578",
+      "epit_r000585"
+    ],
+    "epit_reviewed_0318": [
+      "epit_r000579"
+    ],
+    "epit_reviewed_0319": [
+      "epit_r000580"
+    ],
+    "epit_reviewed_0320": [
+      "epit_r000581"
+    ],
+    "epit_reviewed_0321": [
+      "epit_r000584"
+    ],
+    "epit_reviewed_0322": [
+      "epit_r000586"
+    ],
+    "epit_reviewed_0323": [
+      "epit_r000587"
+    ],
+    "epit_reviewed_0324": [
+      "epit_r000588"
+    ],
+    "epit_reviewed_0325": [
+      "epit_r000589",
+      "epit_r000597",
+      "epit_r000610",
+      "epit_r000624"
+    ],
+    "epit_reviewed_0326": [
+      "epit_r000590",
+      "epit_r000598",
+      "epit_r000611",
+      "epit_r000625"
+    ],
+    "epit_reviewed_0327": [
+      "epit_r000591",
+      "epit_r000601",
+      "epit_r000614",
+      "epit_r000628"
+    ],
+    "epit_reviewed_0328": [
+      "epit_r000592",
+      "epit_r000602",
+      "epit_r000615",
+      "epit_r000629"
+    ],
+    "epit_reviewed_0329": [
+      "epit_r000593",
+      "epit_r000604",
+      "epit_r000616",
+      "epit_r000630"
+    ],
+    "epit_reviewed_0330": [
+      "epit_r000594",
+      "epit_r000605",
+      "epit_r000617",
+      "epit_r000631"
+    ],
+    "epit_reviewed_0331": [
+      "epit_r000595",
+      "epit_r000606",
+      "epit_r000618",
+      "epit_r000632"
+    ],
+    "epit_reviewed_0332": [
+      "epit_r000596",
+      "epit_r000638"
+    ],
+    "epit_reviewed_0333": [
+      "epit_r000599",
+      "epit_r000612",
+      "epit_r000626"
+    ],
+    "epit_reviewed_0334": [
+      "epit_r000600",
+      "epit_r000613",
+      "epit_r000627"
+    ],
+    "epit_reviewed_0335": [
+      "epit_r000603"
+    ],
+    "epit_reviewed_0336": [
+      "epit_r000607",
+      "epit_r000621",
+      "epit_r000635"
+    ],
+    "epit_reviewed_0337": [
+      "epit_r000608",
+      "epit_r000622",
+      "epit_r000637"
+    ],
+    "epit_reviewed_0338": [
+      "epit_r000609",
+      "epit_r000623",
+      "epit_r000639"
+    ],
+    "epit_reviewed_0339": [
+      "epit_r000619",
+      "epit_r000633"
+    ],
+    "epit_reviewed_0340": [
+      "epit_r000620",
+      "epit_r000634"
+    ],
+    "epit_reviewed_0341": [
+      "epit_r000636"
+    ],
+    "epit_reviewed_0342": [
+      "epit_r000640",
+      "epit_r000646",
+      "epit_r000647",
+      "epit_r000654",
+      "epit_r000658",
+      "epit_r000665",
+      "epit_r000674",
+      "epit_r000675",
+      "epit_r000676",
+      "epit_r000677",
+      "epit_r000678",
+      "epit_r000679",
+      "epit_r000680",
+      "epit_r000681",
+      "epit_r000682",
+      "epit_r000683",
+      "epit_r000684",
+      "epit_r000685",
+      "epit_r000686",
+      "epit_r000687",
+      "epit_r000691",
+      "epit_r000720"
+    ],
+    "epit_reviewed_0343": [
+      "epit_r000641"
+    ],
+    "epit_reviewed_0344": [
+      "epit_r000642"
+    ],
+    "epit_reviewed_0345": [
+      "epit_r000643"
+    ],
+    "epit_reviewed_0346": [
+      "epit_r000644",
+      "epit_r000741",
+      "epit_r000742",
+      "epit_r000743",
+      "epit_r000744"
+    ],
+    "epit_reviewed_0347": [
+      "epit_r000645"
+    ],
+    "epit_reviewed_0348": [
+      "epit_r000648",
+      "epit_r000650",
+      "epit_r000652"
+    ],
+    "epit_reviewed_0349": [
+      "epit_r000649",
+      "epit_r000651",
+      "epit_r000655",
+      "epit_r000656",
+      "epit_r000657",
+      "epit_r000725",
+      "epit_r000726",
+      "epit_r000727",
+      "epit_r000728",
+      "epit_r000729",
+      "epit_r000730"
+    ],
+    "epit_reviewed_0350": [
+      "epit_r000653"
+    ],
+    "epit_reviewed_0351": [
+      "epit_r000659"
+    ],
+    "epit_reviewed_0352": [
+      "epit_r000660"
+    ],
+    "epit_reviewed_0353": [
+      "epit_r000661"
+    ],
+    "epit_reviewed_0354": [
+      "epit_r000662"
+    ],
+    "epit_reviewed_0355": [
+      "epit_r000663"
+    ],
+    "epit_reviewed_0356": [
+      "epit_r000664"
+    ],
+    "epit_reviewed_0357": [
+      "epit_r000666"
+    ],
+    "epit_reviewed_0358": [
+      "epit_r000667"
+    ],
+    "epit_reviewed_0359": [
+      "epit_r000668"
+    ],
+    "epit_reviewed_0360": [
+      "epit_r000669"
+    ],
+    "epit_reviewed_0361": [
+      "epit_r000670"
+    ],
+    "epit_reviewed_0362": [
+      "epit_r000671",
+      "epit_r000696",
+      "epit_r000703"
+    ],
+    "epit_reviewed_0363": [
+      "epit_r000672"
+    ],
+    "epit_reviewed_0364": [
+      "epit_r000673"
+    ],
+    "epit_reviewed_0365": [
+      "epit_r000688",
+      "epit_r000692"
+    ],
+    "epit_reviewed_0366": [
+      "epit_r000689",
+      "epit_r000693"
+    ],
+    "epit_reviewed_0367": [
+      "epit_r000690",
+      "epit_r000694"
+    ],
+    "epit_reviewed_0368": [
+      "epit_r000695"
+    ],
+    "epit_reviewed_0369": [
+      "epit_r000697",
+      "epit_r000704"
+    ],
+    "epit_reviewed_0370": [
+      "epit_r000698"
+    ],
+    "epit_reviewed_0371": [
+      "epit_r000699"
+    ],
+    "epit_reviewed_0372": [
+      "epit_r000700"
+    ],
+    "epit_reviewed_0373": [
+      "epit_r000701",
+      "epit_r000707"
+    ],
+    "epit_reviewed_0374": [
+      "epit_r000702"
+    ],
+    "epit_reviewed_0375": [
+      "epit_r000705"
+    ],
+    "epit_reviewed_0376": [
+      "epit_r000706"
+    ],
+    "epit_reviewed_0377": [
+      "epit_r000708"
+    ],
+    "epit_reviewed_0378": [
+      "epit_r000709"
+    ],
+    "epit_reviewed_0379": [
+      "epit_r000710"
+    ],
+    "epit_reviewed_0380": [
+      "epit_r000711"
+    ],
+    "epit_reviewed_0381": [
+      "epit_r000712"
+    ],
+    "epit_reviewed_0382": [
+      "epit_r000713"
+    ],
+    "epit_reviewed_0383": [
+      "epit_r000714"
+    ],
+    "epit_reviewed_0384": [
+      "epit_r000715"
+    ],
+    "epit_reviewed_0385": [
+      "epit_r000716"
+    ],
+    "epit_reviewed_0386": [
+      "epit_r000717"
+    ],
+    "epit_reviewed_0387": [
+      "epit_r000718"
+    ],
+    "epit_reviewed_0388": [
+      "epit_r000719"
+    ],
+    "epit_reviewed_0389": [
+      "epit_r000721"
+    ],
+    "epit_reviewed_0390": [
+      "epit_r000722"
+    ],
+    "epit_reviewed_0391": [
+      "epit_r000723",
+      "epit_r000724"
+    ],
+    "epit_reviewed_0392": [
+      "epit_r000731",
+      "epit_r000732",
+      "epit_r000733",
+      "epit_r000734",
+      "epit_r000735"
+    ],
+    "epit_reviewed_0393": [
+      "epit_r000736",
+      "epit_r000737",
+      "epit_r000738"
+    ],
+    "epit_reviewed_0394": [
+      "epit_r000739",
+      "epit_r000740"
+    ],
+    "epit_reviewed_0395": [
+      "epit_r000745",
+      "epit_r000746",
+      "epit_r000747"
+    ],
+    "epit_reviewed_0396": [
+      "epit_r000748"
+    ],
+    "epit_reviewed_0397": [
+      "epit_r000749",
+      "epit_r000750",
+      "epit_r000751",
+      "epit_r000752",
+      "epit_r000753",
+      "epit_r000754",
+      "epit_r000755",
+      "epit_r000756",
+      "epit_r000757"
+    ],
+    "epit_reviewed_0398": [
+      "epit_r000758"
+    ],
+    "epit_reviewed_0399": [
+      "epit_r000759"
+    ],
+    "epit_reviewed_0400": [
+      "epit_r000760"
+    ]
+  },
+  "csv_file": "epit_dataset_v3.csv",
+  "csv_sha256": "1d48810cec54bb486d34d3cbc5b794d412e069a6efe1b1f6feec45bf4a96517d",
+  "builder": "scripts/build_epit_reviewed_composition_profile.py",
+  "normalization": "Real rows and stored templates were not normalized. Synthetic perturbation retained its existing closure to 100 wt.%."
+}

@@ -12,7 +12,7 @@ from typing import Sequence
 import numpy as np
 
 
-EPIT_COMPOSITION_PROFILE = "epit_dataset_v2"
+EPIT_COMPOSITION_PROFILE = "epit_dataset_v4"
 EPIT_COMPOSITION_FAMILIES = (
     "fe_alloy",
     "al_alloy",
@@ -20,7 +20,7 @@ EPIT_COMPOSITION_FAMILIES = (
     "nicrmo_alloy",
     "other",
 )
-EPIT_COMPOSITION_FAMILY_COUNTS = (298, 55, 17, 17, 13)
+EPIT_COMPOSITION_FAMILY_COUNTS = (241, 43, 13, 14, 12)
 EPIT_COMPOSITION_FAMILY_PROBS = tuple(
     count / sum(EPIT_COMPOSITION_FAMILY_COUNTS) for count in EPIT_COMPOSITION_FAMILY_COUNTS
 )
@@ -74,7 +74,7 @@ def _readonly(values: np.ndarray) -> np.ndarray:
 
 
 def _asset_files(profile_name: str, asset_dir: str | None):
-    if profile_name not in {"epit_dataset_v1", "epit_dataset_v2"}:
+    if profile_name not in {"epit_dataset_v1", "epit_dataset_v2", "epit_dataset_v3", "epit_dataset_v4"}:
         raise ValueError(f"Unknown EPIT composition profile: {profile_name!r}")
     if asset_dir is None:
         root = resources.files("tabicl.prior.assets")
@@ -123,10 +123,24 @@ def _load_epit_composition_profile(profile_name: str, asset_dir: str | None) -> 
     template_values = np.asarray(rows, dtype=np.float64)
     if template_values.shape != (int(metadata["distinct_templates"]), len(elements)):
         raise ValueError(f"Unexpected EPIT composition template shape: {template_values.shape}")
+    if profile_name in {"epit_dataset_v3", "epit_dataset_v4"} and not np.isfinite(template_values).all():
+        raise ValueError("Reviewed EPIT composition templates must contain only finite saved values.")
     if np.any(np.nan_to_num(template_values, nan=0.0) < 0.0):
         raise ValueError("EPIT composition templates must be non-negative.")
     if len(set(template_ids)) != len(template_ids):
         raise ValueError("EPIT composition template identifiers must be unique.")
+    if profile_name == "epit_dataset_v4":
+        scope = metadata["sampling_scope"]
+        source_ids = scope["source_row_ids"]
+        template_sources = metadata["template_source_row_ids"]
+        if (
+            scope["outer_partition"] != "development"
+            or scope["final_query_rows_used"] != 0
+            or len(source_ids) != 608 or len(set(source_ids)) != 608
+            or set(template_sources) != set(template_ids)
+            or {row_id for ids in template_sources.values() for row_id in ids} != set(source_ids)
+        ):
+            raise ValueError("EPIT development composition provenance is inconsistent.")
 
     family_to_index = {family: index for index, family in enumerate(families)}
     try:

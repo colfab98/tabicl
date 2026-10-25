@@ -39,9 +39,9 @@ from scripts.epit_pipeline.split_data import (
     REPO_ROOT,
     SOURCE_FILE,
     EpitDataset,
-    load_epit_dataset,
 )
-from scripts.epit_pipeline.target_rules import TargetRuleFamily, get_rule_families
+from scripts.epit_pipeline.target_rules import TargetRuleFamily, get_rule_families, PROMOTED_TARGET_RULE_FAMILIES
+from scripts.epit_pipeline.formula_data import load_formula_dataset
 from tabicl.prior.epit_schema import (
     EPIT_COMPOSITION_COLUMNS,
     EPIT_LEGACY_COMPOSITION_COLUMNS,
@@ -50,7 +50,7 @@ from tabicl.prior.epit_schema import (
 
 
 DEFAULT_OUTPUT_DIR = (
-    REPO_ROOT / "corrosion_datasets" / "analysis" / "epit_pipeline" / "target_rules_v3"
+    REPO_ROOT / "corrosion_datasets" / "analysis" / "epit_pipeline" / "target_rules_v4"
 )
 SUMMARY_NAME = "calibration_summary.json"
 PREDICTIONS_NAME = "direct_evaluation_predictions.csv"
@@ -70,7 +70,7 @@ class ManifestRows:
     validation_by_fold: dict[int, np.ndarray]
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--split-manifest",
@@ -82,7 +82,7 @@ def parse_args() -> argparse.Namespace:
         "--rule",
         action="append",
         dest="rules",
-        help="Registered rule family to evaluate; repeat as needed (default: all).",
+        help="Registered rule to evaluate; repeat as needed (default: the nine promoted formulas; use --rule all for all registered rules).",
     )
     parser.add_argument(
         "--anchor-strength",
@@ -95,7 +95,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Replace this stage's existing output files.",
     )
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 
 def _load_manifest(
@@ -382,7 +382,7 @@ def calibrate_family(
         dtype=float,
     )
     result = {
-        "schema_version": "epit_target_rule_v3",
+        "schema_version": "epit_target_rule_v4",
         "rule_family": family.name,
         "description": family.description,
         "evaluation_role": family.evaluation_role,
@@ -656,8 +656,7 @@ targets were not used.</p>
 <p>Split manifest: <code>{html.escape(str(manifest_path))}</code></p>
 <h2>Rule comparison</h2>
 <p><strong>Compare scores only when the applicable rows are the same.</strong>
-The Fe/Ni candidates use the same 452 rows and matched current-PREN baseline.
-The all-alloy historical baseline is a separate diagnostic.</p>
+The Fe/Ni candidates use the same 452 development rows.</p>
 {_table(summary_rows)}
 {''.join(sections)}
 </body></html>"""
@@ -705,7 +704,7 @@ def main() -> None:
     if args.anchor_strength < 0 or not np.isfinite(args.anchor_strength):
         raise SystemExit("--anchor-strength must be finite and non-negative.")
     try:
-        families = get_rule_families(args.rules)
+        families = get_rule_families(args.rules or list(PROMOTED_TARGET_RULE_FAMILIES))
     except ValueError as error:
         raise SystemExit(str(error)) from error
 
@@ -716,7 +715,8 @@ def main() -> None:
         [family.name for family in families],
         force=args.force,
     )
-    dataset = load_epit_dataset()
+    dataset, formula_input_identity = load_formula_dataset()
+    composition_identity = formula_input_identity["reviewed_dataset"]
     frozen_split, rows = _load_manifest(manifest_path, dataset)
     manifest = frozen_split.manifest
     masked_target = dataset.target.copy()
@@ -748,6 +748,8 @@ def main() -> None:
                 "split_lock": str(frozen_split.lock_path),
                 "split_lock_sha256": frozen_split.lock_sha256,
                 "source_sha256": manifest["dataset"]["source_sha256"],
+                "reviewed_composition": composition_identity,
+                "reviewed_formula_inputs": formula_input_identity,
                 "epit_schema_version": EPIT_SCHEMA_VERSION,
                 "current_model_visible_composition_columns": dataset.composition_columns,
                 "split_manifest_model_visible_composition_columns": manifest[
@@ -779,7 +781,7 @@ def main() -> None:
         for result, rule_path in zip(results, rule_paths, strict=True)
     }
     summary = {
-        "schema_version": "epit_target_rule_calibration_summary_v3",
+        "schema_version": "epit_target_rule_calibration_summary_v4",
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "split_manifest": str(frozen_split.manifest_path),
         "split_manifest_schema": manifest["schema_version"],
@@ -787,6 +789,8 @@ def main() -> None:
         "split_lock": str(frozen_split.lock_path),
         "split_lock_sha256": frozen_split.lock_sha256,
         "source_sha256": manifest["dataset"]["source_sha256"],
+        "reviewed_composition": composition_identity,
+        "reviewed_formula_inputs": formula_input_identity,
         "epit_schema_version": EPIT_SCHEMA_VERSION,
         "current_model_visible_composition_columns": dataset.composition_columns,
         "split_manifest_model_visible_composition_columns": manifest["dataset"]["model_visible_composition_columns"],

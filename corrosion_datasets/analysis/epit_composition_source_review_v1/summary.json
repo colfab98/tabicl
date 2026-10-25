@@ -1,0 +1,89 @@
+{
+  "review_date": "2026-10-24",
+  "scope": "Investigation of three previously flagged EPIT composition cases; not a full independent composition audit.",
+  "dataset_values_changed": false,
+  "frozen_assignments_changed": false,
+  "reviewed_rows": 23,
+  "reviewed_rows_by_partition": {
+    "development": 6,
+    "final_test": 17
+  },
+  "rows_with_source_text_supporting_a_correction": 1,
+  "rows_with_unresolved_amounts": 22,
+  "unresolved_rows_by_partition": {
+    "development": 5,
+    "final_test": 17
+  },
+  "upstream_Fe_balance_formula_present_in_all_reviewed_rows": true,
+  "findings": [
+    {
+      "case": "Ti",
+      "rows": 1,
+      "development_rows": 1,
+      "final_test_rows": 0,
+      "recommended_correction_only": {
+        "Ti": 1.86,
+        "Fe": 77.612
+      },
+      "basis": "Original Table I indexed text and EPIT alloy description agreed; scan not visually verified."
+    },
+    {
+      "case": "Re",
+      "rows": 12,
+      "development_rows": 0,
+      "final_test_rows": 12,
+      "status": "Exact amounts and row mapping unresolved; no new numeric values proposed."
+    },
+    {
+      "case": "Nb+Ta",
+      "rows": 10,
+      "development_rows": 5,
+      "final_test_rows": 5,
+      "status": "Separate amounts and combined totals unverified; no new numeric values proposed."
+    }
+  ],
+  "sources": [
+    {
+      "doi": "10.1149/1.2411967",
+      "title": "Anodic Polarization of Some Ferritic Stainless Steels in Chloride Media",
+      "url": "https://citeseerx.ist.psu.edu/document?doi=5984cfb24bae9d77f62f3bb3a07ec357368db56a&repid=rep1&type=pdf",
+      "access": "Search-indexed page 575 Table I read; direct PDF retrieval unavailable. No visual scan inspection."
+    },
+    {
+      "doi": "10.1016/0010-938X(69)80007-7",
+      "title": "Effect of alloyed Re on the critical pitting potentials of 18%Cr/10%Ni stainless steels",
+      "url": "https://www.sciencedirect.com/science/article/abs/pii/0010938X69800077",
+      "access": "Publisher abstract read; original composition table not recovered."
+    },
+    {
+      "doi": "10.1016/0010-938X(95)00043-J",
+      "title": "The effect of dominant alloy additions on the corrosion behavior of some conventional and high alloy stainless steels in seawater",
+      "url": "https://www.sciencedirect.com/science/article/pii/0010938X9500043J",
+      "access": "Publisher abstract read; original composition table not recovered."
+    },
+    {
+      "title": "Corrosion behavior of some conventional and high alloy stainless steels in Gulf seawater",
+      "url": "https://www.researchgate.net/publication/237652104_CORROSION_BEHAVIOR_OF_SOME_CONVENTIONAL_AND_HIGH_ALLOY_STAINLESS_STEELS_IN_GULF_SEAWATER1",
+      "access": "Related 1992 author report text read; composition table was not readable. Not used to supply amounts for the 1995 specimens."
+    }
+  ],
+  "inputs_sha256": {
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/raw/CRA_database_Scientific_Data_Publication_12102020.xlsx": "d0ce5e9c4b42e0b5a20dbd5c4896791703c5f433ae19bc032674d5848d9d1438",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/changes_vs_previous_shared.csv": "5d52c5a981d75fb853f46c899c562d93c84194da7fef63acc1fb15a687f29ba8",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/composition_processing_log.csv": "d0e0df3e2a2fd5e681cdb4a95f9fe6e5cd58c94e730a3e6b0853785dd813d551",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/composition_processing_manifest.json": "c208f07cc97719d59f92d40d93ad7832db280a36277fef821d32e0d1161831b9",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/composition_row_audit.csv": "8302ed82bbd289966a76b10221a2bdab924fae44e37d1807d30d2f064b9c5637",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/environment_column_summary.csv": "615f0e659c336fbdb074db6cc29b24f3af94d74e518da681f47370373199678e",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/environment_processing_log.csv": "ad46fa1eeba851e76a588457555749c268feb09717dc5dc13873a47121fb80bf",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/environment_review_notes.csv": "1f24264e5ccc1b4f7e64907e6ac3de89d22cfb9c7b4cd2a4c8231edd4edaf6aa",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/epit_features.csv": "7f397d0644953b0960c63803ce7eecf79fa1603b56c9ba2911eb0d0286589344",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/epit_processed.csv": "69b19943723b8350f178f4fed5711e314b1f3b9b8f5136969a2a7b904760a66f",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/feature_registry.json": "0988342bd88626c229d5100157baa6cd6bd1b2631b8405be7cd3f56ab1dc7b39",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/preparation_processing_log.csv": "d8394d5a7a33eb0cf59cd2d87c3dbee42b26f88a6623ac02ddab144e0619163a",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/processing_manifest.json": "91ec58d52758cc45d7c43ed5d8b4aa279826aa2ed73d5bda0fc28493edd26ccd",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/review_changes.csv": "c8144ffa829fe8c707596e845af15365147e984f9a020ddbb4f495e95c86957d",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/split_assignments.csv": "a16d47dd41ce77f143f868995ebf8689737a6f35fca8a98faec62d7e128290d8"
+  },
+  "row_findings_sha256": "6a1fb965b3c139566797099634fa2fe3ed05534977ddb6ba573bd93dbc066139",
+  "input_files_unchanged_after_review": true
+}

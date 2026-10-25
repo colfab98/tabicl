@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 from pathlib import Path
+from functools import partial
 
 import numpy as np
 import pytest
@@ -12,11 +13,16 @@ from scripts.epit_pipeline import run_optuna as search
 from scripts.epit_pipeline import train_final
 from tabicl.prior.dataset import EPIT_TARGET_RULE_COEFFICIENTS, SCMPrior
 from tabicl.prior.epit_feature_generator import sample_epit_feature_rows
-from tabicl.prior.epit_feature_profile import EPIT_FEATURE_PROFILE
+from tabicl.prior.epit_feature_profile import load_epit_feature_profile
 from tabicl.prior.mlp_scm import MLPSCM
 from tabicl.prior.prior_config import DEFAULT_FIXED_HP
 from tabicl.prior.tree_scm import TreeSCM
 from tabicl.train.train_config import build_parser
+
+# Formula and legacy SCM tests stay pinned to the previous 28-column profile.
+# The expanded 70-column path is covered in test_epit_expanded_features.py.
+EPIT_FEATURE_PROFILE = "epit_fe_nicrmo_features_v3"
+sample_epit_feature_rows = partial(sample_epit_feature_rows, profile=load_epit_feature_profile(EPIT_FEATURE_PROFILE))
 
 
 class RecordingTrial:
@@ -57,7 +63,7 @@ def _fixed_hp() -> dict:
             ),
             "informed_feature_block_strength": 0.0,
             "pitting_process_role": "test_method_category",
-            "pitting_process_category_count": 52,
+            "pitting_process_category_count": 50,
             "pitting_composition_perturb_strength": 0.05,
             "pitting_magpie_features": False,
             "cat_prob": 0.0,
@@ -465,7 +471,6 @@ def test_v8_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_pa
     command = search.training_command(args, params, tmp_path / "checkpoint", rules)
 
     assert set(trial.suggested_names) == {
-        "informed_prior_ratio",
         "mlp_prob",
         "informed_target_mix_weight",
         "pitting_composition_perturb_strength",
@@ -546,14 +551,14 @@ def test_v8_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_pa
         / "train_final.sbatch"
     ).read_text(encoding="utf-8")
     for launcher in (optuna_launcher, final_launcher):
-        assert "epit_pipeline_optuna_empirical_features_scm_target_v8" in launcher
+        assert "epit_pipeline_optuna_empirical_features_scm_target_v10" in launcher
         assert 'NP_SEED="${NP_SEED:-42}"' in launcher
         assert 'TORCH_SEED="${TORCH_SEED:-42}"' in launcher
         assert 'PRIOR_N_JOBS="${PRIOR_N_JOBS:-1}"' in launcher
     assert "--pitting-composition-mode empirical_features_scm_target" in optuna_launcher
     assert 'SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-}"' in final_launcher
     assert 'if [[ -n "$SELECTED_TRIAL_NUMBER" ]]' in final_launcher
-    assert "target_rules_v3/calibration_summary.json" in final_launcher
+    assert "target_rules_v4/calibration_summary.json" in final_launcher
     assert "--allow-missing-selected-trial-artifacts" in final_launcher
     for override in (
         "OVERRIDE_INFORMED_PRIOR_RATIO",
@@ -638,8 +643,8 @@ def test_v8_final_overrides_change_effective_config_not_selected_trial(
     )
 
     assert _value_after(command, "--pitting_magpie_features") == "True"
-    assert _value_after(command, "--min_features") == "38"
-    assert _value_after(command, "--max_features") == "38"
+    assert _value_after(command, "--min_features") == "80"
+    assert _value_after(command, "--max_features") == "80"
     style_index = command.index("--pitting_material_style_probs")
     assert command[style_index + 1 : style_index + 6] == [
         "1",

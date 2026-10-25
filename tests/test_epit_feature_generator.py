@@ -1,11 +1,17 @@
 import numpy as np
 import torch
+from functools import partial
 
 from tabicl.prior.dataset import SCMPrior
 from tabicl.prior.epit_feature_generator import sample_epit_feature_rows
-from tabicl.prior.epit_feature_profile import EPIT_FEATURE_PROFILE, load_epit_feature_profile
+from tabicl.prior.epit_feature_profile import load_epit_feature_profile
 from tabicl.prior.prior_config import DEFAULT_FIXED_HP
 from tabicl.train.train_config import build_parser
+
+# Retain regression coverage for the frozen 28-column generator.
+EPIT_FEATURE_PROFILE = "epit_fe_nicrmo_features_v3"
+load_epit_feature_profile = partial(load_epit_feature_profile, EPIT_FEATURE_PROFILE)
+sample_epit_feature_rows = partial(sample_epit_feature_rows, profile=load_epit_feature_profile())
 
 
 def test_epit_feature_row_sampling_is_deterministic_complete_and_paired():
@@ -67,7 +73,7 @@ def _empirical_feature_fixed_hp() -> dict:
             "informed_normal_block_allocation": (24, 3, 1, 0, 0, 0, 0, 0, 0),
             "informed_normal_block_allocation_min_counts": (24, 3, 1, 0, 0, 0, 0, 0, 0),
             "pitting_process_role": "test_method_category",
-            "pitting_process_category_count": 52,
+            "pitting_process_category_count": 50,
             "pitting_composition_perturb_strength": 0.05,
         }
     )
@@ -94,7 +100,7 @@ def test_empirical_feature_mode_replaces_all_28_columns_before_epit_only_target_
         torch.as_tensor(batch.composition_family_indices.copy()),
     )
     assert prior.last_pitting_target_rule["synthetic_environment_mode"] == "raw"
-    assert prior.last_pitting_target_rule["process_category_count"] == 52
+    assert prior.last_pitting_target_rule["process_category_count"] == 50
 
     assert prior.last_pitting_target_rule["target_mix_weight"] == 1.0
     assert prior.last_pitting_target_rule["configured_target_mix_weight"] == fixed_hp[

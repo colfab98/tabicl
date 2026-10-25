@@ -1,0 +1,45 @@
+{
+  "schema_version": "soccol_composition_rules_v1",
+  "units": "wt.%",
+  "designation_recoveries": [
+    {"row_id": "soccol_r000112", "source": "1969Lizlovs", "designation": "18%Cr-2%Mo-1.86%Ti", "values": {"Ti": 1.86}, "note": "Used the explicit Soccol designation as a nominal amount. EPIT's numeric Ti was 1.88 while its comment also said 1.86; the discrepancy was recorded, not silently resolved in EPIT."},
+    {"row_id": "soccol_r000117", "source": "1969Lizlovs", "designation": "18%Cr-2%Mo-1.75%Ti-2.08%Ni", "values": {"Ti": 1.75}},
+    {"row_id": "soccol_r000149", "source": "1974Machin", "designation": "18Cr-10Ni-3Mo-1Nb Stainless Steel", "values": {"Nb": 1.0}},
+    {"row_id": "soccol_r000152", "source": "1974Machin", "designation": "29Ni-20Cr-3Mo-3.5Cu-1Nb High Alloy Stainless Steel", "values": {"Nb": 1.0, "Cu": 3.5}}
+  ],
+  "same_paper_recoveries": [
+    {"source": "1983Bui", "epit_reference": 73, "elements": ["W"], "expected_rows": 17},
+    {"source": "1998Ahn", "epit_reference": 74, "elements": ["W", "Nb"], "expected_rows": 8},
+    {"source": "1969Lizlovs", "epit_reference": 11, "elements": ["Cu"], "expected_rows": 9},
+    {"source": "1974Machin", "epit_reference": 84, "elements": ["Cu"], "expected_rows": 15},
+    {"source": "1995Malik", "epit_reference": 49, "elements": ["Cu", "Nb"], "expected_rows": 65}
+  ],
+  "unresolved_study_elements": {
+    "1969Boehni": {"elements": ["Re"], "reason": "The study varied Re, but Soccol omitted it. EPIT reference 81 also recorded Re as zero throughout, so that entry was not used to resolve the known omission."},
+    "2018Shi": {"elements": ["Y"], "reason": "The paper reported five Y levels, but the selected Soccol rows lacked a specimen key linking each row to a Y amount. Row order, targets and event outcomes were not used to assign Y."},
+    "1994Malik": {"elements": ["Cu"], "reason": "Known copper-containing grades occurred in this source, but the workbook had no Cu column and the source-specific amounts were not recovered. All source rows were conservatively left pending review; this did not claim that every alloy contained positive Cu."}
+  },
+  "combined_amount_rule": {
+    "source": "1995Malik", "designation_contains": "Nb + Ta", "elements": ["Nb", "Ta"],
+    "reason": "The source designation gave Nb+Ta together. EPIT split the total equally, but independent evidence for an equal split was not established; the separate amounts remained unknown."
+  },
+  "missing_named_element": {
+    "source": "2000DiSchino", "designation": "430TiNb", "elements": ["Nb"],
+    "reason": "The designation explicitly named Nb but supplied no amount; a source-specific amount was not recovered."
+  },
+  "research_notes": [
+    {"source": "1969Boehni", "url": "https://www.sciencedirect.com/science/article/abs/pii/0010938X69800077", "result": "Publisher abstract confirmed Re variation; no recoverable row-level composition table was available in the retrieved content."},
+    {"source": "2018Shi", "url": "https://www.nature.com/articles/s41598-018-23273-x", "result": "Methods gave Y levels 0, 0.007, 0.013, 0.019 and 0.049 wt.%. The workbook lacked an unambiguous specimen-to-row link. Bulk amounts were not matched using pitting potentials."},
+    {"source": "2014Zhou", "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3884226/", "result": "Methods identified commercial 316F/316L and the 316F sulfur content, but the retrieved text did not supply a usable full bulk-composition table. Generic grade chemistry was not substituted."},
+    {"source": "1994Malik", "url": "https://www.sciencedirect.com/science/article/abs/pii/0011916494000867", "result": "Publisher content identified the grades; the required composition table was not recovered. Chemistry from the different 1995 paper was not substituted by grade name."},
+    {"source": "2000DiSchino", "url": "https://link.springer.com/article/10.1023/A:1004872728797", "result": "The article was identified, but the required Nb amount was not recovered from accessible content."},
+    {"source": "1997Laycock", "url": "https://doi.org/10.1016/S0010-938X(97)00049-8", "result": "Other workbook rows named 316SS, but the incomplete rows were not independently linked to the same specimen or reported chemistry. No generic grade or cross-row imputation was applied."},
+    {"source": "2008Pohjanne", "url": "https://doi.org/10.1016/j.jcsr.2008.07.001", "result": "Bibliographic search identified the study; no source-specific composition table was recovered."},
+    {"source": "2011Elsener", "url": "https://onlinelibrary.wiley.com/doi/abs/10.1002/maco.201005826", "result": "Retrieved abstract identified the principal experimental grades; it did not establish the composition of the workbook's incomplete 1.4003/1.4401 rows."},
+    {"source": "2013DeAngelis", "url": null, "result": "The local reference identified a 2013 Politecnico di Milano master's thesis; no unambiguous source table for 470LI was recovered."},
+    {"source": "2013Orlikowski", "url": "https://www.sciencedirect.com/science/article/abs/pii/S135063071200221X", "result": "Publisher text confirmed the comparison grades, but did not supply the missing 1.4436 composition."},
+    {"source": "2020Sander", "url": "https://openresearch-repository.anu.edu.au/items/ae4d11f4-83c7-4b76-8d60-07468fbeb9ad", "result": "Repository record identified the article and marked its PDF restricted. A source-specific composition was not recovered."},
+    {"source": "1968Horvath", "url": "https://doi.org/10.1149/1.2411433", "result": "EPIT assigned a remainder to Fe, but the mixed Ni/Cr-Ni/Cr-Fe source and raw workbook did not independently establish that remainder for the high-Ni row. The derived EPIT Fe was not copied."},
+    {"source": "1991Cortest", "url": null, "result": "The G3 rows lacked required alloying amounts. No generic manufacturer grade recipe was substituted for the source-specific material."}
+  ]
+}

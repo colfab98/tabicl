@@ -1,0 +1,141 @@
+{
+  "schema_version": "reference_type_rules_v1",
+  "review_date": "2026-10-24",
+  "categories": [
+    "SCE",
+    "AgAgCl"
+  ],
+  "missing_value": "CSV empty field, read as NaN; no unknown category or numerical sentinel",
+  "policy": "Retain the existing source-specific reference assignments without converting or otherwise changing reported targets. The feature describes the reference category adopted for those unchanged targets, with the strength of its evidence recorded separately.",
+  "limits": "A verified electrode in an original paper does not independently prove how every target was transcribed into Soccol. The source-specific policy is retained; direct target comparisons were performed for Alar and the same-paper EPIT matches. AgAgCl is a broad category, not a claim that filling solutions are identical.",
+  "epit": {
+    "reference_type": "SCE",
+    "status": "workbook_target_header_verified",
+    "evidence": "Original Pitting Potential sheet cell Z1 declares Epit, mV (SCE); the processed average target retained that scale."
+  },
+  "collection_conflict": {
+    "url": "https://doi.org/10.1016/j.electacta.2024.145355",
+    "local_file": "corrosion_datasets/datasets/soccol_pitting_potential/raw/Soccol_updated_PREN_author_manuscript.pdf",
+    "location": "PDF pages 8, 13 and 19",
+    "finding": "The manuscript described Ag/AgCl (3 M KCl), but did not establish a verified conversion of every stored workbook target. The Alar numerical comparison demonstrated retention of SCE source values. We did not replace all Soccol labels by the collection-wide convention."
+  },
+  "soccol_sources": {
+    "1970Wilde": {
+      "reference_type": "SCE",
+      "doi": "10.1149/1.2407627",
+      "evidence_url": "https://citeseerx.ist.psu.edu/document?doi=32abc25ff4fe75c23776cc9b4ec3b8913a31ec3b&repid=rep1&type=pdf",
+      "location": "PDF page 2, Materials and Experimental Work",
+      "verification_status": "primary_paper_rechecked",
+      "evidence": "The methods identified saturated calomel as the reference for all measured potentials.",
+      "reference_filling_solution": null
+    },
+    "1983Shibata": {
+      "reference_type": "SCE",
+      "doi": "10.2355/isijinternational1966.23.785",
+      "evidence_url": "https://www.jstage.jst.go.jp/article/isijinternational1966/23/9/23_9_785/_pdf",
+      "location": "PDF page 2, section 4",
+      "verification_status": "primary_paper_rechecked",
+      "evidence": "The potential-dependent pitting experiment was described on the SCE scale.",
+      "reference_filling_solution": null
+    },
+    "1995Jackson": {
+      "reference_type": "SCE",
+      "doi": "10.2355/isijinternational.35.557",
+      "evidence_url": "https://www.jstage.jst.go.jp/article/isijinternational1989/35/5/35_5_557/_pdf",
+      "location": "PDF page 2, experimental procedure",
+      "verification_status": "primary_paper_rechecked",
+      "evidence": "The electrochemical procedure specified saturated calomel.",
+      "reference_filling_solution": null
+    },
+    "1999Wegrelius": {
+      "reference_type": "SCE",
+      "doi": "10.1149/1.1391777",
+      "evidence_url": "https://doi.org/10.1149/1.1391777",
+      "location": "Matching EPIT reference 61, epit_r000208",
+      "verification_status": "same_paper_dataset_crosscheck",
+      "evidence": "The one Soccol row matched EPIT composition, conditions and the 549.6 mV target explicitly labelled SCE. The original paper reference statement was not independently re-read.",
+      "reference_filling_solution": null
+    },
+    "2011Elsener": {
+      "reference_type": "SCE",
+      "doi": "10.1002/maco.201005826",
+      "evidence_url": "https://onlinelibrary.wiley.com/doi/abs/10.1002/maco.201005826",
+      "location": "Publisher abstract",
+      "verification_status": "primary_abstract_rechecked",
+      "evidence": "The authors described pitting potentials on the SCE scale in the abstract.",
+      "reference_filling_solution": null
+    },
+    "2013Mesquita": {
+      "reference_type": "SCE",
+      "doi": "10.1590/s0370-44672013000200006",
+      "evidence_url": "https://www.scielo.br/j/rem/a/dSGRrLVhWQ69D5sgZYkMPCf/?format=pdf&lang=en",
+      "location": "PDF page 3, electrochemical procedure; page 4 figure axis",
+      "verification_status": "primary_paper_rechecked",
+      "evidence": "The methods identified saturated calomel and the pitting-potential plot used mV SCE.",
+      "reference_filling_solution": null
+    },
+    "2014Zhou": {
+      "reference_type": "SCE",
+      "doi": "10.1038/srep03604",
+      "evidence_url": "https://www.nature.com/articles/srep03604",
+      "location": "Electrochemical experiments; open-access XML https://www.ebi.ac.uk/europepmc/webservices/rest/PMC3884226/fullTextXML",
+      "verification_status": "primary_paper_rechecked",
+      "evidence": "The original article specified SCE with saturated KCl for electrochemical testing.",
+      "reference_filling_solution": null
+    },
+    "2016Alar": {
+      "reference_type": "SCE",
+      "doi": "10.20964/2016.09.26",
+      "evidence_url": "https://www.electrochemsci.org/papers/vol11/110907674.pdf",
+      "location": "PDF page 2 methods and page 7 Table 2",
+      "verification_status": "primary_paper_and_target_table_rechecked",
+      "evidence": "Table 2 labelled Epit in mV/SCE. Of 66 retained Soccol values, 64 matched exactly; the two previously documented discrepancies were retained unchanged.",
+      "reference_filling_solution": null
+    },
+    "2017Mameng": {
+      "reference_type": "SCE",
+      "doi": "10.1002/maco.201609061",
+      "evidence_url": "https://www.researchgate.net/profile/Sukanya-Haegg-Mameng/publication/287089248_Limiting_conditions_for_pitting_corrosion_of_stainless_steel_EN_14404_316L_in_terms_of_temperature_potential_and_chloride_concentration/links/5e1549c64585159aa4bcef2f/Limiting-conditions-for-pitting-corrosion-of-stainless-steel-EN-14404-316L-in-terms-of-temperature-potential-and-chloride-concentration.pdf",
+      "location": "PDF page 2 methods; Figure 13",
+      "verification_status": "primary_paper_rechecked",
+      "evidence": "The methods specified SCE and the pitting-potential figures used V versus SCE.",
+      "reference_filling_solution": null
+    },
+    "2018Shakir": {
+      "reference_type": "SCE",
+      "doi": "10.31026/j.eng.2018.01.04",
+      "evidence_url": "https://www.joe.uobaghdad.edu.iq/index.php/main/article/download/494/421",
+      "location": "PDF pages 1 and 3, abstract and electrochemical procedure",
+      "verification_status": "primary_paper_rechecked",
+      "evidence": "The abstract and experimental procedure specified the SCE reference.",
+      "reference_filling_solution": null
+    },
+    "2018Shi": {
+      "reference_type": "SCE",
+      "doi": "10.1038/s41598-018-23273-x",
+      "evidence_url": "https://www.nature.com/articles/s41598-018-23273-x",
+      "location": "Electrochemical measurements",
+      "verification_status": "primary_paper_rechecked",
+      "evidence": "The methods specified saturated calomel and potentials versus SCE.",
+      "reference_filling_solution": null
+    },
+    "2020Melia": {
+      "reference_type": "AgAgCl",
+      "doi": "10.1038/s41529-020-00126-5",
+      "evidence_url": "https://doi.org/10.1038/s41529-020-00126-5",
+      "location": "Methods: Electrochemical measurements",
+      "verification_status": "primary_paper_rechecked",
+      "evidence": "The methods specified Ag/AgCl with saturated KCl; plotted breakdown potentials used this reference.",
+      "reference_filling_solution": "saturated KCl"
+    },
+    "2021Vignal": {
+      "reference_type": "SCE",
+      "doi": "10.1007/s11665-021-05621-7",
+      "evidence_url": "https://link.springer.com/article/10.1007/s11665-021-05621-7",
+      "location": "Electrochemical Measurements",
+      "verification_status": "primary_paper_rechecked",
+      "evidence": "The methods explicitly reported potentials versus saturated calomel.",
+      "reference_filling_solution": null
+    }
+  }
+}

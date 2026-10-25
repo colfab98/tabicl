@@ -1,0 +1,116 @@
+{
+  "schema_version": "soccol_reference_v1",
+  "previous_version": "soccol_composition_v1",
+  "counts": {
+    "rows": 4027,
+    "accepted_compositions": 3745,
+    "unresolved_compositions": 282,
+    "original_development_rows": 3222,
+    "accepted_development_rows": 2950,
+    "withheld_development_rows": 272,
+    "frozen_final_query_rows": 805,
+    "unresolved_final_query_rows": 10,
+    "recovered_element_cells": 162,
+    "rows_with_recovered_elements": 103,
+    "composition_columns": 24,
+    "total_features": 58,
+    "final_evaluation_ready": false,
+    "reference_type_counts": {
+      "missing": 3350,
+      "SCE": 565,
+      "AgAgCl": 112
+    },
+    "reference_type_feature_count": 1,
+    "reference_type_by_table": {
+      "soccol_processed.csv": {
+        "missing": 3350,
+        "SCE": 565,
+        "AgAgCl": 112
+      },
+      "soccol_features.csv": {
+        "missing": 3350,
+        "SCE": 565,
+        "AgAgCl": 112
+      },
+      "soccol_development_accepted.csv": {
+        "missing": 2490,
+        "SCE": 348,
+        "AgAgCl": 112
+      },
+      "soccol_development_features.csv": {
+        "missing": 2490,
+        "SCE": 348,
+        "AgAgCl": 112
+      },
+      "soccol_frozen_final_query.csv": {
+        "missing": 695,
+        "SCE": 110
+      },
+      "soccol_frozen_final_query_features.csv": {
+        "missing": 695,
+        "SCE": 110
+      }
+    }
+  },
+  "input_sha256": {
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/composition_changes.csv": "b727ede4ebbf395a7a73e791051608b7166e859eaa37261df24774975477ca03",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/composition_processing_log.csv": "e0e289207d5e98066ed9ac8aa293359ea69050beb15c99b94e91346bf69d604d",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/composition_review_required.csv": "e08713839230229081a2bf5af5daff80e37e1bf5c121425395103be50715777d",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/composition_row_audit.csv": "fbd4769923e69367af580319a48c2730e841f5c175d4942219e714ea24151984",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/environment_column_summary.csv": "bdd7a3834c3a04dcc2b0e79e02212e870e11c34c899dab166a00255357486b72",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/environment_processing_log.csv": "412f82d34bd69dd880b110a2dee5f36f00b9d9ce05e5a6499fe7c4bf3797d5e2",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/environment_review_notes.csv": "1e61d173fc6464f3271fde348b18b2ee714842f840053e234c17deacd6fb560a",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/feature_registry.json": "59ed63b5093bd47a49b5b8651aa2c34eb8b9324f89fb7499c55573f1cd6b2ad9",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/processing_manifest.json": "4c753ef12576221e07666685c0b430466b637203fc6110a881ad7c03187c4b34",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/review_changes.csv": "712757d2bcd5de0c8139e18e961e22daae8b3b92f3258ac83442ef8c254ad3f6",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/soccol_development_accepted.csv": "ff37cb4a55c2d955eb7201975bc24e76056615f694e6562b0939166fe7e54b2b",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/soccol_development_features.csv": "1e5a437ed91805ceeabff53d657d548939f500da123dfeda2cdde20a1580b289",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/soccol_environment_features.csv": "983aabd808f07daf6faa97e648146e669bf4ceb962a46c475d7ab2ef6305ce8c",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/soccol_features.csv": "faaad155a9a9180a7ab2d63e798b37aa82a04d06e58b8dbb0068a6d4ce9a7226",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/soccol_frozen_final_query.csv": "ed5bb5d541286ae44db3c483cb4feb2cb08c9752414e591297835b1525aa8eda",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/soccol_frozen_final_query_features.csv": "be2f5e25afd11da7ec12bd28c52074e229f738fd2728fa223cb348d66ae6400a",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/soccol_processed.csv": "1d4ef1ac42e1fe5fdd87ad1bbefca2e06df65a157d2d8b8262fedf9a9ae5b88f",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/source_rows.csv": "2a6ee82be8b8a9835b6a5256463de089154cb244f3e9819fa44ada7af7354b59",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_composition_v1/split_assignments.csv": "d34b48ad40ae4cf03a7cdcd209c9a08879d3529f3b4dac320dff9986b641b7a8",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/reference_type_rules_v1.json": "69499f9e5f3f0896d844f398d0cbac5b1ffe800f3dd53bfcf0bdf709e4af2395",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_soccol_reference_review_v1/alar_numeric_check.csv": "7f3902741f468db5bcc45ffb3d520047c2806992b07e741e6f9333c2322f9230",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_soccol_reference_review_v1/same_paper_epit_checks.csv": "f583ddf90f839082e6e928698b78db1dee5dc21f945d3be20c92cdcbf156e174",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_soccol_reference_review_v1/source_evidence.csv": "dd2ca727c6da3a071b86c0a5a537f7368f3b7c15ddd8f0f0caad560ba339a971",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_soccol_reference_review_v1/summary.json": "7a6730cf6239e9052177503e4aea04033dcd12f5da2b0276db05f4337e91c095",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/raw/CRA_database_Scientific_Data_Publication_12102020.xlsx": "d0ce5e9c4b42e0b5a20dbd5c4896791703c5f433ae19bc032674d5848d9d1438",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/raw/Soccol_updated_PREN_author_manuscript.pdf": "fe4dcd0008c9801831c62c098244f791e7453a44fc865701f9f9217b85eefe94",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/epit_soccol_context.csv": "3ac7fa8730bba6084ad8f81e05c216601c724641bb1c861b701d07ae1fec247e"
+  },
+  "implementation_sha256": {
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/prepare_reference_types.py": "6b20a5c3e0482211da9383f1253a8b4422c23289d833264276e89737d11ad6ea"
+  },
+  "output_sha256": {
+    "composition_changes.csv": "b727ede4ebbf395a7a73e791051608b7166e859eaa37261df24774975477ca03",
+    "composition_processing_log.csv": "e0e289207d5e98066ed9ac8aa293359ea69050beb15c99b94e91346bf69d604d",
+    "composition_review_required.csv": "e08713839230229081a2bf5af5daff80e37e1bf5c121425395103be50715777d",
+    "composition_row_audit.csv": "fbd4769923e69367af580319a48c2730e841f5c175d4942219e714ea24151984",
+    "environment_column_summary.csv": "bdd7a3834c3a04dcc2b0e79e02212e870e11c34c899dab166a00255357486b72",
+    "environment_processing_log.csv": "412f82d34bd69dd880b110a2dee5f36f00b9d9ce05e5a6499fe7c4bf3797d5e2",
+    "environment_review_notes.csv": "1e61d173fc6464f3271fde348b18b2ee714842f840053e234c17deacd6fb560a",
+    "feature_registry.json": "f57d2f0a219ae3bd20a1e05dd077f456326e22d2b31465fa2c64b79ff7391650",
+    "reference_type_audit.csv": "3f4b3b0e3fc4876cb39862ff161a03a4a3ba779853a2d002ad3fa577cac804fb",
+    "review_changes.csv": "712757d2bcd5de0c8139e18e961e22daae8b3b92f3258ac83442ef8c254ad3f6",
+    "soccol_development_accepted.csv": "229e174e209b01bc08976d785a8b2b31cfc01c8340b796b55b30d5427fdac4b3",
+    "soccol_development_features.csv": "d405c8af160f5a5611cfca03b868544bd72d3c4ad8735d087ff32d140684ec56",
+    "soccol_environment_features.csv": "983aabd808f07daf6faa97e648146e669bf4ceb962a46c475d7ab2ef6305ce8c",
+    "soccol_features.csv": "57a5875606e527c7ba0b4c353690dc4a91c8d61ea50cfa92b97064b549cb87bc",
+    "soccol_frozen_final_query.csv": "c1a6e9432201934e082bbd7615b1d01f8e3273f82c56fc0cd06956c311edb600",
+    "soccol_frozen_final_query_features.csv": "f2f801aaa350992befd9ad477ed8bcdb68dc7eac71a9c7022ad4376c96c000d7",
+    "soccol_processed.csv": "3133588b042c5c2f73d74b5e518b088ca44d25999edb1ac4f476fc99c8972636",
+    "source_rows.csv": "2a6ee82be8b8a9835b6a5256463de089154cb244f3e9819fa44ada7af7354b59",
+    "split_assignments.csv": "d34b48ad40ae4cf03a7cdcd209c9a08879d3529f3b4dac320dff9986b641b7a8"
+  },
+  "policy": {
+    "inherited_policy": "Reported amounts retained; explicit nominal and same-paper raw-data recoveries logged; supported Fe balance computed after recovery; unknown elements zero-filled only for accepted compositions. Known omissions remained NaN in review rows.",
+    "reference_type": "Retain the existing source-specific reference assignments without converting or otherwise changing reported targets. The feature describes the reference category adopted for those unchanged targets, with the strength of its evidence recorded separately.",
+    "verification_limits": "A verified electrode in an original paper does not independently prove how every target was transcribed into Soccol. The source-specific policy is retained; direct target comparisons were performed for Alar and the same-paper EPIT matches. AgAgCl is a broad category, not a claim that filling solutions are identical."
+  },
+  "scope": "Added reference_type and a separate evidence audit. Existing values, targets, row subsets and frozen assignments were preserved; no target conversion or new exclusion was applied.",
+  "historical_records": "Inherited logs describe previous composition/environment stages. Environment-only views retain their original scope; reference_type appears in the full model feature views.",
+  "existing_pipeline_paths_changed": false
+}

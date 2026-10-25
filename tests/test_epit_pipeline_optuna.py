@@ -87,10 +87,10 @@ def _fake_epit_task() -> corrosion_eval.EvalTask:
     )
 
 
-def test_pipeline_defaults_use_current_v8_workflow() -> None:
+def test_pipeline_defaults_use_current_v10_workflow() -> None:
     args = search.parse_args([])
 
-    assert args.study_name == "epit_pipeline_optuna_empirical_features_scm_target_v8"
+    assert args.study_name == "epit_pipeline_optuna_empirical_features_scm_target_v10"
     assert args.pitting_composition_mode == "empirical_features_scm_target"
     assert args.n_trials == 50
     assert args.n_startup_trials == 10
@@ -101,7 +101,7 @@ def test_pipeline_defaults_use_current_v8_workflow() -> None:
     assert args.eval_n_estimators == 8
     assert args.split_manifest == evaluate_optuna_folds.DEFAULT_SPLIT_MANIFEST
     assert "splits_v2" in args.split_manifest.parts
-    assert "target_rules_v3" in args.target_rule_summary.parts
+    assert "target_rules_v4" in args.target_rule_summary.parts
     assert search.PITTING_COEFFICIENT_VARIATION == 0.8
     assert search.PITTING_COEFFICIENT_VARIATION_SEED == 42
     final_args = train_final.parse_args(["--storage", "journal:///unused.log"])
@@ -503,13 +503,13 @@ def test_stage4_verifies_selected_trial_files_and_objective(tmp_path: Path) -> N
         )
 
 
-def test_slurm_launcher_uses_v3_pipeline_artifacts() -> None:
+def test_slurm_launcher_uses_v4_rules_and_frozen_split() -> None:
     launcher = (
         search.REPO_ROOT / "scripts" / "epit_pipeline" / "run_optuna.sbatch"
     ).read_text(encoding="utf-8")
 
     assert "epit_pipeline/splits_v2/split_manifest.json" in launcher
-    assert "epit_pipeline/target_rules_v3/calibration_summary.json" in launcher
+    assert "epit_pipeline/target_rules_v4/calibration_summary.json" in launcher
 
 
 def test_calibrated_coefficients_replace_old_three_search_dimensions() -> None:

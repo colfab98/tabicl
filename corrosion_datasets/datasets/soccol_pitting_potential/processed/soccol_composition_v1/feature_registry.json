@@ -1,0 +1,557 @@
+{
+  "schema_version": "soccol_composition_v1",
+  "feature_columns": [
+    "Fe",
+    "Cr",
+    "Ni",
+    "Mo",
+    "W",
+    "N",
+    "Nb",
+    "C",
+    "Si",
+    "Mn",
+    "Cu",
+    "P",
+    "S",
+    "Al",
+    "V",
+    "Ta",
+    "Re",
+    "Ce",
+    "Ti",
+    "Co",
+    "B",
+    "Mg",
+    "Y",
+    "Gd",
+    "Prep_grinding_grit",
+    "Prep_Ra_micron",
+    "Prep_pH",
+    "Prep_redox",
+    "Prep_time",
+    "CP_time",
+    "CP_temp",
+    "CP_pH",
+    "Test_area_cm2",
+    "scan_rate",
+    "CP_Cl",
+    "CP_Br",
+    "CP_OH",
+    "CP_SO4",
+    "CP_CO3",
+    "CP_NO3",
+    "CP_PO4",
+    "CP_MoO4",
+    "CP_CrO4",
+    "CP_aeration",
+    "CP_agitation",
+    "test_solution_type",
+    "H2SO4_mol_L",
+    "surface_preparation_method",
+    "preparation_solution_type",
+    "heat_treatment_type",
+    "heat_treatment_temperature_C",
+    "heat_treatment_duration_h",
+    "heat_treatment_cooling",
+    "heat_treatment_2_type",
+    "heat_treatment_2_temperature_C",
+    "heat_treatment_2_duration_h",
+    "heat_treatment_2_cooling"
+  ],
+  "columns": {
+    "Prep_grinding_grit": {
+      "dtype": "numeric",
+      "unit": "reported grit grade",
+      "group": "preparation",
+      "qualification": "Reported workbook grade; standards were not assumed equivalent. The explicit 1200/600-US note already had numeric grade 600."
+    },
+    "Prep_Ra_micron": {
+      "dtype": "numeric",
+      "unit": "um",
+      "group": "preparation"
+    },
+    "Prep_pH": {
+      "dtype": "numeric",
+      "unit": "dimensionless",
+      "group": "preparation"
+    },
+    "Prep_redox": {
+      "dtype": "numeric",
+      "unit": "V; reference not established for this column",
+      "group": "preparation",
+      "qualification": "Original Soccol voltage retained. A common reference for E_pit/E_corr did not establish the reference for Prep_redox. Verify before cross-dataset harmonization."
+    },
+    "Prep_time": {
+      "dtype": "numeric",
+      "unit": "h",
+      "group": "preparation",
+      "meaning": "Chemical/electrochemical preparation duration in hours, separate from heat treatment, air exposure and test-bath equilibration. Air-only timing with no separate treatment evidence remained missing."
+    },
+    "CP_time": {
+      "dtype": "numeric",
+      "unit": "h",
+      "group": "test_environment",
+      "meaning": "Equilibration in the test medium before the scan; not time until pitting."
+    },
+    "CP_temp": {
+      "dtype": "numeric",
+      "unit": "degC",
+      "group": "test_environment"
+    },
+    "CP_pH": {
+      "dtype": "numeric",
+      "unit": "dimensionless",
+      "group": "test_environment"
+    },
+    "Test_area_cm2": {
+      "dtype": "numeric",
+      "unit": "cm2",
+      "group": "test_environment"
+    },
+    "scan_rate": {
+      "dtype": "numeric",
+      "unit": "mV/s",
+      "group": "test_environment"
+    },
+    "CP_Cl": {
+      "dtype": "numeric",
+      "unit": "mol/L",
+      "group": "test_environment",
+      "qualification": "Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied."
+    },
+    "CP_Br": {
+      "dtype": "numeric",
+      "unit": "mol/L",
+      "group": "test_environment",
+      "qualification": "Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied."
+    },
+    "CP_OH": {
+      "dtype": "numeric",
+      "unit": "mol/L",
+      "group": "test_environment",
+      "qualification": "Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied."
+    },
+    "CP_SO4": {
+      "dtype": "numeric",
+      "unit": "mol/L",
+      "group": "test_environment",
+      "qualification": "Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied."
+    },
+    "CP_CO3": {
+      "dtype": "numeric",
+      "unit": "mol/L",
+      "group": "test_environment",
+      "qualification": "Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied."
+    },
+    "CP_NO3": {
+      "dtype": "numeric",
+      "unit": "mol/L",
+      "group": "test_environment",
+      "qualification": "Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied."
+    },
+    "CP_PO4": {
+      "dtype": "numeric",
+      "unit": "mol/L",
+      "group": "test_environment",
+      "qualification": "Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied."
+    },
+    "CP_MoO4": {
+      "dtype": "numeric",
+      "unit": "mol/L",
+      "group": "test_environment",
+      "qualification": "Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied."
+    },
+    "CP_CrO4": {
+      "dtype": "numeric",
+      "unit": "mol/L",
+      "group": "test_environment",
+      "qualification": "Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied."
+    },
+    "CP_aeration": {
+      "group": "test_environment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "CP_agitation": {
+      "group": "test_environment",
+      "dtype": "numeric",
+      "unit": "binary",
+      "meaning": "1 yes, 0 no, missing unknown"
+    },
+    "test_solution_type": {
+      "group": "test_environment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "H2SO4_mol_L": {
+      "group": "test_solution",
+      "dtype": "numeric",
+      "unit": "mol/L",
+      "meaning": "Reported acid component molarity; not calculated free sulfate."
+    },
+    "surface_preparation_method": {
+      "group": "preparation",
+      "dtype": "categorical",
+      "unit": null,
+      "meaning": "Explicit operations, alphabetically sorted and joined with + as in EPIT; no inferred chronology."
+    },
+    "preparation_solution_type": {
+      "group": "preparation",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "heat_treatment_type": {
+      "group": "heat_treatment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "heat_treatment_temperature_C": {
+      "group": "heat_treatment",
+      "dtype": "numeric",
+      "unit": "degC"
+    },
+    "heat_treatment_duration_h": {
+      "group": "heat_treatment",
+      "dtype": "numeric",
+      "unit": "h"
+    },
+    "heat_treatment_cooling": {
+      "group": "heat_treatment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "heat_treatment_2_type": {
+      "group": "heat_treatment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "heat_treatment_2_temperature_C": {
+      "group": "heat_treatment",
+      "dtype": "numeric",
+      "unit": "degC"
+    },
+    "heat_treatment_2_duration_h": {
+      "group": "heat_treatment",
+      "dtype": "numeric",
+      "unit": "h"
+    },
+    "heat_treatment_2_cooling": {
+      "group": "heat_treatment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "Fe": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Cr": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Ni": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Mo": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "W": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "N": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Nb": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "C": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Si": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Mn": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Cu": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "P": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "S": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Al": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "V": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Ta": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Re": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Ce": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Ti": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Co": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "B": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Mg": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Y": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Gd": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    }
+  },
+  "composition_columns": [
+    "Fe",
+    "Cr",
+    "Ni",
+    "Mo",
+    "W",
+    "N",
+    "Nb",
+    "C",
+    "Si",
+    "Mn",
+    "Cu",
+    "P",
+    "S",
+    "Al",
+    "V",
+    "Ta",
+    "Re",
+    "Ce",
+    "Ti",
+    "Co",
+    "B",
+    "Mg",
+    "Y",
+    "Gd"
+  ],
+  "missing_policy": "Unknown stays NaN. Reported zeros remain zero. Contradictory reports become NaN with an audit; no fitted imputation or scaling.",
+  "excluded_columns": [
+    "CP_ion_other",
+    "Prep_medium",
+    "CP_anions_info",
+    "E_corr",
+    "E_pit",
+    "event",
+    "source",
+    "label",
+    "ID",
+    "alloy_designation"
+  ],
+  "excluded_reference_columns": [
+    "label",
+    "source",
+    "ID",
+    "alloy_designation",
+    "raw_workbook_row",
+    "E_corr",
+    "E_pit",
+    "event",
+    "legacy_Fe_missing",
+    "legacy_C_missing",
+    "legacy_N_missing",
+    "legacy_Si_missing",
+    "legacy_P_missing",
+    "legacy_S_missing",
+    "legacy_Ti_missing",
+    "legacy_V_missing",
+    "legacy_Cr_missing",
+    "legacy_Mn_missing",
+    "legacy_Ni_missing",
+    "legacy_Nb_missing",
+    "legacy_Mo_missing",
+    "Ti_repair_applied",
+    "legacy_composition_reported_count",
+    "legacy_composition_sum_without_Fe_wt_pct",
+    "legacy_Fe_is_approximate",
+    "legacy_Fe_balance_basis",
+    "legacy_Fe_is_largest_component",
+    "row_material_family",
+    "material_scope_primary",
+    "material_is_Fe_based",
+    "material_is_Ni_based",
+    "material_scope_needs_review",
+    "source_review_status",
+    "source_classification_confidence",
+    "source_has_composition_caveat",
+    "regression_eligible",
+    "survival_eligible",
+    "raw_Prep_grinding_grit",
+    "raw_Prep_Ra_micron",
+    "raw_Prep_pH",
+    "raw_Prep_redox",
+    "raw_Prep_time",
+    "raw_CP_time",
+    "raw_CP_temp",
+    "raw_CP_pH",
+    "raw_Test_area_cm2",
+    "raw_scan_rate",
+    "raw_CP_Cl",
+    "raw_CP_Br",
+    "raw_CP_OH",
+    "raw_CP_SO4",
+    "raw_CP_CO3",
+    "raw_CP_NO3",
+    "raw_CP_PO4",
+    "raw_CP_MoO4",
+    "raw_CP_CrO4",
+    "raw_CP_aeration",
+    "raw_CP_agitation",
+    "raw_CP_anions_info",
+    "raw_Prep_medium",
+    "raw_CP_ion_other",
+    "legacy_Fe",
+    "legacy_Cr",
+    "legacy_Ni",
+    "legacy_Mo",
+    "legacy_N",
+    "legacy_Nb",
+    "legacy_C",
+    "legacy_Si",
+    "legacy_Mn",
+    "legacy_P",
+    "legacy_S",
+    "legacy_V",
+    "legacy_Ti",
+    "composition_status",
+    "composition_sum_available_wt_percent",
+    "missing_composition_cells",
+    "recovered_element_cells",
+    "known_unresolved_elements",
+    "reason",
+    "outer_split",
+    "development_validation_fold",
+    "use_as_development_context",
+    "frozen_final_query"
+  ],
+  "original_environment_columns": {
+    "Prep_grinding_grit": "raw_Prep_grinding_grit",
+    "Prep_Ra_micron": "raw_Prep_Ra_micron",
+    "Prep_pH": "raw_Prep_pH",
+    "Prep_redox": "raw_Prep_redox",
+    "Prep_time": "raw_Prep_time",
+    "CP_time": "raw_CP_time",
+    "CP_temp": "raw_CP_temp",
+    "CP_pH": "raw_CP_pH",
+    "Test_area_cm2": "raw_Test_area_cm2",
+    "scan_rate": "raw_scan_rate",
+    "CP_Cl": "raw_CP_Cl",
+    "CP_Br": "raw_CP_Br",
+    "CP_OH": "raw_CP_OH",
+    "CP_SO4": "raw_CP_SO4",
+    "CP_CO3": "raw_CP_CO3",
+    "CP_NO3": "raw_CP_NO3",
+    "CP_PO4": "raw_CP_PO4",
+    "CP_MoO4": "raw_CP_MoO4",
+    "CP_CrO4": "raw_CP_CrO4",
+    "CP_aeration": "raw_CP_aeration",
+    "CP_agitation": "raw_CP_agitation",
+    "CP_anions_info": "raw_CP_anions_info",
+    "Prep_medium": "raw_Prep_medium",
+    "CP_ion_other": "raw_CP_ion_other"
+  },
+  "scope": "Reviewed composition and inherited environment features. Only accepted development rows are eligible context. Every frozen query row is retained, including unresolved cases; this is not a ready final-evaluation input while any query composition is unresolved.",
+  "test_solution_type_semantics": "Only explicitly named whole media (seawater) were assigned. Additive notes were not treated as complete solution recipes.",
+  "other_ions": "CP_ion_other was never read during extraction. Borate/citrate amounts were not added in this export.",
+  "review_policy": "Source contradictions and uncertain timing associations remained missing; original reports were preserved.",
+  "environment_history_columns": [
+    "Prep_grinding_grit",
+    "Prep_Ra_micron",
+    "Prep_pH",
+    "Prep_redox",
+    "Prep_time",
+    "CP_time",
+    "CP_temp",
+    "CP_pH",
+    "Test_area_cm2",
+    "scan_rate",
+    "CP_Cl",
+    "CP_Br",
+    "CP_OH",
+    "CP_SO4",
+    "CP_CO3",
+    "CP_NO3",
+    "CP_PO4",
+    "CP_MoO4",
+    "CP_CrO4",
+    "CP_aeration",
+    "CP_agitation",
+    "test_solution_type",
+    "H2SO4_mol_L",
+    "surface_preparation_method",
+    "preparation_solution_type",
+    "heat_treatment_type",
+    "heat_treatment_temperature_C",
+    "heat_treatment_duration_h",
+    "heat_treatment_cooling",
+    "heat_treatment_2_type",
+    "heat_treatment_2_temperature_C",
+    "heat_treatment_2_duration_h",
+    "heat_treatment_2_cooling"
+  ],
+  "composition_policy": "Reported amounts retained; explicit nominal and same-paper raw-data recoveries logged; supported Fe balance computed after recovery; unknown elements zero-filled only for accepted compositions. Known omissions remained NaN in review rows.",
+  "final_evaluation_ready": false
+}

@@ -1,0 +1,30 @@
+{
+  "review_date": "2026-10-24",
+  "epit_header": "Pitting Potential!Z1 = Epit, mV (SCE)",
+  "epit_rows": 760,
+  "soccol_source_groups_checked": 13,
+  "soccol_assigned_rows": 677,
+  "soccol_unassigned_rows": 3350,
+  "primary_paper_or_abstract_groups_rechecked": 12,
+  "same_paper_dataset_only_groups": [
+    "1999Wegrelius"
+  ],
+  "alar_exact_target_matches": 64,
+  "alar_retained_target_discrepancies": 2,
+  "same_paper_epit_matching_rows": 9,
+  "target_changes": 0,
+  "rules_sha256": "69499f9e5f3f0896d844f398d0cbac5b1ffe800f3dd53bfcf0bdf709e4af2395",
+  "evidence_file_sha256": {
+    "alar_numeric_check.csv": "7f3902741f468db5bcc45ffb3d520047c2806992b07e741e6f9333c2322f9230",
+    "same_paper_epit_checks.csv": "f583ddf90f839082e6e928698b78db1dee5dc21f945d3be20c92cdcbf156e174",
+    "source_evidence.csv": "dd2ca727c6da3a071b86c0a5a537f7368f3b7c15ddd8f0f0caad560ba339a971"
+  },
+  "source_pdf_sha256": {
+    "1970Wilde.pdf": "9491322df775b1ed389192b05e602bb81c000eabd0f690885b280c70da1a4fbf",
+    "1983Shibata.pdf": "669e7a05f4b6223a008165e4c10cfda385eef3d7a80c9dfe00c9389ae7b0e36b",
+    "1995Jackson.pdf": "09388c31914a2caa69ea1d4b6e5252403ff57b3dda681dea0646f19965fd75cf",
+    "2016Alar.pdf": "ea3ba8a53786408e594c90277c3a147521303dcab4a200a3e08ad3795fc9a814",
+    "2018Shakir.pdf": "845919f8e353e8e29d2e043be61dd63898d0c3981a09c06efe6ef8bf5962d21f"
+  },
+  "local_collection_manuscript_sha256": "fe4dcd0008c9801831c62c098244f791e7453a44fc865701f9f9217b85eefe94"
+}

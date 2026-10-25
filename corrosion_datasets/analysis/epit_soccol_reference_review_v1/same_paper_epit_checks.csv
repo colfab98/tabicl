@@ -1,0 +1,10 @@
+soccol_row_id,source,matched_epit_row_ids,matching_predictors,soccol_E_pit,matching_epit_target_mV_SCE,scope
+soccol_r000118,1970Wilde,epit_r000153,Cr;Ni;Mo;CP_temp;CP_pH;CP_Cl,-185.0,-185.0,Same-paper composition/condition group and target-set agreement; not an independent correction of source values.
+soccol_r000119,1970Wilde,epit_r000154,Cr;Ni;Mo;CP_temp;CP_pH;CP_Cl,-130.0,-130.0,Same-paper composition/condition group and target-set agreement; not an independent correction of source values.
+soccol_r000120,1970Wilde,epit_r000155,Cr;Ni;Mo;CP_temp;CP_pH;CP_Cl,-100.0,-100.0,Same-paper composition/condition group and target-set agreement; not an independent correction of source values.
+soccol_r000121,1970Wilde,epit_r000156,Cr;Ni;Mo;CP_temp;CP_pH;CP_Cl,-35.0,-35.0,Same-paper composition/condition group and target-set agreement; not an independent correction of source values.
+soccol_r000122,1970Wilde,epit_r000157,Cr;Ni;Mo;CP_temp;CP_pH;CP_Cl,-50.0,-50.0,Same-paper composition/condition group and target-set agreement; not an independent correction of source values.
+soccol_r000123,1970Wilde,epit_r000158,Cr;Ni;Mo;CP_temp;CP_pH;CP_Cl,-20.0,-20.0,Same-paper composition/condition group and target-set agreement; not an independent correction of source values.
+soccol_r000124,1970Wilde,epit_r000159,Cr;Ni;Mo;CP_temp;CP_pH;CP_Cl,50.0,50.0,Same-paper composition/condition group and target-set agreement; not an independent correction of source values.
+soccol_r000125,1970Wilde,epit_r000160,Cr;Ni;Mo;CP_temp;CP_pH;CP_Cl,65.0,65.0,Same-paper composition/condition group and target-set agreement; not an independent correction of source values.
+soccol_r001943,1999Wegrelius,epit_r000208,Cr;Ni;Mo;CP_temp;CP_pH;CP_Cl,549.6,549.6,Same-paper composition/condition group and target-set agreement; not an independent correction of source values.

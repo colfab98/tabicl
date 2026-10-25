@@ -47,6 +47,10 @@ from .epit_composition_profile import (
 )
 from .epit_feature_generator import EpitFeatureBatch, sample_epit_feature_rows
 from .epit_feature_profile import EPIT_FEATURE_PROFILE, load_epit_feature_profile
+from .epit_expanded_schema import (
+    EPIT_EXPANDED_FEATURE_PROFILE, EPIT_EXPANDED_FEATURE_COLUMNS,
+    EPIT_EXPANDED_CATEGORICAL_COLUMNS, EPIT_EXPANDED_FEATURE_COUNT,
+)
 from .epit_schema import EPIT_COMPOSITION_INDEX, epit_feature_slices
 from .soccol_feature_generator import SoccolFeatureBatch, sample_soccol_feature_rows
 from .soccol_feature_profile import load_soccol_feature_profile
@@ -950,22 +954,30 @@ class SCMPrior(Prior):
     def _pitting_magpie_features_enabled(self) -> bool:
         return bool(self.fixed_hp.get("pitting_magpie_features", False))
 
+    def _expanded_epit_features_enabled(self) -> bool:
+        return (
+            self._empirical_pitting_feature_profile_enabled()
+            and self.fixed_hp.get("pitting_feature_profile", EPIT_FEATURE_PROFILE) == EPIT_EXPANDED_FEATURE_PROFILE
+        )
+
     def _pitting_magpie_base_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Use the fixed physical features before optional informed-task descriptors."""
 
         if not self._pitting_magpie_features_enabled():
             return params
-        if int(params["num_features"]) != EPIT_MAGPIE_TOTAL_FEATURE_COUNT:
+        base_count = EPIT_EXPANDED_FEATURE_COUNT if self._expanded_epit_features_enabled() else EPIT_BASE_FEATURE_COUNT
+        total_count = base_count + EPIT_MAGPIE_TOTAL_FEATURE_COUNT - EPIT_BASE_FEATURE_COUNT
+        if int(params["num_features"]) != total_count:
             raise ValueError(
                 "pitting_magpie_features requires "
-                f"num_features={EPIT_MAGPIE_TOTAL_FEATURE_COUNT}, got {params['num_features']}."
+                f"num_features={total_count}, got {params['num_features']}."
             )
-        if int(params["max_features"]) < EPIT_MAGPIE_TOTAL_FEATURE_COUNT:
+        if int(params["max_features"]) < total_count:
             raise ValueError(
                 "pitting_magpie_features requires "
-                f"max_features>={EPIT_MAGPIE_TOTAL_FEATURE_COUNT}."
+                f"max_features>={total_count}."
             )
-        base_params = {**params, "num_features": EPIT_BASE_FEATURE_COUNT}
+        base_params = {**params, "num_features": base_count}
         if not params.get("informed_mode", False):
             return base_params
         if not self._fixed_epit_schema_enabled():
@@ -3118,7 +3130,7 @@ class SCMPrior(Prior):
                 )
             ),
         )
-        expected_feature_count = len(profile.composition_profile.observed_elements) + 4
+        expected_feature_count = profile.feature_count
         if X.ndim != 2 or X.shape[1] != expected_feature_count:
             raise ValueError(
                 "empirical_features requires exactly "
@@ -3132,9 +3144,15 @@ class SCMPrior(Prior):
             != len(profile.composition_profile.observed_elements)
         ):
             raise ValueError("empirical_features requires the fixed 24-column material block.")
-        if environment_slice is None or environment_slice.stop - environment_slice.start != 3:
+        expanded = profile.expanded_environment_values is not None
+        if expanded and not self._empirical_pitting_scm_target_enabled():
+            raise ValueError("The expanded EPIT profile requires empirical_features_scm_target.")
+        if expanded:
+            if material_slice != slice(0, 24) or environment_slice != slice(24, 70):
+                raise ValueError("Expanded EPIT features require a 24/46/0 block allocation.")
+        elif environment_slice is None or environment_slice.stop - environment_slice.start != 3:
             raise ValueError("empirical_features requires temperature, chloride, and pH columns.")
-        if process_slice is None or process_slice.stop - process_slice.start != 1:
+        if not expanded and (process_slice is None or process_slice.stop - process_slice.start != 1):
             raise ValueError("empirical_features requires one test-method column.")
 
         nonempty_blocks = {
@@ -3142,7 +3160,8 @@ class SCMPrior(Prior):
             for name, feature_slice in blocks.items()
             if feature_slice.stop > feature_slice.start
         }
-        if nonempty_blocks != {"material", "environment", "process_history"}:
+        expected_blocks = {"material", "environment"} if expanded else {"material", "environment", "process_history"}
+        if nonempty_blocks != expected_blocks:
             raise ValueError(
                 "empirical_features permits only material, environment, and process blocks."
             )
@@ -3196,6 +3215,23 @@ class SCMPrior(Prior):
             ),
             random_state=random_seed,
         )
+        if expanded:
+            X = torch.as_tensor(batch.latent_features.copy(), device=X.device, dtype=X.dtype)
+            info = PittingProfileInfo(
+                applied=True, material_style="empirical_feature_profile", physical_profile_applied=True,
+            )
+            for col in range(24):
+                info.add_role("material_empirical_composition", col)
+            for role, column in (("temperature_like", "CP_temp"), ("chloride_like", "CP_Cl"), ("ph_like", "CP_pH")):
+                info.add_role(role, EPIT_EXPANDED_FEATURE_COLUMNS.index(column))
+            for column in EPIT_EXPANDED_CATEGORICAL_COLUMNS:
+                info.add_role(column, EPIT_EXPANDED_FEATURE_COLUMNS.index(column), categorical=True)
+            family_ids = torch.as_tensor(batch.composition_family_indices.copy(), device=X.device, dtype=torch.long)
+            info.material_family_ids = family_ids
+            self.last_pitting_feature_batch = batch
+            self.last_pitting_composition_batch = batch.compositions
+            self.last_pitting_material_family_ids = family_ids.detach().cpu()
+            return X, info
         sampled = torch.as_tensor(batch.features.copy(), device=X.device, dtype=X.dtype)
         X = X.clone()
         sample_slices = epit_feature_slices(
@@ -3377,7 +3413,7 @@ class SCMPrior(Prior):
         expected_feature_count = (
             SOCCOL_BASE_FEATURE_COUNT
             if soccol_profile
-            else material_feature_count + 4
+            else EPIT_EXPANDED_FEATURE_COUNT if self._expanded_epit_features_enabled() else material_feature_count + 4
         )
         if X.ndim != 2 or X.shape[1] != expected_feature_count:
             raise ValueError(
@@ -3417,8 +3453,15 @@ class SCMPrior(Prior):
             if soccol_profile
             else epit_feature_slices(material_feature_count)
         )
+        # The formulas retain their original inputs and method-aware offsets.
+        # SCM sees all 70 fields, while formulas use a private named projection.
+        formula_X = X
+        if self._expanded_epit_features_enabled():
+            if feature_batch is None:
+                raise RuntimeError("Expanded EPIT target requires its sampled feature batch.")
+            formula_X = torch.as_tensor(feature_batch.formula_features.copy(), device=X.device, dtype=X.dtype)
         rule = self._sample_fixed_epit_target_rule(
-            X,
+            formula_X,
             blocks,
             target_mix_weight,
             profile_info,
@@ -3429,7 +3472,7 @@ class SCMPrior(Prior):
                 "target-rule scores."
             )
         target_component, epit_drive = self._evaluate_fixed_epit_target_rule_tensor(
-            X,
+            formula_X,
             rule,
         )
         combined = (
@@ -4120,6 +4163,13 @@ class SCMPrior(Prior):
             else:
                 valid_target = self.sanity_check(X, y, params["train_size"])
             if (d > 0).all() and valid_target:
+                if empirical_scm_target and self._expanded_epit_features_enabled():
+                    # Restore the exact mask from the sampled environment row,
+                    # after all finite target calculations and standardization.
+                    missing = torch.as_tensor(
+                        np.isnan(self.last_pitting_feature_batch.features), device=X.device,
+                    )
+                    X[0, :, :EPIT_EXPANDED_FEATURE_COUNT].masked_fill_(missing, float("nan"))
                 return X.squeeze(0), y.squeeze(0), d.squeeze(0)
 
     @torch.no_grad()

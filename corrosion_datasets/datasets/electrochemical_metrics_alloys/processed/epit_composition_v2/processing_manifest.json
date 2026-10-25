@@ -1,0 +1,271 @@
+{
+  "schema_version": "epit_composition_v2",
+  "previous_version": "epit_environment_v3",
+  "counts": {
+    "retained_rows": 760,
+    "development_rows": 608,
+    "final_test_rows": 152,
+    "derived_columns": 47,
+    "environment_history_features": 45,
+    "audit_only_derived_columns": 2,
+    "total_features_with_composition": 69,
+    "source_fields": {
+      "Test Solution": {
+        "populated_rows": 760,
+        "distinct_descriptions": 111
+      },
+      "Heat treatment": {
+        "populated_rows": 421,
+        "distinct_descriptions": 79
+      },
+      "Microstructures": {
+        "populated_rows": 217,
+        "distinct_descriptions": 39
+      },
+      "[Cl-] Test Method": {
+        "populated_rows": 752,
+        "distinct_descriptions": 51
+      }
+    },
+    "feature_coverage": {
+      "CP_temp": 677,
+      "CP_pH": 712,
+      "CP_Cl": 758,
+      "scan_rate": 604,
+      "test_solution_type": 760,
+      "CP_aeration": 291,
+      "H2SO4_eq_L": 42,
+      "H2SO4_mol_L": 22,
+      "H2S_partial_pressure_atm": 6,
+      "HCl_eq_L": 52,
+      "HCl_mol_L": 22,
+      "KCl_eq_L": 16,
+      "KCl_mol_L": 7,
+      "MgCl2_mol_L": 8,
+      "Na2S2O3_mol_L": 3,
+      "Na2SO4_mol_L": 8,
+      "NaBr_eq_L": 12,
+      "NaBr_mol_L": 25,
+      "NaClO4_mol_L": 1,
+      "NaCl_eq_L": 96,
+      "NaCl_mol_L": 300,
+      "NaCl_wt_percent": 26,
+      "NaHCO3_mol_L": 38,
+      "Test_area_cm2": 144,
+      "WO4_mol_L": 2,
+      "heat_treatment_type": 377,
+      "heat_treatment_temperature_C": 299,
+      "heat_treatment_duration_h": 332,
+      "heat_treatment_cooling": 247,
+      "heat_treatment_2_type": 95,
+      "heat_treatment_2_temperature_C": 73,
+      "heat_treatment_2_duration_h": 58,
+      "heat_treatment_2_cooling": 61,
+      "phase_FCC": 125,
+      "phase_BCC": 82,
+      "phase_HCP": 9,
+      "phase_IM": 32,
+      "Prep_grinding_grit": 126,
+      "surface_preparation_method": 291,
+      "preparation_solution_type": 101,
+      "Prep_time": 87,
+      "CP_time": 177,
+      "CP_agitation": 6,
+      "CP_Br": 25,
+      "CP_SO4": 2,
+      "NaCl_percent_unspecified": 25,
+      "NaCl_ppm_unspecified": 59
+    },
+    "source_status_rows": {
+      "Test Temp. oC": {
+        "copied_numeric": 677,
+        "missing": 83
+      },
+      "[Cl-] pH": {
+        "copied_numeric": 712,
+        "missing": 48
+      },
+      "[Cl-] M": {
+        "copied_numeric": 760
+      },
+      "Scan Rate mV/s": {
+        "copied_numeric": 604,
+        "missing": 128,
+        "not_numeric": 28
+      },
+      "Test Solution": {
+        "extracted": 462,
+        "partial": 298
+      },
+      "Heat treatment": {
+        "missing": 339,
+        "extracted": 283,
+        "partial": 114,
+        "not_represented": 14,
+        "unresolved": 10
+      },
+      "Microstructures": {
+        "missing": 543,
+        "extracted": 152,
+        "not_represented": 33,
+        "unresolved": 30,
+        "partial": 2
+      },
+      "[Cl-] Test Method": {
+        "not_represented": 537,
+        "extracted": 215,
+        "missing": 8
+      },
+      "Test Solution / [Cl-] M": {
+        "conflict": 2
+      },
+      "Heat treatment / preparation": {
+        "no_added_detail": 368,
+        "missing": 339,
+        "partial": 52,
+        "extracted": 1
+      },
+      "[Cl-] Test Method / preparation": {
+        "no_added_detail": 403,
+        "extracted": 209,
+        "partial": 140,
+        "missing": 8
+      },
+      "Comments / preparation": {
+        "no_added_detail": 443,
+        "missing": 124,
+        "extracted": 101,
+        "partial": 71,
+        "unresolved": 21
+      },
+      "NaBr_mol_L / Test Solution": {
+        "missing": 735,
+        "extracted": 25
+      },
+      "Na2SO4_mol_L / test_solution_type": {
+        "missing": 752,
+        "partial": 6,
+        "extracted": 2
+      },
+      "preparation duration qualification": {
+        "unresolved": 18
+      }
+    },
+    "conflicting_rows": 2,
+    "rows_with_heat_information": 397,
+    "rows_with_second_heat_stage": 95,
+    "rows_with_phase_information": 154,
+    "added_columns": [
+      "Prep_grinding_grit",
+      "surface_preparation_method",
+      "preparation_solution_type",
+      "Prep_time",
+      "CP_time",
+      "CP_agitation",
+      "CP_Br",
+      "CP_SO4"
+    ],
+    "added_feature_coverage": {
+      "Prep_grinding_grit": 126,
+      "surface_preparation_method": 291,
+      "preparation_solution_type": 101,
+      "Prep_time": 87,
+      "CP_time": 177,
+      "CP_agitation": 6,
+      "CP_Br": 25,
+      "CP_SO4": 2
+    },
+    "preparation_conflicting_rows": 0,
+    "rows_with_preparation_method": 291,
+    "preparation_source_fields": {
+      "Heat treatment": {
+        "populated_rows": 421,
+        "distinct_descriptions": 79
+      },
+      "[Cl-] Test Method": {
+        "populated_rows": 752,
+        "distinct_descriptions": 51
+      },
+      "Comments": {
+        "populated_rows": 636,
+        "distinct_descriptions": 80
+      }
+    },
+    "review_changed_cells": 1,
+    "review_changed_rows": 1,
+    "review_changes_by_column": {
+      "CP_Cl": 1
+    },
+    "review_newly_missing_cells": 1,
+    "composition_review_changed_cells": 2,
+    "composition_review_changed_rows": 1,
+    "composition_review_excluded_rows": 0,
+    "composition_review_retained_uncertain_rows": 22,
+    "composition_review_retained_uncertain_development_rows": 5,
+    "composition_review_retained_uncertain_final_test_rows": 17
+  },
+  "policy": {
+    "inherited_policy": {
+      "inherited_policy": {
+        "original_columns": "Preserved verbatim, including composition, targets, and raw environment/history descriptions.",
+        "concentrations": "Each chemical and stated unit had a separate column. Normality, molarity, and weight percent were not conflated. Unknown-basis amounts were audit-only.",
+        "heat_treatment": "Temperature in degrees C, time in hours; distinct reported stages retained. Unresolved ranges and alternatives were not averaged.",
+        "phase_flags": "1 present, 0 supported absence, missing unknown; general discussion and unspecified secondary phases were not phase assignments.",
+        "targets_used_for_extraction": false,
+        "row_exclusions": 0,
+        "previous_environment_columns": "Preserved verbatim.",
+        "preparation": "Only explicit procedure information was extracted. Prep_redox, Prep_pH and Prep_Ra_micron remained deferred. Unknown agitation was not set to zero.",
+        "ions": "NaBr molarity mapped to nominal bromide; only the Na2SO4/NaCl recipe without a named acid mapped to nominal sulfate. No normality conversion or acid speciation inference."
+      },
+      "source_review": "Source contradictions and uncertain timing associations remained missing; original reports were preserved."
+    },
+    "composition_review": {
+      "Ti": "Corrected the numeric Ti amount to 1.86 wt.% using the source-table text and alloy description.",
+      "Fe": "Updated the corrected row's Fe remainder to 77.612 wt.%.",
+      "Re": "Retained all 12 rows and their original zero Re values; exact amounts remained unverified.",
+      "Nb_Ta": "Retained all 10 rows and their recorded equal Nb/Ta amounts; separate amounts and combined totals remained unverified.",
+      "acceptance": "The user accepted these documented uncertainties for comparison on a common dataset; unresolved evidence did not exclude rows or block this export.",
+      "splits": "Preserved all 608 development rows, 152 frozen final queries and development-fold assignments."
+    }
+  },
+  "input_sha256": {
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/changes_vs_previous_shared.csv": "5d52c5a981d75fb853f46c899c562d93c84194da7fef63acc1fb15a687f29ba8",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/composition_processing_log.csv": "d0e0df3e2a2fd5e681cdb4a95f9fe6e5cd58c94e730a3e6b0853785dd813d551",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/composition_processing_manifest.json": "c208f07cc97719d59f92d40d93ad7832db280a36277fef821d32e0d1161831b9",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/composition_row_audit.csv": "8302ed82bbd289966a76b10221a2bdab924fae44e37d1807d30d2f064b9c5637",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/environment_column_summary.csv": "615f0e659c336fbdb074db6cc29b24f3af94d74e518da681f47370373199678e",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/environment_processing_log.csv": "ad46fa1eeba851e76a588457555749c268feb09717dc5dc13873a47121fb80bf",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/environment_review_notes.csv": "1f24264e5ccc1b4f7e64907e6ac3de89d22cfb9c7b4cd2a4c8231edd4edaf6aa",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/epit_features.csv": "7f397d0644953b0960c63803ce7eecf79fa1603b56c9ba2911eb0d0286589344",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/epit_processed.csv": "69b19943723b8350f178f4fed5711e314b1f3b9b8f5136969a2a7b904760a66f",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/feature_registry.json": "0988342bd88626c229d5100157baa6cd6bd1b2631b8405be7cd3f56ab1dc7b39",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/preparation_processing_log.csv": "d8394d5a7a33eb0cf59cd2d87c3dbee42b26f88a6623ac02ddab144e0619163a",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/processing_manifest.json": "91ec58d52758cc45d7c43ed5d8b4aa279826aa2ed73d5bda0fc28493edd26ccd",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/review_changes.csv": "c8144ffa829fe8c707596e845af15365147e984f9a020ddbb4f495e95c86957d",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_environment_v3/split_assignments.csv": "a16d47dd41ce77f143f868995ebf8689737a6f35fca8a98faec62d7e128290d8",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_composition_source_review_v1/row_findings.csv": "6a1fb965b3c139566797099634fa2fe3ed05534977ddb6ba573bd93dbc066139",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_composition_source_review_v1/summary.json": "2dd423d44aec41567b69bfd854652c180571c3229bba62d9ba098cd79736bbe1"
+  },
+  "implementation_sha256": {
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/electrochemical_metrics_alloys/review_epit_composition.py": "bb6c934d6ffa691535919c1b8e18048cb393ebb3324cce016f979976948bc11f"
+  },
+  "output_sha256": {
+    "changes_vs_previous_shared.csv": "5d52c5a981d75fb853f46c899c562d93c84194da7fef63acc1fb15a687f29ba8",
+    "composition_processing_log.csv": "d0e0df3e2a2fd5e681cdb4a95f9fe6e5cd58c94e730a3e6b0853785dd813d551",
+    "composition_processing_manifest.json": "c208f07cc97719d59f92d40d93ad7832db280a36277fef821d32e0d1161831b9",
+    "composition_retained_uncertainties.csv": "14a660326d92d944d86cf7035e763bb1e484b0ffa1c9520233d0099a0ed177bc",
+    "composition_review_changes.csv": "6b200dc18f304b2ac47a4b77c3678797313b80c5052ee35f0cc0c67595d0bae3",
+    "composition_row_audit.csv": "8302ed82bbd289966a76b10221a2bdab924fae44e37d1807d30d2f064b9c5637",
+    "environment_column_summary.csv": "615f0e659c336fbdb074db6cc29b24f3af94d74e518da681f47370373199678e",
+    "environment_processing_log.csv": "ad46fa1eeba851e76a588457555749c268feb09717dc5dc13873a47121fb80bf",
+    "environment_review_notes.csv": "1f24264e5ccc1b4f7e64907e6ac3de89d22cfb9c7b4cd2a4c8231edd4edaf6aa",
+    "epit_features.csv": "2a58001fc69fe6b94f318c053dd781b565e1ecb02c60320e818b5258ade5e4eb",
+    "epit_processed.csv": "9104c3e506e0a520f8111bf1d53fa74457894077adb53ca68eb8e57055073e68",
+    "feature_registry.json": "00f478927bf01d04718c9675eea2a0b12afde3d3c3345f8aff7c0f7149108306",
+    "preparation_processing_log.csv": "d8394d5a7a33eb0cf59cd2d87c3dbee42b26f88a6623ac02ddab144e0619163a",
+    "review_changes.csv": "c8144ffa829fe8c707596e845af15365147e984f9a020ddbb4f495e95c86957d",
+    "split_assignments.csv": "a16d47dd41ce77f143f868995ebf8689737a6f35fca8a98faec62d7e128290d8"
+  },
+  "historical_records": "Inherited logs and composition_processing_manifest.json described earlier processing stages; composition_review_changes.csv recorded this step's two additional corrections.",
+  "scope": "Standalone EPIT export with two corrected cells. All rows, frozen splits, targets, environment values and model paths were preserved. Re and Nb/Ta uncertainties were retained by explicit user decision."
+}

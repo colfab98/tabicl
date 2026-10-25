@@ -15,6 +15,7 @@ from torch.utils.data import IterableDataset
 
 from .dataset import Prior, SCMPrior
 from .epit_schema import EPIT_COMPOSITION_ELEMENTS
+from .epit_feature_profile import EPIT_FEATURE_COMPOSITION_PROFILES
 from .prior_config import DEFAULT_FIXED_HP, DEFAULT_SAMPLED_HP
 from .soccol_schema import SOCCOL_FEATURE_COLUMNS
 from .source_ids import (
@@ -120,6 +121,13 @@ class CombinedCorrosionPriorDataset(IterableDataset):
             num_features = int(regime["num_features"])
             fixed_hp = dict(DEFAULT_FIXED_HP)
             fixed_hp.update(regime.get("fixed_hp", {}))
+            # Frozen v1 combined configs predate an explicit composition
+            # profile. Preserve their old bank when global defaults advance.
+            if (
+                fixed_hp.get("pitting_feature_profile") in EPIT_FEATURE_COMPOSITION_PROFILES
+                and "pitting_composition_profile" not in regime.get("fixed_hp", {})
+            ):
+                fixed_hp["pitting_composition_profile"] = EPIT_FEATURE_COMPOSITION_PROFILES[fixed_hp["pitting_feature_profile"]]
             if float(fixed_hp.get("pitting_coefficient_variation", 0.0)):
                 fixed_hp["pitting_coefficient_variation_seed"] = (
                     int(fixed_hp.get("pitting_coefficient_variation_seed", 42))

@@ -1,0 +1,480 @@
+{
+  "schema_version": "epit_environment_v1",
+  "feature_columns": [
+    "Fe",
+    "Cr",
+    "Ni",
+    "Mo",
+    "W",
+    "N",
+    "Nb",
+    "C",
+    "Si",
+    "Mn",
+    "Cu",
+    "P",
+    "S",
+    "Al",
+    "V",
+    "Ta",
+    "Re",
+    "Ce",
+    "Ti",
+    "Co",
+    "B",
+    "Mg",
+    "Y",
+    "Gd",
+    "CP_temp",
+    "CP_pH",
+    "CP_Cl",
+    "scan_rate",
+    "test_solution_type",
+    "CP_aeration",
+    "H2SO4_eq_L",
+    "H2SO4_mol_L",
+    "H2S_partial_pressure_atm",
+    "HCl_eq_L",
+    "HCl_mol_L",
+    "KCl_eq_L",
+    "KCl_mol_L",
+    "MgCl2_mol_L",
+    "Na2S2O3_mol_L",
+    "Na2SO4_mol_L",
+    "NaBr_eq_L",
+    "NaBr_mol_L",
+    "NaClO4_mol_L",
+    "NaCl_eq_L",
+    "NaCl_mol_L",
+    "NaCl_wt_percent",
+    "NaHCO3_mol_L",
+    "Test_area_cm2",
+    "WO4_mol_L",
+    "heat_treatment_type",
+    "heat_treatment_temperature_C",
+    "heat_treatment_duration_h",
+    "heat_treatment_cooling",
+    "heat_treatment_2_type",
+    "heat_treatment_2_temperature_C",
+    "heat_treatment_2_duration_h",
+    "heat_treatment_2_cooling",
+    "phase_FCC",
+    "phase_BCC",
+    "phase_HCP",
+    "phase_IM"
+  ],
+  "composition_columns": [
+    "Fe",
+    "Cr",
+    "Ni",
+    "Mo",
+    "W",
+    "N",
+    "Nb",
+    "C",
+    "Si",
+    "Mn",
+    "Cu",
+    "P",
+    "S",
+    "Al",
+    "V",
+    "Ta",
+    "Re",
+    "Ce",
+    "Ti",
+    "Co",
+    "B",
+    "Mg",
+    "Y",
+    "Gd"
+  ],
+  "environment_history_columns": [
+    "CP_temp",
+    "CP_pH",
+    "CP_Cl",
+    "scan_rate",
+    "test_solution_type",
+    "CP_aeration",
+    "H2SO4_eq_L",
+    "H2SO4_mol_L",
+    "H2S_partial_pressure_atm",
+    "HCl_eq_L",
+    "HCl_mol_L",
+    "KCl_eq_L",
+    "KCl_mol_L",
+    "MgCl2_mol_L",
+    "Na2S2O3_mol_L",
+    "Na2SO4_mol_L",
+    "NaBr_eq_L",
+    "NaBr_mol_L",
+    "NaClO4_mol_L",
+    "NaCl_eq_L",
+    "NaCl_mol_L",
+    "NaCl_wt_percent",
+    "NaHCO3_mol_L",
+    "Test_area_cm2",
+    "WO4_mol_L",
+    "heat_treatment_type",
+    "heat_treatment_temperature_C",
+    "heat_treatment_duration_h",
+    "heat_treatment_cooling",
+    "heat_treatment_2_type",
+    "heat_treatment_2_temperature_C",
+    "heat_treatment_2_duration_h",
+    "heat_treatment_2_cooling",
+    "phase_FCC",
+    "phase_BCC",
+    "phase_HCP",
+    "phase_IM"
+  ],
+  "audit_only_derived_columns": [
+    "NaCl_percent_unspecified",
+    "NaCl_ppm_unspecified"
+  ],
+  "columns": {
+    "Fe": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Cr": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Ni": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Mo": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "W": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "N": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Nb": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "C": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Si": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Mn": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Cu": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "P": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "S": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Al": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "V": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Ta": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Re": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Ce": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Ti": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Co": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "B": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Mg": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Y": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Gd": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "CP_temp": {
+      "group": "environment",
+      "dtype": "numeric",
+      "unit": "degC"
+    },
+    "CP_pH": {
+      "group": "environment",
+      "dtype": "numeric",
+      "unit": "dimensionless"
+    },
+    "CP_Cl": {
+      "group": "environment",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "scan_rate": {
+      "group": "environment",
+      "dtype": "numeric",
+      "unit": "mV/s"
+    },
+    "test_solution_type": {
+      "group": "solution",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "CP_aeration": {
+      "group": "solution",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "H2SO4_eq_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "eq/L"
+    },
+    "H2SO4_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "H2S_partial_pressure_atm": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "atm"
+    },
+    "HCl_eq_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "eq/L"
+    },
+    "HCl_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "KCl_eq_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "eq/L"
+    },
+    "KCl_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "MgCl2_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "Na2S2O3_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "Na2SO4_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "NaBr_eq_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "eq/L"
+    },
+    "NaBr_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "NaClO4_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "NaCl_eq_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "eq/L"
+    },
+    "NaCl_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "NaCl_percent_unspecified": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "%; basis unspecified"
+    },
+    "NaCl_ppm_unspecified": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "ppm; basis unspecified"
+    },
+    "NaCl_wt_percent": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "NaHCO3_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "Test_area_cm2": {
+      "group": "procedure",
+      "dtype": "numeric",
+      "unit": "cm2"
+    },
+    "WO4_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "heat_treatment_type": {
+      "group": "heat_treatment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "heat_treatment_temperature_C": {
+      "group": "heat_treatment",
+      "dtype": "numeric",
+      "unit": "degC"
+    },
+    "heat_treatment_duration_h": {
+      "group": "heat_treatment",
+      "dtype": "numeric",
+      "unit": "h"
+    },
+    "heat_treatment_cooling": {
+      "group": "heat_treatment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "heat_treatment_2_type": {
+      "group": "heat_treatment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "heat_treatment_2_temperature_C": {
+      "group": "heat_treatment",
+      "dtype": "numeric",
+      "unit": "degC"
+    },
+    "heat_treatment_2_duration_h": {
+      "group": "heat_treatment",
+      "dtype": "numeric",
+      "unit": "h"
+    },
+    "heat_treatment_2_cooling": {
+      "group": "heat_treatment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "phase_FCC": {
+      "group": "microstructure",
+      "dtype": "numeric",
+      "unit": "binary",
+      "meaning": "1 present, 0 supported absence, missing unknown"
+    },
+    "phase_BCC": {
+      "group": "microstructure",
+      "dtype": "numeric",
+      "unit": "binary",
+      "meaning": "1 present, 0 supported absence, missing unknown"
+    },
+    "phase_HCP": {
+      "group": "microstructure",
+      "dtype": "numeric",
+      "unit": "binary",
+      "meaning": "1 present, 0 supported absence, missing unknown"
+    },
+    "phase_IM": {
+      "group": "microstructure",
+      "dtype": "numeric",
+      "unit": "binary",
+      "meaning": "1 present, 0 supported absence, missing unknown"
+    }
+  },
+  "missing_policy": "Unknown stays missing, including phase absence and unused later heat-treatment stages; no imputation or scaling was fitted.",
+  "excluded_source_columns": [
+    "row_id",
+    "task_row_index",
+    "No.",
+    "Epit, mV (SCE) Avg.",
+    "Epit, mV (SCE) Max",
+    "Epit, mV (SCE) Min",
+    "Test Temp. oC",
+    "Test Solution",
+    "[Cl-] M",
+    "[Cl-] pH",
+    "[Cl-] Test Method",
+    "Scan Rate mV/s",
+    "Heat treatment",
+    "Microstructures",
+    "Comments",
+    "Reference",
+    "Material class",
+    "Material class__2",
+    "Material class__3"
+  ],
+  "target_column": "Epit, mV (SCE) Avg.",
+  "heat_stage_semantics": "Stages are ordered explicitly reported thermal treatments. Missing stage fields do not establish absence. Alternative conditions are not separate stages."
+}

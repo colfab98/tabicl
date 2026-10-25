@@ -1439,6 +1439,19 @@ class CurrentPrenFeNiBaseline(CurrentPrenRule):
     evaluation_role = "matched-scope baseline"
 
 
+PROMOTED_TARGET_RULE_FAMILIES = (
+    "pren_n_linear",
+    "cr_mow_n_synergy",
+    "threshold_saturation",
+    "pren_n_improved_environment",
+    "mo_n_acid_repassivation",
+    "mns_inclusion_penalty",
+    "coupled_breakdown",
+    "fe_ni_cr_threshold",
+    "method_aware_pren_n",
+)
+
+
 RULE_FAMILIES: dict[str, TargetRuleFamily] = {
     CurrentPrenRule.name: CurrentPrenRule(),
     CurrentPrenFeNiBaseline.name: CurrentPrenFeNiBaseline(),

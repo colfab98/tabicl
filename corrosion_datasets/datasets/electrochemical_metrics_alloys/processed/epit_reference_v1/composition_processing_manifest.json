@@ -1,0 +1,133 @@
+{
+  "schema_version": "epit_processed_composition_v1",
+  "source_table": "Pitting Potential",
+  "composition_columns": [
+    "Fe",
+    "Cr",
+    "Ni",
+    "Mo",
+    "W",
+    "N",
+    "Nb",
+    "C",
+    "Si",
+    "Mn",
+    "Cu",
+    "P",
+    "S",
+    "Al",
+    "V",
+    "Ta",
+    "Re",
+    "Ce",
+    "Ti",
+    "Co",
+    "B",
+    "Mg",
+    "Y",
+    "Gd"
+  ],
+  "composition_units": "wt.%",
+  "source_to_processed_column_names": {
+    "Composition, wt.% Fe": "Fe",
+    "Composition, wt.% Cr": "Cr",
+    "Composition, wt.% Ni": "Ni",
+    "Composition, wt.% Mo": "Mo",
+    "Composition, wt.% W": "W",
+    "Composition, wt.% N": "N",
+    "Composition, wt.% Nb": "Nb",
+    "Composition, wt.% C": "C",
+    "Composition, wt.% Si": "Si",
+    "Composition, wt.% Mn": "Mn",
+    "Composition, wt.% Cu": "Cu",
+    "Composition, wt.% P": "P",
+    "Composition, wt.% S": "S",
+    "Composition, wt.% Al": "Al",
+    "Composition, wt.% V": "V",
+    "Composition, wt.% Ta": "Ta",
+    "Composition, wt.% Re": "Re",
+    "Composition, wt.% Ce": "Ce",
+    "Composition, wt.% Ti": "Ti",
+    "Composition, wt.% Co": "Co",
+    "Composition, wt.% B": "B",
+    "Composition, wt.% Mg": "Mg",
+    "Composition, wt.% Y": "Y",
+    "Composition, wt.% Gd": "Gd"
+  },
+  "non_composition_columns_copied_from_source": [
+    "No.",
+    "Epit, mV (SCE) Avg.",
+    "Epit, mV (SCE) Max",
+    "Epit, mV (SCE) Min",
+    "Test Temp. oC",
+    "Test Solution",
+    "[Cl-] M",
+    "[Cl-] pH",
+    "[Cl-] Test Method",
+    "Scan Rate mV/s",
+    "Heat treatment",
+    "Microstructures",
+    "Comments",
+    "Reference",
+    "Material class",
+    "Material class__2",
+    "Material class__3"
+  ],
+  "target_column": "Epit, mV (SCE) Avg.",
+  "policy": {
+    "accepted_composition_total_wt_percent": [
+      99.0,
+      101.0
+    ],
+    "upper_limits": "numeric bound retained as approximation; original notation logged",
+    "missing_within_tolerance": "assumed zero unless a known omission prevents it",
+    "known_omission_exceptions": {},
+    "Fe": "reported source amount retained; no new balance calculation",
+    "normalization": "none",
+    "unresolved_composition": "stop for review rather than silently complete or drop a frozen row",
+    "target_values_used_for_composition_decisions": false
+  },
+  "counts": {
+    "source_rows": 810,
+    "rows_without_usable_average_target": 50,
+    "retained_rows": 760,
+    "composition_exclusions": 0,
+    "development_rows": 608,
+    "final_test_rows": 152,
+    "composition_cells_by_action": {
+      "reported_numeric": 14539,
+      "assumed_zero_within_tolerance": 3685,
+      "upper_limit_as_numeric": 16
+    },
+    "composition_nan_cells": 0,
+    "changed_cells_vs_previous_shared": 33,
+    "changed_rows_vs_previous_shared": 19,
+    "changes_by_action": {
+      "assumed_zero_within_tolerance": 17,
+      "upper_limit_as_numeric": 16
+    }
+  },
+  "composition_sum_wt_percent": {
+    "min": 99.5,
+    "max": 100.52
+  },
+  "input_sha256": {
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/raw/CRA_database_Scientific_Data_Publication_12102020.xlsx": "d0ce5e9c4b42e0b5a20dbd5c4896791703c5f433ae19bc032674d5848d9d1438",
+    "corrosion_datasets/datasets/combined_epit_soccol_mpea/processed/epit_soccol_context.csv": "3ac7fa8730bba6084ad8f81e05c216601c724641bb1c861b701d07ae1fec247e",
+    "corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json": "b151505356908814729ae6027660b89739c11dc463ed3b1f10630b001d1b837c",
+    "corrosion_datasets/analysis/epit_pipeline/splits_v2/split_lock.json": "8683f5cb0aa0fca121c66718dbd1d358959b71952e61ada7cd628eda1e9d55b6",
+    "corrosion_datasets/analysis/epit_pipeline/splits_v2/split_assignments.csv": "8ce48224eeb608b94d7468af93e81efee4ad91df753b2b231054ac47b1797852"
+  },
+  "implementation_sha256": {
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/prepare_epit_composition.py": "b02cb4392e25a418112339fd74bf3d9430c53dcfdc670972f97e14ea714300ab",
+    "corrosion_datasets/analysis/scripts/analyze_structure.py": "9f4e44a3345ce8af5968fb0bf63459ebe44705c02cc6f409bcaee051fc497214"
+  },
+  "scope": "Standalone processed reference table; existing training profiles, loaders and shared exports were not updated.",
+  "output_sha256": {
+    "changes_vs_previous_shared.csv": "5d52c5a981d75fb853f46c899c562d93c84194da7fef63acc1fb15a687f29ba8",
+    "composition_processing_log.csv": "d0e0df3e2a2fd5e681cdb4a95f9fe6e5cd58c94e730a3e6b0853785dd813d551",
+    "composition_row_audit.csv": "8302ed82bbd289966a76b10221a2bdab924fae44e37d1807d30d2f064b9c5637",
+    "epit_processed.csv": "0d329e506ed7cac89b6bdb68c47fcd2bf6b0458277356ee83cff125dd1f37c66",
+    "split_assignments.csv": "a16d47dd41ce77f143f868995ebf8689737a6f35fca8a98faec62d7e128290d8"
+  }
+}

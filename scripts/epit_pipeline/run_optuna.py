@@ -22,6 +22,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from scripts import optuna_pitting_magpie_prior_search as original
 from scripts.epit_pipeline.artifact_hashes import load_frozen_split, sha256_file
+from scripts.epit_pipeline.target_rules import PROMOTED_TARGET_RULE_FAMILIES
 from tabicl.prior.dataset import (
     EPIT_FE_NI_FAMILY_NAMES,
     EPIT_FE_NI_FAMILY_PROBS,
@@ -36,6 +37,10 @@ from tabicl.prior.epit_feature_profile import (
     load_epit_feature_profile,
 )
 from tabicl.prior.epit_schema import EPIT_MATERIAL_FEATURE_COUNT
+from tabicl.prior.epit_expanded_schema import (
+    EPIT_EXPANDED_FEATURE_PROFILE, EPIT_EXPANDED_FEATURE_COUNT,
+    EPIT_EXPANDED_FEATURE_COLUMNS, EPIT_EXPANDED_BLOCK_ALLOCATION,
+)
 from tabicl.prior.magpie_features import (
     EPIT_BASE_FEATURE_COUNT,
     EPIT_MAGPIE_DESCRIPTOR_NAMES,
@@ -53,10 +58,10 @@ LEGACY_TARGET_RULE_SUMMARY = (
     PIPELINE_ROOT / "target_rules_v2" / "calibration_summary.json"
 )
 DEFAULT_TARGET_RULE_SUMMARY = (
-    PIPELINE_ROOT / "target_rules_v3" / "calibration_summary.json"
+    PIPELINE_ROOT / "target_rules_v4" / "calibration_summary.json"
 )
 DEFAULT_OPTUNA_ROOT = PIPELINE_ROOT / "optuna_v3"
-DEFAULT_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v8"
+DEFAULT_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v10"
 FIXED_VALIDATION_FOLDS = (1, 2, 3, 4, 5)
 PIPELINE_FINGERPRINT_SCHEMA = "epit_pipeline_stage3_fingerprint_v2"
 LEGACY_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v7"
@@ -72,24 +77,53 @@ EMPIRICAL_FEATURE_MODES = {
     "empirical_features",
     "empirical_features_scm_target",
 }
-EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE = (0.0, 0.15)
+EPIT_FIXED_INFORMED_PRIOR_RATIO = 1.0
+EPIT_MLP_PROB_RANGE = (0.0, 1.0)
+EPIT_TARGET_MIX_WEIGHT_RANGE = (0.0, 1.0)
+EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE = (0.0, 0.30)
+LEGACY_COMPOSITION_PERTURB_STRENGTH_RANGE = (0.0, 0.15)
 GENERIC_SCM_MIX_PROBS = (0.7, 0.3)
 FIXED_BLOCK_ALLOCATION = (EPIT_MATERIAL_FEATURE_COUNT, 3, 1, 0, 0, 0, 0, 0, 0)
 
 
+def uses_fixed_informed_search(composition_mode: str) -> bool:
+    """Apply the new search policy only to the current standalone EPIT prior."""
+    return (
+        EPIT_FEATURE_PROFILE == EPIT_EXPANDED_FEATURE_PROFILE
+        and composition_mode == "empirical_features_scm_target"
+    )
+
+
+def composition_perturb_strength_range(composition_mode: str) -> tuple[float, float]:
+    return (
+        EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE
+        if uses_fixed_informed_search(composition_mode)
+        else LEGACY_COMPOSITION_PERTURB_STRENGTH_RANGE
+    )
+
+
+def uses_expanded_schema(args: argparse.Namespace) -> bool:
+    return uses_fixed_informed_search(getattr(args, "pitting_composition_mode", "legacy"))
+
+
+def model_feature_count(args: argparse.Namespace, use_magpie: bool = False) -> int:
+    if uses_expanded_schema(args):
+        return EPIT_EXPANDED_FEATURE_COUNT + (len(EPIT_MAGPIE_DESCRIPTOR_NAMES) if use_magpie else 0)
+    return EPIT_MAGPIE_TOTAL_FEATURE_COUNT if use_magpie else EPIT_BASE_FEATURE_COUNT
+
+
+def block_allocation(args: argparse.Namespace) -> tuple[int, ...]:
+    return EPIT_EXPANDED_BLOCK_ALLOCATION if uses_expanded_schema(args) else FIXED_BLOCK_ALLOCATION
+
+
+def feature_profile_name(args: argparse.Namespace) -> str:
+    if EPIT_FEATURE_PROFILE == EPIT_EXPANDED_FEATURE_PROFILE and not uses_expanded_schema(args):
+        return "epit_fe_nicrmo_features_v3"
+    return EPIT_FEATURE_PROFILE
+
+
 PITTING_COEFFICIENT_VARIATION = 0.8
 PITTING_COEFFICIENT_VARIATION_SEED = 42
-PROMOTED_TARGET_RULE_FAMILIES = (
-    "pren_n_linear",
-    "cr_mow_n_synergy",
-    "threshold_saturation",
-    "pren_n_improved_environment",
-    "mo_n_acid_repassivation",
-    "mns_inclusion_penalty",
-    "coupled_breakdown",
-    "fe_ni_cr_threshold",
-    "method_aware_pren_n",
-)
 TARGET_RULE_COEFFICIENTS = EPIT_TARGET_RULE_COEFFICIENTS
 LEGACY_TARGET_RULE_FAMILIES = (
     "pren_linear",
@@ -198,7 +232,7 @@ def canonical_json_sha256(payload: dict[str, Any]) -> str:
 
 def pipeline_artifact_identity(rules: TargetRuleConfig) -> dict[str, Any]:
     """Return the frozen data/rule identity shared by Stages 3 and 4."""
-    return {
+    identity = {
         "split_manifest_sha256": rules.split_manifest_sha256,
         "split_lock_sha256": rules.split_lock_sha256,
         "source_sha256": rules.source_sha256,
@@ -209,14 +243,26 @@ def pipeline_artifact_identity(rules: TargetRuleConfig) -> dict[str, Any]:
         "target_rule_coefficients": rules.coefficients,
         "target_rule_coefficient_upper_bounds": rules.upper_bounds,
     }
+    if EPIT_FEATURE_PROFILE.startswith("epit_"):
+        from scripts.epit_pipeline.composition_data import load_reviewed_compositions
+
+        identity["reviewed_composition"] = load_reviewed_compositions().identity
+    return identity
 
 
 def empirical_feature_profile_identity(
     composition_profile_name: str = EPIT_COMPOSITION_PROFILE,
+    *, profile_name: str | None = None,
 ) -> dict[str, Any]:
     """Return one immutable physical-feature identity, including legacy v1."""
+    profile_name = profile_name or (
+        "epit_fe_nicrmo_features_v1"
+        if composition_profile_name in {"epit_dataset_v1", "epit_dataset_v2"}
+        else "epit_fe_nicrmo_features_v2" if composition_profile_name == "epit_dataset_v3"
+        else EPIT_FEATURE_PROFILE
+    )
     feature_profile = load_epit_feature_profile(
-        EPIT_FEATURE_PROFILE,
+        profile_name,
         composition_profile_name=composition_profile_name,
     )
     feature_family_counts = [
@@ -228,7 +274,7 @@ def empirical_feature_profile_identity(
         count / feature_family_total for count in feature_family_counts
     ]
     return {
-        "feature_profile": EPIT_FEATURE_PROFILE,
+        "feature_profile": profile_name,
         "feature_profile_metadata_sha256": canonical_json_sha256(
             feature_profile.metadata
         ),
@@ -255,7 +301,7 @@ def build_pipeline_fingerprint(
     fixed_prior: dict[str, Any] = {
         "reference_workflow": "pitting_magpie_full_v1",
         "prior_type": "hybrid_scm",
-        "block_allocation": list(FIXED_BLOCK_ALLOCATION),
+        "block_allocation": list(block_allocation(args)),
         "material_style": "composition_like",
         "composition_mode": composition_mode,
         "physical_marginal_probability": 1.0,
@@ -265,10 +311,26 @@ def build_pipeline_fingerprint(
         ),
         "pitting_coefficient_variation_seed": PITTING_COEFFICIENT_VARIATION_SEED,
     }
+    if uses_fixed_informed_search(composition_mode):
+        search_space.pop("informed_prior_ratio")
+        search_space["mlp_prob"] = {
+            "distribution": "float", "low": EPIT_MLP_PROB_RANGE[0], "high": EPIT_MLP_PROB_RANGE[1],
+        }
+        fixed_prior["informed_prior_ratio"] = EPIT_FIXED_INFORMED_PRIOR_RATIO
     if composition_mode in EMPIRICAL_FEATURE_MODES:
         feature_profile_identity = empirical_feature_profile_identity()
+        if EPIT_FEATURE_PROFILE == EPIT_EXPANDED_FEATURE_PROFILE and not uses_expanded_schema(args):
+            feature_profile_identity = empirical_feature_profile_identity(profile_name=feature_profile_name(args))
+        if uses_expanded_schema(args):
+            fixed_prior.update({
+                "feature_columns": list(EPIT_EXPANDED_FEATURE_COLUMNS),
+                "feature_count": EPIT_EXPANDED_FEATURE_COUNT,
+                "missing_value_policy": "paired_environment_row_nan",
+                "col_missing_value_embedding": True,
+                "formula_input_policy": "private_28_column_projection_with_auxiliary_test_method",
+            })
         search_space["pitting_composition_perturb_strength"] = list(
-            EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE
+            composition_perturb_strength_range(composition_mode)
         )
         fixed_prior.update(
             {
@@ -290,7 +352,7 @@ def build_pipeline_fingerprint(
             }
         )
         if composition_mode == "empirical_features_scm_target":
-            search_space["informed_target_mix_weight"] = [0.0, 1.0]
+            search_space["informed_target_mix_weight"] = list(EPIT_TARGET_MIX_WEIGHT_RANGE)
             fixed_prior.update(
                 {
                     "scm_target_input_standardization": (
@@ -489,12 +551,24 @@ def load_target_rule_config(
     summary_path = summary_path.expanduser().resolve()
     split_manifest_path = split_manifest_path.expanduser().resolve()
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    formula_input_identity = summary.get("reviewed_formula_inputs")
+    if summary.get("schema_version") == "epit_target_rule_calibration_summary_v4":
+        from scripts.epit_pipeline.formula_data import reviewed_formula_input_identity
+
+        if formula_input_identity != reviewed_formula_input_identity():
+            raise RuntimeError("Target-rule calibration used different reviewed EPIT formula inputs.")
+    if summary.get("reviewed_composition") is not None:
+        from scripts.epit_pipeline.composition_data import load_reviewed_compositions
+
+        if summary["reviewed_composition"] != load_reviewed_compositions().identity:
+            raise RuntimeError("Target-rule calibration used different reviewed EPIT compositions.")
     frozen_split = load_frozen_split(split_manifest_path)
     manifest = frozen_split.manifest
     summary_schema = str(summary.get("schema_version", ""))
     artifact_schema_by_summary = {
         "epit_target_rule_calibration_summary_v2": "epit_target_rule_v2",
         "epit_target_rule_calibration_summary_v3": "epit_target_rule_v3",
+        "epit_target_rule_calibration_summary_v4": "epit_target_rule_v4",
     }
     if summary_schema not in artifact_schema_by_summary:
         raise RuntimeError("Unsupported target-rule calibration summary.")
@@ -528,7 +602,7 @@ def load_target_rule_config(
             continue
         family = str(record.get("rule_family", ""))
         if (
-            summary_schema == "epit_target_rule_calibration_summary_v3"
+            summary_schema in {"epit_target_rule_calibration_summary_v3", "epit_target_rule_calibration_summary_v4"}
             and family not in PROMOTED_TARGET_RULE_FAMILIES
         ):
             continue
@@ -556,6 +630,13 @@ def load_target_rule_config(
             raise RuntimeError(f"Target-rule artifact used a different split lock for {family!r}.")
         if artifact.get("source_sha256") != source_sha256:
             raise RuntimeError(f"Target-rule artifact used different data for {family!r}.")
+        if summary_schema == "epit_target_rule_calibration_summary_v4":
+            if artifact.get("reviewed_formula_inputs") != formula_input_identity:
+                raise RuntimeError(f"Target-rule artifact used different reviewed formula inputs for {family!r}.")
+            if artifact.get("reviewed_composition") != summary.get("reviewed_composition"):
+                raise RuntimeError(f"Target-rule artifact used different reviewed compositions for {family!r}.")
+            if bool(artifact.get("final_test_targets_used", True)):
+                raise RuntimeError(f"Target-rule artifact used final-test targets for {family!r}.")
         values = {
             str(term): float(value)
             for term, value in artifact["final_development_calibration"][
@@ -609,7 +690,7 @@ def load_target_rule_config(
 
     if not scores:
         raise RuntimeError("No candidate target rules were found.")
-    if summary_schema == "epit_target_rule_calibration_summary_v3":
+    if summary_schema in {"epit_target_rule_calibration_summary_v3", "epit_target_rule_calibration_summary_v4"}:
         selected = tuple(scores)
         if selected != PROMOTED_TARGET_RULE_FAMILIES:
             missing = sorted(set(PROMOTED_TARGET_RULE_FAMILIES) - set(selected))
@@ -647,15 +728,19 @@ def sample_params(
         use_magpie = bool(
             trial.suggest_categorical("use_magpie", [False, True])
         )
-    informed_prior_ratio = float(
-        trial.suggest_categorical(
-            "informed_prior_ratio",
-            list(original.INFORMED_PRIOR_RATIO_GRID),
+    if uses_fixed_informed_search(composition_mode):
+        informed_prior_ratio = EPIT_FIXED_INFORMED_PRIOR_RATIO
+        mlp_prob = float(trial.suggest_float("mlp_prob", *EPIT_MLP_PROB_RANGE))
+    else:
+        informed_prior_ratio = float(
+            trial.suggest_categorical(
+                "informed_prior_ratio",
+                list(original.INFORMED_PRIOR_RATIO_GRID),
+            )
         )
-    )
-    mlp_prob = float(
-        trial.suggest_categorical("mlp_prob", list(original.MLP_PROB_GRID))
-    )
+        mlp_prob = float(
+            trial.suggest_categorical("mlp_prob", list(original.MLP_PROB_GRID))
+        )
     if composition_mode in EMPIRICAL_FEATURE_MODES:
         block_strength = 0.0
     else:
@@ -672,12 +757,12 @@ def sample_params(
             perturb_strength = float(
                 trial.suggest_float(
                     "pitting_composition_perturb_strength",
-                    *EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE,
+                    *composition_perturb_strength_range(composition_mode),
                 )
             )
     elif composition_mode == "empirical_features_scm_target":
         target_mix = float(
-            trial.suggest_float("informed_target_mix_weight", 0.0, 1.0)
+            trial.suggest_float("informed_target_mix_weight", *EPIT_TARGET_MIX_WEIGHT_RANGE)
         )
         dirichlet_prob = 0.0
         concentration = None
@@ -685,7 +770,7 @@ def sample_params(
         perturb_strength = float(
             trial.suggest_float(
                 "pitting_composition_perturb_strength",
-                *EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE,
+                *composition_perturb_strength_range(composition_mode),
             )
         )
     elif composition_mode == "legacy":
@@ -730,13 +815,19 @@ def sample_params(
 
 
 def trial_params_from_mapping(
-    values: dict[str, Any], *, composition_mode: str = "legacy"
+    values: dict[str, Any], *, composition_mode: str = "legacy",
+    fixed_informed_prior_ratio: float | None = None,
 ) -> TrialParams:
     """Reconstruct the conditional search configuration from saved values."""
-    required = {
-        "informed_prior_ratio",
-        "mlp_prob",
-    }
+    required = {"mlp_prob"}
+    if fixed_informed_prior_ratio is None:
+        required.add("informed_prior_ratio")
+    else:
+        fixed_informed_prior_ratio = float(fixed_informed_prior_ratio)
+        if not math.isfinite(fixed_informed_prior_ratio) or not 0.0 <= fixed_informed_prior_ratio <= 1.0:
+            raise RuntimeError("The study's fixed informed ratio must be in [0, 1].")
+        if "informed_prior_ratio" in values and float(values["informed_prior_ratio"]) != fixed_informed_prior_ratio:
+            raise RuntimeError("Trial informed ratio conflicts with the study's fixed informed ratio.")
     if composition_mode in EMPIRICAL_FEATURE_MODES:
         required.add("pitting_composition_perturb_strength")
     else:
@@ -800,7 +891,10 @@ def trial_params_from_mapping(
             active_prob = None
     return TrialParams(
         use_magpie=use_magpie,
-        informed_prior_ratio=float(values["informed_prior_ratio"]),
+        informed_prior_ratio=(
+            float(values["informed_prior_ratio"])
+            if fixed_informed_prior_ratio is None else fixed_informed_prior_ratio
+        ),
         mlp_prob=float(values["mlp_prob"]),
         informed_feature_block_strength=block_strength,
         informed_target_mix_weight=target_mix,
@@ -878,7 +972,7 @@ def training_command(
             "[0, 1] and no Dirichlet mixture."
         )
     if composition_mode in EMPIRICAL_FEATURE_MODES:
-        low, high = EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE
+        low, high = composition_perturb_strength_range(composition_mode)
         perturb_strength = params.pitting_composition_perturb_strength
         valid_perturb_strength = (
             perturb_strength is not None
@@ -910,15 +1004,13 @@ def training_command(
     ):
         option_index = command.index(option)
         command[option_index + 1 : option_index + 10] = [
-            str(value) for value in FIXED_BLOCK_ALLOCATION
+            str(value) for value in block_allocation(args)
         ]
-    feature_count = (
-        EPIT_MAGPIE_TOTAL_FEATURE_COUNT
-        if params.use_magpie
-        else EPIT_BASE_FEATURE_COUNT
-    )
+    feature_count = model_feature_count(args, params.use_magpie)
     _replace_option(command, "--min_features", str(feature_count))
     _replace_option(command, "--max_features", str(feature_count))
+    if uses_expanded_schema(args):
+        command.extend(["--col_missing_value_embedding", "true"])
     if composition_mode == "empirical_features_scm_target":
         mix_index = command.index("--mix_probs")
         command[mix_index + 1 : mix_index + 3] = [
@@ -932,6 +1024,9 @@ def training_command(
         _remove_option(command, option)
     if composition_mode in EMPIRICAL_FEATURE_MODES:
         _remove_option(command, "--pitting_material_style_probs", value_count=5)
+        if EPIT_FEATURE_PROFILE.startswith("epit_"):
+            profile = load_epit_feature_profile(feature_profile_name(args))
+            _replace_option(command, "--pitting_process_category_count", str(len(profile.test_method_categories)))
         if params.use_magpie:
             command.extend(
                 ["--pitting_material_style_probs", "1", "0", "0", "0", "0"]
@@ -939,7 +1034,9 @@ def training_command(
         command.extend(
             [
                 "--pitting_feature_profile",
-                EPIT_FEATURE_PROFILE,
+                feature_profile_name(args),
+                "--pitting_composition_profile",
+                EPIT_COMPOSITION_PROFILE,
                 "--pitting_composition_family_probs",
                 *(format_float(value) for value in EPIT_COMPOSITION_FAMILY_PROBS),
                 "--pitting_composition_perturb_strength",
@@ -1002,6 +1099,8 @@ def eval_command(
     ]
     if params.use_magpie:
         command.append("--pitting-magpie-features")
+    if uses_expanded_schema(args):
+        command.append("--epit-expanded-features")
     return command
 
 
@@ -1033,6 +1132,7 @@ def verify_trial_fold_evaluation(
     rules: TargetRuleConfig,
     checkpoint_path: Path,
     params: TrialParams,
+    expanded_schema: bool | None = None,
 ) -> None:
     """Reject stale evaluation output before it can enter Optuna storage."""
     if payload.get("split_manifest_sha256") != rules.split_manifest_sha256:
@@ -1049,6 +1149,8 @@ def verify_trial_fold_evaluation(
     if source.get("local_ckpt_sha256") != checkpoint_sha256:
         raise RuntimeError("Trial evaluation checkpoint hash does not match.")
     settings = payload.get("settings", {})
+    if expanded_schema is not None and bool(settings.get("epit_expanded_features", False)) != expanded_schema:
+        raise RuntimeError("Trial evaluation changed the EPIT feature schema.")
     if "pitting_magpie_features" not in settings or bool(
         settings["pitting_magpie_features"]
     ) != bool(params.use_magpie):
@@ -1062,6 +1164,8 @@ def run_trial(
     trial_number: int,
     params: TrialParams,
 ) -> dict[str, Any]:
+    if uses_fixed_informed_search(args.pitting_composition_mode) and params.informed_prior_ratio != EPIT_FIXED_INFORMED_PRIOR_RATIO:
+        raise ValueError("Current EPIT search trials require a fixed 100% informed ratio.")
     rules: TargetRuleConfig = args.target_rules
     base_run_name = args.base_run_name or default_base_run_name(args.study_name)
     trial_name = f"{base_run_name}_trial_{trial_number:04d}"
@@ -1101,13 +1205,9 @@ def run_trial(
         "sampler_seed": int(args.random_seed),
         "params": trial_params_payload(params),
         "reference_workflow": fixed_prior["reference_workflow"],
-        "fixed_base_feature_count": EPIT_BASE_FEATURE_COUNT,
-        "final_feature_count": (
-            EPIT_MAGPIE_TOTAL_FEATURE_COUNT
-            if params.use_magpie
-            else EPIT_BASE_FEATURE_COUNT
-        ),
-        "fixed_block_allocation": FIXED_BLOCK_ALLOCATION,
+        "fixed_base_feature_count": model_feature_count(args),
+        "final_feature_count": model_feature_count(args, params.use_magpie),
+        "fixed_block_allocation": block_allocation(args),
         "fixed_material_style": fixed_prior["material_style"],
         "fixed_composition_mode": args.pitting_composition_mode,
         "fixed_physical_marginal_prob": 1.0,
@@ -1219,6 +1319,7 @@ def run_trial(
         rules=rules,
         checkpoint_path=checkpoint_path,
         params=params,
+        expanded_schema=uses_expanded_schema(args),
     )
     summary_csv_path = (eval_dir / "summary.csv").resolve()
     rows_csv_path = (eval_dir / "rows.csv").resolve()

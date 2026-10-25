@@ -1,0 +1,2870 @@
+{
+  "schema_version": "epit_environment_reviewed_rules_v1",
+  "description": "Exact-source-text extraction decisions. Unseen descriptions require review; source text and targets were not used as predictors. Numeric conversions were deterministic and no coefficients were fitted.",
+  "phase_mapping_references": [
+    "https://www.phase-trans.msm.cam.ac.uk/map/steel/programs/dilat-b.html",
+    "https://www.twi-global.com/technical-knowledge/faqs/faq-what-are-the-microstructural-constituents-austenite-martensite-bainite-pearlite-and-ferrite"
+  ],
+  "fields": {
+    "Test Solution": [
+      {
+        "source_text": "300 ppm NaCl, pH 7.8",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_ppm_unspecified": 300.0
+        },
+        "status": "partial",
+        "notes": [
+          "NaCl: original ppm basis was unspecified; no mol/L conversion was made."
+        ]
+      },
+      {
+        "source_text": "500 ppm NaCl, pH 7.8",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_ppm_unspecified": 500.0
+        },
+        "status": "partial",
+        "notes": [
+          "NaCl: original ppm basis was unspecified; no mol/L conversion was made."
+        ]
+      },
+      {
+        "source_text": "1000 ppm NaCl, pH 7.8",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_ppm_unspecified": 1000.0
+        },
+        "status": "partial",
+        "notes": [
+          "NaCl: original ppm basis was unspecified; no mol/L conversion was made."
+        ]
+      },
+      {
+        "source_text": "5000 ppm NaCl, pH 7.8",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_ppm_unspecified": 5000.0
+        },
+        "status": "partial",
+        "notes": [
+          "NaCl: original ppm basis was unspecified; no mol/L conversion was made."
+        ]
+      },
+      {
+        "source_text": "Seawater Natural",
+        "features": {
+          "test_solution_type": "natural_seawater"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1M H2SO4 + 0.5M NaCl, H2 deaerated",
+        "features": {
+          "test_solution_type": "H2SO4 + NaCl",
+          "H2SO4_mol_L": 1.0,
+          "NaCl_mol_L": 0.5,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.6M NaCl + 0.1M NaHCO3",
+        "features": {
+          "test_solution_type": "NaCl + NaHCO3",
+          "NaCl_mol_L": 0.6,
+          "NaHCO3_mol_L": 0.1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1M HCl",
+        "features": {
+          "test_solution_type": "HCl",
+          "HCl_mol_L": 0.1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.2M HCl",
+        "features": {
+          "test_solution_type": "HCl",
+          "HCl_mol_L": 0.2
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.0007 M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.0007
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.0007 M NaCl + 0.00008 M Na2S2O3",
+        "features": {
+          "test_solution_type": "Na2S2O3 + NaCl",
+          "NaCl_mol_L": 0.0007,
+          "Na2S2O3_mol_L": 8e-05
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1 M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "deaerated 5 wt.% NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_wt_percent": 5.0,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "deaerated 5 wt.% NaCl + 0.01 atm H2S",
+        "features": {
+          "test_solution_type": "H2S + NaCl",
+          "NaCl_wt_percent": 5.0,
+          "H2S_partial_pressure_atm": 0.01,
+          "CP_aeration": "deaerated"
+        },
+        "status": "partial",
+        "notes": [
+          "H2S partial pressure was retained separately; it was not a dissolved concentration."
+        ]
+      },
+      {
+        "source_text": "3.5 wt.% NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_wt_percent": 3.5
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Deaerated (nitrogen purge) 1 N H2SO4 + 0.5 M NaCl",
+        "features": {
+          "test_solution_type": "H2SO4 + NaCl",
+          "H2SO4_eq_L": 1.0,
+          "NaCl_mol_L": 0.5,
+          "CP_aeration": "deaerated"
+        },
+        "status": "partial",
+        "notes": [
+          "H2SO4: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "deareated (by H2) 1 M HCl",
+        "features": {
+          "test_solution_type": "HCl",
+          "HCl_mol_L": 1.0,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "deareated (by H2) 3 M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 3.0,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "deareated (by H2) 4 M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 4.0,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "deareated (by H2) 6.2 M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 6.2,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1 M HCl + 0.4 M NaCl",
+        "features": {
+          "test_solution_type": "HCl + NaCl",
+          "HCl_mol_L": 0.1,
+          "NaCl_mol_L": 0.4
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Hydrogen-saturated 1 M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0,
+          "CP_aeration": "hydrogen_saturated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Nitrogen-saturated 1 M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0,
+          "CP_aeration": "nitrogen_saturated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Argon-saturated 1 M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0,
+          "CP_aeration": "argon_saturated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Oxygen-saturated 1 M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0,
+          "CP_aeration": "oxygen_saturated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1000 ppm NaCl, pH=5 by acetic acid",
+        "features": {
+          "test_solution_type": "CH3COOH + NaCl",
+          "NaCl_ppm_unspecified": 1000.0
+        },
+        "status": "partial",
+        "notes": [
+          "Acetic acid was reported for pH adjustment; its amount was not reported.",
+          "NaCl: original ppm basis was unspecified; no mol/L conversion was made."
+        ]
+      },
+      {
+        "source_text": "1N HCl",
+        "features": {
+          "test_solution_type": "HCl",
+          "HCl_eq_L": 1.0
+        },
+        "status": "partial",
+        "notes": [
+          "HCl: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "1N H2SO4",
+        "features": {
+          "test_solution_type": "H2SO4",
+          "H2SO4_eq_L": 1.0
+        },
+        "status": "partial",
+        "notes": [
+          "H2SO4: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "0.1M H2SO4 + 0.4 M Na2SO4",
+        "features": {
+          "test_solution_type": "H2SO4 + Na2SO4",
+          "H2SO4_mol_L": 0.1,
+          "Na2SO4_mol_L": 0.4
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1M H2SO4 + 0.4M Na2SO4 + 0.12M NaCl",
+        "features": {
+          "test_solution_type": "H2SO4 + Na2SO4 + NaCl",
+          "H2SO4_mol_L": 0.1,
+          "Na2SO4_mol_L": 0.4,
+          "NaCl_mol_L": 0.12
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Deaerated 0.1 M H2SO4 + 0.4M Na2SO4",
+        "features": {
+          "test_solution_type": "H2SO4 + Na2SO4",
+          "H2SO4_mol_L": 0.1,
+          "Na2SO4_mol_L": 0.4,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Deaerated 0.1 M H2SO4 + 0.4M Na2SO4 + 0.12 M NaCl",
+        "features": {
+          "test_solution_type": "H2SO4 + Na2SO4 + NaCl",
+          "H2SO4_mol_L": 0.1,
+          "Na2SO4_mol_L": 0.4,
+          "NaCl_mol_L": 0.12,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Deaerated 0.1M HCl + 0.4M NaCl",
+        "features": {
+          "test_solution_type": "HCl + NaCl",
+          "HCl_mol_L": 0.1,
+          "NaCl_mol_L": 0.4,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "deaerated 0.3M NaCl (pH 5.4)",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.3,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "deaerated 0.3M NaCl (pH 9.0)",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.3,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1N NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_eq_L": 0.1
+        },
+        "status": "partial",
+        "notes": [
+          "NaCl: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "0.1N NaBr",
+        "features": {
+          "test_solution_type": "NaBr",
+          "NaBr_eq_L": 0.1
+        },
+        "status": "partial",
+        "notes": [
+          "NaBr: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "Deaerated 1 N NaCI",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_eq_L": 1.0,
+          "CP_aeration": "deaerated"
+        },
+        "status": "partial",
+        "notes": [
+          "Normalized source notation 'NaCI' to 'NaCl'; original retained.",
+          "NaCl: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "0.5 NH CI + 1 N NaCI",
+        "features": {
+          "test_solution_type": "HCl + NaCl",
+          "HCl_eq_L": 0.5,
+          "NaCl_eq_L": 1.0
+        },
+        "status": "partial",
+        "notes": [
+          "Normalized source notation 'NaCI' to 'NaCl'; original retained.",
+          "Normalized source notation 'NH CI' to 'N HCl'; original retained.",
+          "HCl: normality was retained in equivalents/L; it was not treated as molarity.",
+          "NaCl: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "0.6 M NaCl and 0.1M NaHCO3",
+        "features": {
+          "test_solution_type": "NaCl + NaHCO3",
+          "NaCl_mol_L": 0.6,
+          "NaHCO3_mol_L": 0.1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1 N H2SO4, 0.1N NaCl",
+        "features": {
+          "test_solution_type": "H2SO4 + NaCl",
+          "H2SO4_eq_L": 0.1,
+          "NaCl_eq_L": 0.1
+        },
+        "status": "partial",
+        "notes": [
+          "H2SO4: normality was retained in equivalents/L; it was not treated as molarity.",
+          "NaCl: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "0.1 N H2SO4, 0.05N NaCl",
+        "features": {
+          "test_solution_type": "H2SO4 + NaCl",
+          "H2SO4_eq_L": 0.1,
+          "NaCl_eq_L": 0.05
+        },
+        "status": "partial",
+        "notes": [
+          "H2SO4: normality was retained in equivalents/L; it was not treated as molarity.",
+          "NaCl: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "0.5 M H2SO4",
+        "features": {
+          "test_solution_type": "H2SO4",
+          "H2SO4_mol_L": 0.5
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1 M KCl",
+        "features": {
+          "test_solution_type": "KCl",
+          "KCl_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.5 M HCl",
+        "features": {
+          "test_solution_type": "HCl",
+          "HCl_mol_L": 0.5
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "de-aerated 0.1 M HCI + 0.4 M NaCl",
+        "features": {
+          "test_solution_type": "HCl + NaCl",
+          "HCl_mol_L": 0.1,
+          "NaCl_mol_L": 0.4,
+          "CP_aeration": "deaerated"
+        },
+        "status": "partial",
+        "notes": [
+          "Normalized source notation 'HCI' to 'HCl'; original retained."
+        ]
+      },
+      {
+        "source_text": "3% NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_percent_unspecified": 3.0
+        },
+        "status": "partial",
+        "notes": [
+          "NaCl: original % basis was unspecified; no mol/L conversion was made."
+        ]
+      },
+      {
+        "source_text": "1N H2SO4 (N2 purged)",
+        "features": {
+          "test_solution_type": "H2SO4",
+          "H2SO4_eq_L": 1.0,
+          "CP_aeration": "deaerated"
+        },
+        "status": "partial",
+        "notes": [
+          "H2SO4: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "3% NaCl (N2 purged)",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_percent_unspecified": 3.0,
+          "CP_aeration": "deaerated"
+        },
+        "status": "partial",
+        "notes": [
+          "NaCl: original % basis was unspecified; no mol/L conversion was made."
+        ]
+      },
+      {
+        "source_text": "10N H2SO4 (N2 purged)",
+        "features": {
+          "test_solution_type": "H2SO4",
+          "H2SO4_eq_L": 10.0,
+          "CP_aeration": "deaerated"
+        },
+        "status": "partial",
+        "notes": [
+          "H2SO4: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "0.1N HCl",
+        "features": {
+          "test_solution_type": "HCl",
+          "HCl_eq_L": 0.1
+        },
+        "status": "partial",
+        "notes": [
+          "HCl: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "deaerated 0.1N HCl",
+        "features": {
+          "test_solution_type": "HCl",
+          "HCl_eq_L": 0.1,
+          "CP_aeration": "deaerated"
+        },
+        "status": "partial",
+        "notes": [
+          "HCl: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "deaerated 1M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "deaerated synthetic sea water",
+        "features": {
+          "test_solution_type": "synthetic_seawater",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.6M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.6
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.6M NaBr",
+        "features": {
+          "test_solution_type": "NaBr",
+          "NaBr_mol_L": 0.6
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "synthetic sea water",
+        "features": {
+          "test_solution_type": "synthetic_seawater"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0M NaCl PH=3",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0M NaCl PH=4",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0M NaCl PH=5",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0M NaCl PH=7",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0M NaCl PH=9",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0M NaBr PH=3",
+        "features": {
+          "test_solution_type": "NaBr",
+          "NaBr_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0M NaBr PH=4",
+        "features": {
+          "test_solution_type": "NaBr",
+          "NaBr_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0M NaBr PH=5",
+        "features": {
+          "test_solution_type": "NaBr",
+          "NaBr_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0M NaBr PH=7",
+        "features": {
+          "test_solution_type": "NaBr",
+          "NaBr_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0M NaBr PH=9",
+        "features": {
+          "test_solution_type": "NaBr",
+          "NaBr_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1M KCl",
+        "features": {
+          "test_solution_type": "KCl",
+          "KCl_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1M NaCl + 0.025 M W04",
+        "features": {
+          "test_solution_type": "NaCl + WO4",
+          "NaCl_mol_L": 0.1,
+          "WO4_mol_L": 0.025
+        },
+        "status": "partial",
+        "notes": [
+          "Normalized source notation 'W04' to 'WO4'; original retained.",
+          "WO4 described a solution ion; its counterion was not identified."
+        ]
+      },
+      {
+        "source_text": "0.1M NaCl + 0.1 M W04",
+        "features": {
+          "test_solution_type": "NaCl + WO4",
+          "NaCl_mol_L": 0.1,
+          "WO4_mol_L": 0.1
+        },
+        "status": "partial",
+        "notes": [
+          "Normalized source notation 'W04' to 'WO4'; original retained.",
+          "WO4 described a solution ion; its counterion was not identified."
+        ]
+      },
+      {
+        "source_text": "distilled water adjusted to pH 4(6.25 x 10–5 M H2SO4) containing 200 ppm Cl- (5.5 x 10-3 NaCl)",
+        "features": {
+          "test_solution_type": "H2SO4 + NaCl",
+          "H2SO4_mol_L": 6.25e-05
+        },
+        "status": "partial",
+        "notes": [
+          "Normalized source notation '6.25 x 10–5' to '6.25e-5'; original retained.",
+          "The NaCl amount 5.5 x 10-3 lacked an explicit unit; only the explicitly molar H2SO4 amount was extracted. The original chloride column was retained."
+        ]
+      },
+      {
+        "source_text": "4M MgCl2",
+        "features": {
+          "test_solution_type": "MgCl2",
+          "MgCl2_mol_L": 4.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1M Na2SO4 + 0.6M NaCl",
+        "features": {
+          "test_solution_type": "Na2SO4 + NaCl",
+          "Na2SO4_mol_L": 0.1,
+          "NaCl_mol_L": 0.6
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1 M HCI",
+        "features": {
+          "test_solution_type": "HCl",
+          "HCl_mol_L": 1.0
+        },
+        "status": "partial",
+        "notes": [
+          "Normalized source notation 'HCI' to 'HCl'; original retained."
+        ]
+      },
+      {
+        "source_text": "deaerated 4M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 4.0,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "3.5% NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_percent_unspecified": 3.5
+        },
+        "status": "partial",
+        "notes": [
+          "NaCl: original % basis was unspecified; no mol/L conversion was made."
+        ]
+      },
+      {
+        "source_text": "Deaerated 0.1M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.1,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Deaerated 1 M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Sea Water 1:30",
+        "features": {
+          "test_solution_type": "seawater"
+        },
+        "status": "partial",
+        "notes": [
+          "The reported seawater dilution 1:30 was retained in the text; its convention was not assumed."
+        ]
+      },
+      {
+        "source_text": "Deaerated 0.5M H2SO4",
+        "features": {
+          "test_solution_type": "H2SO4",
+          "H2SO4_mol_L": 0.5,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "3.5wt% NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_wt_percent": 3.5
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.5M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.5
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.6M NaCl Deaerated N2",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.6,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.6M NaCl Deaerated N2 pH 5.9",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.6,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1 N KCl Deaerated N2 pH 8",
+        "features": {
+          "test_solution_type": "KCl",
+          "KCl_eq_L": 0.1,
+          "CP_aeration": "deaerated"
+        },
+        "status": "partial",
+        "notes": [
+          "KCl: normality was retained in equivalents/L; it was not treated as molarity."
+        ]
+      },
+      {
+        "source_text": "0.01 M Chloride Deaerated",
+        "features": {
+          "test_solution_type": "chloride_unspecified",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1 M ChlorideDeaerated",
+        "features": {
+          "test_solution_type": "chloride_unspecified",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.5 M Chloride Deaerated",
+        "features": {
+          "test_solution_type": "chloride_unspecified",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0 M Chloride Deaerated",
+        "features": {
+          "test_solution_type": "chloride_unspecified",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1 M ChlorideDeaerated pH 4",
+        "features": {
+          "test_solution_type": "chloride_unspecified",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1 M ChlorideDeaerated pH 5.8",
+        "features": {
+          "test_solution_type": "chloride_unspecified",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1 M ChlorideDeaerated pH 8.1",
+        "features": {
+          "test_solution_type": "chloride_unspecified",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1 M ChlorideDeaerated pH 9",
+        "features": {
+          "test_solution_type": "chloride_unspecified",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1 M ChlorideDeaerated pH 9.4",
+        "features": {
+          "test_solution_type": "chloride_unspecified",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0 M Chloride Deaerated pH 4",
+        "features": {
+          "test_solution_type": "chloride_unspecified",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0 M Chloride Deaerated pH 5.8",
+        "features": {
+          "test_solution_type": "chloride_unspecified",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0 M Chloride Deaerated pH 8.1",
+        "features": {
+          "test_solution_type": "chloride_unspecified",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1.0 M Chloride Deaerated pH 10.2",
+        "features": {
+          "test_solution_type": "chloride_unspecified",
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1M NaCl pH 10",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.6M NaCl Deaerated N2 pH 6",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.6,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.01 M NaCl Deaerated N2",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.01,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1 M NaCl Deaerated N2",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.1,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1 M NaCl Deaerated N2",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "5 M NaCl Deaerated N2",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 5.0,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1 M NaCl pH 6",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 1.0
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1 M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1 M NaBr",
+        "features": {
+          "test_solution_type": "NaBr",
+          "NaBr_mol_L": 0.1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.1 M NaCIO4",
+        "features": {
+          "test_solution_type": "NaClO4",
+          "NaClO4_mol_L": 0.1
+        },
+        "status": "partial",
+        "notes": [
+          "Normalized source notation 'NaCIO4' to 'NaClO4'; original retained."
+        ]
+      },
+      {
+        "source_text": "0.5 M NaCl",
+        "features": {
+          "test_solution_type": "NaCl",
+          "NaCl_mol_L": 0.5
+        },
+        "status": "extracted",
+        "notes": []
+      }
+    ],
+    "Heat treatment": [
+      {
+        "source_text": "None",
+        "features": {},
+        "status": "missing",
+        "notes": [
+          "Source missing marker; no absence of heat treatment was inferred."
+        ]
+      },
+      {
+        "source_text": "NA",
+        "features": {},
+        "status": "missing",
+        "notes": [
+          "Source missing marker; no absence of heat treatment was inferred."
+        ]
+      },
+      {
+        "source_text": "The laboratory heats were processed to produce fully solution-annealed steel ranging from 0.8 to 6.4 mm thick and having an ASTM 5 to 6 grain size. These alloys were in the mill-annealed condition.",
+        "features": {
+          "heat_treatment_type": "solution_annealing"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Ingots were cast and hot rolled to 20 mm diameter bars which were heat treated at ll00°c for 30 min and cooled in still air",
+        "features": {
+          "heat_treatment_type": "heat_treatment",
+          "heat_treatment_temperature_C": 1100,
+          "heat_treatment_duration_h": 0.5,
+          "heat_treatment_cooling": "still_air"
+        },
+        "status": "extracted",
+        "notes": [
+          "Normalized ll00 to 1100; no other temperatures were guessed."
+        ]
+      },
+      {
+        "source_text": "Ingots were cast and hot rolled to 20 mm diameter bars which were heat treated at 1100°c for 30 min and cooled in still air",
+        "features": {
+          "heat_treatment_type": "heat_treatment",
+          "heat_treatment_temperature_C": 1100,
+          "heat_treatment_duration_h": 0.5,
+          "heat_treatment_cooling": "still_air"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "5 kg melts were made at atmospheric pressure in an induction furnace using Japanese iron, nickel pellets, electrolytic chromium, ferro-molybdenum, refined manganese, and high-nitrogen ferro-chromium. Ingots were cast and hot rolled to 20 mm diameter bars which were heat treated at 1100°c for 30 min and cooled in still air.",
+        "features": {
+          "heat_treatment_type": "heat_treatment",
+          "heat_treatment_temperature_C": 1100,
+          "heat_treatment_duration_h": 0.5,
+          "heat_treatment_cooling": "still_air"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Solution treatment was performed by heating in nitrogen at 1150 C for 30 minutes followed by water quenching.",
+        "features": {
+          "heat_treatment_type": "solution_treatment",
+          "heat_treatment_temperature_C": 1150,
+          "heat_treatment_duration_h": 0.5,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Solution treatment was performed by heating in nitrogen at 1150 C for 30 minutes followed by water quenching",
+        "features": {
+          "heat_treatment_type": "solution_treatment",
+          "heat_treatment_temperature_C": 1150,
+          "heat_treatment_duration_h": 0.5,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "AISI SS304, as -recieved",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "As-received condition did not establish the preceding heat-treatment history."
+        ]
+      },
+      {
+        "source_text": "Alloy 800, as-recieved",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "As-received condition did not establish the preceding heat-treatment history."
+        ]
+      },
+      {
+        "source_text": "Alloy 600, as-recieved",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "As-received condition did not establish the preceding heat-treatment history."
+        ]
+      },
+      {
+        "source_text": "low nitrogen contents was attained by denitriding in hydrogen for 72h at 1200C, followed by cold rolling to reduce the grain size and final annealing for 20 min at 1100C",
+        "features": {
+          "heat_treatment_type": "denitriding",
+          "heat_treatment_temperature_C": 1200,
+          "heat_treatment_duration_h": 72,
+          "heat_treatment_2_type": "annealing",
+          "heat_treatment_2_temperature_C": 1100,
+          "heat_treatment_2_duration_h": 0.3333333333333333
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "produced as laboratory heats, then forged, hot rolled and cold rolled to produce 2 mm strip, annealed for 20 min at 1100C and brine-quenched",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1100,
+          "heat_treatment_duration_h": 0.3333333333333333,
+          "heat_treatment_cooling": "brine_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Melted in the laboratory. The ingots were forged, hot rolled to plates of 5 mm in thickness, and then solution heat treated at 1050 C for 30 min, followed by water quenching",
+        "features": {
+          "heat_treatment_type": "solution_treatment",
+          "heat_treatment_temperature_C": 1050,
+          "heat_treatment_duration_h": 0.5,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Melted in the laboratory. The ingots were forged, hot rolled to plates of 5 mm in thickness, and then solution heat treated at 1050 C for 30 min, followed by water quenching, then 500 C heated for 1 h",
+        "features": {
+          "heat_treatment_type": "solution_treatment",
+          "heat_treatment_temperature_C": 1050,
+          "heat_treatment_duration_h": 0.5,
+          "heat_treatment_cooling": "water_quench",
+          "heat_treatment_2_type": "heat_treatment",
+          "heat_treatment_2_temperature_C": 500,
+          "heat_treatment_2_duration_h": 1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Melted in the laboratory. The ingots were forged, hot rolled to plates of 5 mm in thickness, and then solution heat treated at 1050 C for 30 min, followed by water quenching, then 600 C heated for 1 h",
+        "features": {
+          "heat_treatment_type": "solution_treatment",
+          "heat_treatment_temperature_C": 1050,
+          "heat_treatment_duration_h": 0.5,
+          "heat_treatment_cooling": "water_quench",
+          "heat_treatment_2_type": "heat_treatment",
+          "heat_treatment_2_temperature_C": 600,
+          "heat_treatment_2_duration_h": 1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Melted in the laboratory. The ingots were forged, hot rolled to plates of 5 mm in thickness, and then solution heat treated at 1050 C for 30 min, followed by water quenching, then 700 C heated for 1 h",
+        "features": {
+          "heat_treatment_type": "solution_treatment",
+          "heat_treatment_temperature_C": 1050,
+          "heat_treatment_duration_h": 0.5,
+          "heat_treatment_cooling": "water_quench",
+          "heat_treatment_2_type": "heat_treatment",
+          "heat_treatment_2_temperature_C": 700,
+          "heat_treatment_2_duration_h": 1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Melted in the laboratory. The ingots were forged, hot rolled to plates of 5 mm in thickness, and then solution heat treated at 1050 C for 30 min, followed by water quenching, then 800 C heated for 1 h",
+        "features": {
+          "heat_treatment_type": "solution_treatment",
+          "heat_treatment_temperature_C": 1050,
+          "heat_treatment_duration_h": 0.5,
+          "heat_treatment_cooling": "water_quench",
+          "heat_treatment_2_type": "heat_treatment",
+          "heat_treatment_2_temperature_C": 800,
+          "heat_treatment_2_duration_h": 1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Melted in the laboratory. The ingots were forged, hot rolled to plates of 5 mm in thickness, and then solution heat treated at 1050 C for 30 min, followed by water quenching, then 900 C heated for 1 h",
+        "features": {
+          "heat_treatment_type": "solution_treatment",
+          "heat_treatment_temperature_C": 1050,
+          "heat_treatment_duration_h": 0.5,
+          "heat_treatment_cooling": "water_quench",
+          "heat_treatment_2_type": "heat_treatment",
+          "heat_treatment_2_temperature_C": 900,
+          "heat_treatment_2_duration_h": 1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "annealled at 1020C for 2h, then water quenched",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1020,
+          "heat_treatment_duration_h": 2,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "annealled at 1060C for 2h, then water quenched",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1060,
+          "heat_treatment_duration_h": 2,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "annealled at 1100C for 2h, then water quenched",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1100,
+          "heat_treatment_duration_h": 2,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "annealled at 1140C for 2h, then water quenched",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1140,
+          "heat_treatment_duration_h": 2,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "solution-treated (1 h, 1120 C, water quench)",
+        "features": {
+          "heat_treatment_type": "solution_treatment",
+          "heat_treatment_temperature_C": 1120,
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "soution-annealed at 1100C for 20 min and water quenched",
+        "features": {
+          "heat_treatment_type": "solution_annealing",
+          "heat_treatment_temperature_C": 1100,
+          "heat_treatment_duration_h": 0.3333333333333333,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "0.25 um diamond finish, annealed at 1100C for 3h and water quenched",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1100,
+          "heat_treatment_duration_h": 3,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "annealed at 1100 C for 3 h followed by a water quench",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1100,
+          "heat_treatment_duration_h": 3,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "solution-annealed",
+        "features": {
+          "heat_treatment_type": "solution_annealing"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "denitrided in a hydrogen atmosphere for three days at 1300C quenched. Then annealled at 1100C for 20min, brine quenched",
+        "features": {
+          "heat_treatment_type": "denitriding",
+          "heat_treatment_temperature_C": 1300,
+          "heat_treatment_duration_h": 72,
+          "heat_treatment_cooling": "quench_unspecified",
+          "heat_treatment_2_type": "annealing",
+          "heat_treatment_2_temperature_C": 1100,
+          "heat_treatment_2_duration_h": 0.3333333333333333,
+          "heat_treatment_2_cooling": "brine_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "Converted three days to 72 hours."
+        ]
+      },
+      {
+        "source_text": "annealled at 1100C for 20min, brine quenched",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1100,
+          "heat_treatment_duration_h": 0.3333333333333333,
+          "heat_treatment_cooling": "brine_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1300C 58h",
+        "features": {
+          "heat_treatment_temperature_C": 1300,
+          "heat_treatment_duration_h": 58
+        },
+        "status": "extracted",
+        "notes": [
+          "The treatment type was not named."
+        ]
+      },
+      {
+        "source_text": "Alloys were prepared by vacuum melting in dense alumina crucibles decarburized electrolytic Fe, electrolytic Cr and carbonyl Ni, the latter supplied by courtesy of the International Nickel Company. Re containing 15 ppm Fe but less than I ppm of any other detectable impurity was supplied by courtesy of Ledgemont Laboratory,Kennecott Copper Corporation. The melt was cast in a purified argon atmosphere by drawing into 7mm dia. Vycor tubes and quenching in water. The alloys were homogenized at 1050°C for 17h, swaged to 0.4cm diameter rods, annealed at 1050°C and water quenched.",
+        "features": {
+          "heat_treatment_type": "homogenization",
+          "heat_treatment_temperature_C": 1050,
+          "heat_treatment_duration_h": 17,
+          "heat_treatment_2_type": "annealing",
+          "heat_treatment_2_temperature_C": 1050,
+          "heat_treatment_2_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "Casting and its quench were not labelled as a separate heat-treatment stage."
+        ]
+      },
+      {
+        "source_text": "The stainless steels evaluated in this study were prepared from commercially pure grades of Fe, Ni, ferrochrome, Mn, Mo, Si, manganese or chromium nitride, and chromium carbide. Melting was done in a vacuum induction furnace.The melting procedure consisted of: (1) melting Fe, Ni, Mo, Mn, and ferrochrome in a vacuum; (2) bleeding nitrogen into the furnace; and (3) introducing Mn4N or CrN, wrapped in iron foil, into the melt, as needed. After casting, only solid sections of the ingots were taken to prepare test specimens. The sections were first soaked for 30 minutes and hot rolled. The temperatures were 1205 C and 1095 C, depending upon hot ductility of the heats. The hot rolled specimens were pickled in a solution containing 10% HNO3 and 2% HF at 65 C to remove the hot working scale, cold rolled to 2 mm, annealed at 1065 C for 5 minutes, water quenched, and pickled again in the same HNO3-HF solution at 65 C. A small section was cut from each heat and used for chemical analysis.",
+        "features": {
+          "heat_treatment_type": "soaking",
+          "heat_treatment_duration_h": 0.5,
+          "heat_treatment_2_type": "annealing",
+          "heat_treatment_2_temperature_C": 1065,
+          "heat_treatment_2_duration_h": 0.08333333333333333,
+          "heat_treatment_2_cooling": "water_quench"
+        },
+        "status": "partial",
+        "notes": [
+          "The initial soaking/rolling temperature had alternatives, so no temperature was assigned to that stage. Pickling solutions and temperatures were not used as test conditions."
+        ]
+      },
+      {
+        "source_text": "Steels used for this study were kindly supplied by the Institute of Iron Metallurgy in Gliwice, Poland. They were in the form of hot forged rods, 18 mm in diameter. The steels were tested in the as-received and quenched after 1 hour of heaing in air at 1120oC",
+        "features": {},
+        "status": "unresolved",
+        "notes": [
+          "The description covered as-received and heated/quenched samples without identifying the applicable condition for this row."
+        ]
+      },
+      {
+        "source_text": "Steels used for this study were kindly supplied by the Institute of Iron Metallurgy in Gliwice, Poland. They were in the form of hot forged rods, 18 mm in diameter. Quenching in water occurered after either (1) heating 1h in air at 1050C, (2) heating 0.5h in air at 1050C",
+        "features": {
+          "heat_treatment_type": "heat_treatment",
+          "heat_treatment_temperature_C": 1050,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "partial",
+        "notes": [
+          "Alternative durations of 1 h and 0.5 h were not separate stages; duration remained missing."
+        ]
+      },
+      {
+        "source_text": "The alloys were induction melted in a vacuum furnace and cast into ingots. The ingots were hot-rolled in a controlled atmosphere, and then cold-rolled to 2.154 mm thick sheets. Before the experiments, all specimens were solution annealed for 20 min at 1150°C, and then water quenched.",
+        "features": {
+          "heat_treatment_type": "solution_annealing",
+          "heat_treatment_temperature_C": 1150,
+          "heat_treatment_duration_h": 0.3333333333333333,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "The steels were heat treated at 1100 and 1250°C followed by quenching in water in order to homogenize the structure.",
+        "features": {
+          "heat_treatment_type": "homogenization",
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "partial",
+        "notes": [
+          "1100 and 1250 C were not presented as an ordered sequence; the applicable temperature remained missing."
+        ]
+      },
+      {
+        "source_text": "2h at 1120 celcius, water quenched",
+        "features": {
+          "heat_treatment_temperature_C": 1120,
+          "heat_treatment_duration_h": 2,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "annealed",
+        "features": {
+          "heat_treatment_type": "annealing"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "sensitized",
+        "features": {
+          "heat_treatment_type": "sensitization"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "solution treat at 1120 celcius",
+        "features": {
+          "heat_treatment_type": "solution_treatment",
+          "heat_treatment_temperature_C": 1120
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "as cast",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "As-cast/as-rolled condition was retained in the original text, without inventing thermal treatment details."
+        ]
+      },
+      {
+        "source_text": "as rolled",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "As-cast/as-rolled condition was retained in the original text, without inventing thermal treatment details."
+        ]
+      },
+      {
+        "source_text": "as-cast",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "As-cast/as-rolled condition was retained in the original text, without inventing thermal treatment details."
+        ]
+      },
+      {
+        "source_text": "solution treat at 1120 celcius, water quench",
+        "features": {
+          "heat_treatment_type": "solution_treatment",
+          "heat_treatment_temperature_C": 1120,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "The ingots were homogenized in A or He, usually at 1050-1100 oC for several hours. Ingots of Ni-Cr, Ni-Mo, and Cr-Fe were cold rolled to 0.25 cm, then annealed at 1000-1050 oC and water quenched. The Cr-Fe alloys containing more than 40% Cr were difficult to roll or swage, hence electrodes were machined directly from the homogenized ingot. Ingots of the lower % Cr-Fe alloys and of the stainless steels were swaged to about 0.45 cm diam rods, annealed at 1050 oC and water quenched. All electrodes measured approximately 2 cm long and were either 0.4 cm diam or 0.5 cm wide by 0.2 cm thick.",
+        "features": {
+          "heat_treatment_type": "homogenization"
+        },
+        "status": "partial",
+        "notes": [
+          "Ranges and several hours were not reduced to point values. Subsequent annealing depended on alloy subgroup and was not assigned without row-specific evidence."
+        ]
+      },
+      {
+        "source_text": "Two sets of laboratory-prepared ferritic alloys and two commercial ferritic stainless steels (Types 430 and 4341) were investigated. The high-purity 17% chromium, 17% Cr-l% Mo, and 17% Cr-3% Mo laboratory alloys were prepared by melting and casting in vacuum. The resulting ingots were hot-rolled to 0.64-cmthick sheet, which was cold-rolled to a 0.32-cm thickness, annealed for 1 hr at 815~ and water-quenched. The 18% Cr-2% Mo alloys modified by titanium and Type 434 is the proposed designation for stainless steel conraining 17% chromium and 1% molybdenum. nickel additions were produced by induction melting in an argon atmosphere, using the split-heat technique. In this technique, the base composition is melted, and part of the melt is poured off to produce an ingot; then to the balance of the melt, the required alloying additions are made and the next ingot is cast. This process is repeated until a series of the desired compositions is cast. The 18% Cr-2% Mo ingots were hotforged, hot-rolled to 0.76-cm-thick strips, and coldrolled to 0.38-cm-thick strips. The 18% Cr-2% Mo alloys containing titanium were annealed for 1 hr at 104O~ the minimum temperature that prevented formation of a second phase in the high titanium alloy, and then water-quenched. The rest of the 18% Cr-2% Mo materials and the hot-rolled, commercial Types 430 and 434 steels were annealed at 815~ for 1 hr and water-quenched.",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "partial",
+        "notes": [
+          "Different alloy subgroups received different annealing temperatures; the common time and cooling were retained, and temperature remained missing."
+        ]
+      },
+      {
+        "source_text": "The ingots were forged, rooled into bars 2 mm thick, then tempered at 1150 C (heating for 15mins) and quenched in water.",
+        "features": {
+          "heat_treatment_type": "tempering",
+          "heat_treatment_temperature_C": 1150,
+          "heat_treatment_duration_h": 0.25,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "The source name tempered and its reported temperature were retained without reinterpretation."
+        ]
+      },
+      {
+        "source_text": "Annealed 2 hours at 650 C",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 650,
+          "heat_treatment_duration_h": 2
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "In this technique, the base composition is melted and part of the melt is cast into an ingot. To the balance of the melt, the required molybdenum addition is made and the next ingot is cast. This process is repeated until a series of the desired positions is cast. By this procedure, the residual and impurity elements, which were intended to be in the range commonly present in commercial stainless steels, were held essentially constant within each series. The ingots were hot-forged and hot-rolled to a thickness of 0.76 cm and then cold-rolled to 0.38 cm. The 13% nickel steels were annealed at 1120C for 1 hr and water-quenched. The 39% nickel steels and the high-purity alloys were annealed at 1150C for 1 hr and water-quenched.",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "partial",
+        "notes": [
+          "1120 versus 1150 C depended on alloy subgroup; no single temperature was assigned."
+        ]
+      },
+      {
+        "source_text": "All surfaces of the cast slabs were ground to remove imperfections and provide good rolling surfaces before annealing 16 hours at 1200C in argon atmosphere. The slabs were hot rolled at 1090C to 1/16 inch thickness. Oxide scale was subsequently removed by sand blasting before a final annealing treatment. Following preparation, each alloy was hot rolled to 0.1 inch sheet and water quenched. Hot rolling temperatures were restricted to a maximum of 982C and a minimum of 816C. The hot rolled sheet was electropolished in an aqueous 15wt% NaCl/ 30wt%H2SO4 electrolyte to remove surface scale and sheared into 1 inch wide strips running parallel to the hot rolling direction. The 1 inch wide hot rolled strips were subsequently cold rolled from 0.1 inch to a final thickness of 0.0625inch.",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1200,
+          "heat_treatment_duration_h": 16,
+          "heat_treatment_2_type": "annealing"
+        },
+        "status": "partial",
+        "notes": [
+          "A later anneal was mentioned without parameters. Hot-rolling temperatures, sheet quenching and electropolishing solution were not attached to an annealing stage."
+        ]
+      },
+      {
+        "source_text": "This one received a final heat treatment of 1h at 1049C followed by water quenching comepared to the one above",
+        "features": {
+          "heat_treatment_type": "heat_treatment",
+          "heat_treatment_temperature_C": 1049,
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "Only the explicitly described final treatment was extracted; the phrase one above was not used to copy another row."
+        ]
+      },
+      {
+        "source_text": "815C annealed then water quenched",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 815,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "925C annealed then water quenched",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 925,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "1035C annealed then water quenched",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1035,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "heat-treated for 1 hr at 1500F followed by water quenching",
+        "features": {
+          "heat_treatment_type": "heat_treatment",
+          "heat_treatment_temperature_C": 815.5555555555555,
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "Converted 1500 degrees F to degrees C using (F - 32) * 5/9."
+        ]
+      },
+      {
+        "source_text": "heat-treated for 1 hr at 1800F followed by water quenching",
+        "features": {
+          "heat_treatment_type": "heat_treatment",
+          "heat_treatment_temperature_C": 982.2222222222222,
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "Converted 1800 degrees F to degrees C using (F - 32) * 5/9."
+        ]
+      },
+      {
+        "source_text": "annealed at 1200C for 24hr and water quenched",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1200,
+          "heat_treatment_duration_h": 24,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "annealing in air for 1 h at 850° C (recrystallization) plus 7 days at 500°C (ordering) followed by cooling in air,which produced the DO3 -ordered structure",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 850,
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_2_type": "ordering",
+          "heat_treatment_2_temperature_C": 500,
+          "heat_treatment_2_duration_h": 168,
+          "heat_treatment_2_cooling": "air_cooling"
+        },
+        "status": "extracted",
+        "notes": [
+          "Converted seven days to 168 hours; the final air cooling belonged to the second stage."
+        ]
+      },
+      {
+        "source_text": "The casts were homogenized for 2 h at I250 C. and then hot-rolled into 5 mm thick plates. The specimen prepared by cold rolling the hot rolled plates into 2mm thick sheets and solution annealing for 20 min at 1050C, followed by water quenching",
+        "features": {
+          "heat_treatment_type": "homogenization",
+          "heat_treatment_temperature_C": 1250,
+          "heat_treatment_duration_h": 2,
+          "heat_treatment_2_type": "solution_annealing",
+          "heat_treatment_2_temperature_C": 1050,
+          "heat_treatment_2_duration_h": 0.3333333333333333,
+          "heat_treatment_2_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "Normalized I250 to 1250."
+        ]
+      },
+      {
+        "source_text": "annealed UNS S30100 austenitic stainless steel",
+        "features": {
+          "heat_treatment_type": "annealing"
+        },
+        "status": "extracted",
+        "notes": [
+          "Ion implantation, where mentioned, was not treated as heat treatment."
+        ]
+      },
+      {
+        "source_text": "annealed UNS S30100 austenitic stainless steel, ion implanted with Mo implanted with 5.55*1016 molybdenum ions/cm2",
+        "features": {
+          "heat_treatment_type": "annealing"
+        },
+        "status": "extracted",
+        "notes": [
+          "Ion implantation, where mentioned, was not treated as heat treatment."
+        ]
+      },
+      {
+        "source_text": "The binary Fe-Cr alloys were furnished by Climax Molybdenum. They were subsequently hot forged. The other alloys were prepared in our laboratory by alloying to the original Fe-Cr alloys the elements Mo, W, V or Si using a vacuum induction furnace under an argon atmosphere.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Melting, casting and forging were manufacturing information; no separate heat treatment was specified."
+        ]
+      },
+      {
+        "source_text": "solution-annealed for 2 h at 1,050°C and then aged at 850°C for 30 min, 1 h, and 10 h.",
+        "features": {
+          "heat_treatment_type": "solution_annealing",
+          "heat_treatment_temperature_C": 1050,
+          "heat_treatment_duration_h": 2,
+          "heat_treatment_2_type": "aging",
+          "heat_treatment_2_temperature_C": 850
+        },
+        "status": "partial",
+        "notes": [
+          "Aging durations of 30 min, 1 h and 10 h described alternatives, not consecutive stages; aging duration remained missing."
+        ]
+      },
+      {
+        "source_text": "Aged in Ar for 24 hrs @ 350C",
+        "features": {
+          "heat_treatment_type": "aging",
+          "heat_treatment_temperature_C": 350,
+          "heat_treatment_duration_h": 24
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Aged in Ar for 24 hrs @ 500C",
+        "features": {
+          "heat_treatment_type": "aging",
+          "heat_treatment_temperature_C": 500,
+          "heat_treatment_duration_h": 24
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Aged in Ar for 24 hrs @ 650C",
+        "features": {
+          "heat_treatment_type": "aging",
+          "heat_treatment_temperature_C": 650,
+          "heat_treatment_duration_h": 24
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Aged in Ar for 24 hrs @ 950C",
+        "features": {
+          "heat_treatment_type": "aging",
+          "heat_treatment_temperature_C": 950,
+          "heat_treatment_duration_h": 24
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Aged in Ar for 24 hrs @ 800C",
+        "features": {
+          "heat_treatment_type": "aging",
+          "heat_treatment_temperature_C": 800,
+          "heat_treatment_duration_h": 24
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "as-milled powders consolidated by SPS @520C for 10 min, heating rate 40C/min, 80MPa in Ar, cooled freely",
+        "features": {
+          "heat_treatment_type": "spark_plasma_sintering",
+          "heat_treatment_temperature_C": 520,
+          "heat_treatment_duration_h": 0.16666666666666666,
+          "heat_treatment_cooling": "free_cooling"
+        },
+        "status": "extracted",
+        "notes": [
+          "The explicitly specified thermal consolidation stage was retained; heating rate and pressure stayed in the original text."
+        ]
+      },
+      {
+        "source_text": "Annealed at 1250C for 1000hr, water quenched",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 1250,
+          "heat_treatment_duration_h": 1000,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "The reported 1000 hours were retained, without correcting unusual source values."
+        ]
+      },
+      {
+        "source_text": "550 °C for1 Hrs",
+        "features": {
+          "heat_treatment_temperature_C": 550,
+          "heat_treatment_duration_h": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "The treatment type was not named."
+        ]
+      },
+      {
+        "source_text": "150 °C for 25 Hrs",
+        "features": {
+          "heat_treatment_temperature_C": 150,
+          "heat_treatment_duration_h": 25
+        },
+        "status": "extracted",
+        "notes": [
+          "The treatment type was not named."
+        ]
+      },
+      {
+        "source_text": "150 °C for 25 hours",
+        "features": {
+          "heat_treatment_temperature_C": 150,
+          "heat_treatment_duration_h": 25
+        },
+        "status": "extracted",
+        "notes": [
+          "The treatment type was not named."
+        ]
+      },
+      {
+        "source_text": "550 °C for 1 hour",
+        "features": {
+          "heat_treatment_temperature_C": 550,
+          "heat_treatment_duration_h": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "The treatment type was not named."
+        ]
+      },
+      {
+        "source_text": "551 °C for 1 hour",
+        "features": {
+          "heat_treatment_temperature_C": 551,
+          "heat_treatment_duration_h": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "The treatment type was not named."
+        ]
+      },
+      {
+        "source_text": "150 °C for 25 hrs and H2O quenched",
+        "features": {
+          "heat_treatment_temperature_C": 150,
+          "heat_treatment_duration_h": 25,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "The treatment type was not named."
+        ]
+      },
+      {
+        "source_text": "550 °C for 1 hrs and H2O quenched",
+        "features": {
+          "heat_treatment_temperature_C": 550,
+          "heat_treatment_duration_h": 1,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "The treatment type was not named."
+        ]
+      },
+      {
+        "source_text": "550 °C for 2 hrs and H2O quenched",
+        "features": {
+          "heat_treatment_temperature_C": 550,
+          "heat_treatment_duration_h": 2,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": [
+          "The treatment type was not named."
+        ]
+      },
+      {
+        "source_text": "Rapid Solidification by deposition of molten alloys on a cooled wheel",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Rapid solidification described manufacture; no separate heat treatment was specified."
+        ]
+      },
+      {
+        "source_text": "Annealed at 600 °C for 2h H2O quenched",
+        "features": {
+          "heat_treatment_type": "annealing",
+          "heat_treatment_temperature_C": 600,
+          "heat_treatment_duration_h": 2,
+          "heat_treatment_cooling": "water_quench"
+        },
+        "status": "extracted",
+        "notes": []
+      }
+    ],
+    "Microstructures": [
+      {
+        "source_text": "NA",
+        "features": {},
+        "status": "missing",
+        "notes": []
+      },
+      {
+        "source_text": "The laboratory heats were processed to produce fully solution-annealed steel ranging from 0.8 to 6.4 mm thick and having an ASTM 5 to 6 grain size.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Heat-treatment and grain-size information did not identify a crystal phase."
+        ]
+      },
+      {
+        "source_text": "austenitic structure, free from second phase precipitates and with a final grain size of 60-70 um",
+        "features": {
+          "phase_FCC": 1,
+          "phase_IM": 0
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite was mapped to FCC; the reported absence of second-phase precipitates supported IM=0. Other phases were not explicitly excluded."
+        ]
+      },
+      {
+        "source_text": "22 Cr Duplex SS",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "53 wt.% austenite + 47 wt.% ferrite",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "49 wt.% austenite + 51 wt.% ferrite",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "40 wt.% austenite + 60 wt.% ferrite",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "36 wt.% austenite + 64 wt.% ferrite",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "austenite + 7% ferrite",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "austenite + 9% ferrite",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "austenite + 10% ferrite",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "austenite + 15% ferrite",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "austenite + 18% ferrite",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "austenite + 11% ferrite",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "austenitic, 𝛿-ferrite",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "Ferritic-Austenitic duplex",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "50/50 austenite-ferrite",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite/ferrite, including duplex stainless steel, were mapped to FCC/BCC. Unreported phases were not marked absent."
+        ]
+      },
+      {
+        "source_text": "Nitrogen, which is an austenite stabilizer, shifts the a-'y phase boundaries in Fe-Cr-Ni alloys, as described in Figure 8.",
+        "features": {},
+        "status": "unresolved",
+        "notes": [
+          "General discussion of nitrogen and phase boundaries was not an observation of the sample."
+        ]
+      },
+      {
+        "source_text": "austenitic",
+        "features": {
+          "phase_FCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite was mapped to FCC; unreported phases remained unknown."
+        ]
+      },
+      {
+        "source_text": "Austenitic structure",
+        "features": {
+          "phase_FCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Austenite was mapped to FCC; unreported phases remained unknown."
+        ]
+      },
+      {
+        "source_text": "𝛿-ferrite",
+        "features": {
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Ferrite was mapped to BCC; unreported phases remained unknown."
+        ]
+      },
+      {
+        "source_text": "ferritic",
+        "features": {
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Ferrite was mapped to BCC; unreported phases remained unknown."
+        ]
+      },
+      {
+        "source_text": "Single austenitic phase. No second phase. Two types of inclusions, MnS and alumina, were found",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 0,
+          "phase_HCP": 0,
+          "phase_IM": 0
+        },
+        "status": "extracted",
+        "notes": [
+          "The source explicitly stated a single austenitic phase and no second phase. Reported nonmetallic inclusions were not intermetallic phases."
+        ]
+      },
+      {
+        "source_text": "Austenitic structure with an α phase",
+        "features": {
+          "phase_FCC": 1
+        },
+        "status": "partial",
+        "notes": [
+          "Austenite was mapped to FCC. The alpha phase was not assigned a structure from the ambiguous label alone."
+        ]
+      },
+      {
+        "source_text": "Metallographic examinations did not show the presence of intermetallic phases in any of the materials.",
+        "features": {
+          "phase_IM": 0
+        },
+        "status": "extracted",
+        "notes": [
+          "The source explicitly reported no intermetallic phases; it did not identify the matrix structure."
+        ]
+      },
+      {
+        "source_text": "the DO3 -ordered structure",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "The DO3 ordered structure was retained in text; it was not forced into the four broad phase flags."
+        ]
+      },
+      {
+        "source_text": "The metallographic examination revealed the presence of a few oxide inclusions in an otherwise apparently single phase ferritic matrix.",
+        "features": {
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Ferrite was mapped to BCC. Apparently single phase was treated conservatively; other phases remained unknown."
+        ]
+      },
+      {
+        "source_text": "secondary phases present",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Secondary phases were not automatically identified as intermetallic compounds."
+        ]
+      },
+      {
+        "source_text": "FCC and BCC",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit FCC/BCC presence was retained; other phases remained unknown."
+        ]
+      },
+      {
+        "source_text": "FCC, disordered BCC, Ordered BCC",
+        "features": {
+          "phase_FCC": 1,
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Explicit FCC/BCC presence was retained; other phases remained unknown."
+        ]
+      },
+      {
+        "source_text": "FCC and Intermetallic Compound rich in Cr",
+        "features": {
+          "phase_FCC": 1,
+          "phase_IM": 1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "FCC",
+        "features": {
+          "phase_FCC": 1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Cu rich FCC",
+        "features": {
+          "phase_FCC": 1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "BCC with some amorphous structure",
+        "features": {
+          "phase_BCC": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "The amorphous part remained in the original text."
+        ]
+      },
+      {
+        "source_text": "FCC and alpha FeCr",
+        "features": {
+          "phase_FCC": 1
+        },
+        "status": "partial",
+        "notes": [
+          "FCC was explicit; alpha FeCr was retained in text without an additional phase assignment."
+        ]
+      },
+      {
+        "source_text": "Amorphous",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Amorphous/crystalline or grain-size wording alone did not establish the four phase flags."
+        ]
+      },
+      {
+        "source_text": "Nanocrystalline",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Amorphous/crystalline or grain-size wording alone did not establish the four phase flags."
+        ]
+      },
+      {
+        "source_text": "Fully Crystalline",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Amorphous/crystalline or grain-size wording alone did not establish the four phase flags."
+        ]
+      },
+      {
+        "source_text": "Amorphous- Nanocrystalline",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Amorphous/crystalline or grain-size wording alone did not establish the four phase flags."
+        ]
+      },
+      {
+        "source_text": "Crystalline",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Amorphous/crystalline or grain-size wording alone did not establish the four phase flags."
+        ]
+      }
+    ],
+    "[Cl-] Test Method": [
+      {
+        "source_text": "Potentiodynamic Polarization with exposed area of 1 cm2. Potentiodynamic polarization experiments were carried out using a scan rate of 0.1 mV/s commencing at a potential about 250 mV more active than the stable OCP. Before starting the polarization scan, the specimen in the sample holder (WE) was left in the cell for about 1 h to attain a steady state which is shown by a constant potential and current at the beginning of the experiment. The potcntiodynamic runs were programmed such that upon attaining a current density of 25μA/cm^2, the scan direction was reversed and the potentials were scanned back to the starting potential.",
+        "features": {
+          "Test_area_cm2": 1
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Potentiodynamic Polarization",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Following pretreatment for 5 min at -1.5 V, the potential was increased-rapidly to -0.5V and thereafter at a steady rate of 1V in 50 min. In this work the critical pitting potential was taken as that at which there was an anodic current flow of 10^-5 A/cm^2.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Polarization curves were obtained potentiodynamically at a scan rate of 20 mV/min, using a Tacussel electrochemical set composed of a potentiostat, a current recorder, and a high impedance electronic millivoltmeter.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. The potential was controlled by a Wenkingt potentiostat (Model 68 TS-3) and changed in steps of 10 mV with a Wenking SMP 69 scanning potentiometer every hour for the positive polarization direction until the onset of pitting or appearance of pits, and every 100 s for the reverse scan until zero current. The potential was initially held at 150 mV for 1 h to attain stable current, whereupon the scanning potentiometer was activated.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. For pitting tests, specimens were allowed to passivate in air for at least 18 h prior to testing.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. Potentiodynamic sweeps in hot 3.5% NaCl solution were carried out at a rate of 1 mV s-1. The tests were carried out in a glass three-electrode cell held in a water bath at 65 °C. In all experiments the rod under test was supported in a holder on the lid of the cell such that the end face just touched the surface of the test solution as described above. The counter electrode was a platinum wire, the reference electrode a saturated calomel electrode (SCE) at the same solution temperature; all potentials are given against the SCE. The potential at which the current density exceeded 50 uA cm-2 was defined as the pitting potential.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. the sample was kept immersed in the experimental solution for 5 min at open-circuit potential (OCP). The anodic potential was increased in steps of 20 mVSCE, and the current readings were recorded after waiting at each set potential for 1 min.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. All solutions used were deaerated with high-purity argon for at least 2 h before analysis. Potentials were measured against a saturated calomel electrode (SCE). Cathodic pretreatments were performed in 0.1 M hydrochloric acid (HCl) for 15 min at –700 mV SCE , while the current was monitored, in order to remove the air-formed oxide film.",
+        "features": {
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. Before the test, the sample remain in contact with the solution for 30 min. at -0.3 to -0.1 V to passivate or reach equilibrium.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. Gound to 600 grit at least 18 h before the test",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiostatic Polarization at different potentials. The working electrode was a rotating disk, the rotation rate was 3000 rpm in all experiments.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. The specimens were activated at the cathodic potential of 2700 mV saturated calomel electrode (SCE) for 10 min.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. Before athe test, specimens were cathodically polarized at - 1.150 V(SCE) for 15 min to reduce the polish-formed film.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiostatic Polarization, Potentiostatic polarization curves were obtained at 25°C and at 0°C in N,-saturated 0.1N NaCl and O*lN NaBr. The electrode totally immersed was first polarized in the least noble passive region for 15min, then the potential was moved in the noble direction 50mV every Smin until the pitting potential was approximated and the current showed a marked increase. This was followed by longer-time runs of 12-15h at a single potential in the neighbourhood of the critical potential in order to establish the steady state value. The least noble potential at which the current did not continuously increase with time and at which no pits could be observed under a low power microscope was taken as the final value.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Polarization test, strips of 1.25 cm x 1.25 cm of the experimental alloys, as well as the commercial alloys, were subjected to anodic polarization in dearated 1 N NaCI solution at 30 C. A Type 308 rod was welded to one side of each specimen and covered with rubber tubing, except the tip for electrical connection to a potentiostat. The specimens were then mounted in epoxy, ground to 600 grit, and rinsed with distilled water. The specimen/mount interface was covered with a thin film of lacquer, and approximately 1 cm 2 of the specimen was exposed. They were then kept in a desiccator until testing. The testing procedure consisted of: (1) introduction of the solution to a one liter polarization cell; (2) setting the temperature of the solution; (3) deoxygenating the solution with prepurified nitrogen at the rate of 90 ml/min starting 30 minutes before immersion of the specimen; (4) cleaning the specimen with distilled water just prior to transferring to the cel]; and (5) anodic polarization 50 minutes after the immersion at a scanning rate of 20 mV/min, using a PAR Model 173 potentiostat and ELSCINT Model ABA-26 Automatic Baseline Advance.",
+        "features": {
+          "Test_area_cm2": 1,
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": [
+          "Reported approximate exposed area was retained as a nominal value."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization, the specimen surface was ground to a 120 grit finish and 5 cm2 was exposed to the corrodent. The potential was controlled, relative to a standard saturated calomel electrode, by a potentiostat. Following. pretreatment for 5 min at -1.5 V, the -potential was increased-rapidly to -0.5V and thereafter at a steady rate of 1V in 50 min. In this work the critical pitting potential was taken as that at which there was an anodic current flow of 10^-5 A/cm2.",
+        "features": {
+          "Test_area_cm2": 5
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Potentiodynamic Polarization, the specimens were cut from rods and mounted in epoxy resin so that the exposed surface area was about 0.8 cm^2. This surface was coarse-ground with silicon-carbide papers and then fine-ground with alumina paste.",
+        "features": {
+          "Test_area_cm2": 0.8
+        },
+        "status": "extracted",
+        "notes": [
+          "Reported approximate exposed area was retained as a nominal value."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization, the electrochemical experiments were carried out in an inert gas glove box by using a 0.5 M H2SO4 solution which was de-aerated by purging with N2. Sample disks of 10 mm diameter were mounted in the electrochemical glass cell equipped with a platinum counter electrode and a mercurous sulfate reference electrode.",
+        "features": {
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization, Cu-wire was spot-welded to one side of each specimen, mounted in epoxy resin, and ground to 2000 grade silicon carbide. To avoid crevice corrosion, the specimenmount interface was carefully coated with a thin ®lm of silicone sealant. Approximately 1 cm2 of the surface was exposed to the test solution.",
+        "features": {
+          "Test_area_cm2": 1
+        },
+        "status": "extracted",
+        "notes": [
+          "Reported approximate exposed area was retained as a nominal value."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. Potentiodynamic polarization tests were performed using a three-electrode cell system consisting of a saturated calomel electrode (SCE) as a reference, a platinum electrode as a counter, and a specimen as the working electrode. The sample was kept immersed in the test solution for 2 h at open-circuit potential. After obtaining the stable corrosion potential (Ecorr), the potential was raised in the anodic direction, from ±100 mV below Ecorr, at a scan rate of 0.2 mV/s.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. Polarization was performed in an electrochemical cell attached to the ESCA instrument. The arrangement allows the samples to be transferred to the analyser without air exposure. The electrolyte was de-aerated by Ar bubbling for 2 h before exposure. The samples were activated at - 700 mV for 10 min. The sweep rate at the potentiodynamic tests was 1 mVs_‘. The samples prepared for the ESCA analyses were polarized by stepping the potential from the activation potential to the potentials - 75, 500 and 800 mV (SCE). The potentials were maintained for 10 min and 2 h.",
+        "features": {
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "ASTM G1",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "ASTMG1",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "ASTMG!",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "NA",
+        "features": {},
+        "status": "missing",
+        "notes": []
+      },
+      {
+        "source_text": "Potentiostatic Polarization. The experimental procedure was to first polarize the electrode potentiostatically at the least noble potential within the passive region for at least 15 min in order to achieve steady-state passivity. The potential was then advanced in stages of 50 mV, allowing 5 min between each change. Initially the current decreased or remained constant after each potential adjustment, but eventually a steadily increasing current at some potential V'c indicated the onset of pitting (or of transpassivity). Steady-state values Vc were obtained subsequently by holding the potential for long times at a fixed value and then observing pitting or the lack of it under a low power microscope. The lowest potential for which pitting could not be observed after a 10-hr or longer period of constant polarization was considered to be the steady-state value Vc. Reproducibility was in the order of ±5 mv.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. The onset of pitting was marked by a sharp and sudden increase in polarization current. The potential scanning was stopped at the pitting potential, and the electrode was allowed to pit for 20 to 30 min. It was then removed from the solution, the tape was stripped, and its surface was examined for pitting and possible crevice corrosion. The potential scanning was usually started at -0.7 to -0.6v, with respect to the saturated calomel electrode (SCE); the scanning was always into the passive potential region. In some experiments, the potential of an actively corroding electrode was changed almost instantaneously to a selected potential in a passive range by switching on a potentiostat, with a potential preset at a desired value.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Scratch",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization. The electrodes for the potentiodynamic studies were mounted in epoxy plastic with a single exposed surface parallel to the rolling plane. Electrical contact was made by soft-soldering a nickel wire to the back of the electrode. Contact between the solder or lead wire and the electrolyte was excluded by the plastic and glass tube. The 0.5 by 0.6 cm exposed surface was polished by using standard metallographic techniques, finishing with a distilled water slurry of 0.3 mu alumina. The edges of the electrode were masked with clear Glyptal varnish to prevent crevice corrosion. The coupons for the exposure tests, 2.5 by 2.5 by 0.3 cm, were surface ground and then polished through No. 600 wet silicon carbide paper. They were solvent degreased and rinsed in methanol before exposure.",
+        "features": {
+          "Test_area_cm2": 0.3
+        },
+        "status": "extracted",
+        "notes": [
+          "Calculated the single explicitly exposed face as 0.5 cm * 0.6 cm = 0.3 cm2; larger immersion coupons were not used."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization, Potentiodynamic polarization commenced at the free-corrosion potential after the sample had been immersed in the solution for 30 minutes",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization - pitting potentital measured by potential sweep method",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization - test electrodes were made from 0.25 mm wire looped to a diameter of 25 mm. Test solutions were prepared from reagent grade chemicals and distilled water and the pH value was adjusted using H2SO4 or NaOH as required. The oxygen content of the test solutions was reduced to a negligible value by bubbling nitrogen through them for a period of 24 h. All electrochemical measurements were carried out in conventional setup, purged with nitrogen during each experiment",
+        "features": {
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "The \"scratch\" technique was employed for the determination of pitting potentials.The electrode was first polarized potentiostatically to some potential well below the expected pitting potential.The polarization current was allowedto stabilize and then the electrode surface was scratched with a sharp silicon-carbide crystal mounted on the end of a glass tube. The scratching of the electrode surface resulted in a sharp polarization current \"blip.\" The electrode potential was manually adjusted by 20 mV steps to more and more noble potential values, until the scratch failed to repassivate, a failure which was indicated by a gradual current rise after the electrode was scratched. The pit was allowed to develop for 10 min, and then the electrode was examined visually. Only those results were considered to be valid where pits actually developed at the scratched site.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "To measure the pitting potentials, the potential was stepped upwards by 25 mV every 400 s, beginning at -300 mV(SCE).",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization- Samples were mechanically polished with emery paper up to grade 1000 under water, then degreased in absolute ethyl alcohol, washed in deionized water, and dried by warm air blowing for electrochemical tests. Polarization curves were obtained potentiodynamically at a scan rate of 20 mV/min.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization - the sample was stabilized in the electrolyte, which was sparged continuously with oxygen (O2), until the potential change was < 1 mV/min, and this potential was considered as the OCP. Then, the sample was scanned potentiodynamically at a rate of 600 mV/h to a potential corresponding to a current density of 10–3 A/cm2 and then scan direction was reversed.",
+        "features": {
+          "CP_aeration": "oxygen_sparged"
+        },
+        "status": "extracted",
+        "notes": [
+          "Continuous oxygen sparging was retained without assuming an equilibrium oxygen concentration."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization(Anodic polarization was applied to the working electrode after a stable corrosion potential had been achieved; this usually took about 2 h after immersion in the solution. As a measure of the resistance to pitting corrosion, the pitting potentials for the alloys were determined from the anodic polarization curve by the potential at which the anodic current density reached a value of 10 uA/cm2 after film breakdown.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiostatically-controlled anodic Polarization, test solution deaerated with N2",
+        "features": {
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic polarization. All studies were carried out with rotating disk electrodes of 0.1 cm2 (diameter 0.357 cm) insulated with a PTFE shrinkable tubing. Experiments were performed at 6000 rpm (in part at 600 rpm) in 1 M HCI at 25°C under a nitrogen atmosphere.",
+        "features": {
+          "Test_area_cm2": 0.1,
+          "CP_aeration": "nitrogen_atmosphere"
+        },
+        "status": "extracted",
+        "notes": []
+      },
+      {
+        "source_text": "Anodic Polarization - Anodic polarization tests performed in deaerated 4 M sodium chloride (NaCl) solution at 80°C. The electrochemical cell for the test consisted of a 1-L multineck flask, as specified in ASTM G 5 with a platinum counter electrode and a saturated calomel electrode (SCE) positioned in a salt bridge with a high-silica tip.",
+        "features": {
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization in a three electrode flat cell, prior to anodic sweep OCP measured for 30 mins",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization in a three electrode flat cell",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization in a three electrode flat cell until 100mA or 1.241 VSCE",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization in a the electrode flat cell, prior to swwep help at OCP then cathodically polarizes for 300s to remove surface films",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiostatic Polarization",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization in a three electrode flat cell, prior to anodic sweep OCP measured for 1 hr",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarization in a three electrode flat cell, prior to anodic sweep OCP was mesured until stability for 6 mins",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiostatic Polarization for 24 hrs in deaerated Cl- solution",
+        "features": {
+          "CP_aeration": "deaerated"
+        },
+        "status": "extracted",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiodynamic Polarzation until a stable pit formed then Potentiostatic Polarization at pitting potential to monitior pit growth",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiostatic Polarization. Measurements made in 10 mV steps and held until a stationary current was observed",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      },
+      {
+        "source_text": "Potentiostatic Polarization. For most of the measurements, Al electrodes were employed measuring 1.5 cm long and 0.4 cm in diameter. One end of each electrode was drilled and tapped, allowing a threaded member attached to a nickel wire to hold the electrode firmly against a glass tube separated by a water-tight Teflon gasket. Only the electrode surface, totally immersed, Teflon, and glass made contact with the electrolyte. Specimens were polished to 3/0 emery paper followed by pickling in 2N NaOH at 80~ for 5 min and then washing in distilled water.",
+        "features": {},
+        "status": "not_represented",
+        "notes": [
+          "Full method text was retained as metadata. Only explicitly reviewed aeration and exposed area were extracted."
+        ]
+      }
+    ]
+  }
+}

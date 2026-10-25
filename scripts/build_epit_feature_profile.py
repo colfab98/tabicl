@@ -68,7 +68,9 @@ def _normalized_method(value: Any) -> str:
 
 
 def build_profile_bytes() -> tuple[bytes, bytes]:
-    dataset = load_epit_dataset()
+    # This builder reproduces the historical v1 environment profile. The
+    # reviewed composition profiles have their own versioned builder.
+    dataset = load_epit_dataset(reviewed_composition=False)
     all_rows = dataset.rows
     family_by_display = {display: family for family, display in FAMILY_DISPLAY_NAMES.items()}
     selected_rows = [

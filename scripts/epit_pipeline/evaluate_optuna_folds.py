@@ -84,6 +84,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default="median",
     )
     parser.add_argument("--pitting-magpie-features", action="store_true")
+    parser.add_argument("--epit-expanded-features", action="store_true")
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--keep-fold-outputs", action="store_true")
     parser.add_argument("--print-subcommands", action="store_true")
@@ -164,6 +165,11 @@ def fold_command(
     ]
     if args.pitting_magpie_features:
         command.append("--pitting-magpie-features")
+    if getattr(args, "epit_expanded_features", False):
+        command.extend([
+            "--epit-expanded-features", "--missing-aware-model", args.model_label,
+            "--fixed-schema-model", args.model_label,
+        ])
     return command
 
 
@@ -286,6 +292,7 @@ def main() -> None:
                     "model_label": args.model_label,
                 },
                 "settings": {
+                    "epit_expanded_features": bool(args.epit_expanded_features),
                     "device": args.device,
                     "n_estimators": args.n_estimators,
                     "tabicl_feat_shuffle_method": args.tabicl_feat_shuffle_method,

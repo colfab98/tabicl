@@ -1,0 +1,175 @@
+{
+  "schema_version": "soccol_environment_v1",
+  "counts": {
+    "retained_rows": 4027,
+    "development_rows": 3222,
+    "final_test_rows": 805,
+    "environment_features": 33,
+    "feature_coverage": {
+      "Prep_grinding_grit": 2990,
+      "Prep_Ra_micron": 367,
+      "Prep_pH": 875,
+      "Prep_redox": 1241,
+      "Prep_time": 1006,
+      "CP_time": 1982,
+      "CP_temp": 3977,
+      "CP_pH": 3963,
+      "Test_area_cm2": 2000,
+      "scan_rate": 3767,
+      "CP_Cl": 4027,
+      "CP_Br": 4027,
+      "CP_OH": 4005,
+      "CP_SO4": 3895,
+      "CP_CO3": 3985,
+      "CP_NO3": 4024,
+      "CP_PO4": 4024,
+      "CP_MoO4": 4024,
+      "CP_CrO4": 4024,
+      "CP_aeration": 2764,
+      "CP_agitation": 518,
+      "test_solution_type": 23,
+      "H2SO4_mol_L": 11,
+      "surface_preparation_method": 1600,
+      "preparation_solution_type": 283,
+      "heat_treatment_type": 89,
+      "heat_treatment_temperature_C": 24,
+      "heat_treatment_duration_h": 24,
+      "heat_treatment_cooling": 48,
+      "heat_treatment_2_type": 0,
+      "heat_treatment_2_temperature_C": 0,
+      "heat_treatment_2_duration_h": 0,
+      "heat_treatment_2_cooling": 0
+    },
+    "conflicting_rows": 192,
+    "rows_with_heat_information": 89,
+    "source_status_rows": {
+      "Prep_grinding_grit": {
+        "copied_numeric": 2990,
+        "missing": 1037
+      },
+      "Prep_Ra_micron": {
+        "missing": 3660,
+        "copied_numeric": 367
+      },
+      "Prep_pH": {
+        "missing": 3152,
+        "copied_numeric": 875
+      },
+      "Prep_redox": {
+        "missing": 2786,
+        "copied_numeric": 1241
+      },
+      "Prep_time": {
+        "missing": 3021,
+        "copied_numeric": 1006
+      },
+      "CP_time": {
+        "missing": 2045,
+        "copied_numeric": 1982
+      },
+      "CP_temp": {
+        "copied_numeric": 3977,
+        "missing": 50
+      },
+      "CP_pH": {
+        "copied_numeric": 3963,
+        "missing": 64
+      },
+      "Test_area_cm2": {
+        "copied_numeric": 2015,
+        "missing": 2012
+      },
+      "scan_rate": {
+        "copied_numeric": 3767,
+        "missing": 260
+      },
+      "CP_Cl": {
+        "copied_numeric": 4027
+      },
+      "CP_Br": {
+        "copied_numeric": 4027
+      },
+      "CP_OH": {
+        "copied_numeric": 4011,
+        "missing": 16
+      },
+      "CP_SO4": {
+        "copied_numeric": 4027
+      },
+      "CP_CO3": {
+        "copied_numeric": 4024,
+        "missing": 3
+      },
+      "CP_NO3": {
+        "copied_numeric": 4024,
+        "missing": 3
+      },
+      "CP_PO4": {
+        "copied_numeric": 4024,
+        "missing": 3
+      },
+      "CP_MoO4": {
+        "copied_numeric": 4024,
+        "missing": 3
+      },
+      "CP_CrO4": {
+        "copied_numeric": 4024,
+        "missing": 3
+      },
+      "CP_aeration": {
+        "extracted": 2764,
+        "missing": 1263
+      },
+      "CP_agitation": {
+        "missing": 3509,
+        "extracted": 518
+      },
+      "CP_anions_info": {
+        "no_additional_detail": 2648,
+        "missing": 937,
+        "partial": 196,
+        "conflict": 177,
+        "extracted": 69
+      },
+      "Prep_medium": {
+        "missing": 1814,
+        "extracted": 1266,
+        "partial": 545,
+        "no_additional_detail": 360,
+        "unresolved": 27,
+        "conflict": 15
+      }
+    }
+  },
+  "input_sha256": {
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/raw/Pitting_potential_dataset_2024.xlsx": "cb255c5a94d90bd207248f6e25727f965d587c29a73b2ffcef6b8c0ced6da1da",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_regression_event1.csv": "280f8ff3f89c5d47b22f46a483b9a67eb612a9cbbe0a3394685a0e3da3a0200c",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/soccol_environment_rules_v1.json": "92678bff1a744106b7605d1aff72b51be4b419318323851865464fcf5053a467",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/splits_v1/split_manifest.json": "bc06162ebb2009a92949522ac5e3d5d256837ddd65a08b2d347c5adf8355cdbb",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/splits_v1/split_lock.json": "f1b4c0662d67df46a38561e2b6393aae5b1811dd6f3dceebe7fc560b3a41bcf9",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/splits_v1/split_assignments.csv": "d34b48ad40ae4cf03a7cdcd209c9a08879d3529f3b4dac320dff9986b641b7a8",
+    "/home/fcolanto/projects/tabicl/corrosion_datasets/datasets/soccol_pitting_potential/processed/splits_v1/split_report.html": "2afbdbd5294aa5a97e6ce6c562a26aedac3f2d695cd8c988f49e7ae3b47aec76"
+  },
+  "implementation_sha256": {
+    "corrosion_datasets/datasets/soccol_pitting_potential/prepare_soccol_environment.py": "c1c893537288bf6104b37ce7d72b8ec88adb26ac3189765b5811f5a99925f964"
+  },
+  "output_sha256": {
+    "environment_column_summary.csv": "2e300bdd043e6ca2c0ad59689a6ba88d9d2d206f4c4a807d02b8a6f0611b1e2c",
+    "environment_processing_log.csv": "dc9c96d2ca4623ffca798d9f742a680be5b4f21444a6a4045881e0c8fcd97303",
+    "environment_review_notes.csv": "d61b49bcf3ed86af0b4653c100ea5f7dc3a959e68e106ec88421f030d5dd5721",
+    "feature_registry.json": "87f1575d914327ed429d9caf5891838a50a5fd190b6c29b232fb4b74bf4a2995",
+    "soccol_environment_features.csv": "ed1a5a5cf32703cf3ea7a065e48ce90641be15347d482afb1175270520561796",
+    "soccol_processed.csv": "a3ccbb3cecb6469fda42cf4be261c67253514a00ae5256655324e4af2dd05c15",
+    "source_rows.csv": "2a6ee82be8b8a9835b6a5256463de089154cb244f3e9819fa44ada7af7354b59",
+    "split_assignments.csv": "d34b48ad40ae4cf03a7cdcd209c9a08879d3529f3b4dac320dff9986b641b7a8"
+  },
+  "policy": {
+    "targets_used_for_extraction": false,
+    "row_exclusions": 0,
+    "CP_ion_other_used": false,
+    "imputation_fitted": false,
+    "composition_reprocessed": false,
+    "frozen_assignments": "Copied byte-for-byte; same final-test rows and development folds."
+  },
+  "scope": "Standalone Soccol environment export. EPIT, shared tables, model loaders, synthetic priors and evaluation paths were not modified."
+}

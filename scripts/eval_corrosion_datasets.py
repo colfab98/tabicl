@@ -54,6 +54,10 @@ from tabicl.prior.epit_schema import (
     EPIT_COMPOSITION_CLOSURE_TOLERANCE_WT_PERCENT,
     EPIT_COMPOSITION_COLUMNS,
 )
+from tabicl.prior.epit_expanded_schema import (
+    EPIT_EXPANDED_FEATURE_COLUMNS, EPIT_EXPANDED_CATEGORICAL_COLUMNS,
+    EPIT_EXPANDED_FEATURE_PROFILE,
+)
 from tabicl.prior.soccol_schema import (
     SOCCOL_CATEGORICAL_COLUMNS,
     SOCCOL_COMPOSITION_COLUMNS,
@@ -565,6 +569,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "Include electrochemical control/setpoint and downstream-response feature groups. "
             "By default these are excluded to keep evaluation leakage-safe."
         ),
+    )
+    parser.add_argument(
+        "--epit-expanded-features", action="store_true",
+        help="Use the reviewed 70-column EPIT schema; retain missing environment values.",
     )
     parser.add_argument(
         "--pitting-magpie-features",
@@ -1190,12 +1198,20 @@ def epit_completed_composition_series(
     column: str,
     rows: list[dict[str, Any]],
 ) -> pd.Series:
-    """Keep all EPIT rows while zero-filling only closure-supported blanks."""
+    """Keep reviewed values unchanged, with the old rule for legacy tables."""
 
     matrix = np.asarray(
         [[eval_to_float(row.get(name), column=name, group="material") for name in EPIT_COMPOSITION_COLUMNS] for row in rows],
         dtype=float,
     )
+    if any(note.startswith("Reviewed EPIT compositions:") for note in (table.notes or [])):
+        usable = np.asarray([
+            math.isfinite(eval_to_float(row.get("Epit, mV (SCE) Avg."), group="target"))
+            for row in rows
+        ])
+        if not np.isfinite(matrix[usable]).all():
+            raise RuntimeError("Reviewed EPIT composition unexpectedly contains missing values.")
+        return pd.Series(matrix[:, EPIT_COMPOSITION_COLUMNS.index(column)], name=column)
     closes = np.abs(np.nansum(matrix, axis=1) - 100.0) <= EPIT_COMPOSITION_CLOSURE_TOLERANCE_WT_PERCENT + 1e-12
     selected = matrix[:, EPIT_COMPOSITION_COLUMNS.index(column)]
     completed = np.where(np.isfinite(selected), selected, np.where(closes, 0.0, np.nan))
@@ -1599,6 +1615,8 @@ def build_task(
         target_slug = f"{target_slug}_numeric_rate_only"
     task_id = f"{table.dataset}__{slugify(table.table)}__{target_slug}"
     quality_flags = assess_task_quality(table, X, y)
+    if is_epit_task and any(note.startswith("Reviewed EPIT compositions:") for note in (table.notes or [])):
+        quality_flags = sorted(set(quality_flags + ["epit_reference_v1_composition"]))
     if strict_numeric_rate_only:
         quality_flags = sorted(set(quality_flags + ["numeric_rate_only_target"]))
     fixed_split: EvalSplit | None = None
@@ -1660,6 +1678,31 @@ def _sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _make_expanded_epit_task() -> EvalTask:
+    """Read the reviewed schema in the existing frozen task-row order."""
+    if __package__:
+        from scripts.epit_pipeline.composition_data import load_reviewed_compositions
+    else:
+        from epit_pipeline.composition_data import load_reviewed_compositions
+    reviewed = load_reviewed_compositions()
+    data = reviewed.rows.sort_values("task_row_index").reset_index(drop=True)
+    target = "Epit, mV (SCE) Avg."
+    y = data[target].map(lambda value: eval_to_float(value, column=target, group="target"))
+    if not np.isfinite(y.to_numpy()).all():
+        raise RuntimeError("Reviewed EPIT targets are not finite.")
+    return EvalTask(
+        task_id=EPIT_PIPELINE_TASK_ID, dataset="electrochemical_metrics_alloys",
+        table="Pitting Potential", target=target, threshold=math.nan,
+        target_binning="continuous", target_bins=0, bin_edges=[], class_labels=[], class_counts={},
+        X=data.loc[:, EPIT_EXPANDED_FEATURE_COLUMNS].copy(), y=y,
+        y_ordinal=pd.Series(np.zeros(len(data), dtype=int)), task_family="normal_corrosion",
+        feature_groups_used=["material", "environment_history"],
+        feature_group_counts={"material": 24, "environment_history": 46}, dropped_feature_columns=[],
+        quality_flags=["epit_reference_v1_70_features"], split_groups=None,
+        split_strategy="epit_frozen_composition_group", include_in_summary=True, summary_exclusion_reason="",
+    )
 
 
 def _make_soccol_pipeline_task(manifest_path: Path) -> EvalTask:
@@ -2024,6 +2067,17 @@ def slugify(text: str) -> str:
 
 
 def make_tasks(args: argparse.Namespace) -> list[EvalTask]:
+    if getattr(args, "epit_expanded_features", False):
+        if args.combined_data_dir is not None or args.epit_split_manifest is None:
+            raise ValueError("Expanded EPIT evaluation requires its frozen EPIT split manifest.")
+        if args.target_binning != "continuous":
+            raise ValueError("Expanded EPIT evaluation uses continuous regression targets.")
+        task = _make_expanded_epit_task()
+        if args.dataset and task.dataset not in set(args.dataset):
+            return []
+        if args.task and task.task_id not in set(args.task):
+            return []
+        return [task]
     if args.combined_data_dir is not None:
         task = _make_combined_pipeline_task(args.combined_data_dir)
         if args.dataset and task.dataset not in set(args.dataset):
@@ -2057,6 +2111,13 @@ def make_tasks(args: argparse.Namespace) -> list[EvalTask]:
             continue
         if selected_datasets and table.dataset not in selected_datasets:
             continue
+        if table.dataset == "electrochemical_metrics_alloys" and table.table == "Pitting Potential":
+            if __package__:
+                from scripts.epit_pipeline.composition_data import apply_reviewed_compositions
+            else:
+                from epit_pipeline.composition_data import apply_reviewed_compositions
+
+            table = apply_reviewed_compositions(table)
         target_cols = choose_target_columns(
             table,
             args.target_mode,
@@ -2566,10 +2627,13 @@ def augment_pitting_magpie_split(
     """Append descriptors using the same train-fitted mean imputation as TabICL."""
 
     material_columns = list(EPIT_MAGPIE_MATERIAL_COLUMNS)
+    expanded = list(X_train.columns[:70]) == list(EPIT_EXPANDED_FEATURE_COLUMNS)
+    if expanded:
+        material_columns = [column.removeprefix("Composition, wt.% ") for column in material_columns]
     missing_columns = [column for column in material_columns if column not in X_train.columns]
     if missing_columns:
         raise ValueError(f"EPIT Magpie composition columns are missing: {missing_columns}")
-    if list(X_train.columns[: len(EPIT_COMPOSITION_COLUMNS)]) != list(EPIT_COMPOSITION_COLUMNS):
+    if not expanded and list(X_train.columns[: len(EPIT_COMPOSITION_COLUMNS)]) != list(EPIT_COMPOSITION_COLUMNS):
         raise ValueError("All 24 EPIT composition columns must be the first model inputs in fixed order.")
     if list(X_test.columns) != list(X_train.columns):
         raise ValueError("Training and test feature columns do not match for EPIT Magpie augmentation.")
@@ -2654,6 +2718,14 @@ def preprocess_epit_split(
     """Normalize EPIT inputs, optionally freezing encodings on reference rows."""
     train = X_train.copy()
     test = X_test.copy()
+    if tuple(train.columns) == EPIT_EXPANDED_FEATURE_COLUMNS:
+        from tabicl.prior.epit_feature_profile import load_epit_feature_profile
+        profile = load_epit_feature_profile(EPIT_EXPANDED_FEATURE_PROFILE)
+        for frame in (train, test):
+            for column in EPIT_EXPANDED_CATEGORICAL_COLUMNS:
+                # Unknown/query-only categories remain missing; no query-fitted vocabulary.
+                frame[column] = frame[column].map(profile.metadata["category_mappings"][column])
+        return train.astype(float), test.astype(float)
     preprocessing = None if X_preprocessing is None else X_preprocessing.copy()
     frames = [train, test] if preprocessing is None else [preprocessing, train, test]
     for column in train.columns:

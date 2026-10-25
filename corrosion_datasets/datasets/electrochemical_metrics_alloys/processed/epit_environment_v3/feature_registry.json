@@ -1,0 +1,553 @@
+{
+  "schema_version": "epit_environment_v3",
+  "feature_columns": [
+    "Fe",
+    "Cr",
+    "Ni",
+    "Mo",
+    "W",
+    "N",
+    "Nb",
+    "C",
+    "Si",
+    "Mn",
+    "Cu",
+    "P",
+    "S",
+    "Al",
+    "V",
+    "Ta",
+    "Re",
+    "Ce",
+    "Ti",
+    "Co",
+    "B",
+    "Mg",
+    "Y",
+    "Gd",
+    "CP_temp",
+    "CP_pH",
+    "CP_Cl",
+    "scan_rate",
+    "test_solution_type",
+    "CP_aeration",
+    "H2SO4_eq_L",
+    "H2SO4_mol_L",
+    "H2S_partial_pressure_atm",
+    "HCl_eq_L",
+    "HCl_mol_L",
+    "KCl_eq_L",
+    "KCl_mol_L",
+    "MgCl2_mol_L",
+    "Na2S2O3_mol_L",
+    "Na2SO4_mol_L",
+    "NaBr_eq_L",
+    "NaBr_mol_L",
+    "NaClO4_mol_L",
+    "NaCl_eq_L",
+    "NaCl_mol_L",
+    "NaCl_wt_percent",
+    "NaHCO3_mol_L",
+    "Test_area_cm2",
+    "WO4_mol_L",
+    "heat_treatment_type",
+    "heat_treatment_temperature_C",
+    "heat_treatment_duration_h",
+    "heat_treatment_cooling",
+    "heat_treatment_2_type",
+    "heat_treatment_2_temperature_C",
+    "heat_treatment_2_duration_h",
+    "heat_treatment_2_cooling",
+    "phase_FCC",
+    "phase_BCC",
+    "phase_HCP",
+    "phase_IM",
+    "Prep_grinding_grit",
+    "surface_preparation_method",
+    "preparation_solution_type",
+    "Prep_time",
+    "CP_time",
+    "CP_agitation",
+    "CP_Br",
+    "CP_SO4"
+  ],
+  "composition_columns": [
+    "Fe",
+    "Cr",
+    "Ni",
+    "Mo",
+    "W",
+    "N",
+    "Nb",
+    "C",
+    "Si",
+    "Mn",
+    "Cu",
+    "P",
+    "S",
+    "Al",
+    "V",
+    "Ta",
+    "Re",
+    "Ce",
+    "Ti",
+    "Co",
+    "B",
+    "Mg",
+    "Y",
+    "Gd"
+  ],
+  "environment_history_columns": [
+    "CP_temp",
+    "CP_pH",
+    "CP_Cl",
+    "scan_rate",
+    "test_solution_type",
+    "CP_aeration",
+    "H2SO4_eq_L",
+    "H2SO4_mol_L",
+    "H2S_partial_pressure_atm",
+    "HCl_eq_L",
+    "HCl_mol_L",
+    "KCl_eq_L",
+    "KCl_mol_L",
+    "MgCl2_mol_L",
+    "Na2S2O3_mol_L",
+    "Na2SO4_mol_L",
+    "NaBr_eq_L",
+    "NaBr_mol_L",
+    "NaClO4_mol_L",
+    "NaCl_eq_L",
+    "NaCl_mol_L",
+    "NaCl_wt_percent",
+    "NaHCO3_mol_L",
+    "Test_area_cm2",
+    "WO4_mol_L",
+    "heat_treatment_type",
+    "heat_treatment_temperature_C",
+    "heat_treatment_duration_h",
+    "heat_treatment_cooling",
+    "heat_treatment_2_type",
+    "heat_treatment_2_temperature_C",
+    "heat_treatment_2_duration_h",
+    "heat_treatment_2_cooling",
+    "phase_FCC",
+    "phase_BCC",
+    "phase_HCP",
+    "phase_IM",
+    "Prep_grinding_grit",
+    "surface_preparation_method",
+    "preparation_solution_type",
+    "Prep_time",
+    "CP_time",
+    "CP_agitation",
+    "CP_Br",
+    "CP_SO4"
+  ],
+  "audit_only_derived_columns": [
+    "NaCl_percent_unspecified",
+    "NaCl_ppm_unspecified"
+  ],
+  "columns": {
+    "Fe": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Cr": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Ni": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Mo": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "W": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "N": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Nb": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "C": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Si": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Mn": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Cu": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "P": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "S": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Al": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "V": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Ta": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Re": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Ce": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Ti": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Co": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "B": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Mg": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Y": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "Gd": {
+      "group": "composition",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "CP_temp": {
+      "group": "environment",
+      "dtype": "numeric",
+      "unit": "degC"
+    },
+    "CP_pH": {
+      "group": "environment",
+      "dtype": "numeric",
+      "unit": "dimensionless"
+    },
+    "CP_Cl": {
+      "group": "environment",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "scan_rate": {
+      "group": "environment",
+      "dtype": "numeric",
+      "unit": "mV/s"
+    },
+    "test_solution_type": {
+      "group": "solution",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "CP_aeration": {
+      "group": "solution",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "H2SO4_eq_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "eq/L"
+    },
+    "H2SO4_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "H2S_partial_pressure_atm": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "atm"
+    },
+    "HCl_eq_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "eq/L"
+    },
+    "HCl_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "KCl_eq_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "eq/L"
+    },
+    "KCl_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "MgCl2_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "Na2S2O3_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "Na2SO4_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "NaBr_eq_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "eq/L"
+    },
+    "NaBr_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "NaClO4_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "NaCl_eq_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "eq/L"
+    },
+    "NaCl_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "NaCl_percent_unspecified": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "%; basis unspecified"
+    },
+    "NaCl_ppm_unspecified": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "ppm; basis unspecified"
+    },
+    "NaCl_wt_percent": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "wt.%"
+    },
+    "NaHCO3_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "Test_area_cm2": {
+      "group": "procedure",
+      "dtype": "numeric",
+      "unit": "cm2"
+    },
+    "WO4_mol_L": {
+      "group": "solution",
+      "dtype": "numeric",
+      "unit": "mol/L"
+    },
+    "heat_treatment_type": {
+      "group": "heat_treatment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "heat_treatment_temperature_C": {
+      "group": "heat_treatment",
+      "dtype": "numeric",
+      "unit": "degC"
+    },
+    "heat_treatment_duration_h": {
+      "group": "heat_treatment",
+      "dtype": "numeric",
+      "unit": "h"
+    },
+    "heat_treatment_cooling": {
+      "group": "heat_treatment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "heat_treatment_2_type": {
+      "group": "heat_treatment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "heat_treatment_2_temperature_C": {
+      "group": "heat_treatment",
+      "dtype": "numeric",
+      "unit": "degC"
+    },
+    "heat_treatment_2_duration_h": {
+      "group": "heat_treatment",
+      "dtype": "numeric",
+      "unit": "h"
+    },
+    "heat_treatment_2_cooling": {
+      "group": "heat_treatment",
+      "dtype": "categorical",
+      "unit": null
+    },
+    "phase_FCC": {
+      "group": "microstructure",
+      "dtype": "numeric",
+      "unit": "binary",
+      "meaning": "1 present, 0 supported absence, missing unknown"
+    },
+    "phase_BCC": {
+      "group": "microstructure",
+      "dtype": "numeric",
+      "unit": "binary",
+      "meaning": "1 present, 0 supported absence, missing unknown"
+    },
+    "phase_HCP": {
+      "group": "microstructure",
+      "dtype": "numeric",
+      "unit": "binary",
+      "meaning": "1 present, 0 supported absence, missing unknown"
+    },
+    "phase_IM": {
+      "group": "microstructure",
+      "dtype": "numeric",
+      "unit": "binary",
+      "meaning": "1 present, 0 supported absence, missing unknown"
+    },
+    "Prep_grinding_grit": {
+      "group": "preparation",
+      "dtype": "numeric",
+      "unit": "reported grit grade",
+      "meaning": "Reported numeric abrasive grade; no common grading standard was assumed. Mesh and slash/emery notations were not converted."
+    },
+    "surface_preparation_method": {
+      "group": "preparation",
+      "dtype": "categorical",
+      "unit": null,
+      "meaning": "Explicit preparation operations. A + separated list records multiple operations, not an inferred chronology or complete history."
+    },
+    "preparation_solution_type": {
+      "group": "preparation",
+      "dtype": "categorical",
+      "unit": null,
+      "meaning": "Named chemical/electrochemical treatment or cleaning liquid. Rinse water and abrasive carriers were not added to an active treatment mixture."
+    },
+    "Prep_time": {
+      "group": "preparation",
+      "dtype": "numeric",
+      "unit": "h",
+      "meaning": "Chemical/electrochemical preparation duration in hours, separate from heat treatment, air exposure and test-bath equilibration. Air-only timing with no separate treatment evidence remained missing."
+    },
+    "CP_time": {
+      "group": "test_environment",
+      "dtype": "numeric",
+      "unit": "h",
+      "meaning": "Time in the test solution at open circuit or before the scan. Approximate reported times remained nominal estimates."
+    },
+    "CP_agitation": {
+      "group": "test_environment",
+      "dtype": "numeric",
+      "unit": "binary",
+      "meaning": "1 explicitly stirred or rotating electrode, 0 explicitly quiescent; missing otherwise. Stationary current and gas bubbling did not establish agitation state."
+    },
+    "CP_Br": {
+      "group": "test_environment",
+      "dtype": "numeric",
+      "unit": "mol/L",
+      "meaning": "Nominal bromide amount from explicit NaBr molarity, one Br per NaBr. Normality was not converted."
+    },
+    "CP_SO4": {
+      "group": "test_environment",
+      "dtype": "numeric",
+      "unit": "mol/L",
+      "meaning": "Nominal sulfate amount from explicit Na2SO4 molarity in a recipe without a named acid. No free-ion speciation calculation or acid contribution was inferred."
+    }
+  },
+  "missing_policy": "Unknown stays missing, including phase absence and unused later heat-treatment stages; no imputation or scaling was fitted.",
+  "excluded_source_columns": [
+    "row_id",
+    "task_row_index",
+    "No.",
+    "Epit, mV (SCE) Avg.",
+    "Epit, mV (SCE) Max",
+    "Epit, mV (SCE) Min",
+    "Test Temp. oC",
+    "Test Solution",
+    "[Cl-] M",
+    "[Cl-] pH",
+    "[Cl-] Test Method",
+    "Scan Rate mV/s",
+    "Heat treatment",
+    "Microstructures",
+    "Comments",
+    "Reference",
+    "Material class",
+    "Material class__2",
+    "Material class__3"
+  ],
+  "target_column": "Epit, mV (SCE) Avg.",
+  "heat_stage_semantics": "Stages are ordered explicitly reported thermal treatments. Missing stage fields do not establish absence. Alternative conditions are not separate stages.",
+  "preparation_policy": "Only explicit procedure information was extracted. Prep_redox, Prep_pH and Prep_Ra_micron remained deferred. Unknown agitation was not set to zero.",
+  "preparation_source_fields": [
+    "Heat treatment",
+    "[Cl-] Test Method",
+    "Comments"
+  ],
+  "comments_policy": "Only reviewed preparation clauses supplied added features. Targets, composition notes and comments on corrosion outcomes did not supply feature values.",
+  "ion_policy": "NaBr molarity mapped to nominal bromide; only the Na2SO4/NaCl recipe without a named acid mapped to nominal sulfate. No normality conversion or acid speciation inference.",
+  "review_policy": "Source contradictions and uncertain timing associations remained missing; original reports were preserved."
+}

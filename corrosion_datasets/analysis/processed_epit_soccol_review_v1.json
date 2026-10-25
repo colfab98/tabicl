@@ -1,0 +1,30 @@
+{
+  "epit": {
+    "rows": 760,
+    "features": 69,
+    "corrections": {
+      "CP_Cl": 1
+    },
+    "explicit_molar_chloride_rows_crosschecked": 332,
+    "output_manifest_sha256": "91ec58d52758cc45d7c43ed5d8b4aa279826aa2ed73d5bda0fc28493edd26ccd",
+    "frozen_split_sha256": "a16d47dd41ce77f143f868995ebf8689737a6f35fca8a98faec62d7e128290d8",
+    "source_exports_unchanged": true,
+    "output_checksums_verified": true
+  },
+  "soccol": {
+    "rows": 4027,
+    "features": 33,
+    "corrections": {
+      "Prep_time": 217,
+      "surface_preparation_method": 32
+    },
+    "direct_numeric_disagreements_all_logged_as_missing": 409,
+    "output_manifest_sha256": "cb7c5874d0b65a345966a063474245e2fb8e08078fcc43bda9e827f729b83841",
+    "frozen_split_sha256": "d34b48ad40ae4cf03a7cdcd209c9a08879d3529f3b4dac320dff9986b641b7a8",
+    "source_exports_unchanged": true,
+    "output_checksums_verified": true
+  },
+  "shared_columns_checked": 24,
+  "tests_passed": 26,
+  "scope": "Source-cell and extraction audit; not independent re-verification of every literature measurement. Soccol legacy composition was not certified."
+}
