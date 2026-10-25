@@ -1,0 +1,34 @@
+column,dtype,unit,group,qualification,populated_rows,distinct_values,meaning
+Prep_grinding_grit,numeric,reported grit grade,preparation,Reported workbook grade; standards were not assumed equivalent. The explicit 1200/600-US note already had numeric grade 600.,2990,19,
+Prep_Ra_micron,numeric,um,preparation,,367,31,
+Prep_pH,numeric,dimensionless,preparation,,875,33,
+Prep_redox,numeric,V; reference not established for this column,preparation,Original Soccol voltage retained. A common reference for E_pit/E_corr did not establish the reference for Prep_redox. Verify before cross-dataset harmonization.,1241,44,
+Prep_time,numeric,h,preparation,,789,19,"Chemical/electrochemical preparation duration in hours, separate from heat treatment, air exposure and test-bath equilibration. Air-only timing with no separate treatment evidence remained missing."
+CP_time,numeric,h,test_environment,,1982,22,Equilibration in the test medium before the scan; not time until pitting.
+CP_temp,numeric,degC,test_environment,,3977,73,
+CP_pH,numeric,dimensionless,test_environment,,3963,53,
+Test_area_cm2,numeric,cm2,test_environment,,2000,35,
+scan_rate,numeric,mV/s,test_environment,,3767,53,
+CP_Cl,numeric,mol/L,test_environment,Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied.,4027,116,
+CP_Br,numeric,mol/L,test_environment,Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied.,4027,21,
+CP_OH,numeric,mol/L,test_environment,Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied.,4005,53,
+CP_SO4,numeric,mol/L,test_environment,Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied.,3895,35,
+CP_CO3,numeric,mol/L,test_environment,Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied.,3985,8,
+CP_NO3,numeric,mol/L,test_environment,Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied.,4024,9,
+CP_PO4,numeric,mol/L,test_environment,Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied.,4024,7,
+CP_MoO4,numeric,mol/L,test_environment,Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied.,4024,8,
+CP_CrO4,numeric,mol/L,test_environment,Workbook concentration retained unless explicit text contradicted it. No universal valence conversion or free-ion calculation was applied.,4024,8,
+CP_aeration,categorical,,test_environment,,2764,4,
+CP_agitation,numeric,binary,test_environment,,518,2,"1 yes, 0 no, missing unknown"
+test_solution_type,categorical,,test_environment,,23,2,
+H2SO4_mol_L,numeric,mol/L,test_solution,,11,1,Reported acid component molarity; not calculated free sulfate.
+surface_preparation_method,categorical,,preparation,,1600,22,"Explicit operations, alphabetically sorted and joined with + as in EPIT; no inferred chronology."
+preparation_solution_type,categorical,,preparation,,283,7,
+heat_treatment_type,categorical,,heat_treatment,,89,2,
+heat_treatment_temperature_C,numeric,degC,heat_treatment,,24,6,
+heat_treatment_duration_h,numeric,h,heat_treatment,,24,1,
+heat_treatment_cooling,categorical,,heat_treatment,,48,2,
+heat_treatment_2_type,categorical,,heat_treatment,,0,0,
+heat_treatment_2_temperature_C,numeric,degC,heat_treatment,,0,0,
+heat_treatment_2_duration_h,numeric,h,heat_treatment,,0,0,
+heat_treatment_2_cooling,categorical,,heat_treatment,,0,0,

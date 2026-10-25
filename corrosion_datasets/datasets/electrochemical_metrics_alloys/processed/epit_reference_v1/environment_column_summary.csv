@@ -1,0 +1,48 @@
+column,group,dtype,unit,populated_rows,distinct_values,model_feature,meaning
+CP_temp,environment,numeric,degC,677,21,True,
+CP_pH,environment,numeric,dimensionless,712,26,True,
+CP_Cl,environment,numeric,mol/L,758,29,True,
+scan_rate,environment,numeric,mV/s,604,25,True,
+test_solution_type,solution,categorical,,760,21,True,
+CP_aeration,solution,categorical,,291,7,True,
+H2SO4_eq_L,solution,numeric,eq/L,42,3,True,
+H2SO4_mol_L,solution,numeric,mol/L,22,4,True,
+H2S_partial_pressure_atm,solution,numeric,atm,6,1,True,
+HCl_eq_L,solution,numeric,eq/L,52,3,True,
+HCl_mol_L,solution,numeric,mol/L,22,4,True,
+KCl_eq_L,solution,numeric,eq/L,16,1,True,
+KCl_mol_L,solution,numeric,mol/L,7,1,True,
+MgCl2_mol_L,solution,numeric,mol/L,8,1,True,
+Na2S2O3_mol_L,solution,numeric,mol/L,3,1,True,
+Na2SO4_mol_L,solution,numeric,mol/L,8,2,True,
+NaBr_eq_L,solution,numeric,eq/L,12,1,True,
+NaBr_mol_L,solution,numeric,mol/L,25,3,True,
+NaClO4_mol_L,solution,numeric,mol/L,1,1,True,
+NaCl_eq_L,solution,numeric,eq/L,96,3,True,
+NaCl_mol_L,solution,numeric,mol/L,300,13,True,
+NaCl_wt_percent,solution,numeric,wt.%,26,2,True,
+NaHCO3_mol_L,solution,numeric,mol/L,38,1,True,
+Test_area_cm2,procedure,numeric,cm2,144,5,True,
+WO4_mol_L,solution,numeric,mol/L,2,2,True,
+heat_treatment_type,heat_treatment,categorical,,377,11,True,
+heat_treatment_temperature_C,heat_treatment,numeric,degC,299,27,True,
+heat_treatment_duration_h,heat_treatment,numeric,h,332,14,True,
+heat_treatment_cooling,heat_treatment,categorical,,247,5,True,
+heat_treatment_2_type,heat_treatment,categorical,,95,5,True,
+heat_treatment_2_temperature_C,heat_treatment,numeric,degC,73,9,True,
+heat_treatment_2_duration_h,heat_treatment,numeric,h,58,4,True,
+heat_treatment_2_cooling,heat_treatment,categorical,,61,3,True,
+phase_FCC,microstructure,numeric,binary,125,1,True,"1 present, 0 supported absence, missing unknown"
+phase_BCC,microstructure,numeric,binary,82,2,True,"1 present, 0 supported absence, missing unknown"
+phase_HCP,microstructure,numeric,binary,9,1,True,"1 present, 0 supported absence, missing unknown"
+phase_IM,microstructure,numeric,binary,32,2,True,"1 present, 0 supported absence, missing unknown"
+Prep_grinding_grit,preparation,numeric,reported grit grade,126,4,True,Reported numeric abrasive grade; no common grading standard was assumed. Mesh and slash/emery notations were not converted.
+surface_preparation_method,preparation,categorical,,291,18,True,"Explicit preparation operations. A + separated list records multiple operations, not an inferred chronology or complete history."
+preparation_solution_type,preparation,categorical,,101,5,True,Named chemical/electrochemical treatment or cleaning liquid. Rinse water and abrasive carriers were not added to an active treatment mixture.
+Prep_time,preparation,numeric,h,87,5,True,"Chemical/electrochemical preparation duration in hours, separate from heat treatment, air exposure and test-bath equilibration. Air-only timing with no separate treatment evidence remained missing."
+CP_time,test_environment,numeric,h,177,6,True,Time in the test solution at open circuit or before the scan. Approximate reported times remained nominal estimates.
+CP_agitation,test_environment,numeric,binary,6,1,True,"1 explicitly stirred or rotating electrode, 0 explicitly quiescent; missing otherwise. Stationary current and gas bubbling did not establish agitation state."
+CP_Br,test_environment,numeric,mol/L,25,3,True,"Nominal bromide amount from explicit NaBr molarity, one Br per NaBr. Normality was not converted."
+CP_SO4,test_environment,numeric,mol/L,2,1,True,Nominal sulfate amount from explicit Na2SO4 molarity in a recipe without a named acid. No free-ion speciation calculation or acid contribution was inferred.
+NaCl_percent_unspecified,solution,numeric,%; basis unspecified,25,2,False,
+NaCl_ppm_unspecified,solution,numeric,ppm; basis unspecified,59,4,False,

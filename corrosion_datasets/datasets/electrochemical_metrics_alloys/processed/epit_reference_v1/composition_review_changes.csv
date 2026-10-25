@@ -1,0 +1,3 @@
+row_id,column,previous_value,reviewed_value,reason,evidence_doi
+epit_r000359,Ti,1.88,1.86,Corrected the numeric Ti amount to 1.86 wt.% using the source-table text and alloy description.,10.1149/1.2411967
+epit_r000359,Fe,77.592,77.612,Updated the corrected row's Fe remainder to 77.612 wt.%.,10.1149/1.2411967

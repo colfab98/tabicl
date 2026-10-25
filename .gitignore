@@ -139,7 +139,8 @@ docs/tutorials/
 checkpoints/
 smoke_test_run/
 
-# Corrosion dataset metadata is tracked; source payloads stay local.
+# Corrosion dataset metadata and selected reviewed exports are tracked.
+# Source payloads and intermediate exports stay local by default.
 /corrosion_datasets/datasets/*/raw/**
 !/corrosion_datasets/datasets/*/raw/
 !/corrosion_datasets/datasets/*/raw/.gitkeep
@@ -149,6 +150,16 @@ smoke_test_run/
 /corrosion_datasets/datasets/**/*.[xX][lL][sS][xX]
 /corrosion_datasets/datasets/**/*.[zZ][iI][pP]
 /corrosion_datasets/datasets/**/*.[pP][dD][fF]
+
+# Current reviewed EPIT and Soccol tables, frozen row assignments, and audits.
+# These CSVs must travel with the tracked processing manifests to other nodes.
+!/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_reference_v1/*.csv
+!/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_reference_v1/*.csv
+
+# Keep bulky per-cell processing logs and the full Soccol change dump local.
+/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_reference_v1/*_processing_log.csv
+/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_reference_v1/*_processing_log.csv
+/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_reference_v1/composition_changes.csv
 
 # Local EPIT direct-prior run outputs.
 /corrosion_datasets/analysis/epit_direct_prior/
