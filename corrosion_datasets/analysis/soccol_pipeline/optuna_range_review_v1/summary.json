@@ -1,0 +1,261 @@
+{
+  "best_trial": {
+    "informed_prior_ratio": 1.0,
+    "informed_target_mix_weight": 0.6629552824594551,
+    "mean_development_fold_spearman": 0.6046456067598436,
+    "mlp_prob": 1.0,
+    "pitting_composition_perturb_strength": 0.035765974235415644,
+    "trial": 19.0
+  },
+  "current_ranges": {
+    "informed_target_mix_weight": [
+      0,
+      1
+    ],
+    "mlp_prob": [
+      0,
+      1
+    ],
+    "pitting_composition_perturb_strength": [
+      0,
+      0.15
+    ]
+  },
+  "epit_comparison": {
+    "best_trial_number": 17,
+    "best_trial_params": {
+      "informed_prior_ratio": 0.5,
+      "informed_target_mix_weight": 0.2642320686239362,
+      "mlp_prob": 0.7,
+      "pitting_composition_perturb_strength": 0.14967534915253464
+    },
+    "source_journal": "/home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna/epit_pipeline_optuna_empirical_features_scm_target_v8/study_journal_v1.log",
+    "source_journal_sha256": "edd1ac4798d2d3e6a0041cfef1a04e5867c1155fe892ed860023f3fb8c442e6f",
+    "top_10_composition_noise_max": 0.14967534915253464,
+    "top_10_composition_noise_min": 0.09535158248541227,
+    "trial_states": {
+      "COMPLETE": 40,
+      "RUNNING": 3
+    }
+  },
+  "fixed_settings": {
+    "informed_prior_ratio": 1.0,
+    "pitting_coefficient_variation": 0.8,
+    "pitting_coefficient_variation_seed": 42
+  },
+  "historical_search_space": {
+    "informed_prior_ratio": [
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "informed_target_mix_weight": [
+      0.0,
+      1.0
+    ],
+    "mlp_prob": [
+      0.0,
+      0.25,
+      0.5,
+      0.7,
+      0.75,
+      1.0
+    ],
+    "pitting_composition_perturb_strength": [
+      0.0,
+      0.15
+    ]
+  },
+  "implementation": {
+    "epit_composition_perturb_strength_range": [
+      0.0,
+      0.3
+    ],
+    "previous_range_fingerprint_rejected": true,
+    "soccol_composition_perturb_strength_range": [
+      0.0,
+      0.15
+    ],
+    "study_name": "soccol_pipeline_optuna_empirical_features_scm_target_v4",
+    "training_launched": false
+  },
+  "independently_verified_local_results": [
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11310/trial_0000/trial_result.json",
+      "sha256": "507f9f14652ad87dea54c404c1fe660aed3538fbdf706faac58be79db67f4761",
+      "trial": 0
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11310/trial_0001/trial_result.json",
+      "sha256": "37ff3354e941cb6f6fbdfe110724d81e81eb1e0792fbfd758cc6f043b7af3dc6",
+      "trial": 1
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11310/trial_0002/trial_result.json",
+      "sha256": "a7b9550da88105bcb0b58306d150b5381ae3cd9b967075c3f4545682c0cfb7ed",
+      "trial": 2
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11310/trial_0003/trial_result.json",
+      "sha256": "3f4faf3fa2dc9c0232de782fd2228312eebcf738000b31b2d8ba8cd29fff796f",
+      "trial": 3
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11310/trial_0004/trial_result.json",
+      "sha256": "8502ae32fe31ff85587bcd234d5cbf4d8f7c7d5045df70da0ef237d27f41f46a",
+      "trial": 4
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11310/trial_0009/trial_result.json",
+      "sha256": "2286fa965b385a1efa6b73f5251dc63fe8bae2bf5b66370b6d3559639b445437",
+      "trial": 9
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11310/trial_0012/trial_result.json",
+      "sha256": "081274f2f88e81e8a39ad181a99f467cedf9aad3d0c9344516f58eaf0db81536",
+      "trial": 12
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11310/trial_0016/trial_result.json",
+      "sha256": "327354af7c7765e7f6d7dd27d6b4adcd2e36ae2e6f25ba7312f0609ceb0d5832",
+      "trial": 16
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11310/trial_0022/trial_result.json",
+      "sha256": "285eccfbcf835fbdd022ac41a349c47e5620a1a55ce43ee512b12c950adfa549",
+      "trial": 22
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11310/trial_0027/trial_result.json",
+      "sha256": "bf086c8ee219e83e68b39840b6c559aeedabbe2f2e9623b3a2a35df64d110c2a",
+      "trial": 27
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11310/trial_0032/trial_result.json",
+      "sha256": "d134860086f105db898590a0b1acf88b120b39f2de9358c9962f202c0873ff67",
+      "trial": 32
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11310/trial_0036/trial_result.json",
+      "sha256": "23a26737ec2e66670d421c8fd32c893f37b1d067ce23c5cfac2079e7ef60c42c",
+      "trial": 36
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11311/trial_0005/trial_result.json",
+      "sha256": "83a01fb884e961602fa352b3f85488217768b9638d89acbe8e63592078d7bbef",
+      "trial": 5
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11311/trial_0010/trial_result.json",
+      "sha256": "e99257bb74fd36454b4d3de690479a0f9ce9757e3bebc4694289b53f1360cb1e",
+      "trial": 10
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11311/trial_0017/trial_result.json",
+      "sha256": "de79b911f439d1673e39f8251b5e92dd6f39711c34bec739b82b547f1a4c9c61",
+      "trial": 17
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11311/trial_0021/trial_result.json",
+      "sha256": "4402f120033b6ce1b7313d674020d01fbcd2f7999ddf995404b48ed5e32d38ef",
+      "trial": 21
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11311/trial_0026/trial_result.json",
+      "sha256": "34965bda6366f8c21b91d86dd7279df7aec2ec2639b6dd5386058bd3eaac3fe2",
+      "trial": 26
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11311/trial_0031/trial_result.json",
+      "sha256": "aa3b888c80b77add0dcf87923b3404a1d1e6258644f4d5fdafe19628c1b6fea0",
+      "trial": 31
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11311/trial_0037/trial_result.json",
+      "sha256": "b0d9378dfee13168d8209b68043074810b42b04ef0a125d875ebdebecc11aa4c",
+      "trial": 37
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11311/trial_0041/trial_result.json",
+      "sha256": "1bf3f0bb680b267c9b15195e9f30bcc7f3ecec3848d50080c6a983a8e9022efd",
+      "trial": 41
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11311/trial_0046/trial_result.json",
+      "sha256": "3f2983434204fec08e6218693d921bf8fb643a6cca513e87e94d75d9c4f8c55b",
+      "trial": 46
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11311/trial_0050/trial_result.json",
+      "sha256": "368ff4b248355947b97091b6765b49c2e6716d4d906066eeccdfbfa24c7951af",
+      "trial": 50
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11311/trial_0052/trial_result.json",
+      "sha256": "9d3209bcd3d3ea0be7f3e32aab0c15ae8ca93d53afacbeebb788e47654f6193e",
+      "trial": 52
+    },
+    {
+      "path": "corrosion_datasets/analysis/soccol_pipeline/optuna_v1/trials/soccol_pipeline_optuna_empirical_features_scm_target_v1/tabicl_soccol_pipeline_soccol_pipeline_optuna_empirical_features_scm_target_v1_11311/trial_0053/trial_result.json",
+      "sha256": "b243cecd70a328d691cdda2c8603b8639693cfe85c59a7ad3bffd102d4b4a201",
+      "trial": 53
+    }
+  ],
+  "interpretation": "Descriptive adaptive-search results, not controlled parameter effects. Reviewed source rows, schema, formulas and composition weighting changed. No final-query scores were used.",
+  "output_sha256s": {
+    "completed_trials.csv": "d5f3eea00e1958653736086a00f9a8f583c094bba1111e0f7c64aa734ad0f2e0",
+    "parameter_summary.csv": "37db8b3df3147a23f2372881f93d10307a36cdd12e13fcff4e94f8a27580fa70"
+  },
+  "pipeline_fingerprint_sha256": "4dac2767dac352b151c99c32af1f8ff8dd8cc8d859845417700f8e36631552bd",
+  "ranges_at_review": {
+    "informed_target_mix_weight": [
+      0,
+      1
+    ],
+    "mlp_prob": [
+      0,
+      1
+    ],
+    "pitting_composition_perturb_strength": [
+      0,
+      0.3
+    ]
+  },
+  "recommendation_implemented": true,
+  "recommended_ranges": {
+    "informed_target_mix_weight": [
+      0,
+      1
+    ],
+    "mlp_prob": [
+      0,
+      1
+    ],
+    "pitting_composition_perturb_strength": [
+      0,
+      0.15
+    ]
+  },
+  "source_journal": "/home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna/soccol_pipeline_optuna_empirical_features_scm_target_v1/study_journal_v1.log",
+  "source_journal_sha256": "21cf9f36282ab79afe424ec85f9fcb7e78409f68c1b8f720f45082d6eed00a9f",
+  "study_name": "soccol_pipeline_optuna_empirical_features_scm_target_v1",
+  "top_10_all_informed_100_percent": true,
+  "top_10_mlp_at_least_075": 8,
+  "top_10_trial_numbers": [
+    19,
+    20,
+    14,
+    16,
+    38,
+    37,
+    43,
+    17,
+    36,
+    27
+  ],
+  "trial_states": {
+    "COMPLETE": 50,
+    "RUNNING": 5
+  }
+}

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+import argparse
 from functools import partial
 from pathlib import Path
 
@@ -18,19 +19,19 @@ from scripts.eval_corrosion_datasets import SOCCOL_PIPELINE_TASK_ID  # noqa: E40
 from scripts.soccol_pipeline import train_final as soccol_train  # noqa: E402
 
 
-SOCCOL_DEVELOPMENT_ROWS = 3222
+SOCCOL_DEVELOPMENT_ROWS = 2950
 SOCCOL_FINAL_TEST_ROWS = 805
 SOCCOL_FINAL_MODEL_LABEL = "final_soccol_model"
 
 
-def configure() -> None:
-    """Point the unchanged EPIT final evaluator at the frozen Soccol model."""
-    soccol_train.configure()
+def configure(*, reviewed_data: bool = True) -> None:
+    """Evaluate reviewed context against the original outer queries."""
+    soccol_train.configure(reviewed_data=reviewed_data)
     base.__doc__ = __doc__
-    base.DEFAULT_FINAL_ROOT = soccol_train.SOCCOL_FINAL_ROOT
+    base.DEFAULT_FINAL_ROOT = soccol_train.base.DEFAULT_FINAL_ROOT
     base.PITTING_TASK_ID = SOCCOL_PIPELINE_TASK_ID
     base.FINAL_MODEL_LABEL = SOCCOL_FINAL_MODEL_LABEL
-    base.DEVELOPMENT_ROWS = SOCCOL_DEVELOPMENT_ROWS
+    base.DEVELOPMENT_ROWS = SOCCOL_DEVELOPMENT_ROWS if reviewed_data else 3222
     base.FINAL_TEST_ROWS = SOCCOL_FINAL_TEST_ROWS
     base.load_frozen_split = partial(
         load_frozen_split,
@@ -38,9 +39,15 @@ def configure() -> None:
     )
 
 
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    mode_parser = soccol_train.soccol_search.data_mode_parser()
+    mode, _ = mode_parser.parse_known_args(argv)
+    configure(reviewed_data=not mode.legacy_data)
+    return base.parse_args(argv, parents=(mode_parser,))
+
+
 def main() -> None:
-    configure()
-    base.main()
+    base.run(parse_args())
 
 
 if __name__ == "__main__":

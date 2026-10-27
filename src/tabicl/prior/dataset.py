@@ -54,6 +54,11 @@ from .epit_expanded_schema import (
 from .epit_schema import EPIT_COMPOSITION_INDEX, epit_feature_slices
 from .soccol_feature_generator import SoccolFeatureBatch, sample_soccol_feature_rows
 from .soccol_feature_profile import load_soccol_feature_profile
+from .soccol_reviewed_schema import (
+    SOCCOL_REVIEWED_FEATURE_PROFILES, SOCCOL_REVIEWED_FEATURE_COLUMNS,
+    SOCCOL_REVIEWED_CATEGORICAL_COLUMNS, SOCCOL_REVIEWED_FEATURE_COUNT,
+    SOCCOL_REVIEWED_FEATURE_INDEX, soccol_reviewed_feature_slices,
+)
 from .soccol_schema import (
     SOCCOL_BASE_FEATURE_COUNT,
     SOCCOL_CATEGORICAL_COLUMNS,
@@ -960,6 +965,12 @@ class SCMPrior(Prior):
             and self.fixed_hp.get("pitting_feature_profile", EPIT_FEATURE_PROFILE) == EPIT_EXPANDED_FEATURE_PROFILE
         )
 
+    def _reviewed_soccol_features_enabled(self) -> bool:
+        return (
+            self._empirical_pitting_feature_profile_enabled()
+            and self.fixed_hp.get("pitting_feature_profile") in SOCCOL_REVIEWED_FEATURE_PROFILES
+        )
+
     def _pitting_magpie_base_params(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Use the fixed physical features before optional informed-task descriptors."""
 
@@ -1145,7 +1156,7 @@ class SCMPrior(Prior):
     def _pitting_target_rule_coefficients(self) -> Dict[str, Dict[str, float]]:
         if (
             str(self.fixed_hp.get("pitting_feature_profile", ""))
-            == SOCCOL_FEATURE_PROFILE
+            in (SOCCOL_FEATURE_PROFILE, *SOCCOL_REVIEWED_FEATURE_PROFILES)
         ):
             return SOCCOL_TARGET_RULE_COEFFICIENTS
         return EPIT_TARGET_RULE_COEFFICIENTS
@@ -1228,6 +1239,10 @@ class SCMPrior(Prior):
         material_slice = blocks.get("material")
         env_slice = blocks.get("environment")
         process_slice = blocks.get("process_history")
+        if self._reviewed_soccol_features_enabled():
+            # Soccol formulas have no test-method term; keep the shared rule
+            # bookkeeping on an existing category without adding an input.
+            process_slice = slice(SOCCOL_REVIEWED_FEATURE_INDEX["reference_type"], SOCCOL_REVIEWED_FEATURE_COUNT)
         if material_slice is None or material_slice.stop <= material_slice.start:
             raise ValueError("Fixed EPIT schema requires a material block.")
         if env_slice is None or env_slice.stop - env_slice.start < 3:
@@ -1252,9 +1267,12 @@ class SCMPrior(Prior):
             feature_profile_name = str(
                 self.fixed_hp.get("pitting_feature_profile", EPIT_FEATURE_PROFILE)
             )
-            if feature_profile_name == SOCCOL_FEATURE_PROFILE:
+            if feature_profile_name in (SOCCOL_FEATURE_PROFILE, *SOCCOL_REVIEWED_FEATURE_PROFILES):
                 feature_profile = load_soccol_feature_profile(feature_profile_name)
-                process_count = int(feature_profile.metadata["max_process_category_count"])
+                if feature_profile_name in SOCCOL_REVIEWED_FEATURE_PROFILES:
+                    process_count = max(2, *(len(m) for m in feature_profile.metadata["preprocessing"]["category_mappings"].values()))
+                else:
+                    process_count = int(feature_profile.metadata["max_process_category_count"])
             else:
                 feature_profile = load_epit_feature_profile(
                     feature_profile_name,
@@ -1378,15 +1396,20 @@ class SCMPrior(Prior):
                 ),
             }
         )
-        if str(self.fixed_hp.get("pitting_feature_profile", "")) == SOCCOL_FEATURE_PROFILE:
+        if str(self.fixed_hp.get("pitting_feature_profile", "")) in (SOCCOL_FEATURE_PROFILE, *SOCCOL_REVIEWED_FEATURE_PROFILES):
+            feature_index = SOCCOL_REVIEWED_FEATURE_INDEX if self._reviewed_soccol_features_enabled() else SOCCOL_FEATURE_INDEX
             rule.update(
                 {
                     "soccol_schema": True,
-                    "temperature_col": SOCCOL_FEATURE_INDEX["CP_temp"],
-                    "chloride_col": SOCCOL_FEATURE_INDEX["CP_Cl"],
-                    "ph_col": SOCCOL_FEATURE_INDEX["CP_pH"],
+                    "soccol_feature_columns": list(feature_index),
+                    "temperature_col": feature_index["CP_temp"],
+                    "chloride_col": feature_index["CP_Cl"],
+                    "ph_col": feature_index["CP_pH"],
                 }
             )
+            if self._reviewed_soccol_features_enabled():
+                rule["synthetic_material_family_names"] = ("all_accepted_soccol_materials",)
+                rule["coefficient_source"] = "configured Soccol coefficients"
         return rule
 
     def _fixed_epit_environment_values_tensor(
@@ -1632,16 +1655,21 @@ class SCMPrior(Prior):
         X: Tensor,
         rule: Dict[str, Any],
     ) -> Tuple[Tensor, Tensor]:
-        """Evaluate the nine Soccol-calibrated formulas on the 37 raw features."""
+        """Evaluate the existing Soccol formulas using their named inputs."""
         family = str(rule["target_rule_family"])
         coefficients = {
             str(name): float(value)
             for name, value in rule["target_rule_coefficients"].items()
         }
 
+        columns = tuple(rule.get("soccol_feature_columns", SOCCOL_FEATURE_INDEX))
+        if columns not in (tuple(SOCCOL_FEATURE_INDEX), SOCCOL_REVIEWED_FEATURE_COLUMNS) or X.shape[1] != len(columns):
+            raise ValueError("Soccol formula input columns do not match the recorded schema.")
+        feature_index = {name: index for index, name in enumerate(columns)}
+
         def value(name: str) -> Tensor:
             return torch.nan_to_num(
-                X[:, SOCCOL_FEATURE_INDEX[name]],
+                X[:, feature_index[name]],
                 nan=0.0,
                 posinf=0.0,
                 neginf=0.0,
@@ -3117,7 +3145,7 @@ class SCMPrior(Prior):
         profile_name = str(
             self.fixed_hp.get("pitting_feature_profile", EPIT_FEATURE_PROFILE)
         )
-        if profile_name == SOCCOL_FEATURE_PROFILE:
+        if profile_name in (SOCCOL_FEATURE_PROFILE, *SOCCOL_REVIEWED_FEATURE_PROFILES):
             return self._apply_soccol_pitting_feature_profile(
                 X, blocks, family, profile_name
             )
@@ -3276,11 +3304,15 @@ class SCMPrior(Prior):
         """Replace the fixed schema with target-free Soccol physical rows."""
         if family != "normal_corrosion":
             raise ValueError("The Soccol profile requires normal_corrosion.")
-        if X.ndim != 2 or X.shape[1] != SOCCOL_BASE_FEATURE_COUNT:
+        reviewed = profile_name in SOCCOL_REVIEWED_FEATURE_PROFILES
+        feature_count = SOCCOL_REVIEWED_FEATURE_COUNT if reviewed else SOCCOL_BASE_FEATURE_COUNT
+        if reviewed and (self._pitting_composition_mode() != "empirical_features_scm_target" or self._pitting_magpie_features_enabled()):
+            raise ValueError("Reviewed Soccol requires empirical_features_scm_target without Magpie features.")
+        if X.ndim != 2 or X.shape[1] != feature_count:
             raise ValueError(
-                f"The Soccol profile requires exactly {SOCCOL_BASE_FEATURE_COUNT} columns."
+                f"The Soccol profile requires exactly {feature_count} columns."
             )
-        expected = soccol_feature_slices()
+        expected = soccol_reviewed_feature_slices() if reviewed else soccol_feature_slices()
         for name, expected_slice in expected.items():
             observed = blocks.get(name)
             if observed is None or observed.stop - observed.start != expected_slice.stop - expected_slice.start:
@@ -3303,6 +3335,19 @@ class SCMPrior(Prior):
             ),
             random_state=random_seed,
         )
+        if reviewed:
+            X = torch.as_tensor(batch.latent_features.copy(), device=X.device, dtype=X.dtype)
+            info = PittingProfileInfo(applied=True, material_style="empirical_feature_profile", physical_profile_applied=True)
+            for col in range(24):
+                info.add_role("material_empirical_composition", col)
+            for column in SOCCOL_REVIEWED_FEATURE_COLUMNS[24:]:
+                info.add_role(f"soccol_{column}", SOCCOL_REVIEWED_FEATURE_INDEX[column], categorical=column in SOCCOL_REVIEWED_CATEGORICAL_COLUMNS)
+            family_ids = torch.zeros(X.shape[0], device=X.device, dtype=torch.long)
+            info.material_family_ids = family_ids
+            self.last_pitting_feature_batch = batch
+            self.last_pitting_composition_batch = batch.compositions
+            self.last_pitting_material_family_ids = family_ids.detach().cpu()
+            return X, info
         sampled = torch.as_tensor(batch.features.copy(), device=X.device, dtype=X.dtype)
         X = X.clone()
         for name, source_slice in expected.items():
@@ -3409,9 +3454,9 @@ class SCMPrior(Prior):
         )
         soccol_profile = str(
             self.fixed_hp.get("pitting_feature_profile", "")
-        ) == SOCCOL_FEATURE_PROFILE
+        ) in (SOCCOL_FEATURE_PROFILE, *SOCCOL_REVIEWED_FEATURE_PROFILES)
         expected_feature_count = (
-            SOCCOL_BASE_FEATURE_COUNT
+            (SOCCOL_REVIEWED_FEATURE_COUNT if self._reviewed_soccol_features_enabled() else SOCCOL_BASE_FEATURE_COUNT)
             if soccol_profile
             else EPIT_EXPANDED_FEATURE_COUNT if self._expanded_epit_features_enabled() else material_feature_count + 4
         )
@@ -3449,7 +3494,7 @@ class SCMPrior(Prior):
             material_family_ids=family_ids.to(device=X.device),
         )
         blocks = (
-            soccol_feature_slices()
+            (soccol_reviewed_feature_slices() if self._reviewed_soccol_features_enabled() else soccol_feature_slices())
             if soccol_profile
             else epit_feature_slices(material_feature_count)
         )
@@ -4163,13 +4208,13 @@ class SCMPrior(Prior):
             else:
                 valid_target = self.sanity_check(X, y, params["train_size"])
             if (d > 0).all() and valid_target:
-                if empirical_scm_target and self._expanded_epit_features_enabled():
+                if empirical_scm_target and (self._expanded_epit_features_enabled() or self._reviewed_soccol_features_enabled()):
                     # Restore the exact mask from the sampled environment row,
                     # after all finite target calculations and standardization.
                     missing = torch.as_tensor(
                         np.isnan(self.last_pitting_feature_batch.features), device=X.device,
                     )
-                    X[0, :, :EPIT_EXPANDED_FEATURE_COUNT].masked_fill_(missing, float("nan"))
+                    X[0, :, :missing.shape[1]].masked_fill_(missing, float("nan"))
                 return X.squeeze(0), y.squeeze(0), d.squeeze(0)
 
     @torch.no_grad()
@@ -4333,7 +4378,7 @@ class SCMPrior(Prior):
         """Map a synthetic table to generic, EPIT, or Soccol masking."""
         if not bool(params.get("informed_mode", False)):
             return MISSINGNESS_SOURCE_GENERIC
-        if str(params.get("pitting_feature_profile", "")) == SOCCOL_FEATURE_PROFILE:
+        if str(params.get("pitting_feature_profile", "")) in (SOCCOL_FEATURE_PROFILE, *SOCCOL_REVIEWED_FEATURE_PROFILES):
             return MISSINGNESS_SOURCE_SOCCOL
         return MISSINGNESS_SOURCE_EPIT
 

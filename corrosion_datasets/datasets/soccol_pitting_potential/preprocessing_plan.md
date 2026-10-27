@@ -53,8 +53,8 @@ prediction pipeline with the Soccol pitting-potential dataset.
 - `scripts/eval_corrosion_datasets.py` fits continuous means and categorical
   mappings separately on each context partition and verifies that all 37 model
   inputs are finite.
-- `src/tabicl/prior/assets/soccol_pitting_features_v1.*` stores the target-free
-  synthetic feature profile. `prepare_pipeline_assets.py` reproduces it and the
+- `src/tabicl/prior/assets/soccol_pitting_features_v1.*` stores the historical
+  target-free synthetic feature profile. `prepare_pipeline_assets.py --legacy-data` reproduces it and the
   frozen nine-rule calibration artifacts.
 - `scripts/soccol_pipeline/run_optuna.py` reuses the previous search settings
   with the frozen Soccol composition split.

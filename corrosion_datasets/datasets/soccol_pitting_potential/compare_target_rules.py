@@ -545,14 +545,24 @@ RULES = (
 )
 
 
-def parse_args() -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=DEFAULT_DATA)
     parser.add_argument("--splits", type=Path, default=DEFAULT_SPLITS)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--anchor-strength", type=float, default=0.1)
+    parser.add_argument("--reviewed-data", action="store_true", help="Use only accepted development rows from soccol_reference_v1.")
+    parser.add_argument("--inspect-inputs", action="store_true", help="Check and print the input selection without fitting formulas.")
     parser.add_argument("--force", action="store_true")
-    return parser.parse_args()
+    args = parser.parse_args(argv)
+    if args.reviewed_data:
+        from scripts.soccol_pipeline.data import PROCESSED_DIR
+
+        if args.data == DEFAULT_DATA:
+            args.data = PROCESSED_DIR / "soccol_processed.csv"
+        if args.output_dir == DEFAULT_OUTPUT:
+            args.output_dir = DEFAULT_OUTPUT.with_name("soccol_target_rules_reviewed_v1")
+    return args
 
 
 def _sha256(path: Path) -> str:
@@ -614,6 +624,7 @@ def _fit_coefficients(
     anchor: np.ndarray,
     upper_bounds: np.ndarray,
     anchor_strength: float,
+    *, clamp_bound_roundoff: bool = False,
 ) -> tuple[np.ndarray, float]:
     target_rank = _rank_standardize(target)
     anchor = np.asarray(anchor, dtype=float)
@@ -639,10 +650,26 @@ def _fit_coefficients(
     weights = np.asarray(result.x, dtype=float)
     weights[np.abs(weights) < 1e-10] = 0.0
     weights /= weights.sum()
+    if clamp_bound_roundoff:
+        if np.any(weights > upper_bounds + 1e-12):
+            raise RuntimeError("Calibrated coefficients exceeded their bounds beyond floating-point roundoff.")
+        # Normalization can turn 0.15 into 0.15000000000000002. Training's
+        # coefficient sampler enforces the bound exactly; retain that bound.
+        weights = np.minimum(weights, upper_bounds)
     return weights, objective(weights)
 
 
-def _load_data(data_path: Path, split_path: Path) -> pd.DataFrame:
+def _load_data(data_path: Path, split_path: Path, *, reviewed_data: bool = False) -> pd.DataFrame:
+    if reviewed_data:
+        from scripts.soccol_pipeline.formula_data import load_formula_data
+
+        if data_path.name != "soccol_processed.csv":
+            raise ValueError("Reviewed Soccol formula inputs must name soccol_reference_v1/soccol_processed.csv.")
+        data = load_formula_data(processed_dir=data_path.parent, split_manifest=split_path.parent / "split_manifest.json")
+        identity = data.attrs["soccol_development_selection"]["reviewed_data"]
+        if _sha256(split_path) != identity["files_sha256"]["split_assignments.csv"]:
+            raise RuntimeError("Formula input assignments differ from the frozen Soccol split.")
+        return data
     data = pd.read_csv(data_path, low_memory=False)
     splits = pd.read_csv(split_path, low_memory=False)
     if len(data) != len(splits):
@@ -678,10 +705,16 @@ def _load_data(data_path: Path, split_path: Path) -> pd.DataFrame:
 
 def _fit_imputation(data: pd.DataFrame) -> dict[str, float]:
     result: dict[str, float] = {}
-    for column in MEAN_IMPUTE_COLUMNS:
+    reviewed = "soccol_development_selection" in data.attrs
+    columns = (*MEAN_IMPUTE_COLUMNS, *(c for c in ION_ZERO_COLUMNS if c != "CP_ion_other")) if reviewed else MEAN_IMPUTE_COLUMNS
+    for column in columns:
         finite = data[column].to_numpy(dtype=float)
         finite = finite[np.isfinite(finite)]
         if finite.size == 0:
+            if reviewed:
+                # Internal formula placeholder only; saved/model inputs stay NaN.
+                result[column] = 0.0
+                continue
             raise RuntimeError(f"{column} is entirely missing in a context fold.")
         result[column] = float(np.mean(finite))
     return result
@@ -689,9 +722,19 @@ def _fit_imputation(data: pd.DataFrame) -> dict[str, float]:
 
 def _inputs(data: pd.DataFrame, imputation: dict[str, float]) -> dict[str, np.ndarray]:
     values: dict[str, np.ndarray] = {}
+    reviewed = "soccol_development_selection" in data.attrs
     for column in COMPOSITION_ZERO_COLUMNS + ION_ZERO_COLUMNS:
+        if reviewed and column == "CP_ion_other":
+            continue  # Excluded, and none of the formula definitions uses it.
         array = data[column].to_numpy(dtype=float)
-        values[column] = np.nan_to_num(array, nan=0.0)
+        if reviewed and column in COMPOSITION_ZERO_COLUMNS:
+            if not np.isfinite(array).all():
+                raise RuntimeError("Accepted Soccol formula compositions must remain complete.")
+            values[column] = array
+        elif reviewed:
+            values[column] = np.where(np.isfinite(array), array, imputation[column])
+        else:
+            values[column] = np.nan_to_num(array, nan=0.0)
     for column in MEAN_IMPUTE_COLUMNS:
         array = data[column].to_numpy(dtype=float)
         values[column] = np.where(np.isfinite(array), array, imputation[column])
@@ -938,6 +981,7 @@ def _evaluate_rule(
             spec.anchor,
             spec.upper_bounds,
             anchor_strength,
+            clamp_bound_roundoff="soccol_development_selection" in development.attrs,
         )
         validation_terms = _transform_terms(validation, spec, state)
         prediction = validation_terms @ weights
@@ -954,6 +998,7 @@ def _evaluate_rule(
                 "coefficients": _coefficient_dict(spec, weights),
                 "objective": objective,
                 **metrics,
+                **({"feature_state": state} if "soccol_development_selection" in development.attrs else {}),
             }
         )
         for row, score, score_z in zip(
@@ -963,6 +1008,7 @@ def _evaluate_rule(
                 {
                     "rule": spec.name,
                     "raw_workbook_row": int(row.raw_workbook_row),
+                    **({"row_id": row.row_id, "task_row_index": int(row.task_row_index)} if hasattr(row, "task_row_index") else {}),
                     "label": row.label,
                     "source": row.source,
                     "composition_group": row.composition_group,
@@ -980,6 +1026,7 @@ def _evaluate_rule(
         spec.anchor,
         spec.upper_bounds,
         anchor_strength,
+        clamp_bound_roundoff="soccol_development_selection" in development.attrs,
     )
     fold_spearman = np.asarray([row["spearman"] for row in fold_results])
     fold_mae = np.asarray([row["standardized_mae"] for row in fold_results])
@@ -1073,6 +1120,7 @@ def _write_readme(
     path: Path,
     results: list[dict[str, Any]],
     assessments: list[dict[str, Any]],
+    *, reviewed_data: bool = False,
 ) -> None:
     ranked = sorted(
         results,
@@ -1085,10 +1133,10 @@ def _write_readme(
     extension = by_name["new_pren_n_coupled_mns_weak_anions"]
     best_old = by_name["old_coupled_breakdown"]
     lines = [
-        "# Soccol target-rule comparison v1",
+        "# Soccol target-rule comparison: reviewed inputs" if reviewed_data else "# Soccol target-rule comparison v1",
         "",
         "All results use the frozen five composition-group development folds. Final-test",
-        "targets were masked before rule fitting and evaluation.",
+        "rows were excluded before rule fitting and evaluation." if reviewed_data else "targets were masked before rule fitting and evaluation.",
         "",
         "The old set is the nine-rule set enabled by the latest project commit:",
         "`pren_n_linear`, `cr_mow_n_synergy`, `threshold_saturation`,",
@@ -1150,6 +1198,17 @@ def _write_readme(
 
 def main() -> None:
     args = parse_args()
+    data = _load_data(args.data, args.splits, reviewed_data=args.reviewed_data)
+    development = data[data["outer_split"].eq("development")].copy()
+    selection = data.attrs.get("soccol_development_selection")
+    if args.inspect_inputs:
+        print(json.dumps({
+            "development_rows": len(development),
+            "fold_counts": development.development_validation_fold.astype(int).value_counts().sort_index().to_dict(),
+            "final_query_rows_in_fit": int(data.outer_split.eq("final_test").sum()) if selection is not None else 0,
+            "selection_sha256": None if selection is None else selection["selection_sha256"],
+        }, indent=2))
+        return
     args.output_dir.mkdir(parents=True, exist_ok=True)
     targets = (
         args.output_dir / "comparison_summary.json",
@@ -1160,8 +1219,6 @@ def main() -> None:
     if not args.force and any(path.exists() for path in targets):
         raise RuntimeError("Output already exists; pass --force to replace it.")
 
-    data = _load_data(args.data, args.splits)
-    development = data[data["outer_split"].eq("development")].copy()
     results: list[dict[str, Any]] = []
     predictions: list[dict[str, Any]] = []
     for spec in RULES:
@@ -1177,7 +1234,8 @@ def main() -> None:
     extension = by_name["new_pren_n_coupled_mns_weak_anions"]
     best_old = by_name["old_coupled_breakdown"]
     summary = {
-        "schema_version": "soccol_target_rule_comparison_v1",
+        "schema_version": "soccol_target_rule_comparison_v2" if selection is not None else "soccol_target_rule_comparison_v1",
+        **({"development_selection": selection} if selection is not None else {}),
         "old_rule_inventory_from_latest_commit": {
             "evaluated": [
                 "pren_n_linear",
@@ -1201,7 +1259,10 @@ def main() -> None:
             "coefficient_fit": "nonnegative, sum-to-one SLSQP on standardized EPIT ranks",
             "anchor_strength": float(args.anchor_strength),
             "numeric_imputation": "context-fold mean",
-            "composition_and_ion_blanks": "zero",
+            "composition_and_ion_blanks": (
+                "Accepted compositions preserved; missing ions filled internally from context means."
+                if selection is not None else "zero"
+            ),
             "all_material_families_included": True,
             "final_test_targets_used": False,
         },
@@ -1212,6 +1273,7 @@ def main() -> None:
             "splits_sha256": _sha256(args.splits),
             "development_rows": int(len(development)),
             "final_test_rows_masked": int(data["outer_split"].eq("final_test").sum()),
+            **({"final_test_rows_excluded": selection["final_query_rows_excluded"]} if selection is not None else {}),
         },
         "rules": results,
         "retention_assessment": assessments,
@@ -1280,7 +1342,7 @@ def main() -> None:
             )
     pd.DataFrame(metric_rows).to_csv(targets[1], index=False)
     pd.DataFrame(predictions).to_csv(targets[2], index=False)
-    _write_readme(targets[3], results, assessments)
+    _write_readme(targets[3], results, assessments, reviewed_data=args.reviewed_data)
 
     for row in sorted(
         results,

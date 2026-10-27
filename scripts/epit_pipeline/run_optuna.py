@@ -41,6 +41,7 @@ from tabicl.prior.epit_expanded_schema import (
     EPIT_EXPANDED_FEATURE_PROFILE, EPIT_EXPANDED_FEATURE_COUNT,
     EPIT_EXPANDED_FEATURE_COLUMNS, EPIT_EXPANDED_BLOCK_ALLOCATION,
 )
+from tabicl.prior.soccol_reviewed_schema import SOCCOL_REVIEWED_FEATURE_PROFILE
 from tabicl.prior.magpie_features import (
     EPIT_BASE_FEATURE_COUNT,
     EPIT_MAGPIE_DESCRIPTOR_NAMES,
@@ -81,20 +82,23 @@ EPIT_FIXED_INFORMED_PRIOR_RATIO = 1.0
 EPIT_MLP_PROB_RANGE = (0.0, 1.0)
 EPIT_TARGET_MIX_WEIGHT_RANGE = (0.0, 1.0)
 EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE = (0.0, 0.30)
+SOCCOL_COMPOSITION_PERTURB_STRENGTH_RANGE = (0.0, 0.15)
 LEGACY_COMPOSITION_PERTURB_STRENGTH_RANGE = (0.0, 0.15)
 GENERIC_SCM_MIX_PROBS = (0.7, 0.3)
 FIXED_BLOCK_ALLOCATION = (EPIT_MATERIAL_FEATURE_COUNT, 3, 1, 0, 0, 0, 0, 0, 0)
 
 
 def uses_fixed_informed_search(composition_mode: str) -> bool:
-    """Apply the new search policy only to the current standalone EPIT prior."""
+    """Share the current search policy across reviewed EPIT and Soccol priors."""
     return (
-        EPIT_FEATURE_PROFILE == EPIT_EXPANDED_FEATURE_PROFILE
+        EPIT_FEATURE_PROFILE in {EPIT_EXPANDED_FEATURE_PROFILE, SOCCOL_REVIEWED_FEATURE_PROFILE}
         and composition_mode == "empirical_features_scm_target"
     )
 
 
 def composition_perturb_strength_range(composition_mode: str) -> tuple[float, float]:
+    if uses_fixed_informed_search(composition_mode) and EPIT_FEATURE_PROFILE == SOCCOL_REVIEWED_FEATURE_PROFILE:
+        return SOCCOL_COMPOSITION_PERTURB_STRENGTH_RANGE
     return (
         EPIT_COMPOSITION_PERTURB_STRENGTH_RANGE
         if uses_fixed_informed_search(composition_mode)
@@ -103,7 +107,29 @@ def composition_perturb_strength_range(composition_mode: str) -> tuple[float, fl
 
 
 def uses_expanded_schema(args: argparse.Namespace) -> bool:
-    return uses_fixed_informed_search(getattr(args, "pitting_composition_mode", "legacy"))
+    # Search policy is shared; the 70-column EPIT schema is not.
+    return (
+        EPIT_FEATURE_PROFILE == EPIT_EXPANDED_FEATURE_PROFILE
+        and getattr(args, "pitting_composition_mode", "legacy") == "empirical_features_scm_target"
+    )
+
+
+def uses_reviewed_soccol_schema(args: argparse.Namespace) -> bool:
+    return (
+        EPIT_FEATURE_PROFILE == SOCCOL_REVIEWED_FEATURE_PROFILE
+        and getattr(args, "pitting_composition_mode", "legacy") == "empirical_features_scm_target"
+    )
+
+
+def validate_reviewed_soccol_fold_selection(payload: dict[str, Any]) -> None:
+    """Require the accepted development selection in current Soccol fold results."""
+    if EPIT_FEATURE_PROFILE != SOCCOL_REVIEWED_FEATURE_PROFILE:
+        return
+    expected = empirical_feature_profile_identity()["development_selection"]
+    if not payload.get("settings", {}).get("soccol_reviewed_data", False):
+        raise RuntimeError("Soccol fold evaluation did not use reviewed data.")
+    if payload.get("soccol_development_selection") != expected:
+        raise RuntimeError("Soccol fold evaluation changed the accepted development selection.")
 
 
 def model_feature_count(args: argparse.Namespace, use_magpie: bool = False) -> int:
@@ -475,8 +501,10 @@ def bind_study_pipeline_fingerprint(
     return fingerprint_sha256
 
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
+def parse_args(
+    argv: list[str] | None = None, *, parents: tuple[argparse.ArgumentParser, ...] = (),
+) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__, parents=parents)
     parser.add_argument("--backend", choices=("optuna", "random"), default="optuna")
     parser.add_argument("--study-name", default=DEFAULT_STUDY_NAME)
     parser.add_argument(
@@ -551,6 +579,21 @@ def load_target_rule_config(
     summary_path = summary_path.expanduser().resolve()
     split_manifest_path = split_manifest_path.expanduser().resolve()
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    summary_schema = str(summary.get("schema_version", ""))
+    reviewed_soccol = summary_schema == "soccol_target_rule_calibration_summary_v2"
+    rule_coefficients = TARGET_RULE_COEFFICIENTS
+    promoted_families = PROMOTED_TARGET_RULE_FAMILIES
+    soccol_selection = None
+    if reviewed_soccol:
+        from scripts.soccol_pipeline.data import load_soccol_dataset, select_accepted_development
+        from scripts.soccol_pipeline.target_rules import PROMOTED_RULES
+        from tabicl.prior.dataset import SOCCOL_TARGET_RULE_COEFFICIENTS
+
+        soccol_selection = select_accepted_development(load_soccol_dataset(split_manifest=split_manifest_path)).identity
+        if summary.get("development_selection") != soccol_selection:
+            raise RuntimeError("Target-rule calibration used different reviewed Soccol development inputs.")
+        rule_coefficients = SOCCOL_TARGET_RULE_COEFFICIENTS
+        promoted_families = PROMOTED_RULES
     formula_input_identity = summary.get("reviewed_formula_inputs")
     if summary.get("schema_version") == "epit_target_rule_calibration_summary_v4":
         from scripts.epit_pipeline.formula_data import reviewed_formula_input_identity
@@ -562,13 +605,17 @@ def load_target_rule_config(
 
         if summary["reviewed_composition"] != load_reviewed_compositions().identity:
             raise RuntimeError("Target-rule calibration used different reviewed EPIT compositions.")
-    frozen_split = load_frozen_split(split_manifest_path)
+    frozen_split = (
+        load_frozen_split(split_manifest_path, expected_manifest_schema="soccol_composition_split_manifest_v1")
+        if reviewed_soccol else load_frozen_split(split_manifest_path)
+    )
     manifest = frozen_split.manifest
     summary_schema = str(summary.get("schema_version", ""))
     artifact_schema_by_summary = {
         "epit_target_rule_calibration_summary_v2": "epit_target_rule_v2",
         "epit_target_rule_calibration_summary_v3": "epit_target_rule_v3",
         "epit_target_rule_calibration_summary_v4": "epit_target_rule_v4",
+        "soccol_target_rule_calibration_summary_v2": "soccol_target_rule_v2",
     }
     if summary_schema not in artifact_schema_by_summary:
         raise RuntimeError("Unsupported target-rule calibration summary.")
@@ -577,19 +624,37 @@ def load_target_rule_config(
         raise RuntimeError("Target-rule calibration used a different split manifest.")
     if summary.get("split_lock_sha256") != frozen_split.lock_sha256:
         raise RuntimeError("Target-rule calibration used a different split lock.")
-    source_sha256 = str(manifest.get("dataset", {}).get("source_sha256", ""))
+    source_sha256 = (
+        soccol_selection["reviewed_data"]["files_sha256"]["soccol_processed.csv"]
+        if reviewed_soccol else str(manifest.get("dataset", {}).get("source_sha256", ""))
+    )
     if str(summary.get("source_sha256", "")) != source_sha256:
         raise RuntimeError("Target-rule calibration and split manifest use different data.")
     if bool(summary.get("final_test_targets_used", True)):
         raise RuntimeError("Target-rule calibration used final-test targets.")
-    if int(summary.get("development_rows", -1)) != int(
-        manifest.get("split_design", {}).get("development_rows", -2)
-    ):
+    expected_development_rows = (
+        soccol_selection["source_rows"] if reviewed_soccol
+        else int(manifest.get("split_design", {}).get("development_rows", -2))
+    )
+    if int(summary.get("development_rows", -1)) != expected_development_rows:
         raise RuntimeError("Target-rule calibration development count is inconsistent.")
     if int(summary.get("final_test_rows_excluded", -1)) != int(
         manifest.get("split_design", {}).get("final_test_rows", -2)
     ):
         raise RuntimeError("Target-rule calibration final-test count is inconsistent.")
+    if reviewed_soccol:
+        expected_folds = [{
+            "fold": fold,
+            "context_task_row_indices": [index for index, label in zip(soccol_selection["source_task_row_indices"], soccol_selection["validation_folds"]) if label != fold],
+            "validation_task_row_indices": [index for index, label in zip(soccol_selection["source_task_row_indices"], soccol_selection["validation_folds"]) if label == fold],
+        } for fold in range(1, 6)]
+        if (
+            summary.get("fold_assignments") != expected_folds
+            or summary.get("withheld_development_rows_excluded") != soccol_selection["withheld_development_rows"]
+            or summary.get("final_test_rows_excluded_before_calibration") is not True
+            or [r.get("rule_family") for r in summary.get("rules", [])] != list(promoted_families)
+        ):
+            raise RuntimeError("Reviewed Soccol calibration changed its frozen folds or nine-rule inventory.")
 
     scores: dict[str, float] = {}
     probabilities: dict[str, float] = {}
@@ -602,11 +667,11 @@ def load_target_rule_config(
             continue
         family = str(record.get("rule_family", ""))
         if (
-            summary_schema in {"epit_target_rule_calibration_summary_v3", "epit_target_rule_calibration_summary_v4"}
-            and family not in PROMOTED_TARGET_RULE_FAMILIES
+            (reviewed_soccol or summary_schema in {"epit_target_rule_calibration_summary_v3", "epit_target_rule_calibration_summary_v4"})
+            and family not in promoted_families
         ):
             continue
-        if family not in TARGET_RULE_COEFFICIENTS:
+        if family not in rule_coefficients:
             raise RuntimeError(
                 f"Calibrated rule {family!r} is not implemented by the prior."
             )
@@ -630,6 +695,21 @@ def load_target_rule_config(
             raise RuntimeError(f"Target-rule artifact used a different split lock for {family!r}.")
         if artifact.get("source_sha256") != source_sha256:
             raise RuntimeError(f"Target-rule artifact used different data for {family!r}.")
+        if reviewed_soccol:
+            if (artifact.get("development_selection") != soccol_selection
+                or artifact.get("development_rows") != expected_development_rows
+                or artifact.get("final_test_targets_used") is not False
+                or artifact.get("final_development_calibration", {}).get("rows") != expected_development_rows):
+                raise RuntimeError(f"Target-rule artifact used different reviewed Soccol rows for {family!r}.")
+            folds = artifact.get("fold_calibrations", [])
+            if [f.get("fold") for f in folds] != [1, 2, 3, 4, 5] or any(
+                f.get("validation_rows") != soccol_selection["fold_counts"][str(f["fold"])]
+                or f.get("context_rows") != expected_development_rows - f["validation_rows"]
+                or "imputation_means" not in f.get("feature_state", {}) for f in folds
+            ):
+                raise RuntimeError(f"Reviewed Soccol fold fits are incomplete for {family!r}.")
+            if not math.isclose(score, float(artifact["direct_evaluation"]["mean_fold_spearman"]), rel_tol=0, abs_tol=1e-12):
+                raise RuntimeError(f"Reviewed Soccol rule score differs from its artifact for {family!r}.")
         if summary_schema == "epit_target_rule_calibration_summary_v4":
             if artifact.get("reviewed_formula_inputs") != formula_input_identity:
                 raise RuntimeError(f"Target-rule artifact used different reviewed formula inputs for {family!r}.")
@@ -643,7 +723,7 @@ def load_target_rule_config(
                 "coefficients"
             ].items()
         }
-        expected_terms = set(TARGET_RULE_COEFFICIENTS[family])
+        expected_terms = set(rule_coefficients[family])
         if set(values) != expected_terms:
             raise RuntimeError(
                 f"Calibrated coefficients for {family!r} do not match the prior."
@@ -690,11 +770,11 @@ def load_target_rule_config(
 
     if not scores:
         raise RuntimeError("No candidate target rules were found.")
-    if summary_schema in {"epit_target_rule_calibration_summary_v3", "epit_target_rule_calibration_summary_v4"}:
+    if reviewed_soccol or summary_schema in {"epit_target_rule_calibration_summary_v3", "epit_target_rule_calibration_summary_v4"}:
         selected = tuple(scores)
-        if selected != PROMOTED_TARGET_RULE_FAMILIES:
-            missing = sorted(set(PROMOTED_TARGET_RULE_FAMILIES) - set(selected))
-            unexpected = sorted(set(selected) - set(PROMOTED_TARGET_RULE_FAMILIES))
+        if selected != promoted_families:
+            missing = sorted(set(promoted_families) - set(selected))
+            unexpected = sorted(set(selected) - set(promoted_families))
             raise RuntimeError(
                 "Promoted target-rule set is incomplete or reordered; "
                 f"missing={missing}, unexpected={unexpected}."
@@ -1149,6 +1229,7 @@ def verify_trial_fold_evaluation(
     if source.get("local_ckpt_sha256") != checkpoint_sha256:
         raise RuntimeError("Trial evaluation checkpoint hash does not match.")
     settings = payload.get("settings", {})
+    validate_reviewed_soccol_fold_selection(payload)
     if expanded_schema is not None and bool(settings.get("epit_expanded_features", False)) != expanded_schema:
         raise RuntimeError("Trial evaluation changed the EPIT feature schema.")
     if "pitting_magpie_features" not in settings or bool(
@@ -1165,7 +1246,7 @@ def run_trial(
     params: TrialParams,
 ) -> dict[str, Any]:
     if uses_fixed_informed_search(args.pitting_composition_mode) and params.informed_prior_ratio != EPIT_FIXED_INFORMED_PRIOR_RATIO:
-        raise ValueError("Current EPIT search trials require a fixed 100% informed ratio.")
+        raise ValueError("Current reviewed search trials require a fixed 100% informed ratio.")
     rules: TargetRuleConfig = args.target_rules
     base_run_name = args.base_run_name or default_base_run_name(args.study_name)
     trial_name = f"{base_run_name}_trial_{trial_number:04d}"

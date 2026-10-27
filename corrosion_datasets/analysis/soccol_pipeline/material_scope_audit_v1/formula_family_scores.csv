@@ -1,0 +1,73 @@
+dataset,rule_family,material_family,rows,valid_folds,mean_valid_fold_spearman,minimum_valid_fold_spearman,maximum_valid_fold_spearman
+soccol,coupled_breakdown,Fe_Ni_Cr_alloy_800,64,1,0.8107153322048336,0.8107153322048336,0.8107153322048336
+soccol,coupled_breakdown,fe_based_high_alloy_taxonomy_caveat,35,5,0.6715151515151515,0.0,0.9999999999999999
+soccol,coupled_breakdown,fe_based_model_alloy,65,5,0.3731256759479797,0.09999999999999999,0.6956536648843503
+soccol,coupled_breakdown,fe_based_stainless,2745,5,0.4512604522740138,0.20971300280559838,0.6788787535803401
+soccol,coupled_breakdown,ni_based_alloy_600,2,0,,,
+soccol,coupled_breakdown,ni_based_model_alloy,39,5,0.03304029304029306,-0.5,0.7142857142857143
+soccol,cr_mow_n_synergy,Fe_Ni_Cr_alloy_800,64,1,0.8284322158572559,0.8284322158572559,0.8284322158572559
+soccol,cr_mow_n_synergy,fe_based_high_alloy_taxonomy_caveat,35,5,0.7224242424242424,0.0,0.9999999999999999
+soccol,cr_mow_n_synergy,fe_based_model_alloy,65,5,0.28393614021889413,-0.008322167543363759,0.524863881081478
+soccol,cr_mow_n_synergy,fe_based_stainless,2745,5,0.45196167300126416,0.22503334075753847,0.5440331850707567
+soccol,cr_mow_n_synergy,ni_based_alloy_600,2,0,,,
+soccol,cr_mow_n_synergy,ni_based_model_alloy,39,5,0.2638827838827839,-0.5,0.7142857142857143
+soccol,mns_inclusion_penalty,Fe_Ni_Cr_alloy_800,64,1,0.8275290021808579,0.8275290021808579,0.8275290021808579
+soccol,mns_inclusion_penalty,fe_based_high_alloy_taxonomy_caveat,35,5,0.7127272727272727,0.0,0.9999999999999999
+soccol,mns_inclusion_penalty,fe_based_model_alloy,65,5,0.22287830770796296,0.09154384297700133,0.4226535463445586
+soccol,mns_inclusion_penalty,fe_based_stainless,2745,5,0.4556826844297522,0.2659606210873986,0.6710168192340065
+soccol,mns_inclusion_penalty,ni_based_alloy_600,2,0,,,
+soccol,mns_inclusion_penalty,ni_based_model_alloy,39,5,0.2638827838827839,-0.5,0.7142857142857143
+soccol,mo_n_acid_repassivation,Fe_Ni_Cr_alloy_800,64,1,0.8275290021808579,0.8275290021808579,0.8275290021808579
+soccol,mo_n_acid_repassivation,fe_based_high_alloy_taxonomy_caveat,35,5,0.6909090909090908,0.0,0.9999999999999999
+soccol,mo_n_acid_repassivation,fe_based_model_alloy,65,5,0.1881776489476429,-0.10351989060779022,0.7016601357615547
+soccol,mo_n_acid_repassivation,fe_based_stainless,2745,5,0.414060820800492,0.17564405527324006,0.595965685149488
+soccol,mo_n_acid_repassivation,ni_based_alloy_600,2,0,,,
+soccol,mo_n_acid_repassivation,ni_based_model_alloy,39,5,0.2638827838827839,-0.5,0.7142857142857143
+soccol,pren_n_coupled_mns,Fe_Ni_Cr_alloy_800,64,1,0.8107153322048336,0.8107153322048336,0.8107153322048336
+soccol,pren_n_coupled_mns,fe_based_high_alloy_taxonomy_caveat,35,5,0.5963636363636363,0.0,0.9999999999999999
+soccol,pren_n_coupled_mns,fe_based_model_alloy,65,5,0.2849211913144508,-0.047158949412394624,0.7320469920346929
+soccol,pren_n_coupled_mns,fe_based_stainless,2745,5,0.5600630530061326,0.45562266579678995,0.7626049790478144
+soccol,pren_n_coupled_mns,ni_based_alloy_600,2,0,,,
+soccol,pren_n_coupled_mns,ni_based_model_alloy,39,5,0.03304029304029306,-0.5,0.7142857142857143
+soccol,pren_n_coupled_mns_weak_anions,Fe_Ni_Cr_alloy_800,64,1,0.8275290021808579,0.8275290021808579,0.8275290021808579
+soccol,pren_n_coupled_mns_weak_anions,fe_based_high_alloy_taxonomy_caveat,35,5,0.6739393939393938,0.0,0.9999999999999999
+soccol,pren_n_coupled_mns_weak_anions,fe_based_model_alloy,65,5,0.2958127799536154,-0.047158949412394624,0.7430967579521978
+soccol,pren_n_coupled_mns_weak_anions,fe_based_stainless,2745,5,0.5592182571270787,0.2863529236587688,0.6849964361425408
+soccol,pren_n_coupled_mns_weak_anions,ni_based_alloy_600,2,0,,,
+soccol,pren_n_coupled_mns_weak_anions,ni_based_model_alloy,39,5,0.03304029304029306,-0.5,0.7142857142857143
+soccol,pren_n_improved_environment,Fe_Ni_Cr_alloy_800,64,1,0.8275290021808579,0.8275290021808579,0.8275290021808579
+soccol,pren_n_improved_environment,fe_based_high_alloy_taxonomy_caveat,35,5,0.7151515151515151,0.0,0.9999999999999999
+soccol,pren_n_improved_environment,fe_based_model_alloy,65,5,0.2021093426150271,0.09154384297700133,0.37569204119516314
+soccol,pren_n_improved_environment,fe_based_stainless,2745,5,0.4136005497668217,0.21361395716631895,0.5870922075758687
+soccol,pren_n_improved_environment,ni_based_alloy_600,2,0,,,
+soccol,pren_n_improved_environment,ni_based_model_alloy,39,5,0.2638827838827839,-0.5,0.7142857142857143
+soccol,pren_n_linear,Fe_Ni_Cr_alloy_800,64,1,0.7746331037989852,0.7746331037989852,0.7746331037989852
+soccol,pren_n_linear,fe_based_high_alloy_taxonomy_caveat,35,5,0.7224242424242424,0.0,0.9999999999999999
+soccol,pren_n_linear,fe_based_model_alloy,65,5,0.25246505494788735,-0.047158949412394624,0.8756939489622553
+soccol,pren_n_linear,fe_based_stainless,2745,5,0.3868475561518253,0.22300465252106894,0.5527468374749399
+soccol,pren_n_linear,ni_based_alloy_600,2,0,,,
+soccol,pren_n_linear,ni_based_model_alloy,39,5,0.2577289377289378,-0.5,0.7142857142857143
+soccol,threshold_saturation,Fe_Ni_Cr_alloy_800,64,1,0.8284322158572559,0.8284322158572559,0.8284322158572559
+soccol,threshold_saturation,fe_based_high_alloy_taxonomy_caveat,35,5,0.7103030303030302,0.0,0.9999999999999999
+soccol,threshold_saturation,fe_based_model_alloy,65,5,0.025830184179116134,-0.10324528696022295,0.22469852367082147
+soccol,threshold_saturation,fe_based_stainless,2745,5,0.4192865052014999,0.19377616813576728,0.5496681908732349
+soccol,threshold_saturation,ni_based_alloy_600,2,0,,,
+soccol,threshold_saturation,ni_based_model_alloy,39,5,0.2734065934065934,-0.5,0.7142857142857143
+epit,coupled_breakdown,Fe Alloy,411,5,0.5225207795702114,0.4501438904884613,0.6392036281577607
+epit,coupled_breakdown,NiCrMo Alloy,41,5,0.3726452106086365,-0.22424242424242422,0.880952380952381
+epit,cr_mow_n_synergy,Fe Alloy,411,5,0.5136984037891579,0.36032778116835024,0.6052214572624964
+epit,cr_mow_n_synergy,NiCrMo Alloy,41,5,0.3419641521063851,-0.12727272727272726,0.880952380952381
+epit,fe_ni_cr_threshold,Fe Alloy,411,5,0.5003432858080528,0.3713784011561423,0.5759070211762172
+epit,fe_ni_cr_threshold,NiCrMo Alloy,41,5,0.46438839453062747,0.12280777351893819,0.8333333333333335
+epit,method_aware_pren_n,Fe Alloy,411,5,0.5782357382100412,0.4144693790684079,0.6460335403574596
+epit,method_aware_pren_n,NiCrMo Alloy,41,5,0.3593620673864502,-0.22424242424242422,0.8571428571428572
+epit,mns_inclusion_penalty,Fe Alloy,411,5,0.5595555867122226,0.4808754315152584,0.6939566386230852
+epit,mns_inclusion_penalty,NiCrMo Alloy,41,5,0.3032672892957359,-0.12727272727272726,0.880952380952381
+epit,mo_n_acid_repassivation,Fe Alloy,411,5,0.5312180441864498,0.4095150474160067,0.6229390085761913
+epit,mo_n_acid_repassivation,NiCrMo Alloy,41,5,0.29850538453383113,-0.12727272727272726,0.8571428571428572
+epit,pren_n_improved_environment,Fe Alloy,411,5,0.532710473513843,0.4092859825902072,0.6282561055825365
+epit,pren_n_improved_environment,NiCrMo Alloy,41,5,0.29850538453383113,-0.12727272727272726,0.8571428571428572
+epit,pren_n_linear,Fe Alloy,411,5,0.48582258002365897,0.38841465288562216,0.5874755851957691
+epit,pren_n_linear,NiCrMo Alloy,41,5,0.29169282965625554,-0.22424242424242422,0.880952380952381
+epit,threshold_saturation,Fe Alloy,411,5,0.487536824317791,0.3308238656531597,0.5744600959474273
+epit,threshold_saturation,NiCrMo Alloy,41,5,0.36081117486400427,0.04561431587846275,0.6428571428571429

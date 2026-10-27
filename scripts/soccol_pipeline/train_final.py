@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import sys
+import argparse
 from functools import partial
 from pathlib import Path
 
@@ -21,17 +22,17 @@ from scripts.soccol_pipeline import run_optuna as soccol_search  # noqa: E402
 SOCCOL_PIPELINE_ROOT = (
     REPO_ROOT / "corrosion_datasets" / "analysis" / "soccol_pipeline"
 )
-SOCCOL_FINAL_ROOT = SOCCOL_PIPELINE_ROOT / "final_v1"
-SOCCOL_CHECKPOINT_ROOT = REPO_ROOT / "checkpoints" / "soccol_pipeline_final_v1"
+SOCCOL_FINAL_ROOT = SOCCOL_PIPELINE_ROOT / "final_v2"
+SOCCOL_CHECKPOINT_ROOT = REPO_ROOT / "checkpoints" / "soccol_pipeline_final_v2"
 SOCCOL_SPLIT_SCHEMA = "soccol_composition_split_manifest_v1"
 
 
-def configure() -> None:
-    """Point the unchanged EPIT final-training workflow at Soccol artifacts."""
-    soccol_search.configure()
+def configure(*, reviewed_data: bool = True) -> None:
+    """Select reviewed Soccol artifacts, or explicitly reproduce historical v1."""
+    soccol_search.configure(reviewed_data=reviewed_data)
     base.__doc__ = __doc__
-    base.DEFAULT_FINAL_ROOT = SOCCOL_FINAL_ROOT
-    base.DEFAULT_CHECKPOINT_ROOT = SOCCOL_CHECKPOINT_ROOT
+    base.DEFAULT_FINAL_ROOT = SOCCOL_FINAL_ROOT if reviewed_data else SOCCOL_PIPELINE_ROOT / "final_v1"
+    base.DEFAULT_CHECKPOINT_ROOT = SOCCOL_CHECKPOINT_ROOT if reviewed_data else REPO_ROOT / "checkpoints/soccol_pipeline_final_v1"
     base.PITTING_TASK_ID = SOCCOL_PIPELINE_TASK_ID
     base.load_frozen_split = partial(
         load_frozen_split,
@@ -39,9 +40,15 @@ def configure() -> None:
     )
 
 
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    mode_parser = soccol_search.data_mode_parser()
+    mode, _ = mode_parser.parse_known_args(argv)
+    configure(reviewed_data=not mode.legacy_data)
+    return base.parse_args(argv, parents=(mode_parser,))
+
+
 def main() -> None:
-    configure()
-    base.main()
+    base.run(parse_args())
 
 
 if __name__ == "__main__":

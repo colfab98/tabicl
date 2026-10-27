@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-"""Build immutable Soccol feature-profile and target-rule pipeline assets."""
+"""Build reviewed v3 with uniform composition templates and joint context rows."""
 
 from __future__ import annotations
 
 import csv
+import argparse
 import hashlib
 import json
 import sys
@@ -24,12 +25,15 @@ from tabicl.prior.soccol_schema import (  # noqa: E402
     SOCCOL_COMPOSITION_COLUMNS,
     SOCCOL_CONTINUOUS_COLUMNS,
     SOCCOL_FEATURE_COLUMNS,
-    SOCCOL_FEATURE_PROFILE,
+    SOCCOL_FEATURE_PROFILE as LEGACY_SOCCOL_FEATURE_PROFILE,
     SOCCOL_ION_COLUMNS,
     SOCCOL_SCHEMA_VERSION,
 )
 
-from compare_target_rules import RULES  # noqa: E402
+if __package__:
+    from .compare_target_rules import RULES  # noqa: E402
+else:
+    from compare_target_rules import RULES  # noqa: E402
 
 
 DATA = Path(__file__).resolve().parent / "processed" / "soccol_regression_event1.csv"
@@ -40,22 +44,7 @@ COMPARISON = REPO_ROOT / "corrosion_datasets" / "analysis" / "soccol_target_rule
 ASSET_DIR = REPO_ROOT / "src" / "tabicl" / "prior" / "assets"
 RULE_DIR = REPO_ROOT / "corrosion_datasets" / "analysis" / "soccol_pipeline" / "target_rules_v1"
 
-RULE_SELECTION = (
-    ("pren_n_linear", "old_pren_n_linear"),
-    ("cr_mow_n_synergy", "old_cr_mo_n_synergy"),
-    ("threshold_saturation", "old_threshold_saturation"),
-    ("pren_n_improved_environment", "old_pren_n_improved_environment"),
-    ("mo_n_acid_repassivation", "old_mo_n_acid_repassivation"),
-    ("mns_inclusion_penalty", "old_mns_inclusion_penalty"),
-    ("coupled_breakdown", "old_coupled_breakdown"),
-    ("pren_n_coupled_mns", "new_pren_n_coupled_mns"),
-    ("pren_n_coupled_mns_weak_anions", "new_pren_n_coupled_mns_weak_anions"),
-)
-
-TERM_RENAMES = {
-    "log_halide_aggressiveness": "log_chloride_aggressiveness",
-    "temperature_halide_interaction": "temperature_chloride_interaction",
-}
+from scripts.soccol_pipeline.target_rules import RULE_SELECTION, TERM_RENAMES  # noqa: E402
 
 
 def _normalize_category(value: object) -> str | None:
@@ -65,7 +54,105 @@ def _normalize_category(value: object) -> str | None:
     return text if text else None
 
 
-def build_feature_asset() -> tuple[Path, Path]:
+def load_reviewed_feature_source(dataset=None) -> pd.DataFrame:
+    """Target-free accepted rows for the reviewed sampling asset.
+
+    Select before computing any sampling probabilities, numeric filling values
+    or categories. Historical 37-column assets remain reproducible separately.
+    """
+    from scripts.soccol_pipeline.data import select_accepted_development
+
+    development = select_accepted_development(dataset)
+    output = development.features.copy()
+    output.insert(0, "task_row_index", development.task_row_indices)
+    output.insert(0, "profile_row_id", development.rows.row_id.to_numpy())
+    output.attrs["soccol_development_selection"] = development.identity
+    return output
+
+
+def build_reviewed_feature_assets(dataset=None) -> dict[str, bytes]:
+    """Freeze both sampling banks and their statistics from accepted development.
+
+    Keep every accepted observation for context, and identify one representative
+    per distinct composition for uniform composition draws. No family filter.
+    """
+    from scripts.soccol_pipeline.data import load_soccol_dataset
+    from tabicl.prior.soccol_reviewed_schema import (
+        SOCCOL_REVIEWED_FEATURE_PROFILE as name,
+        SOCCOL_REVIEWED_SCHEMA_VERSION as schema,
+        SOCCOL_REVIEWED_FEATURE_COLUMNS as columns,
+        SOCCOL_REVIEWED_COMPOSITION_COLUMNS as composition,
+        SOCCOL_REVIEWED_CONTEXT_COLUMNS as context,
+        SOCCOL_REVIEWED_CATEGORICAL_COLUMNS as categorical,
+        SOCCOL_COMPOSITION_SAMPLING_POLICY,
+    )
+
+    dataset = load_soccol_dataset() if dataset is None else dataset
+    if tuple(dataset.registry["feature_columns"]) != columns or tuple(
+        c for c in columns if dataset.registry["columns"][c]["dtype"] == "categorical"
+    ) != categorical:
+        raise RuntimeError("Reviewed Soccol sampling schema differs from the saved registry.")
+    source = load_reviewed_feature_source(dataset)
+    selection = source.attrs["soccol_development_selection"]
+    output = source[["profile_row_id", "task_row_index"]].copy()
+    mappings, fill_values = {}, {}
+    for column in columns:
+        values = source[column]
+        if column in categorical:
+            categories = sorted(values.dropna().astype(str).unique())
+            mapping = {category: index for index, category in enumerate(categories)}
+            mappings[column] = mapping
+            output[column] = values.map(mapping).astype(float)
+            modes = output[column].mode()
+            fill_values[column] = float(modes.iloc[0]) if len(modes) else 0.0
+        else:
+            output[column] = pd.to_numeric(values, errors="raise")
+            if column in context:
+                observed = output[column].dropna()
+                fill_values[column] = float(observed.mean()) if len(observed) else 0.0
+    if np.isinf(output[list(columns)].to_numpy()).any():
+        raise RuntimeError("Reviewed Soccol sampling inputs contain infinite values.")
+    csv_bytes = output.to_csv(index=False, lineterminator="\n").encode("utf-8")
+    distinct = ~source[list(composition)].duplicated()
+    metadata = {
+        "profile_name": name, "schema_version": schema,
+        "rows": len(source), "feature_columns": list(columns),
+        "composition_columns": list(composition), "context_columns": list(context),
+        "categorical_columns": list(categorical),
+        "csv_sha256": hashlib.sha256(csv_bytes).hexdigest(),
+        "development_selection": selection,
+        "target_columns_used": [],
+        "sampling_scope": {
+            "outer_partition": "development", "composition_status": "accepted",
+            "material_scope": "all accepted Soccol materials; no family restriction",
+            "final_query_rows_used": 0, "withheld_development_rows_used": 0,
+        },
+        "sampling": {
+            "composition_and_context_rows": "sampled independently with replacement",
+            "composition_templates": "one representative per distinct saved composition; uniform template probability; first accepted source row retained",
+            "composition_sampling_policy": SOCCOL_COMPOSITION_SAMPLING_POLICY,
+            "composition_template_source_task_row_indices": source.loc[distinct, "task_row_index"].astype(int).tolist(),
+            "distinct_compositions": len(source[list(composition)].drop_duplicates()),
+            "context_rows": "all non-composition fields and their missingness sampled together from one accepted development row",
+            "composition_perturbation": "positive entries receive multiplicative log-normal noise; zeros stay zero; only synthetic compositions close to 100 wt.%",
+        },
+        "preprocessing": {
+            "source_rows": len(source), "selection_sha256": selection["selection_sha256"],
+            "category_mappings": mappings, "latent_fill_values": fill_values,
+            "latent_fill_policy": "Accepted-development mean for numeric fields, mode for categories, zero only if entirely missing; internal calculations only.",
+            "model_missing_policy": "Saved NaNs retained; no independent missingness mask or source-value imputation.",
+        },
+        "missing_counts": output[list(columns)].isna().sum().astype(int).to_dict(),
+        "feature_units": {c: dataset.registry["columns"][c]["unit"] for c in columns},
+        "builder": "corrosion_datasets/datasets/soccol_pitting_potential/prepare_pipeline_assets.py --reviewed-data",
+    }
+    return {
+        f"{name}.csv": csv_bytes,
+        f"{name}.json": (json.dumps(metadata, indent=2, sort_keys=True, allow_nan=False) + "\n").encode("utf-8"),
+    }
+
+
+def build_legacy_feature_asset() -> tuple[Path, Path]:
     data = pd.read_csv(DATA)
     if len(data) != 4027:
         raise RuntimeError(f"Expected 4027 Soccol rows, found {len(data)}.")
@@ -98,12 +185,12 @@ def build_feature_asset() -> tuple[Path, Path]:
         category_mappings[column] = mapping
         output[column] = normalized.map(mapping).fillna(-1).astype(int)
 
-    csv_path = ASSET_DIR / f"{SOCCOL_FEATURE_PROFILE}.csv"
-    json_path = ASSET_DIR / f"{SOCCOL_FEATURE_PROFILE}.json"
+    csv_path = ASSET_DIR / f"{LEGACY_SOCCOL_FEATURE_PROFILE}.csv"
+    json_path = ASSET_DIR / f"{LEGACY_SOCCOL_FEATURE_PROFILE}.json"
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     output.to_csv(csv_path, index=False, quoting=csv.QUOTE_MINIMAL)
     metadata = {
-        "profile_name": SOCCOL_FEATURE_PROFILE,
+        "profile_name": LEGACY_SOCCOL_FEATURE_PROFILE,
         "schema_version": SOCCOL_SCHEMA_VERSION,
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "rows": int(len(output)),
@@ -135,7 +222,7 @@ def _renamed(mapping: dict[str, float]) -> dict[str, float]:
     return {TERM_RENAMES.get(name, name): float(value) for name, value in mapping.items()}
 
 
-def build_rule_assets() -> Path:
+def build_legacy_rule_assets() -> Path:
     comparison = json.loads(COMPARISON.read_text(encoding="utf-8"))
     if comparison.get("method", {}).get("final_test_targets_used") is not False:
         raise RuntimeError("Soccol rule comparison did not keep final-test targets masked.")
@@ -215,9 +302,57 @@ def build_rule_assets() -> Path:
     return summary_path
 
 
-def main() -> None:
-    csv_path, json_path = build_feature_asset()
-    rules_path = build_rule_assets()
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--reviewed-data", dest="reviewed_data", action="store_true",
+        help="Use the reviewed 58-column v3 sampling bank (default).",
+    )
+    mode.add_argument(
+        "--legacy-data", dest="reviewed_data", action="store_false",
+        help="Explicitly rebuild the historical 37-column v1 bank and rule artifacts.",
+    )
+    parser.set_defaults(reviewed_data=True)
+    parser.add_argument("--inspect-inputs", action="store_true")
+    parser.add_argument("--output-dir", type=Path, default=ASSET_DIR)
+    parser.add_argument("--check", action="store_true", help="Verify the reviewed bank matches its accepted development inputs.")
+    args = parser.parse_args(argv)
+    if not args.reviewed_data and (args.inspect_inputs or args.check or args.output_dir != ASSET_DIR):
+        parser.error("--inspect-inputs, --check and --output-dir require the reviewed route; omit --legacy-data")
+    return args
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = parse_args(argv)
+    if args.reviewed_data:
+        if not args.inspect_inputs:
+            assets = build_reviewed_feature_assets()
+            if args.check:
+                for name, content in assets.items():
+                    if (args.output_dir / name).read_bytes() != content:
+                        raise RuntimeError(f"Reviewed Soccol bank differs from accepted development inputs: {name}")
+                print("Reviewed Soccol bank matches its accepted development inputs.")
+                return
+            if any((args.output_dir / name).exists() for name in assets):
+                raise FileExistsError("Refusing to overwrite a versioned Soccol feature asset; use --check to verify it.")
+            args.output_dir.mkdir(parents=True, exist_ok=True)
+            for name, content in assets.items():
+                (args.output_dir / name).write_bytes(content)
+                print(args.output_dir / name)
+            return
+        source = load_reviewed_feature_source()
+        selection = source.attrs["soccol_development_selection"]
+        print(json.dumps({
+            "sampling_source_rows": len(source),
+            "fold_counts": selection["fold_counts"],
+            "selection_sha256": selection["selection_sha256"],
+            "target_columns_used": [],
+            "final_query_rows_used": 0,
+        }, indent=2))
+        return
+    csv_path, json_path = build_legacy_feature_asset()
+    rules_path = build_legacy_rule_assets()
     print(csv_path)
     print(json_path)
     print(rules_path)

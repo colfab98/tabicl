@@ -45,8 +45,10 @@ def parse_bool(value: str) -> bool:
     )
 
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
+def parse_args(
+    argv: list[str] | None = None, *, parents: tuple[argparse.ArgumentParser, ...] = (),
+) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__, parents=parents)
     parser.add_argument("--study-name", default=search.DEFAULT_STUDY_NAME)
     parser.add_argument(
         "--selected-trial-number",
@@ -67,10 +69,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--allow-missing-selected-trial-artifacts",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
+        default=True,
         help=(
-            "Use the completed Optuna journal record when an explicitly pinned "
-            "trial's immutable proxy artifacts are no longer locally available."
+            "Use the verified completed Optuna journal record when selected-trial "
+            "proxy files are missing locally (default, including automatic selection). "
+            "Use --no-allow-missing-selected-trial-artifacts to require every local file."
         ),
     )
     parser.add_argument(
@@ -181,14 +185,6 @@ def validate_args(args: argparse.Namespace) -> None:
         )
     if args.selected_trial_number is not None and args.selected_trial_number < 0:
         raise ValueError("--selected-trial-number must be non-negative.")
-    if (
-        args.allow_missing_selected_trial_artifacts
-        and args.selected_trial_number is None
-    ):
-        raise ValueError(
-            "--allow-missing-selected-trial-artifacts requires "
-            "--selected-trial-number."
-        )
 
 
 def load_selected_trial(args: argparse.Namespace) -> tuple[Any, Any]:
@@ -378,6 +374,7 @@ def verify_selected_trial_evaluation(
     if source.get("local_ckpt_sha256") != sha256_file(checkpoint):
         raise RuntimeError("Selected trial evaluation checkpoint hash changed.")
     settings = payload.get("settings", {})
+    search.validate_reviewed_soccol_fold_selection(payload)
     if settings.get("tabicl_feat_shuffle_method") != "none":
         raise RuntimeError("Selected trial changed the fixed feature order.")
     if "pitting_magpie_features" not in settings or bool(
@@ -470,6 +467,7 @@ def verify_selected_trial_journal_record(
 
     artifacts: dict[str, dict[str, str]] = {}
     missing: list[str] = []
+    verified: list[str] = []
     for path_attr, sha_attr in (
         ("summary_csv", "summary_csv_sha256"),
         ("summary_json", "summary_json_sha256"),
@@ -488,6 +486,10 @@ def verify_selected_trial_journal_record(
         artifacts[path_attr] = {"path": str(path), "sha256": sha_value}
         if not path.is_file():
             missing.append(str(path))
+        else:
+            if sha256_file(path) != sha_value:
+                raise RuntimeError(f"Selected-trial artifact hash changed: {path}")
+            verified.append(str(path))
 
     metrics = {"mean_test_spearman": float(trial.value)}
     if not math.isfinite(metrics["mean_test_spearman"]):
@@ -510,13 +512,17 @@ def verify_selected_trial_journal_record(
             raise RuntimeError(f"Selected trial journal metric is not finite: {key}.")
         metrics[key] = value
 
-    return {
+    provenance = {
         "schema_version": "epit_selected_trial_journal_provenance_v1",
         "verification_mode": "optuna_journal_record",
         "immutable_files_verified": False,
         "missing_local_artifacts": missing,
+        "verified_local_artifacts": verified,
         "development_rows_only": True,
         "validation_folds": list(search.FIXED_VALIDATION_FOLDS),
+        "source_sha256": rules.source_sha256,
+        "split_manifest_sha256": rules.split_manifest_sha256,
+        "split_lock_sha256": rules.split_lock_sha256,
         "settings": {
             "n_estimators": int(evaluation["n_estimators"]),
             "pitting_magpie_features": bool(params.use_magpie),
@@ -529,6 +535,37 @@ def verify_selected_trial_journal_record(
         "recorded_artifacts": artifacts,
         "recorded_metrics": metrics,
     }
+    fixed_prior = study_fingerprint.get("fixed_prior", {})
+    if fixed_prior.get("feature_profile") == search.SOCCOL_REVIEWED_FEATURE_PROFILE:
+        provenance["soccol_development_selection"] = fixed_prior["development_selection"]
+        provenance["settings"]["soccol_reviewed_data"] = True
+    return provenance
+
+
+def verify_selected_trial_provenance(
+    trial: Any, *, args: argparse.Namespace, rules: search.TargetRuleConfig,
+    params: search.TrialParams, study_fingerprint: dict[str, Any],
+    study_fingerprint_sha256: str,
+) -> dict[str, Any]:
+    """Prefer local evidence; allow verified journal evidence across worker nodes."""
+    try:
+        return verify_selected_trial_evaluation(
+            trial, split_manifest=args.split_manifest, rules=rules, params=params,
+            study_fingerprint_sha256=study_fingerprint_sha256,
+        )
+    except FileNotFoundError:
+        if not args.allow_missing_selected_trial_artifacts:
+            raise
+        provenance = verify_selected_trial_journal_record(
+            trial, rules=rules, params=params, study_fingerprint=study_fingerprint,
+            study_fingerprint_sha256=study_fingerprint_sha256,
+        )
+        print(
+            "Selected-trial proxy files are unavailable locally; "
+            "validated the completed Optuna journal record instead.",
+            flush=True,
+        )
+        return provenance
 
 
 def replace_option(command: list[str], option: str, value: Any) -> None:
@@ -679,6 +716,7 @@ def validate_fold_evaluation_payload(
     if source.get("local_ckpt_sha256") != sha256_file(checkpoint):
         raise RuntimeError("Checkpoint evaluation model hash changed.")
     settings = payload.get("settings", {})
+    search.validate_reviewed_soccol_fold_selection(payload)
     if expanded_schema is not None and bool(settings.get("epit_expanded_features", False)) != expanded_schema:
         raise RuntimeError("Checkpoint evaluation changed the EPIT feature schema.")
     if int(settings.get("n_estimators", -1)) != n_estimators:
@@ -832,6 +870,16 @@ def run(args: argparse.Namespace) -> Path:
     args.pitting_composition_mode = composition_mode
     if composition_mode in search.EMPIRICAL_FEATURE_MODES:
         verify_empirical_feature_profile_identity(fixed_prior)
+    reviewed_split_metadata = {}
+    if search.uses_reviewed_soccol_schema(args):
+        from scripts.soccol_pipeline.data import reviewed_final_split_metadata
+
+        reviewed_split_metadata = reviewed_final_split_metadata(args.split_manifest)
+        if (
+            reviewed_split_metadata["soccol_development_selection"] != fixed_prior["development_selection"]
+            or reviewed_split_metadata["source_sha256"] != rules.source_sha256
+        ):
+            raise RuntimeError("Final Soccol inputs differ from the selected study.")
     proxy_training = study_fingerprint.get("proxy_training", {})
     proxy_training_overrides: dict[str, dict[str, int]] = {}
     for argument_name, fingerprint_name in (
@@ -856,29 +904,10 @@ def run(args: argparse.Namespace) -> Path:
         dict(trial.params), composition_mode=composition_mode,
         fixed_informed_prior_ratio=fixed_prior.get("informed_prior_ratio"),
     )
-    try:
-        trial_eval = verify_selected_trial_evaluation(
-            trial,
-            split_manifest=args.split_manifest,
-            rules=rules,
-            params=selected_params,
-            study_fingerprint_sha256=study_fingerprint_sha256,
-        )
-    except FileNotFoundError:
-        if not args.allow_missing_selected_trial_artifacts:
-            raise
-        trial_eval = verify_selected_trial_journal_record(
-            trial,
-            rules=rules,
-            params=selected_params,
-            study_fingerprint=study_fingerprint,
-            study_fingerprint_sha256=study_fingerprint_sha256,
-        )
-        print(
-            "Selected-trial proxy files are unavailable locally; "
-            "validated the completed Optuna journal record instead.",
-            flush=True,
-        )
+    trial_eval = verify_selected_trial_provenance(
+        trial, args=args, rules=rules, params=selected_params,
+        study_fingerprint=study_fingerprint, study_fingerprint_sha256=study_fingerprint_sha256,
+    )
     params, overrides = apply_parameter_overrides(
         args,
         selected_params,
@@ -998,6 +1027,12 @@ def run(args: argparse.Namespace) -> Path:
         "expected_n_features": search.model_feature_count(evaluation_args, params.use_magpie),
         "max_samples_per_task": 0,
     }
+    if reviewed_split_metadata:
+        evaluation_configuration.update({
+            "soccol_reviewed_data": True,
+            "col_missing_value_embedding": True,
+            "soccol_feature_profile": search.SOCCOL_REVIEWED_FEATURE_PROFILE,
+        })
     manifest = {
         "schema_version": "epit_final_model_manifest_v1",
         "frozen_utc": utc_now(),
@@ -1033,6 +1068,7 @@ def run(args: argparse.Namespace) -> Path:
             "final_test_rows": int(
                 frozen_split.manifest["split_design"]["final_test_rows"]
             ),
+            **reviewed_split_metadata,
         },
         "target_rules": {
             "summary": rules.summary_path,

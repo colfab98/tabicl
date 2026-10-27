@@ -13,7 +13,8 @@ snapshots.
   `../../analysis/soccol_source_conventions/source_conventions.csv`
 - Reproducible preprocessing builder: `prepare_benchmark.py`
 - Previous-EPIT-compatible split builder: `prepare_composition_split.py`
-- Synthetic profile and calibrated-rule builder: `prepare_pipeline_assets.py`
+- Reviewed v2 sampling-bank builder (default): `prepare_pipeline_assets.py`
+- Reviewed formula calibration: `../../../scripts/soccol_pipeline/calibrate_target_rules.py`
 - Optuna launcher: `../../../scripts/soccol_pipeline/run_optuna.py`
 - Model-ready tables, frozen split, and feature roles: `processed/`
 
@@ -42,8 +43,8 @@ The preceding composition v1 export was preserved.
   remained incomplete or ambiguous.
 - [Frozen final-query features](processed/soccol_reference_v1/soccol_frozen_final_query_features.csv):
   all 805 original queries, including 10 unresolved `1994Malik` rows.
-  **This export is not ready for final evaluation until those compositions are resolved.**
-  The frozen queries were not dropped or replaced.
+  Unresolved composition values remained missing. The current final evaluator
+  retained these queries without dropping or replacing them.
 - [Rows requiring review](processed/soccol_composition_v1/composition_review_required.csv)
   records each unresolved composition and original partition.
 - [Processing report](../../DATASET_PROCESSING.md#soccol-composition-processing),
@@ -51,8 +52,14 @@ The preceding composition v1 export was preserved.
   [source decisions](soccol_composition_rules_v1.json) document the corrections,
   evidence and remaining uncertainties.
 
-Existing model and shared-schema paths remain unchanged. This export does not
-automatically switch formula fitting, training or evaluation to the revised data.
+The current standalone Soccol pipeline uses this reviewed export for formula
+fitting, training and evaluation. Profile loading and sampling default to
+`soccol_pitting_features_v3`: uniform sampling of the 349 distinct compositions,
+with independent joint context sampling over all 2,950 accepted observations.
+Historical profiles require explicit selection and retain their old weighting.
+The checkpoint-comparison default also uses these reviewed inputs; the
+historical comparison requires explicit `--legacy-data`. The old combined-schema
+workflow remains separate.
 
 ```bash
 .venv/bin/python -m corrosion_datasets.datasets.prepare_reference_types soccol \
@@ -91,8 +98,8 @@ preparation information. It also sorted multiple preparation-operation names
 as in EPIT for 32 rows. Original values and the v1 export were preserved;
 [review_changes.csv](processed/soccol_environment_v2/review_changes.csv) recorded every change.
 
-Existing training, evaluation and shared-schema paths still use their previous
-exports. The environment export does not switch those paths automatically.
+This earlier environment-only export did not switch model paths by itself.
+The current standalone pipeline uses the later reviewed reference export above.
 
 ```bash
 .venv/bin/python -m corrosion_datasets.datasets.review_epit_soccol_environment soccol \

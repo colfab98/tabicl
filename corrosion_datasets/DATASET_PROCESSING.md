@@ -1512,3 +1512,867 @@ and the changed input cells in
   generated commands at 100% informed, including a perturbation strength above
   the previous 0.15 limit. The three launchers passed shell syntax checks. No
   Optuna training or full model training was run.
+
+## Soccol pipeline: reviewed-data loader
+
+- **Input source:** we added `scripts/soccol_pipeline/data.py` to read
+  `soccol_reference_v1` directly. It loaded all 58 registered features,
+  including the shared 24 composition columns, and retained the reported
+  `E_pit` target without an electrode conversion. The reviewed route no
+  longer read model inputs from `soccol_regression_event1.csv`.
+- **Values and missingness:** we preserved saved numeric values, accepted
+  zeros, recovered element amounts and unresolved `NaN` values. Loading did
+  not calculate a new Fe balance, normalize a real composition, replace
+  missing elements or ions with zero, or fit imputation values. Category
+  labels remained as saved for the later encoding step.
+- **Identity and checks:** we verified file checksums, the registered feature
+  order, wt.% units, agreement between feature and reference tables, and
+  composition acceptance against the saved audit. We matched rows by their
+  original workbook-derived IDs and returned them in frozen task order.
+  Duplicate or missing IDs, changed partitions and altered files caused errors.
+- **Rows:** we retained all 4,027 rows and exposed the saved acceptance and
+  partition flags. The loader identified 2,950 accepted development rows,
+  272 unresolved development rows and all 805 frozen queries, including ten
+  unresolved compositions. We did not filter rows or revise the frozen split
+  during this step.
+- **Integration and scope:** we connected an explicit
+  `--soccol-reviewed-data` route in the general evaluator for task inspection.
+  It rejected model evaluation until the accepted-row filter, training schema
+  and missing-value handling were connected, preventing the old 37-column
+  imputer from filling or discarding reviewed inputs. Historical Optuna and
+  checkpoint evaluation retained their original route. We did not refit
+  formulas, rebuild synthetic assets, start training or change dataset files.
+- **Validation:** 47 relevant tests passed. They checked exact saved values,
+  known composition recoveries, retained zeros and NaNs, row reordering by
+  frozen IDs, rejection of altered files or partitions, all 805 final queries,
+  and historical Soccol/EPIT compatibility. The reviewed loader and frozen
+  query selection succeeded without reading the old source CSV. The documented
+  task-inspection command also ran successfully without model evaluation.
+
+## Soccol pipeline: shared accepted-development selection
+
+- **One selection:** we added `select_accepted_development()` to the reviewed
+  loader. It selected rows whose saved composition status was accepted and
+  whose frozen outer partition was development. It verified the saved
+  eligibility flags and preserved original row IDs, source task indices and
+  fold labels. It returned **2,950 rows**, withholding the same **272**
+  unresolved development rows. No new split or source-data edit was made.
+- **Formula inputs:** `formula_data.py` and the comparison driver's explicit
+  `--reviewed-data` path used this selection before fitting any statistics or
+  coefficients. No final-query row reached formula fitting. Saved composition
+  values remained complete and unchanged. Missing numeric/ion values received
+  context-only means for internal formula calculations; entirely unobserved
+  fields used an internal zero placeholder. Source inputs retained their NaNs,
+  and `CP_ion_other` remained excluded. Formula definitions were unchanged;
+  we did not run coefficient calibration during this step.
+- **Sampling preparation:** `load_reviewed_feature_source()` returned the same
+  accepted rows as target-free source data, retaining all 58 registered fields,
+  missing values and original IDs. It did not use any target values. This
+  selection preceded the later sampling-bank rebuild and any fitted sampling
+  statistics. The existing historical 37-column bank was retained.
+- **Optuna folds:** the reviewed evaluator used only accepted rows for both
+  labeled context and validation. Validation counts were **622, 615, 638,
+  445 and 630**; corresponding context counts were **2,328, 2,335, 2,312,
+  2,505 and 2,320**. The fold wrapper forwarded the reviewed-data flag and
+  recorded the selection identity in its reviewed output metadata.
+- **Final-query boundary:** reviewed final-test selection used the 2,950
+  accepted development rows as context and preserved all **805 frozen queries**,
+  including the ten unresolved compositions. Context-size diagnostics could
+  reduce the accepted context to a saved fold while retaining all 805 queries.
+  Preprocessing-row selection also excluded withheld development rows.
+- **Versioning and scope:** formula and sampling input records shared a
+  checksum over selected row IDs, original indices and fold labels. The
+  reviewed formula comparison used a separate output default. Historical
+  pipelines retained their original inputs and row counts. Reviewed model
+  execution remained blocked pending the training-schema and missing-value
+  migration; no Optuna run or full model training was started.
+- **Validation:** 108 relevant tests passed. They checked exact saved inputs,
+  identical selected rows across formula and sampling sources, original fold
+  memberships, exclusion of withheld and final-query rows from development,
+  retention of all 805 final queries, and historical Soccol/EPIT compatibility.
+  Formula, sampling and evaluator inspection commands also ran successfully
+  without coefficient fitting or model evaluation.
+
+## Soccol pipeline: development-only synthetic sampling bank
+
+- **Bank:** we built `src/tabicl/prior/assets/soccol_pitting_features_v2.csv`
+  and its JSON metadata from the same **2,950 accepted development rows**.
+  The composition bank, joint environment/history bank, category mappings and
+  internal filling statistics excluded all **805 final queries** and **272
+  withheld development rows**. No target value was used.
+- **Material scope and weights:** we retained every accepted Soccol material
+  without applying EPIT's Fe/Ni–Cr–Mo restriction. Each accepted observation
+  remained one equally weighted bank entry; repeated compositions retained
+  their source frequency. These entries contained **349 distinct compositions**.
+  Composition and environment/history entries were sampled independently,
+  with replacement, as in the original Soccol sampler.
+- **Saved values:** we preserved the 24 corrected composition columns exactly,
+  including reported zeros and accepted totals slightly different from 100%.
+  Only generated compositions received the existing positive-entry
+  multiplicative perturbation and closure to 100 wt.%; their zeros stayed zero.
+- **Environment and missingness:** the bank retained all 34 remaining reviewed
+  fields. We sampled their values and missingness together from one development
+  observation. We encoded categories using sorted accepted-development labels
+  and retained unknown entries as NaN. Means for numeric fields and modes for
+  categories were fitted only on accepted development observations and stored
+  separately for internal calculations. Entirely missing fields used zero only
+  in that internal representation; model-facing bank values remained missing.
+- **Identity and validation:** metadata recorded original row IDs, task indices,
+  unchanged fold labels, the shared selection checksum, input hashes, missing
+  counts and fitted statistics. The loader checked the bank against these
+  records. Rebuilding with `--reviewed-data --check` required identical bytes.
+- **Scope:** the loader and sampler supported the new 58-column bank explicitly.
+  We retained the historical `v1` assets and existing 37-column wrappers for
+  earlier runs. Switching training and evaluation to the reviewed schema
+  remained a separate migration step. We did not refit target formulas or run
+  Optuna or full model training.
+- **Checks:** 122 relevant tests passed. Altering final-query features,
+  withheld-development features or any targets left the generated bank and
+  its statistics unchanged. Tests also checked exact source compositions,
+  unchanged observation weights, joint environment/missingness sampling,
+  preserved zeros under perturbation, rejection of inconsistent metadata,
+  and historical Soccol/EPIT compatibility. The CLI rebuild check passed.
+
+## Soccol pipeline: reviewed 58-column training and evaluation schema
+
+- **Shared schema:** we connected the exact saved names, order and types to
+  the reviewed loader, synthetic sampler, training runtime and real-data
+  evaluator. The inputs contained **24 composition columns and 34 other
+  fields**, with **49 numeric fields and nine categories** overall. The old
+  `Prep_medium`, `CP_anions_info` and `CP_ion_other` predictors were excluded;
+  their accepted structured replacements remained in the reviewed schema.
+- **Training:** the reviewed path used `soccol_pitting_features_v2`, exactly
+  58 features and a 24-column material/34-column context allocation. Category
+  roles followed the saved column positions. Both MLP and tree SCM targets
+  received all 58 fields. The nine existing Soccol formulas read their
+  original named inputs from the new order; their calculations and
+  coefficients were not refitted during this step.
+- **Missing values and categories:** real inputs used the sampling bank's
+  accepted-development category mappings. Query-only categories stayed
+  missing. Saved numeric values, zeros and NaNs were preserved. Synthetic
+  target calculations used the bank's finite internal representation, then
+  restored the sampled row's missingness before model input. Reviewed
+  training required the missing-value embedding and did not require a
+  separate masking profile. All-empty columns retained their positions.
+- **Evaluation:** we enabled model evaluation through `--soccol-reviewed-data`
+  and connected the development-fold wrapper to matching fixed-column and
+  missing-aware settings. CatBoost's default reviewed route identified the
+  nine categorical columns explicitly. The same 2,950 accepted development
+  rows and all 805 frozen final queries remained in their original partitions.
+  Ten unresolved final-query compositions remained missing and were retained.
+- **Versioning:** the explicit reviewed search route generated 58-column
+  commands, recorded the schema and sampling-bank identity, and used separate
+  `optuna_v2` defaults. It required a matching reviewed `target_rules_v2`
+  calibration and rejected the historical fit. Existing historical sbatch and
+  frozen-model wrappers remained reproducible. The formula refit and Optuna
+  search-policy update remained pending; no study or full model training ran.
+- **Validation:** 139 tests passed. They checked all nine formulas against
+  the same values in their historical order, both SCM types, real/synthetic
+  encoding equality, retained missingness, frozen query membership and
+  historical EPIT/Soccol compatibility. A tiny CPU training step and local
+  checkpoint prediction completed with all 58 columns and finite outputs.
+  This smoke test used development data only and did not produce final-model
+  evaluation scores. NumPy emitted warnings for all-empty columns; predictions
+  remained finite and the tests verified that the columns and NaNs survived.
+
+## Soccol pipeline: joint environment sampling verification
+
+- We confirmed that the reviewed bank and runtime already sampled all **34
+  non-composition fields** from one accepted development observation. Solution
+  information, concentrations, preparation, heat treatment, reference type and
+  their missing values stayed together. Fields were not drawn separately.
+- We continued drawing composition independently from the same 2,950-row
+  accepted development pool, as in EPIT. Independent draws could select the
+  same observation by chance; they were not forced to match or differ.
+- The finite internal representation used the same selected environment row.
+  After target calculations and standardization, training restored that row's
+  original missing-value pattern. No additional environment draw was made.
+- Seven existing focused checks passed for paired fields, unchanged zeros,
+  missingness through both SCM types and EPIT alignment. We clarified the
+  sampler documentation; its sampling behavior and bank files were unchanged.
+
+## Soccol pipeline: category codes and missing-value handling verification
+
+- We confirmed that all **nine categorical mappings** were fitted on the
+  **2,950 accepted development rows** and stored in the reviewed sampling bank.
+  Synthetic samples and real-data evaluation reused those exact mappings;
+  evaluation did not refit them on its context or query rows.
+- Missing and unseen category labels remained NaN. A known category assigned
+  code `0` remained a valid observed value. The entirely unreported
+  `heat_treatment_2_type` and `heat_treatment_2_cooling` fields retained empty
+  mappings and missing values; no category was invented for them.
+- Environment measurements, including ions, retained their saved zeros and
+  NaNs. Finite development means/category modes were used only in the internal
+  representation for synthetic calculations. The original joint missingness
+  was restored before model input, using the same procedure as reviewed EPIT.
+- Reviewed training enabled the learned missing-value embedding and rejected
+  configurations that disabled it. Checkpoint loading retained this mode for
+  inference, so reviewed-model inputs were not mean-imputed. The historical
+  37-column preprocessing remained separate for reproducing earlier runs.
+- We expanded the evaluation check to cover known, unseen and missing values
+  for every categorical field. **16 focused tests passed**, including
+  development-only mapping/statistic checks, learned-vector gradient checks,
+  both SCM types and a tiny CPU training/checkpoint prediction check. The
+  existing all-empty-column NumPy warnings recurred; outputs remained finite
+  and missing columns retained their positions. No sampling-bank or dataset
+  values were changed during this verification.
+
+## Soccol pipeline: reviewed nine-formula refit
+
+- **Inputs and scope:** we refitted the same nine Soccol formulas using all
+  **2,950 accepted development rows**. We excluded the **272 withheld
+  development rows** and all **805 frozen final queries** before calibration.
+  The original row IDs and five fold assignments were preserved.
+- **Fitting:** each fold fitted numeric/ion filling values, all scaling values
+  and formula coefficients on its context rows only. Validation sizes remained
+  **622, 615, 638, 445 and 630**; their context sizes remained **2,328, 2,335,
+  2,312, 2,505 and 2,320**. Held-out rows were transformed using the saved
+  context state. No filling values or coefficients were fitted on validation
+  rows for that fold.
+- **Unchanged definitions:** we retained all nine formulas, their named inputs,
+  coefficient anchors and upper bounds. We kept the nonnegative, sum-to-one
+  SLSQP fit against standardized target ranks and anchor strength **0.1**.
+  The 58-column training implementation read each formula's existing named
+  inputs correctly. No extra terms, family restrictions or target conversions
+  were introduced.
+- **Final coefficient centers:** after the five-fold evaluations, we fitted
+  each formula once on all accepted development rows for synthetic training.
+  We saved these coefficients separately from each fold's fitted coefficients,
+  filling values and scaling state. Real inputs retained their saved NaNs;
+  filling remained internal to formula calculations.
+- **Saved artifacts:** we wrote the new version to
+  `analysis/soccol_pipeline/target_rules_v2/`, including nine rule JSON files,
+  `calibration_summary.json`, `rule_scores.csv`, `fold_metrics.csv`, and
+  `oof_predictions.csv`. These recorded input hashes, accepted row IDs, frozen
+  folds, per-fold preprocessing and coefficients, held-out predictions, scores
+  and score-based rule probabilities. The historical `target_rules_v1` files
+  were retained unchanged.
+- **Results:** mean development-fold Spearman ranged from **0.431203** to
+  **0.571158**. The highest score belonged to
+  `pren_n_coupled_mns_weak_anions`; `pren_n_coupled_mns` scored **0.560894**.
+  We retained all nine formulas. These were development formula scores, not
+  final-model scores; the old and new calibrations used different row sets.
+- **Training connection:** the reviewed Optuna loader accepted the new artifact
+  version and checked the corrected input identity, 2,950-row count, unchanged
+  folds, complete nine-rule inventory, coefficient terms/bounds and checksums.
+  It rejected historical or mismatched calibrations. We corrected only
+  floating-point excess beyond a coefficient bound after normalization
+  (`0.15000000000000002` became `0.15`); the bound was not relaxed.
+- **Validation:** 103 relevant tests passed. We reproduced all 45 held-out
+  fold predictions and scores from saved states and coefficients, verified
+  context-only preprocessing, and confirmed that changing a validation fold's
+  features/targets did not change that fold's fitted state or coefficients.
+  All nine formulas agreed with the named training implementation. The saved
+  coefficients also passed a tiny CPU training step and local checkpoint
+  prediction check, with historical EPIT/Soccol compatibility retained. No
+  Optuna study or full model training was started.
+
+## Soccol pipeline: Optuna settings aligned with reviewed EPIT
+
+- **Search settings:** we fixed the informed ratio at **100%** and removed it
+  from Optuna's searched parameters. We used continuous ranges of **0–1** for
+  the MLP share, **0–1** for formula contribution and **0–0.30** for composition
+  perturbation strength. The tree SCM received the remaining share after the
+  MLP. The reviewed EPIT and Soccol searches used the same range definitions.
+- **Retained settings:** we kept **50 trials per worker**, **10 startup
+  trials**, **1,000 training steps**, a **10,000-step scheduler**, all **five
+  frozen development folds** and **eight evaluation estimators**. Mean
+  development-fold Spearman remained the objective. Coefficient variation
+  remained **0.8**, with seed **42**.
+- **Reviewed inputs:** we made the reviewed route the default for the Soccol
+  search command and selected it explicitly in the sbatch launcher. It used
+  the **58-column** `soccol_pitting_features_v2` bank, the same **2,950 accepted
+  development rows** and the refitted nine-rule `target_rules_v2` calibration.
+  We kept Soccol's own column order, joint environment sampling, category
+  mappings and missing-value embedding. Sharing EPIT's search policy did not
+  replace Soccol's schema with EPIT's 70-column schema.
+- **Study separation:** we selected
+  `soccol_pipeline_optuna_empirical_features_scm_target_v3` and separate
+  `analysis/soccol_pipeline/optuna_v3/` outputs. The study fingerprint recorded
+  the fixed ratio, broader ranges, data/schema and formula identities and
+  rejected incompatible study reuse. The journal retained its shared
+  cross-node storage location, under the new study directory.
+- **Historical compatibility:** we retained the old search through
+  `--legacy-data`. Existing final-training and frozen-model wrappers continued
+  to select the historical v1 route explicitly; migration of those wrappers
+  to the new selected trial remained a separate step. No final-test rows were
+  used as Optuna evaluation queries.
+- **Validation:** **79 focused tests passed**, including actual Optuna
+  parameter distributions, range endpoints, fixed-ratio reconstruction,
+  58-column training/evaluation commands, incompatible-study rejection and
+  existing EPIT/Soccol behavior. Two command-only previews used the reviewed
+  data and calibration; one sampled perturbation **0.203**, above the former
+  **0.15** limit. The launcher passed shell syntax checking. No Optuna training
+  job was launched and no final-test scores were produced.
+
+## Soccol pipeline: reviewed final training and frozen-query evaluation
+
+- **Trial selection:** we removed the launcher's default selection of old
+  trial **19**. Final training selected the best completed trial from
+  `soccol_pipeline_optuna_empirical_features_scm_target_v3` automatically.
+  It checked the selected trial's saved results, study fingerprint, reviewed
+  sampling bank and `target_rules_v2` calibration before training.
+- **Training and checkpoint selection:** we retained **10,000 training
+  steps** and selected the final checkpoint using only the five accepted
+  development folds. The final workflow used the reviewed **58-column**
+  schema, shared category mappings and learned missing-value embedding.
+  No frozen final-query observations were used to choose the checkpoint.
+- **Informed-ratio overrides:** we recovered the selected trial's fixed
+  **100%** ratio from the study fingerprint. We preserved later **25%, 50%,
+  75% and 100%** final-training overrides. Other selected parameters remained
+  unchanged, and override runs retained separate names and output locations
+  by default.
+- **Final evaluation:** we supplied all **2,950 accepted development rows**
+  as labeled context and retained the exact **805 frozen final queries**,
+  including the ten queries with unresolved compositions. We recorded the
+  original **3,222-row** development count separately from the accepted
+  context count. The frozen model manifest stored accepted context IDs,
+  original final-query IDs and reviewed file identities; result validation
+  checked actual row membership as well as row counts.
+- **Optional context diagnostics:** we retained the ability to use one
+  accepted development fold as context: **622, 615, 638, 445 or 630** rows.
+  Each evaluation still used the same **805 outer final queries**. Development
+  folds were not substituted for final-model queries.
+- **Fold-result correction:** we corrected reviewed Soccol fold summaries to
+  record the processed CSV's hash, matching the refitted formula artifacts.
+  They had still recorded the original CSV's hash, which would have caused
+  valid reviewed results to fail later identity checks. We also required the
+  accepted-development selection in Optuna and checkpoint-selection results.
+  Historical EPIT and Soccol file identities remained unchanged.
+- **Outputs and compatibility:** we moved reviewed final outputs to
+  `analysis/soccol_pipeline/final_v2/` and
+  `checkpoints/soccol_pipeline_final_v2/`. The final-training and evaluation
+  launchers selected the reviewed route explicitly. Historical final workflows
+  remained available through `--legacy-data`; the old checkpoint-comparison
+  script retained its historical v1 behavior.
+- **Validation:** **96 relevant tests passed**. A complete simulated workflow
+  exercised study selection, real artifact/hash checks, development-only
+  checkpoint selection, manifest freezing, full-context evaluation and all
+  five reduced-context evaluations. It retained every original query and
+  rejected changed membership even when row counts stayed equal. All four
+  informed-ratio overrides passed. Training jobs, checkpoint bytes and
+  prediction scores in that integration test were artificial fixtures; no
+  real training or final-test prediction job was launched. Both launchers
+  passed shell syntax checks.
+
+## Soccol pipeline: reviewed profile fixed as the default
+
+- We changed the profile loader and feature sampler to default explicitly to
+  **`soccol_pitting_features_v2`**, containing **2,950 accepted development
+  rows and 58 features**. Missing v2 files caused an error; the loader did not
+  fall back to historical v1 data.
+- We changed the sampling-asset builder's default route to the reviewed v2
+  bank. `--check` and `--inspect-inputs` worked without an extra data-selection
+  flag. `--reviewed-data` remained an explicit equivalent, and `--legacy-data`
+  was required to run historical v1 generation. Historical builder functions
+  received explicit `legacy` names.
+- We retained explicit v1 loading for old 37-column models and combined-prior
+  configurations. The historical schema's identifiers continued to describe
+  v1; current loading and sampling defaults came from the reviewed profile.
+  Current Optuna and final-training launchers already selected v2 explicitly.
+- We preserved all frozen dataset, split, bank and formula files. Rebuilding
+  the reviewed bank in a temporary directory produced identical bytes, and
+  the builder continued to refuse overwriting existing versioned files.
+- **Validation:** **70 relevant tests passed**, covering default 58-column
+  sampling, retained missingness, no fallback when v2 files were missing,
+  default asset generation/checking and explicit historical compatibility.
+  The default builder check passed, and all 18 files staged during the preceding
+  Git step remained unchanged.
+
+## Soccol pipeline: before/after input audit
+
+- **Scope:** we compared `soccol_regression_event1.csv` with the reviewed
+  `soccol_reference_v1` export in frozen row order. We saved every changed
+  common feature cell, its original and reviewed values, row ID, partition,
+  development eligibility and formula dependencies in
+  [`input_audit_v1/`](analysis/soccol_pipeline/input_audit_v1/). We compared
+  preprocessing inputs only; we did not refit coefficients or calculate
+  prediction scores.
+- **Rows and targets:** all **4,027 rows**, their target values and frozen
+  assignments were unchanged. The reviewed workflow used **2,950 accepted
+  development rows**, withheld **272 development rows**, and retained all
+  **805 final queries**. Ten final queries still had unresolved composition
+  cells. Accepted development compositions were complete, including their
+  saved zeros.
+- **Schema changes:** the model schema changed from **37 to 58 columns**:
+  **34 retained, 24 added and 3 removed**. The removed model fields were
+  `CP_ion_other`, `Prep_medium` and `CP_anions_info`; supported information
+  from the latter two had been extracted into separate fields. Added columns
+  were counted separately from corrections to existing columns.
+- **Changed common cells:** across all rows, we recorded **4,554 changes in
+  1,231 rows**. Within accepted development only, we recorded **1,015 changes
+  in 797 rows**. These comprised **71 corrected numeric composition amounts**,
+  **299 values deliberately left missing after review**, and **645 category
+  representation changes**. Aeration renaming and agitation `yes/no` to
+  `1/0` did not change the reported experimental conditions.
+
+| Common feature | Changed accepted-development cells | Change |
+| --- | ---: | --- |
+| `Fe` | 60 | Corrected balance after recovering other elements |
+| `Nb` | 9 | Recovered reported amount |
+| `Ti` | 2 | Recovered reported amount |
+| `Prep_time` | 152 | Removed air-exposure durations from the preparation-treatment field |
+| `Test_area_cm2` | 15 | Left conflicting reports missing |
+| `CP_SO4` | 104 | Left conflicting reports missing |
+| `CP_CO3` | 22 | Left conflicting reports missing |
+| `CP_OH` | 6 | Left conflicting reports missing |
+| `CP_aeration` | 252 | Renamed `natural` to `naturally_aerated` |
+| `CP_agitation` | 393 | Encoded explicit `yes/no` as `1/0` |
+
+- **Added composition fields:** **20 accepted development rows** contained
+  positive `W`, and **38** contained positive `Cu`. The other nine newly
+  introduced element columns were zero throughout accepted development.
+  These additions were outside the common-cell correction counts above.
+- **Raw formula inputs:** among fields actually used by the existing nine
+  formulas, only **104 sulfate cells** changed in accepted development.
+  `Cr`, `Mo`, `N`, `Mn`, `S`, temperature, pH, chloride, bromide and nitrate
+  raw values were unchanged on those rows. The formula-adapter audit also
+  recorded corrections to loaded but unused fields, identifying actual
+  formula dependencies separately.
+- **Internal formula filling:** we compared each accepted validation row
+  using only its fold's context. We also evaluated the old filling procedure
+  on the same accepted context rows, separating the effect of row removal
+  from preprocessing changes. The **104 sulfate values** used context means
+  internally after their disputed values were removed. **Three already-missing
+  nitrate values** changed from internal zero filling to context means.
+  **51 missing pH values and 33 missing temperature values** received different
+  internal means solely because the accepted context was smaller. Model-facing
+  unknowns remained NaN. These counts described inputs before formula scaling;
+  they did not measure all effects of changed scaling or coefficients.
+- **Consistency within Soccol:** all **19 audit checks passed**. The reviewed
+  loader, formula adapter and saved sampling bank agreed on accepted rows,
+  feature values and missingness. All nine saved formula artifacts used the
+  same accepted selection and context-specific filling values.
+- **Comparison with EPIT:** all **49 shared feature names** had matching
+  types and units. Both reviewed workflows preserved missing model inputs
+  and used context means internally for missing formula inputs. Their full
+  schemas remained **58 Soccol versus 70 EPIT columns**; category codes were
+  local to each specialist, rather than universal codes for a future merge.
+- **Formula difference identified:** Soccol's formula named
+  `cr_mow_n_synergy` used `Mo` without `W`, whereas EPIT's corresponding
+  formula used `Mo + 0.5*W`. Soccol's nine analytical formulas did not use
+  `W`, `Cu`, `Fe`, `Nb` or `Ti`. Consequently, the composition corrections
+  reached the model and SCM but did not directly change these formula terms.
+  We documented this existing difference and preserved the approved formula
+  definitions; the audit did not establish its effect on prediction scores.
+- **Validation:** **44 tests passed**, including checks that the reported
+  formula dependencies matched actual calculations, missing values were
+  distinguished from zeros, and final-query or validation-row changes did
+  not alter that fold's context filling statistics. No dataset, bank,
+  formula coefficient or frozen split file was changed by this audit.
+
+We generated the audit with:
+
+```bash
+.venv/bin/python -m scripts.soccol_pipeline.audit_input_changes
+```
+
+The command refused to overwrite a nonempty output directory. A repeat audit
+could use a new `--output-dir`. The saved
+[`README.md`](analysis/soccol_pipeline/input_audit_v1/README.md) described each
+CSV; `summary.json` recorded the input/output hashes and consistency checks.
+
+## Soccol pipeline: previous versus reviewed formula scores
+
+- **Saved results:** we found the previous nine promoted formula artifacts
+  in `analysis/soccol_pipeline/target_rules_v1/` and their development
+  predictions in `analysis/soccol_target_rules_v1/oof_predictions.csv`.
+  We compared them with `soccol_pipeline/target_rules_v2/`, without running
+  training or refitting coefficients. We saved the comparison in
+  [`target_rule_comparison_v1/`](analysis/soccol_pipeline/target_rule_comparison_v1/).
+- **Matching rows:** the previous results covered **3,222 development rows**,
+  whereas the reviewed results covered **2,950 accepted development rows**.
+  We therefore also re-scored the saved old predictions on exactly the same
+  **2,950 validation rows**, retaining their frozen fold assignments. Every
+  score below was the unweighted mean of five development-fold Spearman
+  correlations. All **805 frozen final queries** were excluded.
+
+| Formula | Old: 3,222 rows | Old: same 2,950 rows | Reviewed: 2,950 rows | Change on same rows |
+| --- | ---: | ---: | ---: | ---: |
+| `pren_n_linear` | 0.463315 | 0.441652 | 0.431203 | −0.010448 |
+| `cr_mow_n_synergy` | 0.494717 | 0.472136 | 0.479619 | +0.007483 |
+| `threshold_saturation` | 0.459631 | 0.434369 | 0.439298 | +0.004930 |
+| `pren_n_improved_environment` | 0.459677 | 0.436797 | 0.438341 | +0.001544 |
+| `mo_n_acid_repassivation` | 0.459924 | 0.436328 | 0.433876 | −0.002452 |
+| `mns_inclusion_penalty` | 0.498030 | 0.477475 | 0.467508 | −0.009967 |
+| `coupled_breakdown` | 0.502793 | 0.482026 | 0.475886 | −0.006141 |
+| `pren_n_coupled_mns` | 0.554193 | 0.564396 | 0.560894 | −0.003502 |
+| `pren_n_coupled_mns_weak_anions` | 0.586618 | 0.579633 | 0.571158 | −0.008475 |
+
+- **Results:** three formulas improved and six declined on matched validation
+  rows. The mean across the nine formulas changed from **0.480534 to
+  0.477531**, a decrease of **0.003003**. This descriptive mean was not an
+  ensemble score. `pren_n_coupled_mns_weak_anions` remained strongest, and
+  `pren_n_coupled_mns` remained second.
+- **Interpretation:** comparing the original populations directly gave a
+  larger mean decrease, from **0.497655 to 0.477531**. Much of that apparent
+  decrease came from changing which validation rows were scored. The matched
+  comparison controlled validation membership, but retained the old
+  predictions' original larger context fits. Context membership,
+  preprocessing, scaling and fitted coefficients still differed. The
+  comparison did not isolate the effect of cleaning alone or establish an
+  improvement or decline in trained TabICL performance.
+- **Validation:** we reproduced all **45 previous and 45 reviewed fold
+  scores**, plus both sets of nine saved mean scores. We checked frozen split
+  identities, formula artifact hashes, unchanged formula definitions, row
+  membership and fold assignments. CSV target round-off was at most
+  **1.14 × 10⁻¹³**; target ranks matched exactly in every paired fold.
+  Existing datasets, split files, formula artifacts and sampling banks were
+  unchanged.
+
+We generated the comparison with:
+
+```bash
+.venv/bin/python -m scripts.soccol_pipeline.compare_saved_rule_results
+```
+
+The command refused to overwrite a nonempty output directory. It saved
+[`comparison_vs_v1.csv`](analysis/soccol_pipeline/target_rule_comparison_v1/comparison_vs_v1.csv),
+per-fold comparisons, a readable summary and source/output hashes. A repeat
+comparison could use a fresh `--output-dir`.
+
+## Soccol pipeline: material-family coverage
+
+- **Active scope:** we verified that formula fitting and synthetic sampling
+  used all **2,950 accepted development rows**, covering **349 distinct
+  compositions**. No alloy-family filter was applied. Composition and joint
+  environment rows were sampled independently and uniformly by observation.
+  The material-family identifiers passed by the Soccol sampler were a single
+  placeholder category; they did not select different Fe/Ni rules.
+
+| Stored material group | Accepted development rows | Share of composition draws |
+| --- | ---: | ---: |
+| Stainless steels | 2,745 | 93.05% |
+| Fe-labelled model alloys | 65 | 2.20% |
+| Fe–Ni–Cr Alloy 800 | 64 | 2.17% |
+| Ni–Cr–Mo model alloys | 39 | 1.32% |
+| High-alloy group with broad historical labels | 35 | 1.19% |
+| Nickel Alloy 600 | 2 | 0.07% |
+
+- **Historical labels:** `material_scope_primary` still contained **2,810
+  include, 99 review and 41 exclude** entries within accepted development.
+  Those entries were historical notes, not current filters. The reviewed
+  composition status governed acceptance. The 272 withheld development rows
+  had unresolved compositions; they were not excluded by material family.
+- **Composition cross-check:** Fe was the largest element in **2,901**
+  accepted rows, Ni in **47**, and Cr in **two**. Eight rows with broad
+  `fe_based...` labels had another largest element: six Ni and two Cr.
+  We recorded their IDs separately and retained the frozen labels. This
+  largest-element diagnostic was not a replacement alloy taxonomy.
+- **Formula coverage:** all nine Soccol formulas used the same definitions
+  and globally fitted coefficient distributions across the accepted material
+  population. Formula selection was not conditioned on alloy family. We
+  calculated each formula's within-family development-fold scores from saved
+  held-out predictions, without refitting coefficients. The complete table
+  was saved in the [material-scope analysis](analysis/soccol_pipeline/material_scope_audit_v1/README.md).
+- **Main result:** `pren_n_coupled_mns_weak_anions`, the strongest formula
+  overall, scored **0.5592** on the 2,745-row stainless group, **0.2958** on
+  the 65-row Fe-labelled model-alloy group, and **0.0330** on the 39-row
+  Ni–Cr–Mo group. Within Ni–Cr–Mo, `threshold_saturation` was highest at
+  **0.2734**. These were means of within-family development-fold Spearman
+  correlations, rather than separately fitted family models or final scores.
+- **Small-group limits:** all 39 Ni–Cr–Mo rows came from `2009Wong`, with
+  **8, 14, 8, 6 and 3** observations across the five validation folds. The
+  64 Alloy 800 rows belonged to one composition and fold 5; their high
+  correlations described environmental variation for that composition. We
+  did not report a correlation for the two Alloy 600 rows. Folds with fewer
+  than three rows or constant targets/predictions were left unscored.
+- **Signal available in nickel rows:** all 39 Ni–Cr–Mo rows had zero Mn, S,
+  N, sulfate and nitrate; pH and chloride were constant. Consequently, the
+  extra Mn/S and weak-anion terms supplied no varying signal within that
+  subgroup. Temperature and composition varied. This observation did not
+  establish why a trained Soccol model performed differently from EPIT.
+- **Difference from EPIT sampling:** EPIT used **411 Fe and 41 Ni–Cr–Mo
+  development observations**, represented by **241 Fe and 14 Ni–Cr–Mo
+  distinct composition templates**. Its current composition sampling gave
+  nickel **14/255 = 5.49%**, whereas Soccol's observation sampling gave
+  nickel-labelled rows **41/2,950 = 1.39%**. EPIT's environment-row share,
+  41/452, was separate from this composition probability. We documented the
+  template-versus-observation difference without changing either sampler.
+- **Difference from EPIT formulas:** EPIT included `fe_ni_cr_threshold`,
+  with Cr thresholds of **12 wt.% for Fe and 15 wt.% for Ni–Cr–Mo**. Soccol
+  had no promoted rule with a separate Fe/Ni threshold. EPIT nevertheless
+  also scored lower on nickel: its strongest formula overall scored
+  **0.5782 on Fe versus 0.3594 on Ni–Cr–Mo**; its best nickel formula was
+  `fe_ni_cr_threshold` at **0.4644**. Weak nickel performance alone was
+  therefore not a unique explanation for Soccol. The datasets' subgroup
+  rows and contexts differed, so the scores did not isolate the effect of
+  family-specific rules.
+- **Assessment:** we recommended keeping the current material inclusion for
+  this Optuna run. The small nickel groups did not justify automatic removal
+  or use of the old exclusion flags. Observation-based composition weighting
+  and the absence of a family-specific formula remained separate findings
+  for the sampling/formula review. No dataset values, family labels, rules,
+  weights or frozen partitions were changed.
+- **Validation and outputs:** we checked bank membership and prediction
+  membership against accepted development rows and frozen folds, and
+  reproduced the overall mean scores of all nine Soccol and nine EPIT
+  formulas. We saved family counts, partition counts, label caveats and all
+  subgroup/fold scores in
+  [`material_scope_audit_v1/`](analysis/soccol_pipeline/material_scope_audit_v1/).
+  No final-query predictions were used.
+
+We generated the analysis with:
+
+```bash
+.venv/bin/python -m scripts.soccol_pipeline.analyze_material_scope
+```
+
+The command refused to overwrite an existing nonempty output directory.
+`summary.json` recorded the source/output hashes and the sampling comparison.
+
+## Soccol pipeline: synthetic sampling audit
+
+- **Scope:** we traced the reviewed source banks through composition and
+  environment sampling, internal filling, formula/SCM target generation,
+  standardization and missing-value restoration. We sampled **20,000 rows
+  per dataset** at each perturbation strength **0, 0.05 and 0.30**, using
+  seed **606**, and compared Soccol with the current EPIT path. We saved the
+  numerical results in
+  [`synthetic_sampling_audit_v1/`](analysis/soccol_pipeline/synthetic_sampling_audit_v1/).
+- **Main difference:** Soccol sampled composition observations uniformly,
+  whereas EPIT sampled distinct composition templates. Soccol's 2,950
+  accepted observations contained 349 distinct compositions; repeated
+  measurements therefore increased a composition's chance of being drawn.
+
+| Composition-weight statistic | Soccol | EPIT |
+| --- | ---: | ---: |
+| Distinct active source compositions | 349 | 255 |
+| Largest single-composition probability | 6.64% | 0.39% |
+| Share of draws assigned to top 10 compositions | 34.31% | 3.92% |
+| Share of draws assigned to top 20 compositions | 52.71% | 7.84% |
+| Effective template count from source weights | 52.26 | 255.00 |
+
+- **Weighting example:** the most repeated Soccol composition occurred
+  **196 times**: Fe 69, Cr 17.5, Ni 11 and Mo 2.5 wt.%. It received 196 times
+  the probability of a composition recorded once. The actual sampled top-20
+  share was **52.52%**, consistent with the expected **52.71%**. All 349
+  distinct source compositions appeared in the sample. The effective count
+  above was `1 / sum(probability²)`, describing weight concentration rather
+  than the number of possible perturbed alloys.
+- **Correct source handling:** the Soccol bank matched the real-data encoder
+  and accepted development row IDs. Saved compositions remained unchanged.
+  Both samplers perturbed positive element amounts, preserved zeros and
+  normalized only synthetic compositions to 100 wt.%. Sampled values were
+  finite and composition totals agreed with 100 within numerical precision.
+- **Correct context handling:** all environment, preparation, heat-treatment
+  and measurement fields were drawn together from one observed row, including
+  their joint missingness. Composition was drawn independently of that row
+  in both pipelines. The audit found no accidental independent resampling of
+  individual context fields. Composition/environment independence was a
+  shared design, not a unique Soccol difference.
+- **Missing values and categories:** the model received the original sampled
+  NaN pattern and recorded category codes. Internal numeric means and category
+  modes supplied finite values for SCM/formula calculations only. Soccol used
+  its 2,950 accepted development rows for these statistics; EPIT retained
+  statistics from all 608 development rows while sampling 452 Fe/Ni environment
+  rows. This scope difference was documented; no final-query rows contributed
+  filling statistics. EPIT's formula and SCM temperature/chloride/pH inputs
+  agreed exactly after internal filling.
+- **Comparable missingness:** across the **25 shared context columns**, missing
+  entries were **62.69% for Soccol versus 59.91% for EPIT**. Soccol had five
+  entirely missing context fields in its accepted bank, and EPIT had four
+  in its active bank. After internal filling, **15/58 Soccol columns and
+  16/70 EPIT columns** were constant over their source supports. Constant
+  internal features standardized to zero, while missing model inputs remained
+  NaN. Missing or constant columns alone did not uniquely explain Soccol's
+  weaker performance.
+- **Noise magnitude:** at strength **0.05**, the 95th percentile of the largest
+  per-element change in a generated row was **2.54 wt.% points for Soccol**
+  and **2.67 for EPIT**. At **0.30**, these values were **15.63 and 16.08**.
+  The parameter controlled log-normal noise; it was not a hard ±30% limit.
+  Both samplers allowed values outside the original observed ranges. Neither
+  reclassified generated alloys or applied a family-specific acceptance filter
+  after perturbation. This behavior was shared; we did not change the search
+  range in this audit.
+- **Training connection:** the checked Soccol path passed all 58 columns to
+  the SCM, read the intended named formula inputs, retained fixed column
+  positions and restored missingness after finite target calculations.
+  The corresponding EPIT path used 70 model columns and its private formula
+  projection. Both MLP and tree SCM paths and the learned missing-value
+  handling passed the existing focused checks.
+- **Recommendation:** we recommended drawing Soccol's **349 distinct reviewed
+  compositions equally**, while keeping observation-weighted joint environment
+  sampling. This would align composition weighting with EPIT without removing
+  material families or balancing families equally. Under that proposal any
+  20 source compositions would receive **5.73%** of draws. We documented the
+  proposal but left the sampler, bank, dataset and training settings unchanged.
+  A trained-model benefit had not been demonstrated.
+- **Validation:** all **51 sampling assertions** and **80 existing focused
+  tests** passed. The tests included small CPU training/inference checks.
+  Five existing empty-column warnings occurred in the Soccol inference check;
+  predictions remained finite and missingness/schema assertions passed.
+  No Optuna run, full training or frozen final-query scoring was performed.
+
+We generated the numerical audit with:
+
+```bash
+.venv/bin/python -m scripts.soccol_pipeline.audit_synthetic_sampling
+```
+
+The command refused to overwrite a nonempty output directory. It saved source
+composition weights, feature summaries, sampled coverage, perturbation ranges
+and source/output hashes. Repeated source entries and distinct compositions
+were counted separately.
+
+## Soccol pipeline: uniform composition sampling and fixed coefficient variation
+
+- **Approved sampling change:** we gave each of the **349 distinct accepted
+  development compositions** equal probability, matching EPIT's treatment of
+  distinct compositions. Repeated measurements no longer increased a
+  composition's sampling probability. The 20 most repeated compositions
+  therefore received **5.73%**, instead of **52.71%**, of the expected draws.
+  We did not balance the material families equally.
+- **Source handling:** we retained the first accepted source row as the ID
+  for each distinct composition. We kept all **2,950 observations** in the
+  bank and drew environment, preparation, history and missingness together
+  from one independently selected observation. These context observations
+  retained equal probability. Source values, category codes, internal filling
+  statistics, formula coefficients, development folds and all **805 frozen
+  final queries** remained unchanged.
+- **Versioning:** we created `soccol_pitting_features_v3.csv` and `.json`.
+  The CSV bytes matched v2; the metadata recorded the new sampling policy
+  and the 349 representative source indices. We preserved explicitly selected
+  v1/v2 sampling behavior and kept the earlier audit commands pinned to v2
+  so their reported weighting remained reproducible. Both reviewed versions
+  used the same 58-column real-input schema.
+- **Training connection:** we set the current Optuna and final-training
+  defaults to profile v3 and the new
+  `soccol_pipeline_optuna_empirical_features_scm_target_v4` study, with search
+  results under `analysis/soccol_pipeline/optuna_v4/`. The study fingerprint
+  included the sampling policy and template count and rejected reuse of
+  studies with the previous weighting. Existing `target_rules_v2` fits
+  remained valid because their accepted real-data inputs had not changed.
+- **Coefficient variation (item 7):** we verified that Soccol already used
+  the same fixed **0.8** variation and seed **42** as EPIT. We documented
+  this as an **a priori design choice**, not a value fitted to either dataset
+  or an Optuna search parameter. The setting applied both during Optuna and
+  during final training at **25%, 50%, 75% and 100%** informed ratios.
+- **Meaning of 0.8:** both pipelines used the same coefficient sampler.
+  It multiplied fitted coefficients by independent uniform factors from
+  **0.2 to 1.8**, normalized their sum to one, and rejected values exceeding
+  the existing upper bounds. Zero coefficients remained zero. If 100 attempts
+  failed, it returned the original coefficients. The parameter was not a
+  variance or a guaranteed ±80% final coefficient change after normalization.
+  We found no mismatch between Soccol and EPIT in this setting or mechanism.
+- **Verification:** all **146 focused tests** passed, including 50,000 draws
+  from each Soccol profile, exact source-data equality, context/missingness
+  preservation, version checks and final-training command checks. We also
+  checked that the frozen v3 assets rebuilt exactly from accepted development
+  inputs. Five existing empty-column warnings occurred in the small CPU
+  inference check; predictions remained finite. We made no claim of improved
+  trained-model performance and launched no Optuna or full-training job.
+
+## Soccol pipeline: historical Optuna ranges (item 8)
+
+- **Evidence:** we read temporary copies of the old Soccol v1 and EPIT v8
+  journals. Soccol had **50 completed trials** and five entries still marked
+  `RUNNING`; we excluded the latter. All completed trials shared one pipeline
+  fingerprint. We checked the 24 available local result files against their
+  journal scores, parameters and hashes. Only development-fold scores entered
+  this review.
+- **Best old configuration:** Soccol trial **19** scored **0.604646** mean
+  development-fold Spearman with **100% informed**, MLP share **1.0**, formula
+  contribution **0.662955**, and composition perturbation **0.035766**.
+- **Broader pattern:** all top ten trials used 100% informed. Eight used MLP
+  share 0.75 or 1.0; the others used 0.25 and 0.50. Their formula contribution
+  ranged from **0.581274 to 0.836408**, and composition perturbation from
+  **0.018839 to 0.045396**. These were joint adaptive-search results, not
+  isolated causal effects of individual parameters.
+- **Difference from EPIT:** EPIT's best old trial used composition
+  perturbation **0.149675**, near its previous 0.15 upper limit. Its top ten
+  ranged from **0.095352 to 0.149675**. Soccol did not show this pressure
+  towards the upper limit, so extending its range to 0.30 was not supported
+  by the same historical pattern.
+- **Recommendation:** we proposed continuous **0–1 MLP share**, **0–1 formula
+  contribution**, and **0–0.15 composition perturbation**, with informed share
+  fixed at **100%** and coefficient variation fixed at **0.8**, seed **42**.
+  We retained broad ranges because the source data, features, formula fits
+  and composition weighting had changed. We did not restrict the search to
+  the old top-ten interval or claim an optimum for the corrected workflow.
+- **Initial review status and outputs:** at this stage the proposed noise-range
+  change had not been implemented; the scripts still used **0–0.30**. We saved the completed
+  trials, parameter summaries, source hashes and recommendation in
+  [`optuna_range_review_v1/`](analysis/soccol_pipeline/optuna_range_review_v1/README.md).
+  We launched no training and left the original journals untouched.
+
+### Approved range implementation
+
+- We changed Soccol's composition-perturbation search range to **0–0.15**.
+  EPIT retained **0–0.30**. Both retained continuous **0–1** MLP share and
+  formula contribution, fixed **100% informed**, and coefficient variation
+  **0.8** with seed **42**.
+- We used the same dataset-specific range in Optuna sampling, parameter
+  validation, study fingerprints and saved trial metadata. A study previously
+  bound to **0–0.30** could not silently resume with the reduced range.
+  The current Soccol study name remained **v4**.
+- Final training retained the selected trial's composition-noise value for
+  each **25%, 50%, 75% and 100%** informed-ratio override. Historical search
+  modes retained their previous settings.
+- All **26 focused checks** passed, covering the Soccol and EPIT search
+  distributions, old-range fingerprint rejection and final-training commands.
+  We updated both pipeline READMEs and the range-review implementation status.
+  We launched no Optuna or full-training job.
+
+## Soccol pipeline: reviewed baseline and checkpoint comparisons (item 9)
+
+- **Checkpoint comparison:** we replaced the default old trial-19/37-column
+  route with the reviewed **58-column** inputs. Soccol, generic TabICL,
+  pretrained TabICL v2 and fixed CatBoost received the same **2,950 accepted
+  development context rows** and all **805 frozen final queries**, including
+  the ten unresolved compositions. We used the reviewed category mappings
+  and preserved source NaNs. Soccol used fixed columns and learned missing-value
+  handling; generic and pretrained models retained their existing handling.
+- **Category handling:** we replaced the historical four-category list with
+  the **nine reviewed categories**. We did not treat numeric `CP_agitation`
+  as categorical or request excluded `Prep_medium`/`CP_anions_info` columns.
+- **Model selection:** the comparison default read the frozen reviewed v4
+  final-model manifest, checked its locked checkpoint and reviewed input/split
+  identity, and used that checkpoint's run directory. Other informed-ratio
+  runs could be selected through their own manifest or an explicit run path.
+  A missing new model produced an error instead of selecting old trial 19.
+  The comparison curves did not change the development-selected checkpoint.
+- **Development baselines before training:** we added
+  `scripts/soccol_pipeline/evaluate_baseline_folds.py`. It compared the generic
+  **step-1000** checkpoint, pretrained TabICL v2 and fixed CatBoost on the same
+  five accepted development folds as Optuna. Query counts were **622, 615,
+  638, 445 and 630**, with the other accepted development rows as context.
+  All 805 final queries were excluded. The script saved individual scores,
+  their five-fold means, reviewed source hashes and original row membership.
+  Its defaults matched the EPIT baseline protocol: eight estimators, seed 42,
+  no feature shuffling or power transform, and CatBoost with 1,000 iterations,
+  depth 6, learning rate 0.03 and L2 penalty 3.0.
+- **Membership checks:** we checked original source-row indices in the saved
+  results, not only their counts. For development evaluation, we translated
+  the evaluator's local 2,950-row positions back to frozen source indices.
+  Context-size diagnostics used each development fold as context while keeping
+  all 805 final queries. They did not substitute development rows as final
+  model queries.
+- **Checkpoint coverage and outputs:** the comparison retained available
+  checkpoints from either run, including each run's latest endpoint after
+  interval filtering. It required all four models, no recorded model errors,
+  and all six metric SVGs. Nonempty result directories were rejected. Reviewed
+  outputs were separate from historical results, and `--legacy-data` remained
+  available for the old input/model combination. The sbatch launcher called
+  the same reviewed Python entry point as local execution.
+- **Preparation and verification:** both commands supported `--dry-run`.
+  We verified the real split/command/result paths using mock model scores:
+  **91 regression checks** passed, and all **seven comparison checks** passed
+  after the final label-handling adjustment. We also parsed the launcher
+  preview and all five baseline commands through the real evaluator. We ran
+  no actual baseline scoring, checkpoint evaluation, training or Optuna job.
+- **Remaining EPIT difference:** EPIT's older checkpoint-comparison launchers
+  still referenced historical v7/v8 runs. This Soccol update did not migrate
+  those EPIT launcher defaults.
+
+We prepared the development-baseline command as:
+
+```bash
+.venv/bin/python -m scripts.soccol_pipeline.evaluate_baseline_folds --device cpu
+```
+
+The reviewed checkpoint comparison, after final training, used:
+
+```bash
+sbatch scripts/soccol_pipeline/evaluate_checkpoint_comparison.sbatch
+```

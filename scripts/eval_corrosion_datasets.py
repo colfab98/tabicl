@@ -65,6 +65,9 @@ from tabicl.prior.soccol_schema import (
     SOCCOL_FEATURE_COLUMNS,
     SOCCOL_ION_COLUMNS,
 )
+from tabicl.prior.soccol_reviewed_schema import (
+    SOCCOL_REVIEWED_FEATURE_COLUMNS, SOCCOL_REVIEWED_CATEGORICAL_COLUMNS,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -575,6 +578,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Use the reviewed 70-column EPIT schema; retain missing environment values.",
     )
     parser.add_argument(
+        "--soccol-reviewed-data", action="store_true",
+        help=(
+            "Load soccol_reference_v1 with saved values and missingness. "
+            "Use the reviewed 58-column sampling-bank encoding and retain missing values."
+        ),
+    )
+    parser.add_argument(
         "--pitting-magpie-features",
         action="store_true",
         help=(
@@ -675,6 +685,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def validate_args(args: argparse.Namespace) -> None:
+    if getattr(args, "soccol_reviewed_data", False):
+        if args.pitting_magpie_features or args.epit_expanded_features:
+            raise ValueError("Reviewed Soccol uses its own 58-column schema without EPIT expansion or Magpie.")
     epit_mode_count = int(args.epit_validation_fold is not None) + int(
         args.epit_final_test
     )
@@ -1705,7 +1718,61 @@ def _make_expanded_epit_task() -> EvalTask:
     )
 
 
-def _make_soccol_pipeline_task(manifest_path: Path) -> EvalTask:
+def _make_soccol_pipeline_task(manifest_path: Path, *, reviewed_data: bool = False) -> EvalTask:
+    """Select reviewed inputs explicitly; preserve historical checkpoint inputs."""
+    if not reviewed_data:
+        return _make_legacy_soccol_pipeline_task(manifest_path)
+    if __package__:
+        from scripts.soccol_pipeline.data import load_soccol_dataset, select_accepted_development
+    else:
+        from soccol_pipeline.data import load_soccol_dataset, select_accepted_development
+    dataset = load_soccol_dataset(split_manifest=manifest_path)
+    development = select_accepted_development(dataset)
+    features = dataset.features.copy()
+    features.attrs["reviewed_soccol_data"] = dataset.identity
+    features.attrs["soccol_development_selection"] = development.identity
+    return EvalTask(
+        task_id=SOCCOL_PIPELINE_TASK_ID, dataset="soccol_pitting_potential",
+        table="soccol_reference_v1", target="E_pit", threshold=math.nan,
+        target_binning="continuous", target_bins=0, bin_edges=[], class_labels=[], class_counts={},
+        X=features, y=dataset.targets.copy(),
+        y_ordinal=pd.Series(np.zeros(len(features), dtype=int)), task_family="normal_corrosion",
+        feature_groups_used=["material", "environment_history", "measurement"],
+        feature_group_counts={"material": 24, "environment_history": 33, "measurement": 1},
+        dropped_feature_columns=[], quality_flags=["soccol_reference_v1"], split_groups=None,
+        split_strategy="soccol_frozen_composition_group", include_in_summary=True, summary_exclusion_reason="",
+    )
+
+
+def _reviewed_soccol_final_provenance(tasks: list[EvalTask]) -> dict[str, Any]:
+    """Report actual original row membership, including reduced-context diagnostics."""
+    task = next(task for task in tasks if task.task_id == SOCCOL_PIPELINE_TASK_ID)
+    if task.fixed_split is None or not task.fixed_split.split_strategy.startswith("epit_pipeline_final_test"):
+        raise RuntimeError("Reviewed Soccol final provenance requires the frozen outer queries.")
+    return {
+        "soccol_development_selection": task.X.attrs["soccol_development_selection"],
+        "context_task_row_indices": task.fixed_split.train_index.tolist(),
+        "query_task_row_indices": task.fixed_split.test_index.tolist(),
+    }
+
+
+def _reviewed_soccol_development_provenance(tasks: list[EvalTask], fold: int) -> dict[str, Any]:
+    """Record actual accepted context/validation membership for baseline checks."""
+    task = next(task for task in tasks if task.task_id == SOCCOL_PIPELINE_TASK_ID)
+    if task.fixed_split is None or task.fixed_split.split_strategy != f"epit_pipeline_development_fold_{fold}":
+        raise RuntimeError("Reviewed Soccol development provenance requires a frozen development fold.")
+    selection = task.X.attrs["soccol_development_selection"]
+    source_indices = np.asarray(selection["source_task_row_indices"], dtype=int)
+    if len(task.X) != len(source_indices):
+        raise RuntimeError("Reviewed Soccol development task has inconsistent source-row indices.")
+    return {
+        "soccol_development_selection": selection,
+        "context_task_row_indices": source_indices[task.fixed_split.train_index].tolist(),
+        "query_task_row_indices": source_indices[task.fixed_split.test_index].tolist(),
+    }
+
+
+def _make_legacy_soccol_pipeline_task(manifest_path: Path) -> EvalTask:
     """Build the approved 37-feature Soccol task in frozen row order."""
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     dataset_meta = manifest.get("dataset", {})
@@ -1899,18 +1966,26 @@ def _load_epit_pipeline_indices(
     manifest_task_id = dataset_meta.get("task_id", expected_task_id)
     if manifest_task_id != expected_task_id:
         raise RuntimeError("EPIT split manifest task does not match the evaluator.")
-    source_path = REPO_ROOT / str(dataset_meta.get("source_file", ""))
-    if not source_path.is_file():
-        raise FileNotFoundError(f"EPIT source file not found: {source_path}")
-    if _sha256_file(source_path) != str(dataset_meta.get("source_sha256", "")):
-        raise RuntimeError("EPIT source file changed after the split was created.")
-
     matching = [task for task in tasks if task.task_id == expected_task_id]
     if len(matching) != 1:
         raise RuntimeError(
             f"Expected exactly one EPIT task, found {len(matching)}."
         )
     task = matching[0]
+    reviewed_identity = task.X.attrs.get("reviewed_soccol_data")
+    if reviewed_identity is not None:
+        if (
+            expected_task_id != SOCCOL_PIPELINE_TASK_ID
+            or reviewed_identity.get("version") != "soccol_reference_v1"
+            or reviewed_identity.get("split_manifest_sha256") != _sha256_file(manifest_path)
+        ):
+            raise RuntimeError("Reviewed Soccol inputs were loaded against a different frozen split.")
+    else:
+        source_path = REPO_ROOT / str(dataset_meta.get("source_file", ""))
+        if not source_path.is_file():
+            raise FileNotFoundError(f"EPIT source file not found: {source_path}")
+        if _sha256_file(source_path) != str(dataset_meta.get("source_sha256", "")):
+            raise RuntimeError("EPIT source file changed after the split was created.")
     expected_rows = int(dataset_meta.get("usable_rows", -1))
     if len(task.X) != expected_rows:
         raise RuntimeError(
@@ -1949,6 +2024,18 @@ def _load_epit_pipeline_indices(
         raise RuntimeError("EPIT final-test row count is inconsistent.")
     if np.intersect1d(development_global, final_global).size:
         raise RuntimeError("EPIT development and final-test rows overlap.")
+
+    if reviewed_identity is not None:
+        accepted = np.asarray(reviewed_identity["accepted_development_task_row_indices"], dtype=int)
+        selection = task.X.attrs.get("soccol_development_selection", {})
+        if (
+            len(accepted) != reviewed_identity["accepted_development_rows"]
+            or not np.array_equal(accepted, np.unique(accepted))
+            or not np.isin(accepted, development_global).all()
+            or accepted.tolist() != selection.get("source_task_row_indices")
+        ):
+            raise RuntimeError("Reviewed Soccol accepted-development indices are inconsistent.")
+        development_global = accepted
 
     return task, development_global, final_global, manifest
 
@@ -2067,6 +2154,17 @@ def slugify(text: str) -> str:
 
 
 def make_tasks(args: argparse.Namespace) -> list[EvalTask]:
+    if getattr(args, "soccol_reviewed_data", False):
+        if args.epit_split_manifest is None or args.combined_data_dir is not None or getattr(args, "epit_expanded_features", False):
+            raise ValueError("Reviewed Soccol loading requires its frozen split and a standalone Soccol task.")
+        if args.target_binning != "continuous":
+            raise ValueError("Reviewed Soccol uses the unchanged continuous pitting-potential target.")
+        task = _make_soccol_pipeline_task(args.epit_split_manifest, reviewed_data=True)
+        if args.dataset and task.dataset not in set(args.dataset):
+            return []
+        if args.task and task.task_id not in set(args.task):
+            return []
+        return [task]
     if getattr(args, "epit_expanded_features", False):
         if args.combined_data_dir is not None or args.epit_split_manifest is None:
             raise ValueError("Expanded EPIT evaluation requires its frozen EPIT split manifest.")
@@ -2670,7 +2768,21 @@ def preprocess_soccol_split(
     *,
     X_preprocessing: pd.DataFrame | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Apply the approved Soccol encodings using fixed preprocessing rows."""
+    """Encode the selected Soccol version without mixing old and reviewed inputs."""
+    if tuple(X_train.columns) == SOCCOL_REVIEWED_FEATURE_COLUMNS or tuple(X_test.columns) == SOCCOL_REVIEWED_FEATURE_COLUMNS:
+        from scripts.soccol_pipeline.data import encode_model_features
+
+        return encode_model_features(X_train), encode_model_features(X_test)
+    if (
+        "reviewed_soccol_data" in X_train.attrs
+        or "reviewed_soccol_data" in X_test.attrs
+        or set(X_train.columns) != set(SOCCOL_FEATURE_COLUMNS)
+        or set(X_test.columns) != set(SOCCOL_FEATURE_COLUMNS)
+    ):
+        raise ValueError(
+            "Reviewed Soccol inputs cannot use historical 37-column preprocessing. "
+            "Use the exact reviewed 58-column order for both context and queries."
+        )
     train = X_train.loc[:, SOCCOL_FEATURE_COLUMNS].copy()
     test = X_test.loc[:, SOCCOL_FEATURE_COLUMNS].copy()
     preprocessing = (
@@ -4622,7 +4734,9 @@ def main() -> None:
                 l2_leaf_reg=args.catboost_l2_leaf_reg,
                 random_state=args.random_state,
                 thread_count=args.catboost_thread_count,
-                categorical_columns=tuple(args.catboost_categorical_column),
+                categorical_columns=tuple(args.catboost_categorical_column) or (
+                    SOCCOL_REVIEWED_CATEGORICAL_COLUMNS if args.soccol_reviewed_data else ()
+                ),
             )
             jobs.append(
                 {
@@ -4908,6 +5022,11 @@ def main() -> None:
             "task_tables": [str(path) for path in task_table_paths],
         },
     }
+    if args.soccol_reviewed_data and args.epit_final_test:
+        payload["soccol_final_split"] = _reviewed_soccol_final_provenance(tasks)
+        payload["missing_aware_models"] = sorted({slugify(label) for label in args.missing_aware_model})
+    if args.soccol_reviewed_data and args.epit_validation_fold is not None:
+        payload["soccol_development_split"] = _reviewed_soccol_development_provenance(tasks, args.epit_validation_fold)
     output_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     pd.DataFrame(rows).to_csv(output_csv, index=False)
     wide_df.to_csv(output_wide_csv, index=False)

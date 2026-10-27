@@ -56,8 +56,11 @@ EXPECTED_MODELS = (
 PRETRAINED_CHECKPOINT_VERSION = "tabicl-regressor-v2-20260212.ckpt"
 
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
+def parse_args(
+    argv: list[str] | None = None, *, description: str | None = None,
+    parents: tuple[argparse.ArgumentParser, ...] = (),
+) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=description or __doc__, parents=list(parents))
     parser.add_argument(
         "--split-manifest",
         type=Path,

@@ -1,0 +1,213 @@
+{
+  "accepted_development_active_formula_raw_changes": {
+    "CP_SO4": 104
+  },
+  "accepted_development_changed_cells": 1015,
+  "accepted_development_changed_rows": 797,
+  "accepted_development_changes_by_type": {
+    "category_representation": 645,
+    "known_to_missing": 299,
+    "numeric_correction": 71
+  },
+  "audit_version": "soccol_input_audit_v1",
+  "changed_common_input_cells": 4554,
+  "changed_common_input_rows": 1231,
+  "checks": {
+    "accepted_compositions_complete": true,
+    "bank_row_ids_match": true,
+    "bank_task_indices_match": true,
+    "bank_values_and_missingness_match": true,
+    "category_encoding_preserves_development_missingness": true,
+    "coupled_breakdown_selection_and_filling_match": true,
+    "cr_mow_n_synergy_selection_and_filling_match": true,
+    "formula_adapter_matches_saved_features": true,
+    "frozen_splits_validated_by_loader": true,
+    "mns_inclusion_penalty_selection_and_filling_match": true,
+    "mo_n_acid_repassivation_selection_and_filling_match": true,
+    "original_row_order_preserved": true,
+    "pren_n_coupled_mns_selection_and_filling_match": true,
+    "pren_n_coupled_mns_weak_anions_selection_and_filling_match": true,
+    "pren_n_improved_environment_selection_and_filling_match": true,
+    "pren_n_linear_selection_and_filling_match": true,
+    "shared_epit_names_types_units_match": true,
+    "targets_exactly_unchanged": true,
+    "threshold_saturation_selection_and_filling_match": true
+  },
+  "comparison_tolerance": {
+    "absolute": 1e-10,
+    "nan_equals_nan": true,
+    "relative": 1e-12
+  },
+  "effective_formula_changes_by_column": {
+    "CP_NO3": 3,
+    "CP_SO4": 104,
+    "CP_pH": 51,
+    "CP_temp": 33
+  },
+  "features": {
+    "added": [
+      "W",
+      "Cu",
+      "Al",
+      "Ta",
+      "Re",
+      "Ce",
+      "Co",
+      "B",
+      "Mg",
+      "Y",
+      "Gd",
+      "test_solution_type",
+      "H2SO4_mol_L",
+      "surface_preparation_method",
+      "preparation_solution_type",
+      "heat_treatment_type",
+      "heat_treatment_temperature_C",
+      "heat_treatment_duration_h",
+      "heat_treatment_cooling",
+      "heat_treatment_2_type",
+      "heat_treatment_2_temperature_C",
+      "heat_treatment_2_duration_h",
+      "heat_treatment_2_cooling",
+      "reference_type"
+    ],
+    "old": 37,
+    "removed": [
+      "CP_ion_other",
+      "Prep_medium",
+      "CP_anions_info"
+    ],
+    "reviewed": 58,
+    "shared_old_new": 34,
+    "shared_with_epit": 49
+  },
+  "files_sha256": {
+    "corrosion_datasets/analysis/soccol_pipeline/target_rules_v2/coupled_breakdown.json": "2506f87c6b21644f56824c8612bbc644c19b83c78cdabd4f21dac1602934f9f5",
+    "corrosion_datasets/analysis/soccol_pipeline/target_rules_v2/cr_mow_n_synergy.json": "3bda0fc223a98df1554dc7cf778d909c0bd48adc5a4f9b2fa8a95e1c90549bad",
+    "corrosion_datasets/analysis/soccol_pipeline/target_rules_v2/mns_inclusion_penalty.json": "e97eea06e225aff118ace55ffd156536bf4da7015a905f8809c566a93df9cacd",
+    "corrosion_datasets/analysis/soccol_pipeline/target_rules_v2/mo_n_acid_repassivation.json": "d4f0a6b9913f4a9f982720848dff5e31d429206556801a0a303c5fbb139330e7",
+    "corrosion_datasets/analysis/soccol_pipeline/target_rules_v2/pren_n_coupled_mns.json": "34df79238b5b07b2baca1037a4478c6e449b83dbf56acea4d58feda5f49222f2",
+    "corrosion_datasets/analysis/soccol_pipeline/target_rules_v2/pren_n_coupled_mns_weak_anions.json": "23bf78b4e3dd259cd7052ac02c2d2b55ed4f175e91cc6eceb6a42d420c728c1f",
+    "corrosion_datasets/analysis/soccol_pipeline/target_rules_v2/pren_n_improved_environment.json": "3f90488c3f634765d18abab145e9e61fc09a7b2956457fa850f5fc230aa2dd46",
+    "corrosion_datasets/analysis/soccol_pipeline/target_rules_v2/pren_n_linear.json": "9c78cd8b2cb7554823dce60a48ace1c2e851fa2c7d293619d5196a00c82b7633",
+    "corrosion_datasets/analysis/soccol_pipeline/target_rules_v2/threshold_saturation.json": "6ebc6b5cfb20027b6dc2a4288e13a282293c4cb7085552432691a2c463fa2a08",
+    "corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_reference_v1/feature_registry.json": "061304c1ccbb4343c98f54b02bcef01bd577301cf77119f6813c26590ac7c9e6",
+    "corrosion_datasets/datasets/soccol_pitting_potential/compare_target_rules.py": "af79c18e5e455efbbc7a7f63da5395e378ecd4c297ad2d5632d0d84573bd1799",
+    "corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_reference_v1/feature_registry.json": "f57d2f0a219ae3bd20a1e05dd077f456326e22d2b31465fa2c64b79ff7391650",
+    "corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_reference_v1/soccol_features.csv": "57a5875606e527c7ba0b4c353690dc4a91c8d61ea50cfa92b97064b549cb87bc",
+    "corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_reference_v1/soccol_processed.csv": "3133588b042c5c2f73d74b5e518b088ca44d25999edb1ac4f476fc99c8972636",
+    "corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_reference_v1/split_assignments.csv": "d34b48ad40ae4cf03a7cdcd209c9a08879d3529f3b4dac320dff9986b641b7a8",
+    "corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_regression_event1.csv": "280f8ff3f89c5d47b22f46a483b9a67eb612a9cbbe0a3394685a0e3da3a0200c",
+    "corrosion_datasets/datasets/soccol_pitting_potential/processed/splits_v1/split_manifest.json": "bc06162ebb2009a92949522ac5e3d5d256837ddd65a08b2d347c5adf8355cdbb",
+    "scripts/soccol_pipeline/audit_input_changes.py": "f6ef660e33c0db84a6ea70ff075344a33e282d2dac56899bfc587e526bb3f99f",
+    "src/tabicl/prior/assets/soccol_pitting_features_v2.csv": "11324fb7217e1d858abaa8411b9144838b79fea409c2f320184095990335bcc2",
+    "src/tabicl/prior/assets/soccol_pitting_features_v2.json": "7a4c27c0863dd4b38ae9346f63d00a5113d1f340cd2c52364c83278d141e30a1"
+  },
+  "findings": [
+    "The formulas retain their previous definitions. Only sulfate changed as a raw input actually used by the nine formulas on accepted development rows.",
+    "Model-facing NaNs are retained. Internal formula filling uses context means; missing nitrate previously used zero. Changes to context membership also change means.",
+    "Soccol's cr_mow_n_synergy name is misleading: its formula uses Mo, not W. EPIT's corresponding formula uses Mo + 0.5*W. No formula was changed by this audit.",
+    "The reviewed Soccol bank contains 20 accepted development rows with positive W and 38 with positive Cu. All 58 features can feed the SCM, but the nine analytical formulas ignore W, Cu, Fe, Nb and Ti.",
+    "Missingness and the shared 49 feature names/types/units agree with EPIT. Individual schemas remain 58 versus 70 columns; separate category codes must not be treated as universal merged-dataset codes.",
+    "Ten frozen Soccol final queries retain unresolved composition NaNs. Accepted Soccol development compositions are complete. The final queries were retained unchanged; this audit did not evaluate predictions."
+  ],
+  "output_sha256": {
+    "change_counts.csv": "f66f4279ea0fa8dcf5bfbd87e7bac92e2289c92b500a57325303dad4945545bc",
+    "effective_formula_input_changes.csv": "6ef7c0a8632f5b854c822db6dd4787f4faac8f1c5dd76d09f1b8fb6b7afa7e0f",
+    "fold_filling_values.csv": "a1fe1b74cc553daae13d37fd1582836d3f9f744b7e9e63cc5dd08f9395a6c719",
+    "formula_input_changes_vs_legacy.csv": "e6d7cfa0560747061d2bbe92473f220926a46b15ae36faf52115a06e77ee1efb",
+    "input_changes_vs_legacy.csv": "48df11160caa3bcc0f3da35a587afd4f954b502be41b1552c50ff3dd2dc94cb6",
+    "schema_comparison.csv": "0e9ac960d9427cf5430a2c3a58a75274423ec819aad92d07f30c8a5502e13df4",
+    "shared_epit_schema_check.csv": "9b9f6bb9900b53c0af7b11f92efb21105e806fcb8d127634504044bd03b61f00"
+  },
+  "rows": {
+    "accepted_development": 2950,
+    "all": 4027,
+    "final_queries": 805,
+    "original_development": 3222,
+    "unresolved_final_compositions": 10,
+    "withheld_development": 272
+  },
+  "rule_dependencies": {
+    "coupled_breakdown": [
+      "CP_Cl",
+      "CP_pH",
+      "CP_temp",
+      "Cr",
+      "Mo"
+    ],
+    "cr_mow_n_synergy": [
+      "CP_Cl",
+      "CP_pH",
+      "CP_temp",
+      "Cr",
+      "Mo",
+      "N"
+    ],
+    "mns_inclusion_penalty": [
+      "CP_Cl",
+      "CP_pH",
+      "CP_temp",
+      "Cr",
+      "Mn",
+      "Mo",
+      "N",
+      "S"
+    ],
+    "mo_n_acid_repassivation": [
+      "CP_Cl",
+      "CP_pH",
+      "CP_temp",
+      "Cr",
+      "Mo",
+      "N"
+    ],
+    "pren_n_coupled_mns": [
+      "CP_Cl",
+      "CP_pH",
+      "CP_temp",
+      "Cr",
+      "Mn",
+      "Mo",
+      "N",
+      "S"
+    ],
+    "pren_n_coupled_mns_weak_anions": [
+      "CP_Br",
+      "CP_Cl",
+      "CP_NO3",
+      "CP_SO4",
+      "CP_pH",
+      "CP_temp",
+      "Cr",
+      "Mn",
+      "Mo",
+      "N",
+      "S"
+    ],
+    "pren_n_improved_environment": [
+      "CP_Cl",
+      "CP_pH",
+      "CP_temp",
+      "Cr",
+      "Mo",
+      "N"
+    ],
+    "pren_n_linear": [
+      "CP_Cl",
+      "CP_pH",
+      "CP_temp",
+      "Cr",
+      "Mo",
+      "N"
+    ],
+    "threshold_saturation": [
+      "CP_Cl",
+      "CP_pH",
+      "CP_temp",
+      "Cr",
+      "Mo"
+    ]
+  },
+  "scope": "Input comparison only; no coefficient fitting, model training or prediction scores."
+}

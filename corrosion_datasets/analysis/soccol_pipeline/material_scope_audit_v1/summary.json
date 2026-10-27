@@ -1,0 +1,60 @@
+{
+  "accepted_development_rows": 2950,
+  "comparison_limit": "EPIT and Soccol subgroup rows and contexts differ. Their scores describe each workflow, not a matched experiment isolating a cause.",
+  "distinct_compositions": 349,
+  "epit_composition_family_probabilities": {
+    "fe_alloy": 0.9450980392156862,
+    "nicrmo_alloy": 0.054901960784313725
+  },
+  "epit_distinct_composition_templates_by_family": {
+    "fe_alloy": 241,
+    "nicrmo_alloy": 14
+  },
+  "epit_environment_rows_by_family": {
+    "fe_alloy": 411,
+    "nicrmo_alloy": 41
+  },
+  "final_query_predictions_used": false,
+  "frozen_final_queries_excluded_from_scores": 805,
+  "historical_scope_flags": {
+    "exclude": 41,
+    "include": 2810,
+    "review": 99
+  },
+  "largest_element_counts": {
+    "Cr": 2,
+    "Fe": 2901,
+    "Ni": 47
+  },
+  "output_sha256": {
+    "accepted_family_counts.csv": "6248f9622fc418bc8618ecdf80f67a389727c8e21d394fb705976b95e18022d3",
+    "family_label_caveats.csv": "80dc5f90efe84980fa14a04f564f3bfa98ad8dae74f879400bd497088e827230",
+    "formula_family_fold_scores.csv": "b495d410bd723e7966ec4cdac6cc48a7a726075b260742396b64b8247b62d8fe",
+    "formula_family_scores.csv": "773487af45f4c3358a218e44385f8a86a8eb68b119e678426eb17f34bd324b64",
+    "partition_family_counts.csv": "a74537f1d0e4fc792036bb132caad4e5cbaa5b2cacdcf69c45c10f454c576b2e"
+  },
+  "recommendation": "Retain current accepted-material scope for this run. Do not exclude nickel or automatically apply historical exclusion flags. Small nickel groups warrant formula-specific investigation, not an unsupported scope change.",
+  "refitting_performed": false,
+  "schema_version": "soccol_material_scope_audit_v1",
+  "score_definition": "Unweighted mean of within-family Spearman over valid development folds. Folds with fewer than three rows or constant targets/predictions were not scored. Existing globally fitted coefficients were retained.",
+  "soccol_nickel_label_probability": 0.013898305084745762,
+  "soccol_sampling": "Uniform composition observation draws; independent uniform joint environment observation draws; no material-family routing.",
+  "soccol_selection": "All accepted development observations, regardless of historical include/review/exclude metadata.",
+  "source_sha256": {
+    "corrosion_datasets/analysis/epit_pipeline/splits_v2/split_lock.json": "8683f5cb0aa0fca121c66718dbd1d358959b71952e61ada7cd628eda1e9d55b6",
+    "corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json": "b151505356908814729ae6027660b89739c11dc463ed3b1f10630b001d1b837c",
+    "corrosion_datasets/analysis/epit_pipeline/target_rules_v4/calibration_summary.json": "8c0b1aafa7188e7b667b2179305d06ae800104caf5a5137ddf35ee711ca735fe",
+    "corrosion_datasets/analysis/epit_pipeline/target_rules_v4/direct_evaluation_predictions.csv": "b1f1ae4142dca78927f9b7e9845bd0fc808150c2f26e7bebf8cace9580978646",
+    "corrosion_datasets/analysis/soccol_pipeline/target_rules_v2/calibration_summary.json": "35f6f78fd037138ba2b75114cfb09d5486cd20913bebf2161536c364d5cdae6f",
+    "corrosion_datasets/analysis/soccol_pipeline/target_rules_v2/oof_predictions.csv": "7399ec624ee21d769770c7ceaa0c9000e20590fcb30bc320536d651e2074ab92",
+    "corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_reference_v1/feature_registry.json": "f57d2f0a219ae3bd20a1e05dd077f456326e22d2b31465fa2c64b79ff7391650",
+    "corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_reference_v1/soccol_processed.csv": "3133588b042c5c2f73d74b5e518b088ca44d25999edb1ac4f476fc99c8972636",
+    "scripts/soccol_pipeline/analyze_material_scope.py": "e87aa75ce5daf356bf992bae92c47c71490800f26ea521f749fe0d39304c7128",
+    "src/tabicl/prior/dataset.py": "c6ee55c32722fab45b74df2c250b4e2113258458c102c10e241355c078655e8a",
+    "src/tabicl/prior/epit_composition_profile.py": "a29fb01e0764156b2ad925bff296d69647cf6da329631d736f2bbad5f257f733",
+    "src/tabicl/prior/epit_feature_generator.py": "edce0e202310f66c2cf0b34517a5449c87507d3b0adc97a34f75fc97da0b8170",
+    "src/tabicl/prior/soccol_feature_generator.py": "fc4b0a50a0290173cefe4472a4db790f4effb663326612e88c7e16ea01f6ad04"
+  },
+  "stored_family_label_caveats": 8,
+  "withheld_development_rows": 272
+}

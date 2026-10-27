@@ -1,4 +1,8 @@
-"""Fixed 37-column model schema for the Soccol pitting-potential task."""
+"""Historical 37-column Soccol schema for explicitly selected v1 workflows.
+
+Current sampling defaults are defined in soccol_feature_profile; its reviewed
+58-column layout is defined in soccol_reviewed_schema.
+"""
 
 from __future__ import annotations
 

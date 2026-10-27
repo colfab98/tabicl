@@ -1,0 +1,7 @@
+material_family,development_rows,distinct_compositions,source_count,composition_draw_probability,largest_element_Fe_rows,largest_element_Ni_rows,largest_element_Cr_rows,fold_1_rows,fold_2_rows,fold_3_rows,fold_4_rows,fold_5_rows
+fe_based_stainless,2745,277,124,0.9305084745762712,2745,0,0,586,578,607,421,553
+fe_based_model_alloy,65,50,4,0.022033898305084745,62,1,2,18,16,13,13,5
+Fe_Ni_Cr_alloy_800,64,1,1,0.02169491525423729,64,0,0,0,0,0,0,64
+ni_based_model_alloy,39,14,1,0.013220338983050847,0,39,0,8,14,8,6,3
+fe_based_high_alloy_taxonomy_caveat,35,7,1,0.011864406779661017,30,5,0,10,5,10,5,5
+ni_based_alloy_600,2,1,1,0.0006779661016949153,0,2,0,0,2,0,0,0

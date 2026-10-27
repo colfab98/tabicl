@@ -43,7 +43,6 @@ EXTRA_ARGS=()
 if [[ -n "$SELECTED_TRIAL_NUMBER" ]]; then
   EXTRA_ARGS+=(
     --selected-trial-number "$SELECTED_TRIAL_NUMBER"
-    --allow-missing-selected-trial-artifacts
   )
 fi
 if [[ -n "$FINAL_RUN_NAME" ]]; then

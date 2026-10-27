@@ -523,14 +523,15 @@ class Trainer:
         self.missingness_augmenter = None
         from tabicl.prior.epit_expanded_schema import EPIT_EXPANDED_FEATURE_PROFILE
         from tabicl.prior.epit_feature_profile import EPIT_FEATURE_PROFILE
+        from tabicl.prior.soccol_reviewed_schema import SOCCOL_REVIEWED_FEATURE_PROFILES
 
-        native_epit = (
+        native_reviewed = (
             getattr(self.config, "pitting_composition_mode", None) == "empirical_features_scm_target"
-            and (getattr(self.config, "pitting_feature_profile", None) or EPIT_FEATURE_PROFILE) == EPIT_EXPANDED_FEATURE_PROFILE
+            and (getattr(self.config, "pitting_feature_profile", None) or EPIT_FEATURE_PROFILE) in (EPIT_EXPANDED_FEATURE_PROFILE, *SOCCOL_REVIEWED_FEATURE_PROFILES)
         )
         if not bool(getattr(self.config, "col_missing_value_embedding", False)):
-            if native_epit:
-                raise ValueError("Expanded EPIT samples retain NaNs and require --col_missing_value_embedding true.")
+            if native_reviewed:
+                raise ValueError("Reviewed EPIT/Soccol samples retain NaNs and require --col_missing_value_embedding true.")
             if getattr(self.config, "missingness_query_column_probability", 0.0) != 0.0 or getattr(
                 self.config, "missingness_preserve_observed_composition", False
             ):
@@ -538,7 +539,7 @@ class Trainer:
             return
 
         profile_path = getattr(self.config, "missingness_profile_path", None)
-        if native_epit and not profile_path and self.config.prior_dir is None:
+        if native_reviewed and not profile_path and self.config.prior_dir is None:
             if getattr(self.config, "missingness_query_column_probability", 0.0) != 0.0 or getattr(
                 self.config, "missingness_preserve_observed_composition", False
             ):

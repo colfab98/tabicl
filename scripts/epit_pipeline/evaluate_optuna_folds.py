@@ -85,6 +85,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--pitting-magpie-features", action="store_true")
     parser.add_argument("--epit-expanded-features", action="store_true")
+    parser.add_argument("--soccol-reviewed-data", action="store_true")
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--keep-fold-outputs", action="store_true")
     parser.add_argument("--print-subcommands", action="store_true")
@@ -168,6 +169,11 @@ def fold_command(
     if getattr(args, "epit_expanded_features", False):
         command.extend([
             "--epit-expanded-features", "--missing-aware-model", args.model_label,
+            "--fixed-schema-model", args.model_label,
+        ])
+    if getattr(args, "soccol_reviewed_data", False):
+        command.extend([
+            "--soccol-reviewed-data", "--missing-aware-model", args.model_label,
             "--fixed-schema-model", args.model_label,
         ])
     return command
@@ -270,17 +276,26 @@ def main() -> None:
     frozen_split = load_frozen_split(args.split_manifest.expanduser())
     manifest = frozen_split.manifest
     checkpoint_path = args.local_ckpt_path.expanduser().resolve()
+    selection_metadata = {}
+    source_sha256 = manifest.get("dataset", {}).get("source_sha256")
+    if getattr(args, "soccol_reviewed_data", False):
+        from scripts.soccol_pipeline.data import load_soccol_dataset, select_accepted_development
+
+        reviewed = load_soccol_dataset(split_manifest=args.split_manifest)
+        selection_metadata["soccol_development_selection"] = select_accepted_development(reviewed).identity
+        source_sha256 = reviewed.identity["files_sha256"]["soccol_processed.csv"]
     summary_json_path.write_text(
         json.dumps(
             {
                 "schema_version": "epit_optuna_fold_evaluation_v1",
+                **selection_metadata,
                 "task_id": PITTING_TASK_ID,
                 "split_manifest": str(args.split_manifest.expanduser().resolve()),
                 "split_manifest_schema": manifest.get("schema_version"),
                 "split_manifest_sha256": frozen_split.manifest_sha256,
                 "split_lock": str(frozen_split.lock_path),
                 "split_lock_sha256": frozen_split.lock_sha256,
-                "source_sha256": manifest.get("dataset", {}).get("source_sha256"),
+                "source_sha256": source_sha256,
                 "validation_folds": list(args.validation_folds),
                 "development_rows_only": True,
                 "final_test_rows_excluded": int(
@@ -293,6 +308,7 @@ def main() -> None:
                 },
                 "settings": {
                     "epit_expanded_features": bool(args.epit_expanded_features),
+                    "soccol_reviewed_data": bool(getattr(args, "soccol_reviewed_data", False)),
                     "device": args.device,
                     "n_estimators": args.n_estimators,
                     "tabicl_feat_shuffle_method": args.tabicl_feat_shuffle_method,

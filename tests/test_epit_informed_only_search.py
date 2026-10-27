@@ -94,7 +94,7 @@ def test_four_final_training_ratios_change_only_the_ratio(rules, tmp_path, ratio
     assert float(command[command.index("--informed_prior_ratio") + 1]) == ratio
 
 
-def test_soccol_keeps_its_previous_search_space(monkeypatch):
+def test_historical_soccol_keeps_its_previous_search_space(monkeypatch):
     monkeypatch.setattr(search, "EPIT_FEATURE_PROFILE", SOCCOL_FEATURE_PROFILE)
     study = optuna.create_study(sampler=optuna.samplers.RandomSampler(seed=42))
     trial = study.ask()

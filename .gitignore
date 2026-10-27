@@ -156,6 +156,9 @@ smoke_test_run/
 !/corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_reference_v1/*.csv
 !/corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_reference_v1/*.csv
 
+# The frozen Soccol split lock requires this separate assignments file.
+!/corrosion_datasets/datasets/soccol_pitting_potential/processed/splits_v1/split_assignments.csv
+
 # Keep bulky per-cell processing logs and the full Soccol change dump local.
 /corrosion_datasets/datasets/electrochemical_metrics_alloys/processed/epit_reference_v1/*_processing_log.csv
 /corrosion_datasets/datasets/soccol_pitting_potential/processed/soccol_reference_v1/*_processing_log.csv

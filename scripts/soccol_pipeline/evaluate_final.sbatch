@@ -11,7 +11,8 @@ set -euo pipefail
 cd /home/fcolanto/projects/tabicl
 source .venv/bin/activate
 
-FINAL_MODEL_MANIFEST="${FINAL_MODEL_MANIFEST:-corrosion_datasets/analysis/soccol_pipeline/final_v1/soccol_pipeline_optuna_empirical_features_scm_target_v1/final_model_manifest.json}"
+FINAL_MODEL_MANIFEST="${FINAL_MODEL_MANIFEST:-corrosion_datasets/analysis/soccol_pipeline/final_v2/soccol_pipeline_optuna_empirical_features_scm_target_v4/final_model_manifest.json}"
 
 python -m scripts.soccol_pipeline.evaluate_final \
+  --soccol-reviewed-data \
   --final-model-manifest "$FINAL_MODEL_MANIFEST"

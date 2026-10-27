@@ -56,8 +56,10 @@ def default_final_model_manifest() -> Path:
     )
 
 
-def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
+def parse_args(
+    argv: list[str] | None = None, *, parents: tuple[argparse.ArgumentParser, ...] = (),
+) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__, parents=parents)
     parser.add_argument(
         "--final-model-manifest",
         type=Path,
@@ -107,17 +109,38 @@ def validate_frozen_model(frozen: FrozenFinalModel) -> dict[str, Any]:
         raise RuntimeError("Final model names a different frozen split manifest.")
     if frozen_split.lock_sha256 != split_meta.get("lock_sha256"):
         raise RuntimeError("Final model names a different frozen split lock.")
+    config = manifest.get("evaluation_configuration", {})
     split_design = frozen_split.manifest.get("split_design", {})
-    if int(split_design.get("development_rows", -1)) != DEVELOPMENT_ROWS:
+    original_development_rows = DEVELOPMENT_ROWS
+    if config.get("soccol_reviewed_data", False):
+        from scripts.soccol_pipeline.data import reviewed_final_split_metadata
+        from tabicl.prior.soccol_reviewed_schema import SOCCOL_REVIEWED_FEATURE_PROFILES
+
+        reviewed = reviewed_final_split_metadata(split_manifest)
+        if any(split_meta.get(key) != value for key, value in reviewed.items()):
+            raise RuntimeError("Frozen Soccol context/query selection or reviewed data changed.")
+        if reviewed["development_rows"] != DEVELOPMENT_ROWS:
+            raise RuntimeError("Frozen Soccol accepted context count is inconsistent.")
+        original_development_rows = reviewed["original_development_rows"]
+        if (
+            config.get("soccol_feature_profile") not in SOCCOL_REVIEWED_FEATURE_PROFILES
+            or not config.get("col_missing_value_embedding", False)
+            or config.get("epit_expanded_features", False)
+            or config.get("pitting_magpie_features", False)
+        ):
+            raise RuntimeError("Frozen Soccol configuration changed its reviewed schema or missing-value handling.")
+        expected_selection = search.empirical_feature_profile_identity().get("development_selection")
+        if reviewed["soccol_development_selection"] != expected_selection:
+            raise RuntimeError("Frozen Soccol inputs differ from the reviewed sampling bank.")
+    if int(split_design.get("development_rows", -1)) != original_development_rows:
         raise RuntimeError(
-            f"Final EPIT evaluation requires exactly {DEVELOPMENT_ROWS} context rows."
+            f"Final evaluation requires exactly {original_development_rows} original development rows."
         )
     if int(split_design.get("final_test_rows", -1)) != FINAL_TEST_ROWS:
         raise RuntimeError(
             f"Final EPIT evaluation requires exactly {FINAL_TEST_ROWS} final-test rows."
         )
 
-    config = manifest.get("evaluation_configuration", {})
     if config.get("task_id") != PITTING_TASK_ID:
         raise RuntimeError("Frozen evaluation task is not the EPIT task.")
     if config.get("tabicl_norm_methods") != ["none"]:
@@ -204,6 +227,8 @@ def final_evaluation_command(
         command.extend(["--pitting-magpie-model", FINAL_MODEL_LABEL])
     if config.get("epit_expanded_features", False):
         command.extend(["--epit-expanded-features", "--missing-aware-model", FINAL_MODEL_LABEL])
+    if config.get("soccol_reviewed_data", False):
+        command.extend(["--soccol-reviewed-data", "--missing-aware-model", FINAL_MODEL_LABEL])
     return command
 
 
@@ -233,6 +258,23 @@ def validate_final_results(
         raise RuntimeError("Final evaluation used a different checkpoint.")
     if payload.get("errors"):
         raise RuntimeError(f"Final evaluation reported errors: {payload['errors']}")
+    if config.get("soccol_reviewed_data", False):
+        selection = frozen.manifest["split"]["soccol_development_selection"]
+        context_indices = selection["source_task_row_indices"]
+        if expected_split_strategy.startswith("epit_pipeline_final_test_context_fold_"):
+            fold = int(expected_split_strategy.rsplit("_", 1)[1])
+            context_indices = [index for index, saved_fold in zip(
+                context_indices, selection["validation_folds"], strict=True,
+            ) if saved_fold == fold]
+        expected = {
+            "soccol_development_selection": selection,
+            "context_task_row_indices": context_indices,
+            "query_task_row_indices": frozen.manifest["split"]["final_query_task_row_indices"],
+        }
+        if payload.get("soccol_final_split") != expected:
+            raise RuntimeError("Final Soccol evaluation changed the frozen context/query membership.")
+        if FINAL_MODEL_LABEL not in payload.get("missing_aware_models", []):
+            raise RuntimeError("Final Soccol evaluation disabled missing-aware inputs.")
 
     rows = list(payload.get("rows", []))
     if len(rows) != 1 or rows[0].get("model") != FINAL_MODEL_LABEL:
@@ -264,6 +306,10 @@ def validate_final_results(
 
 
 def development_fold_counts(frozen: FrozenFinalModel) -> dict[int, int]:
+    if frozen.manifest.get("evaluation_configuration", {}).get("soccol_reviewed_data", False):
+        validate_frozen_model(frozen)
+        selection = frozen.manifest["split"]["soccol_development_selection"]
+        return {fold: int(selection["fold_counts"][str(fold)]) for fold in DEVELOPMENT_FOLDS}
     split_manifest = Path(str(frozen.manifest["split"]["manifest"])).resolve()
     manifest = load_frozen_split(split_manifest).manifest
     fold_field = (

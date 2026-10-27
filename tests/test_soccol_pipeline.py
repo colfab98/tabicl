@@ -54,8 +54,8 @@ def test_soccol_only_rules_are_not_exposed_to_legacy_epit_schema():
     assert soccol_only <= SOCCOL_TARGET_RULE_COEFFICIENTS.keys()
 
 
-def test_soccol_feature_profile_samples_finite_37_column_rows():
-    profile = load_soccol_feature_profile()
+def test_explicit_legacy_soccol_profile_samples_finite_37_column_rows():
+    profile = load_soccol_feature_profile(SOCCOL_FEATURE_PROFILE)
     batch = sample_soccol_feature_rows(512, profile=profile, random_state=42)
 
     assert profile.n_rows == 4027
@@ -130,7 +130,7 @@ def test_soccol_final_split_uses_3222_context_and_805_untouched_rows():
 
 
 def test_soccol_comparison_wrapper_defaults_to_full_development_context():
-    args = evaluate_checkpoint_comparison.parse_args([])
+    args = evaluate_checkpoint_comparison.parse_args(["--candidate-run", "/tmp/reviewed_soccol_run"])
     command = evaluate_checkpoint_comparison.evaluation_command(args)
 
     assert args.context_folds is None
@@ -138,7 +138,9 @@ def test_soccol_comparison_wrapper_defaults_to_full_development_context():
     assert "--epit-final-test" in command
     assert "--compare-pretrained-tabicl" in command
     assert "--compare-catboost" in command
-    assert command[command.index("--fixed-schema-model") + 1] == "soccol_trial19"
+    assert command[command.index("--fixed-schema-model") + 1] == "soccol_reviewed"
+    assert command[command.index("--missing-aware-model") + 1] == "soccol_reviewed"
+    assert "--soccol-reviewed-data" in command
     assert command[command.index("--device") + 1] == "cpu"
     for column in evaluate_checkpoint_comparison.CATBOOST_CATEGORICAL_COLUMNS:
         assert column in command
@@ -203,7 +205,7 @@ from pathlib import Path
 from scripts.epit_pipeline.artifact_hashes import FrozenFinalModel
 from scripts.soccol_pipeline import evaluate_final, train_final
 
-evaluate_final.configure()
+evaluate_final.configure(reviewed_data=False)
 train_base = train_final.base
 eval_base = evaluate_final.base
 args = train_base.parse_args(["--storage", "journal:///unused.log"])
@@ -345,15 +347,12 @@ def test_soccol_checkpoint_comparison_uses_final_test_and_requires_plots():
         / "evaluate_checkpoint_comparison.sbatch"
     ).read_text(encoding="utf-8")
 
-    assert "--epit-final-test" in launcher
+    assert "python -m scripts.soccol_pipeline.evaluate_checkpoint_comparison" in launcher
+    assert "FINAL_MODEL_MANIFEST" in launcher
+    assert "DRY_RUN" in launcher
     assert "--epit-validation-fold" not in launcher
-    assert "--checkpoint all" in launcher
-    assert "--output-plot-dir" in launcher
-    assert "Required plot missing" in launcher
-    assert "--compare-pretrained-tabicl" in launcher
-    assert "--compare-catboost" in launcher
-    for column in SOCCOL_CATEGORICAL_COLUMNS:
-        assert f"--catboost-categorical-column {column}" in launcher
+    assert len(evaluate_checkpoint_comparison.REQUIRED_PLOTS) == 6
+    assert "trial_0019" not in launcher
 
 
 def test_soccol_empirical_scm_target_generates_finite_dataset():

@@ -127,7 +127,11 @@ still combine its SCM target with a formula target.
 The study fingerprint recorded both the fixed ratio and the new ranges, so
 previous studies could not be resumed with these settings. The new policy
 applied to the current expanded EPIT `empirical_features_scm_target` mode.
-Soccol and historical EPIT modes retained their previous search settings.
+Historical EPIT modes retained their previous search settings. The reviewed
+Soccol workflow subsequently adopted the same MLP and formula ranges; its separate
+[historical-results review](../../corrosion_datasets/analysis/soccol_pipeline/optuna_range_review_v1/README.md)
+led to an approved **0–0.15** composition range for Soccol. EPIT retained
+**0–0.30**.
 
 Final training read the fixed ratio from the selected study's fingerprint.
 `--override-informed-prior-ratio` (or `OVERRIDE_INFORMED_PRIOR_RATIO` in the
