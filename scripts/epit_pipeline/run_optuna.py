@@ -62,9 +62,9 @@ DEFAULT_TARGET_RULE_SUMMARY = (
     PIPELINE_ROOT / "target_rules_v4" / "calibration_summary.json"
 )
 DEFAULT_OPTUNA_ROOT = PIPELINE_ROOT / "optuna_v3"
-DEFAULT_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v10"
+DEFAULT_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v11"
 FIXED_VALIDATION_FOLDS = (1, 2, 3, 4, 5)
-PIPELINE_FINGERPRINT_SCHEMA = "epit_pipeline_stage3_fingerprint_v2"
+PIPELINE_FINGERPRINT_SCHEMA = "epit_pipeline_stage3_fingerprint_v3"
 LEGACY_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v7"
 STUDY_FINGERPRINT_ATTR = "epit_pipeline_fingerprint"
 STUDY_FINGERPRINT_SHA256_ATTR = "epit_pipeline_fingerprint_sha256"
@@ -338,6 +338,8 @@ def build_pipeline_fingerprint(
         "pitting_coefficient_variation_seed": PITTING_COEFFICIENT_VARIATION_SEED,
     }
     if uses_fixed_informed_search(composition_mode):
+        from tabicl.prior.paired_streams import stream_policy
+        fixed_prior["paired_prior_streams"] = stream_policy(getattr(args, "prior_stream_seed", 42))
         search_space.pop("informed_prior_ratio")
         search_space["mlp_prob"] = {
             "distribution": "float", "low": EPIT_MLP_PROB_RANGE[0], "high": EPIT_MLP_PROB_RANGE[1],
@@ -434,6 +436,7 @@ def build_pipeline_fingerprint(
             "scheduler_total_steps": int(args.scheduler_total_steps),
             "np_seed": int(args.np_seed),
             "torch_seed": int(args.torch_seed),
+            "python_seed": int(getattr(args, "python_seed", 42)),
             "nproc_per_node": int(args.nproc_per_node),
             "prior_n_jobs": int(args.prior_n_jobs),
             "dataloader_num_workers": int(args.dataloader_num_workers),
@@ -549,6 +552,8 @@ def parse_args(
     parser.add_argument("--scheduler-total-steps", type=int, default=10000)
     parser.add_argument("--np-seed", type=int, default=42)
     parser.add_argument("--torch-seed", type=int, default=42)
+    parser.add_argument("--python-seed", type=int, default=42)
+    parser.add_argument("--prior-stream-seed", type=int, default=42)
     parser.add_argument("--prior-n-jobs", type=int, default=1)
     parser.add_argument("--dataloader-num-workers", type=int, default=4)
     parser.add_argument("--dataloader-prefetch-factor", type=int, default=4)
@@ -1091,6 +1096,12 @@ def training_command(
     _replace_option(command, "--max_features", str(feature_count))
     if uses_expanded_schema(args):
         command.extend(["--col_missing_value_embedding", "true"])
+    if uses_fixed_informed_search(composition_mode):
+        command.extend([
+            "--paired_prior_streams", "true",
+            "--prior_stream_seed", str(getattr(args, "prior_stream_seed", 42)),
+            "--python_seed", str(getattr(args, "python_seed", 42)),
+        ])
     if composition_mode == "empirical_features_scm_target":
         mix_index = command.index("--mix_probs")
         command[mix_index + 1 : mix_index + 3] = [
@@ -1430,29 +1441,48 @@ def run_trial(
     return result
 
 
-def run_optuna(args: argparse.Namespace) -> None:
+def create_pipeline_study(args: argparse.Namespace) -> tuple[Any, str]:
+    """Create/bind a study without exposing a partially written identity to peers."""
     try:
         import optuna
     except ImportError as error:
         raise SystemExit("Optuna is not installed in this environment.") from error
 
+    initialization_lock = None
+    if args.storage is not None and args.storage.startswith("journal://"):
+        from optuna.storages.journal import JournalFileOpenLock
+
+        journal_path = Path(args.storage.removeprefix("journal://")).expanduser().resolve()
+        journal_path.parent.mkdir(parents=True, exist_ok=True)
+        # Separate from Optuna's append lock: hold this across both identity
+        # attributes, without blocking the journal writes performed below.
+        initialization_lock = JournalFileOpenLock(
+            str(journal_path) + ".pipeline_init", grace_period=120,
+        )
+        initialization_lock.acquire()
+    try:
+        study = optuna.create_study(
+            study_name=args.study_name,
+            storage=original.search_utils.build_optuna_storage(args.storage),
+            direction="maximize",
+            load_if_exists=True,
+            sampler=optuna.samplers.TPESampler(
+                seed=args.random_seed,
+                n_startup_trials=args.n_startup_trials,
+            ),
+        )
+        fingerprint_sha256 = bind_study_pipeline_fingerprint(study, args.pipeline_fingerprint)
+        return study, fingerprint_sha256
+    finally:
+        if initialization_lock is not None:
+            initialization_lock.release()
+
+
+def run_optuna(args: argparse.Namespace) -> None:
     args.base_run_name = (
         args.base_run_name or default_base_run_name(args.study_name)
     )
-    study = optuna.create_study(
-        study_name=args.study_name,
-        storage=original.search_utils.build_optuna_storage(args.storage),
-        direction="maximize",
-        load_if_exists=True,
-        sampler=optuna.samplers.TPESampler(
-            seed=args.random_seed,
-            n_startup_trials=args.n_startup_trials,
-        ),
-    )
-    fingerprint_sha256 = bind_study_pipeline_fingerprint(
-        study,
-        args.pipeline_fingerprint,
-    )
+    study, fingerprint_sha256 = create_pipeline_study(args)
 
     def objective(trial: Any) -> float:
         trial.set_user_attr(STUDY_FINGERPRINT_SHA256_ATTR, fingerprint_sha256)

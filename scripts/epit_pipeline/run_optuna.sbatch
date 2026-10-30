@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=epit_optuna_empirical_scm_v10
+#SBATCH --job-name=epit_optuna_empirical_scm_v11
 #SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
@@ -10,8 +10,9 @@ set -euo pipefail
 
 cd /home/fcolanto/projects/tabicl
 source .venv/bin/activate
+export PYTHONPATH="$PWD/src:$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
-STUDY_NAME="${STUDY_NAME:-epit_pipeline_optuna_empirical_features_scm_target_v10}"
+STUDY_NAME="${STUDY_NAME:-epit_pipeline_optuna_empirical_features_scm_target_v11}"
 N_TRIALS="${N_TRIALS:-50}"
 N_STARTUP_TRIALS="${N_STARTUP_TRIALS:-10}"
 MAX_STEPS="${MAX_STEPS:-1000}"
@@ -19,7 +20,12 @@ SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-10000}"
 NPROC_PER_NODE="${NPROC_PER_NODE:-1}"
 NP_SEED="${NP_SEED:-42}"
 TORCH_SEED="${TORCH_SEED:-42}"
+PYTHON_SEED="${PYTHON_SEED:-42}"
+PRIOR_STREAM_SEED="${PRIOR_STREAM_SEED:-42}"
 PRIOR_N_JOBS="${PRIOR_N_JOBS:-1}"
+DATALOADER_NUM_WORKERS="${DATALOADER_NUM_WORKERS:-4}"
+DATALOADER_PREFETCH_FACTOR="${DATALOADER_PREFETCH_FACTOR:-4}"
+EVAL_N_ESTIMATORS="${EVAL_N_ESTIMATORS:-8}"
 RANDOM_SEED="${RANDOM_SEED:-$((42 + SLURM_JOB_ID))}"
 SPLIT_MANIFEST="${SPLIT_MANIFEST:-corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json}"
 TARGET_RULE_SUMMARY="${TARGET_RULE_SUMMARY:-corrosion_datasets/analysis/epit_pipeline/target_rules_v4/calibration_summary.json}"
@@ -45,6 +51,11 @@ python -m scripts.epit_pipeline.run_optuna \
   --nproc-per-node "$NPROC_PER_NODE" \
   --np-seed "$NP_SEED" \
   --torch-seed "$TORCH_SEED" \
+  --python-seed "$PYTHON_SEED" \
+  --prior-stream-seed "$PRIOR_STREAM_SEED" \
   --prior-n-jobs "$PRIOR_N_JOBS" \
+  --dataloader-num-workers "$DATALOADER_NUM_WORKERS" \
+  --dataloader-prefetch-factor "$DATALOADER_PREFETCH_FACTOR" \
+  --eval-n-estimators "$EVAL_N_ESTIMATORS" \
   --max-steps "$MAX_STEPS" \
   --scheduler-total-steps "$SCHEDULER_TOTAL_STEPS"

@@ -55,6 +55,54 @@ class MutableStudy:
         self.user_attrs[name] = value
 
 
+@pytest.mark.parametrize("different_settings", [False, True])
+def test_shared_journal_startup_binds_one_complete_identity(tmp_path, monkeypatch, different_settings):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+    import time
+
+    optuna = pytest.importorskip("optuna")
+    storage = f"journal://{tmp_path / 'study.log'}"
+    barrier = Barrier(2)
+    original_set_attr = optuna.study.Study.set_user_attr
+
+    def slow_identity_write(study, name, value):
+        original_set_attr(study, name, value)
+        if name == search.STUDY_FINGERPRINT_ATTR:
+            # Expose the historical gap between the payload and hash writes.
+            time.sleep(0.05)
+
+    monkeypatch.setattr(optuna.study.Study, "set_user_attr", slow_identity_write)
+
+    def start_worker(worker):
+        fingerprint = {
+            "schema_version": search.PIPELINE_FINGERPRINT_SCHEMA,
+            "prior_stream_seed": 42 + (worker if different_settings else 0),
+        }
+        args = SimpleNamespace(
+            storage=storage, study_name="shared_startup", random_seed=worker,
+            n_startup_trials=10, pipeline_fingerprint=fingerprint,
+        )
+        barrier.wait(timeout=10)
+        try:
+            study, digest = search.create_pipeline_study(args)
+        except RuntimeError as error:
+            return "rejected", str(error)
+        assert study.user_attrs[search.STUDY_FINGERPRINT_ATTR] == fingerprint
+        assert study.user_attrs[search.STUDY_FINGERPRINT_SHA256_ATTR] == digest
+        return "accepted", digest
+
+    with ThreadPoolExecutor(max_workers=2) as workers:
+        results = list(workers.map(start_worker, range(2)))
+    if different_settings:
+        assert sorted(status for status, _ in results) == ["accepted", "rejected"]
+        assert "different split" in next(value for status, value in results if status == "rejected")
+    else:
+        assert results[0] == results[1]
+        assert results[0][0] == "accepted"
+    assert not list(tmp_path.glob("*.lock"))
+
+
 def _value_after(command: list[str], option: str) -> str:
     return command[command.index(option) + 1]
 
@@ -87,10 +135,10 @@ def _fake_epit_task() -> corrosion_eval.EvalTask:
     )
 
 
-def test_pipeline_defaults_use_current_v10_workflow() -> None:
+def test_pipeline_defaults_use_current_v11_workflow() -> None:
     args = search.parse_args([])
 
-    assert args.study_name == "epit_pipeline_optuna_empirical_features_scm_target_v10"
+    assert args.study_name == "epit_pipeline_optuna_empirical_features_scm_target_v11"
     assert args.pitting_composition_mode == "empirical_features_scm_target"
     assert args.n_trials == 50
     assert args.n_startup_trials == 10
@@ -110,6 +158,7 @@ def test_pipeline_defaults_use_current_v10_workflow() -> None:
     assert final_args.nproc_per_node == 1
     assert final_args.eval_device is None
     assert final_args.resume_checkpoint_selection is False
+    assert final_args.allow_missing_selected_trial_artifacts is True
     assert evaluate_final.default_final_model_manifest() == (
         train_final.DEFAULT_FINAL_ROOT / args.study_name / "final_model_manifest.json"
     )
@@ -314,7 +363,8 @@ def test_stage4_automatically_selects_current_best_with_active_trials(
     assert selected is best
 
 
-def test_stage4_validates_missing_worker_files_from_journal(tmp_path: Path) -> None:
+@pytest.mark.parametrize("case", ["missing", "partial", "strict", "corrupt", "incomplete_hash", "incomplete_metric"])
+def test_stage4_validates_missing_worker_files_from_journal(tmp_path: Path, case: str) -> None:
     search_args = search.parse_args(["--pitting-composition-mode", "legacy"])
     rules = search.load_target_rule_config(
         summary_path=search_args.target_rule_summary,
@@ -355,18 +405,41 @@ def test_stage4_validates_missing_worker_files_from_journal(tmp_path: Path) -> N
         attrs[path_attr] = str(tmp_path / path_attr)
         attrs[sha_attr] = "0" * 64
     trial = SimpleNamespace(number=36, value=0.6963, user_attrs=attrs)
+    argv = ["--storage", "journal:///unused.log"]
+    if case == "strict":
+        argv.append("--no-allow-missing-selected-trial-artifacts")
+    args = train_final.parse_args(argv)
+    train_final.validate_args(args)
+    assert args.selected_trial_number is None
+    if case in {"partial", "corrupt"}:
+        path = Path(attrs["checkpoint_path"])
+        path.write_bytes(b"available proxy checkpoint")
+        if case == "partial":
+            attrs["checkpoint_sha256"] = train_final.sha256_file(path)
+    if case == "incomplete_hash":
+        del attrs["rows_csv_sha256"]
+    if case == "incomplete_metric":
+        del attrs["mean_test_rmse"]
 
-    provenance = train_final.verify_selected_trial_journal_record(
-        trial,
-        rules=rules,
-        params=params,
-        study_fingerprint=fingerprint,
-        study_fingerprint_sha256=fingerprint_sha256,
-    )
+    def verify():
+        return train_final.verify_selected_trial_provenance(
+            trial, args=args, rules=rules, params=params,
+            study_fingerprint=fingerprint, study_fingerprint_sha256=fingerprint_sha256,
+        )
+
+    if case in {"strict", "corrupt", "incomplete_hash", "incomplete_metric"}:
+        expected_error = FileNotFoundError if case == "strict" else RuntimeError
+        message = {"strict": "does not exist", "corrupt": "hash changed",
+                   "incomplete_hash": "incomplete journal", "incomplete_metric": "finite journal metric"}[case]
+        with pytest.raises(expected_error, match=message):
+            verify()
+        return
+    provenance = verify()
 
     assert provenance["verification_mode"] == "optuna_journal_record"
     assert provenance["immutable_files_verified"] is False
-    assert len(provenance["missing_local_artifacts"]) == 5
+    assert len(provenance["missing_local_artifacts"]) == (4 if case == "partial" else 5)
+    assert len(provenance["verified_local_artifacts"]) == (1 if case == "partial" else 0)
     assert provenance["validation_folds"] == [1, 2, 3, 4, 5]
 
 
@@ -844,7 +917,7 @@ def test_context_fold_driver_cli_uses_all_saved_folds(
 
 
 def test_epit_comparison_wrapper_needs_only_context_fold_count() -> None:
-    args = evaluate_checkpoint_comparison.parse_args(["--context-folds", "5"])
+    args = evaluate_checkpoint_comparison.parse_args(["--context-folds", "5", "--candidate-run", "/tmp/new_epit_run"])
     command = evaluate_checkpoint_comparison.evaluation_command(args)
 
     assert _value_after(command, "--context-folds") == "5"
@@ -852,7 +925,9 @@ def test_epit_comparison_wrapper_needs_only_context_fold_count() -> None:
     assert "--compare-pretrained-tabicl" in command
     assert "--compare-catboost" in command
     assert _value_after(command, "--device") == "cpu"
-    assert _value_after(command, "--fixed-schema-model") == "corrpfn_v8"
+    assert _value_after(command, "--fixed-schema-model") == "epit_reviewed"
+    assert "--epit-expanded-features" in command
+    assert "--missing-aware-model" in command
 
 
 def test_absolute_checkpoint_run_path_does_not_require_run_prefix(

@@ -4,6 +4,10 @@ This folder keeps external corrosion datasets separate from TabICL training code
 
 Raw files should stay unchanged. Any cleaning, derived tables, or scripts should go under a separate analysis or processed-data folder.
 
+For the current end-to-end procedure, see [Adding a new dataset](NEW_DATASET_WORKFLOW.md).
+Dataset-specific processing decisions and corrections are recorded in
+[DATASET_PROCESSING.md](DATASET_PROCESSING.md).
+
 ## Current Dataset Status
 
 | Dataset | Status | Primary Use For Informed Prior Work |

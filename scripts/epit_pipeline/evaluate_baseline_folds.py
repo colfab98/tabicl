@@ -20,6 +20,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.epit_pipeline.artifact_hashes import load_frozen_split, sha256_file
+from tabicl.prior.epit_expanded_schema import EPIT_EXPANDED_CATEGORICAL_COLUMNS
 from scripts.epit_pipeline.evaluate_optuna_folds import (
     DEFAULT_SPLIT_MANIFEST,
     PITTING_TASK_ID,
@@ -33,7 +34,7 @@ DEFAULT_OUTPUT_DIR = (
     / "corrosion_datasets"
     / "analysis"
     / "epit_pipeline"
-    / "baseline_folds_v2"
+    / "baseline_folds_reviewed_v3"
 )
 LEGACY_OUTPUT_DIR = DEFAULT_OUTPUT_DIR.with_name("baseline_folds_v1")
 DEFAULT_GENERIC_CHECKPOINT = (
@@ -46,8 +47,8 @@ VALIDATION_FOLDS = (1, 2, 3, 4, 5)
 DEVELOPMENT_ROWS = 608
 CONTEXT_ROW_COUNTS = frozenset({486, 487})
 VALIDATION_ROW_COUNTS = frozenset({121, 122})
-BASELINE_SCHEMA_VERSION = "epit_development_baselines_v2"
-CATBOOST_CATEGORICAL_COLUMNS: tuple[str, ...] = ()
+BASELINE_SCHEMA_VERSION = "epit_development_baselines_v3"
+CATBOOST_CATEGORICAL_COLUMNS = EPIT_EXPANDED_CATEGORICAL_COLUMNS
 EXPECTED_MODELS = (
     "generic_baseline",
     "pretrained_tabicl_v2",
@@ -115,6 +116,7 @@ def fold_command(
     *,
     fold: int,
     fold_dir: Path,
+    reviewed_epit: bool = True,
 ) -> list[str]:
     command = [
         sys.executable,
@@ -171,12 +173,16 @@ def fold_command(
         "--output-summary-csv",
         str(fold_dir / "summary.csv"),
     ]
-    for column in CATBOOST_CATEGORICAL_COLUMNS:
-        command.extend(["--catboost-categorical-column", column])
+    if reviewed_epit:
+        command.append("--epit-expanded-features")
+        for column in CATBOOST_CATEGORICAL_COLUMNS:
+            command.extend(["--catboost-categorical-column", column])
     return command
 
 
 def validate_fold_rows(rows: pd.DataFrame, *, fold: int) -> None:
+    if set(rows.get("n_features", [])) != {70}:
+        raise RuntimeError("EPIT baselines must use the reviewed 70-column schema.")
     models = list(rows.get("model", pd.Series(dtype=str)).astype(str))
     if len(models) != len(EXPECTED_MODELS) or set(models) != set(EXPECTED_MODELS):
         raise RuntimeError(
@@ -276,6 +282,9 @@ def run(args: argparse.Namespace) -> Path:
             )
         rows = pd.read_csv(fold_dir / "rows.csv")
         validate_fold_rows(rows, fold=fold)
+        from scripts.epit_pipeline.evaluation_identity import frozen_membership
+        if result.get("epit_reviewed_split") != frozen_membership(args.split_manifest, validation_fold=fold):
+            raise RuntimeError("EPIT baseline fold changed frozen development membership.")
         rows.insert(0, "optuna_validation_fold", fold)
         rows.insert(1, "fold_output_dir", str(fold_dir))
         fold_rows.append(rows)
@@ -319,6 +328,8 @@ def run(args: argparse.Namespace) -> Path:
             "tabicl_norm_methods": ["none"],
             "regression_output": "median",
             "pitting_magpie_features": False,
+            "epit_expanded_features": True,
+            "expected_n_features": 70,
             "pretrained_checkpoint_version": PRETRAINED_CHECKPOINT_VERSION,
             "catboost_iterations": args.catboost_iterations,
             "catboost_depth": args.catboost_depth,

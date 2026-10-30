@@ -551,7 +551,7 @@ def test_v8_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_pa
         / "train_final.sbatch"
     ).read_text(encoding="utf-8")
     for launcher in (optuna_launcher, final_launcher):
-        assert "epit_pipeline_optuna_empirical_features_scm_target_v10" in launcher
+        assert "epit_pipeline_optuna_empirical_features_scm_target_v11" in launcher
         assert 'NP_SEED="${NP_SEED:-42}"' in launcher
         assert 'TORCH_SEED="${TORCH_SEED:-42}"' in launcher
         assert 'PRIOR_N_JOBS="${PRIOR_N_JOBS:-1}"' in launcher
@@ -559,7 +559,7 @@ def test_v8_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_pa
     assert 'SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-}"' in final_launcher
     assert 'if [[ -n "$SELECTED_TRIAL_NUMBER" ]]' in final_launcher
     assert "target_rules_v4/calibration_summary.json" in final_launcher
-    assert "--allow-missing-selected-trial-artifacts" in final_launcher
+    assert train_final.parse_args(["--storage", "journal:///unused.log"]).allow_missing_selected_trial_artifacts
     for override in (
         "OVERRIDE_INFORMED_PRIOR_RATIO",
         "OVERRIDE_MLP_PROB",

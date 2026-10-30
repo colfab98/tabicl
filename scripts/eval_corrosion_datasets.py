@@ -2867,12 +2867,14 @@ def should_preserve_feature_schema(
     model_kind: str,
     split: EvalSplit,
     explicitly_requested: bool,
+    *, native_baseline: bool = False,
 ) -> bool:
     return bool(
         explicitly_requested
         or (
             split.preprocessing_index is not None
             and "tabicl" in model_kind
+            and not native_baseline
         )
     )
 
@@ -2907,6 +2909,7 @@ def evaluate_estimator(
     pitting_magpie_features: bool = False,
     preserve_feature_schema: bool = False,
     expected_preserve_missing_values: bool | None = None,
+    native_tabicl_baseline: bool = False,
 ) -> dict[str, Any]:
     if pitting_magpie_features and task.task_id != "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg":
         raise ValueError("pitting_magpie_features is only valid for the fixed EPIT pitting task.")
@@ -2924,6 +2927,7 @@ def evaluate_estimator(
             model_kind,
             split,
             preserve_feature_schema,
+            native_baseline=native_tabicl_baseline,
         )
         train_index = split.train_index
         test_index = split.test_index
@@ -4824,6 +4828,11 @@ def main() -> None:
                         expected_preserve_missing_values=job.get(
                             "expected_preserve_missing_values"
                         ),
+                        native_tabicl_baseline=bool(
+                            args.native_tabicl_baselines
+                            and "tabicl" in job["model_kind"]
+                            and not job["preserve_feature_schema"]
+                        ),
                     )
                     if job.get("reuse_static_baseline"):
                         pretrained_tabicl_row_templates_by_task.setdefault(task.task_id, []).append(dict(row))
@@ -5022,6 +5031,19 @@ def main() -> None:
             "task_tables": [str(path) for path in task_table_paths],
         },
     }
+    if args.epit_expanded_features:
+        task = next(task for task in tasks if task.task_id == EPIT_PIPELINE_TASK_ID)
+        source_indices = np.arange(len(task.X))
+        if args.epit_validation_fold is not None:
+            from scripts.epit_pipeline.evaluation_identity import frozen_membership
+            source_indices = np.asarray(frozen_membership(args.epit_split_manifest)["context_task_row_indices"])
+            if len(source_indices) != len(task.X):
+                raise RuntimeError("EPIT development task lost frozen source-row identities.")
+        payload["epit_reviewed_split"] = {
+            "context_task_row_indices": source_indices[task.fixed_split.train_index].tolist(),
+            "query_task_row_indices": source_indices[task.fixed_split.test_index].tolist(),
+        }
+        payload["missing_aware_models"] = sorted({slugify(label) for label in args.missing_aware_model})
     if args.soccol_reviewed_data and args.epit_final_test:
         payload["soccol_final_split"] = _reviewed_soccol_final_provenance(tasks)
         payload["missing_aware_models"] = sorted({slugify(label) for label in args.missing_aware_model})

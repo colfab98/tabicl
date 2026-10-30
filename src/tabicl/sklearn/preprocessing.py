@@ -325,6 +325,23 @@ class UniqueFeatureFilter(TransformerMixin, BaseEstimator):
         return X[:, self.features_to_keep_]
 
 
+def _supported_column_moments(X, *, ddof=0):
+    """Compute moments only where at least two context values are known.
+
+    Unsupported columns receive identity-transform defaults. The support mask
+    also lets callers bypass clipping and nonlinear normalization, without
+    fitting any statistics to query values.
+    """
+    supported = np.sum(~np.isnan(X), axis=0) >= 2
+    dtype = X.dtype if np.issubdtype(X.dtype, np.floating) else np.float64
+    means = np.zeros(X.shape[1], dtype=dtype)
+    stds = np.ones(X.shape[1], dtype=dtype)
+    if supported.any():
+        means[supported] = np.nanmean(X[:, supported], axis=0)
+        stds[supported] = np.nanstd(X[:, supported], axis=0, ddof=ddof)
+    return means, stds, supported
+
+
 class OutlierRemover(TransformerMixin, BaseEstimator):
     """Transformer that clips extreme values based on training data distribution.
 
@@ -335,6 +352,9 @@ class OutlierRemover(TransformerMixin, BaseEstimator):
        deviations and mark as missing.
     2. Second stage: Recompute statistics without outliers for more robust bounds.
     3. Final stage: Apply log-based clipping to maintain data distribution.
+
+    Columns with fewer than two known context values, including after outlier
+    removal, pass through unchanged. Missing values remain missing.
 
     Parameters
     ----------
@@ -384,16 +404,15 @@ class OutlierRemover(TransformerMixin, BaseEstimator):
         X = validate_data(self, X, allow_nan=True)
 
         # First stage: Identify outliers using initial statistics
-        self.means_ = np.nanmean(X, axis=0)
-        self.stds_ = np.nanstd(X, axis=0, ddof=1 if X.shape[0] > 1 else 0)
+        self.means_, self.stds_, supported = _supported_column_moments(X, ddof=1)
 
         # Ensure standard deviations are not zero
         self.stds_ = np.maximum(self.stds_, 1e-6)
 
         # Create a clean copy with outliers replaced by NaN
         X_clean = X.copy()
-        lower_bounds = self.means_ - self.threshold * self.stds_
-        upper_bounds = self.means_ + self.threshold * self.stds_
+        lower_bounds = np.where(supported, self.means_ - self.threshold * self.stds_, -np.inf)
+        upper_bounds = np.where(supported, self.means_ + self.threshold * self.stds_, np.inf)
 
         # Create masks for values outside bounds
         lower_mask = X < lower_bounds[np.newaxis, :]
@@ -404,15 +423,18 @@ class OutlierRemover(TransformerMixin, BaseEstimator):
         X_clean[outlier_mask] = np.nan
 
         # Second stage: Recompute statistics without outliers
-        self.means_ = np.nanmean(X_clean, axis=0)
-        self.stds_ = np.nanstd(X_clean, axis=0, ddof=1 if X.shape[0] > 1 else 0)
+        self.means_, self.stds_, self.supported_features_ = _supported_column_moments(X_clean, ddof=1)
 
         # Ensure standard deviations are not zero
         self.stds_ = np.maximum(self.stds_, 1e-6)
 
         # Compute final bounds
-        self.lower_bounds_ = self.means_ - self.threshold * self.stds_
-        self.upper_bounds_ = self.means_ + self.threshold * self.stds_
+        self.lower_bounds_ = np.where(
+            self.supported_features_, self.means_ - self.threshold * self.stds_, -np.inf
+        )
+        self.upper_bounds_ = np.where(
+            self.supported_features_, self.means_ + self.threshold * self.stds_, np.inf
+        )
 
         return self
 
@@ -452,6 +474,9 @@ class CustomStandardScaler(TransformerMixin, BaseEstimator):
 
     Computes the z-score :math:`z = (x - \\mu) / (\\sigma + \\epsilon)` and clips
     the result to ``[clip_min, clip_max]``.
+
+    Columns with fewer than two known context values are neither scaled nor
+    clipped. Their known values and NaNs pass through unchanged.
 
     Parameters
     ----------
@@ -503,8 +528,8 @@ class CustomStandardScaler(TransformerMixin, BaseEstimator):
 
         X = validate_data(self, X, allow_nan=True)
 
-        self.mean_ = np.nanmean(X, axis=0)
-        self.scale_ = np.nanstd(X, axis=0) + self.epsilon
+        self.mean_, self.scale_, self.supported_features_ = _supported_column_moments(X)
+        self.scale_[self.supported_features_] += self.epsilon
 
         return self
 
@@ -532,6 +557,7 @@ class CustomStandardScaler(TransformerMixin, BaseEstimator):
 
         X_scaled = (X - self.mean_) / self.scale_
         X_clipped = np.clip(X_scaled, self.clip_min, self.clip_max)
+        X_clipped[:, ~self.supported_features_] = X[:, ~self.supported_features_]
 
         return X_clipped.reshape(-1) if is_vector else X_clipped
 
@@ -701,6 +727,8 @@ class PreprocessingPipeline(TransformerMixin, BaseEstimator):
     """Preprocessing pipeline for tabular data.
 
     This pipeline combines scaling, normalization, and outlier handling.
+    Columns with fewer than two known context values bypass all three steps;
+    query values never determine which columns are processed.
 
     Parameters
     ----------
@@ -765,7 +793,8 @@ class PreprocessingPipeline(TransformerMixin, BaseEstimator):
         self.standard_scaler_ = CustomStandardScaler()
         X_scaled = self.standard_scaler_.fit_transform(X)
 
-        # 2. Apply normalization
+        # 2. Apply normalization only to columns supported by the context.
+        self.normalized_features_ = self.standard_scaler_.supported_features_.copy()
         if self.normalization_method != "none":
             if self.normalization_method == "power":
                 self.normalizer_ = PowerTransformer(method="yeo-johnson", standardize=True)
@@ -786,9 +815,14 @@ class PreprocessingPipeline(TransformerMixin, BaseEstimator):
             else:
                 raise ValueError(f"Unknown normalization method: {self.normalization_method}")
 
-            self.X_min_ = np.nanmin(X_scaled, axis=0, keepdims=True)
-            self.X_max_ = np.nanmax(X_scaled, axis=0, keepdims=True)
-            X_normalized = self.normalizer_.fit_transform(X_scaled)
+            X_normalized = X_scaled.copy()
+            if self.normalized_features_.any():
+                X_supported = X_scaled[:, self.normalized_features_]
+                self.X_min_ = np.nanmin(X_supported, axis=0, keepdims=True)
+                self.X_max_ = np.nanmax(X_supported, axis=0, keepdims=True)
+                X_normalized[:, self.normalized_features_] = self.normalizer_.fit_transform(X_supported)
+            else:
+                self.normalizer_ = None
         else:
             self.normalizer_ = None
             X_normalized = X_scaled
@@ -818,13 +852,15 @@ class PreprocessingPipeline(TransformerMixin, BaseEstimator):
         X = self.standard_scaler_.transform(X)
         # Normalization
         if self.normalizer_ is not None:
+            X_supported = X[:, self.normalized_features_]
             try:
                 # this can fail in rare cases if there is an outlier in X that was not present in fit()
-                X = self.normalizer_.transform(X)
+                X_normalized = self.normalizer_.transform(X_supported)
             except ValueError:
                 # clip values to train min/max
-                X = np.clip(X, self.X_min_, self.X_max_)
-                X = self.normalizer_.transform(X)
+                X_supported = np.clip(X_supported, self.X_min_, self.X_max_)
+                X_normalized = self.normalizer_.transform(X_supported)
+            X[:, self.normalized_features_] = X_normalized
         # Outlier removal
         X = self.outlier_remover_.transform(X)
 

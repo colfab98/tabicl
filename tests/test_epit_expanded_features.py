@@ -182,7 +182,7 @@ def test_one_cpu_training_step_preserves_sampled_missingness(tmp_path):
     from tabicl.train.run import Trainer
     _, _, config = _training_config(tmp_path)
     overrides = dict(device="cpu", prior_device="cpu", amp=False, python_seed=42, prior_n_jobs=1,
-        dataloader_num_workers=0, batch_size=1, micro_batch_size=1, max_seq_len=32,
+        dataloader_num_workers=0, batch_size=1, batch_size_per_gp=1, micro_batch_size=1, max_seq_len=32,
         num_quantiles=9, embed_dim=16, col_num_blocks=1, col_nhead=2, col_num_inds=4,
         row_num_blocks=1, row_nhead=2, row_num_cls=2, icl_num_blocks=1, icl_nhead=2,
         warmup_proportion=0., max_steps=2, wandb_log=False)

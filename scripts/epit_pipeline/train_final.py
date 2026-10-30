@@ -105,6 +105,8 @@ def parse_args(
     parser.add_argument("--checkpoint-selection-interval", type=int, default=500)
     parser.add_argument("--np-seed", type=int, default=42)
     parser.add_argument("--torch-seed", type=int, default=42)
+    parser.add_argument("--python-seed", type=int, default=42)
+    parser.add_argument("--prior-stream-seed", type=int, default=42)
     parser.add_argument("--prior-n-jobs", type=int, default=1)
     parser.add_argument("--dataloader-num-workers", type=int, default=4)
     parser.add_argument("--dataloader-prefetch-factor", type=int, default=4)
@@ -881,6 +883,15 @@ def run(args: argparse.Namespace) -> Path:
         ):
             raise RuntimeError("Final Soccol inputs differ from the selected study.")
     proxy_training = study_fingerprint.get("proxy_training", {})
+    if search.uses_fixed_informed_search(composition_mode):
+        from tabicl.prior.paired_streams import stream_policy
+        if fixed_prior.get("paired_prior_streams") != stream_policy(args.prior_stream_seed):
+            raise RuntimeError("Final training must use the selected study's paired data-stream policy and seed.")
+        for name in ("np_seed", "torch_seed", "python_seed", "scheduler_total_steps",
+                     "nproc_per_node", "prior_n_jobs", "dataloader_num_workers",
+                     "dataloader_prefetch_factor"):
+            if int(getattr(args, name)) != int(proxy_training.get(name, -1)):
+                raise RuntimeError(f"Paired final training must match Optuna's {name}; only training duration and explicit prior overrides may change.")
     proxy_training_overrides: dict[str, dict[str, int]] = {}
     for argument_name, fingerprint_name in (
         ("np_seed", "np_seed"),

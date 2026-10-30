@@ -25,6 +25,7 @@ import wandb
 from tabicl import TabICL
 from tabicl.prior.combined_corrosion import CombinedCorrosionPriorDataset
 from tabicl.prior.dataset import PriorDataset
+from tabicl.prior.paired_streams import PairedPriorDataset
 from tabicl.prior.genload import LoadPriorDataset
 from tabicl.prior.prior_config import DEFAULT_FIXED_HP
 from tabicl.prior.epit_feature_profile import EPIT_FEATURE_COMPOSITION_PROFILES
@@ -264,6 +265,15 @@ class Trainer:
             if self.config.prior_n_jobs != 1:
                 raise ValueError("The combined corrosion prior requires --prior_n_jobs 1.")
 
+        paired = getattr(self.config, "paired_prior_streams", False)
+        if paired:
+            if combined_config is not None or self.config.prior_dir is not None:
+                raise ValueError("Paired standalone streams cannot use a combined config or stored prior.")
+            if self.config.batch_size_per_gp % self.config.micro_batch_size:
+                raise ValueError("Paired prior group size must be divisible by micro_batch_size.")
+            if self.missingness_augmenter is not None:
+                raise ValueError("Paired streams preserve sampled missingness; external masking would break table identity.")
+
         variation = float(getattr(self.config, "pitting_coefficient_variation", 0.0))
         if not math.isfinite(variation) or not 0.0 <= variation < 1.0:
             raise ValueError("pitting_coefficient_variation must be in [0, 1).")
@@ -464,7 +474,10 @@ class Trainer:
                 )
                 self.prior_provenance = dataset.provenance
             else:
-                dataset = PriorDataset(
+                dataset_class = PairedPriorDataset if paired else PriorDataset
+                stream_args = dict(seed=self.config.prior_stream_seed, rank=self.ddp_rank,
+                                   world_size=self.ddp_world_size) if paired else {}
+                dataset = dataset_class(
                     batch_size=self.config.batch_size,
                     batch_size_per_gp=self.config.batch_size_per_gp,
                     min_features=self.config.min_features,
@@ -483,6 +496,7 @@ class Trainer:
                     n_jobs=self.config.prior_n_jobs,
                     informed_prior_ratio=self.config.informed_prior_ratio,
                     return_source_ids=getattr(self, "missingness_augmenter", None) is not None,
+                    **stream_args,
                 )
         else:
             # Load pre-generated prior data from disk
@@ -512,7 +526,7 @@ class Trainer:
             dataloader_kwargs["prefetch_factor"] = self.config.dataloader_prefetch_factor
 
         # Create dataloader for efficient loading and prefetching
-        if isinstance(dataset, CombinedCorrosionPriorDataset) and self.config.prior_device == "cpu":
+        if isinstance(dataset, (CombinedCorrosionPriorDataset, PairedPriorDataset)) and self.config.prior_device == "cpu":
             self.dataloader = CheckpointablePriorLoader(**dataloader_kwargs)
         else:
             self.dataloader = DataLoader(**dataloader_kwargs)
@@ -650,6 +664,14 @@ class Trainer:
         # Keep sampling metadata on CPU, including states sent to prior workers.
         # Model/optimizer load_state_dict move their tensors to the model device.
         checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+        paired = isinstance(self.dataloader.dataset, PairedPriorDataset)
+        saved_stream = checkpoint.get("paired_prior_stream")
+        if not self.config.only_load_model and (paired or saved_stream is not None):
+            expected = self.dataloader.dataset.checkpoint_identity() if paired else None
+            if saved_stream != expected or checkpoint.get("sampling_state") is None:
+                raise ValueError("Paired stream resume requires matching recipe/profile/seed and saved loader state; legacy checkpoints cannot be resumed as paired runs.")
+            if any(state.get("loader") is None for state in checkpoint["sampling_state"]["ranks"]):
+                raise ValueError("Paired stream checkpoint is missing its consumed dataset boundary.")
 
         # Load model state
         if "state_dict" not in checkpoint:
@@ -705,6 +727,10 @@ class Trainer:
         checkpoint = {
             "config": self.model_config,
             "combined_corrosion_prior": getattr(self, "prior_provenance", None),
+            "paired_prior_stream": (
+                self.dataloader.dataset.checkpoint_identity()
+                if isinstance(self.dataloader.dataset, PairedPriorDataset) else None
+            ),
             "missingness_augmentation": (
                 self.missingness_augmenter.provenance
                 if getattr(self, "missingness_augmenter", None) is not None
@@ -717,7 +743,10 @@ class Trainer:
             "sampling_state": {"version": 1, "ranks": sampling_states},
             "curr_step": self.curr_step,
         }
-        torch.save(checkpoint, checkpoint_path)
+        # Do not expose an incomplete checkpoint to another process/node.
+        temporary_path = checkpoint_path + ".tmp"
+        torch.save(checkpoint, temporary_path)
+        os.replace(temporary_path, checkpoint_path)
 
     def manage_checkpoint(self):
         """Manage temporary checkpoints by deleting the oldest when limit is exceeded."""

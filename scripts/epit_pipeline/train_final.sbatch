@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=epit_final_empirical_scm_v10
+#SBATCH --job-name=epit_final_empirical_scm_v11
 #SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=96:00:00
@@ -10,8 +10,9 @@ set -euo pipefail
 
 cd /home/fcolanto/projects/tabicl
 source .venv/bin/activate
+export PYTHONPATH="$PWD/src:$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
-STUDY_NAME="${STUDY_NAME:-epit_pipeline_optuna_empirical_features_scm_target_v10}"
+STUDY_NAME="${STUDY_NAME:-epit_pipeline_optuna_empirical_features_scm_target_v11}"
 OPTUNA_STORAGE_ROOT="${OPTUNA_STORAGE_ROOT:-/home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna}"
 STUDY_DIR="${OPTUNA_STORAGE_ROOT}/${STUDY_NAME}"
 STORAGE="${STORAGE:-journal://${STUDY_DIR}/study_journal_v1.log}"
@@ -27,6 +28,8 @@ CHECKPOINT_SELECTION_MIN_STEP="${CHECKPOINT_SELECTION_MIN_STEP:-500}"
 CHECKPOINT_SELECTION_INTERVAL="${CHECKPOINT_SELECTION_INTERVAL:-500}"
 NP_SEED="${NP_SEED:-42}"
 TORCH_SEED="${TORCH_SEED:-42}"
+PYTHON_SEED="${PYTHON_SEED:-42}"
+PRIOR_STREAM_SEED="${PRIOR_STREAM_SEED:-42}"
 PRIOR_N_JOBS="${PRIOR_N_JOBS:-1}"
 DATALOADER_NUM_WORKERS="${DATALOADER_NUM_WORKERS:-4}"
 DATALOADER_PREFETCH_FACTOR="${DATALOADER_PREFETCH_FACTOR:-4}"
@@ -89,6 +92,8 @@ python -m scripts.epit_pipeline.train_final \
   --checkpoint-selection-interval "$CHECKPOINT_SELECTION_INTERVAL" \
   --np-seed "$NP_SEED" \
   --torch-seed "$TORCH_SEED" \
+  --python-seed "$PYTHON_SEED" \
+  --prior-stream-seed "$PRIOR_STREAM_SEED" \
   --prior-n-jobs "$PRIOR_N_JOBS" \
   --dataloader-num-workers "$DATALOADER_NUM_WORKERS" \
   --dataloader-prefetch-factor "$DATALOADER_PREFETCH_FACTOR" \

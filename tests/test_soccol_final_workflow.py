@@ -44,9 +44,9 @@ def test_final_defaults_and_ratio_overrides_keep_reviewed_inputs(reviewed, tmp_p
     args = soccol_train.parse_args([
         "--storage", "journal:///unused.log", "--override-informed-prior-ratio", str(ratio),
     ])
-    assert args.study_name == "soccol_pipeline_optuna_empirical_features_scm_target_v4"
+    assert args.study_name == "soccol_pipeline_optuna_empirical_features_scm_target_v5"
     assert args.selected_trial_number is None
-    assert not args.allow_missing_selected_trial_artifacts
+    assert args.allow_missing_selected_trial_artifacts
     assert args.max_steps == 10000
     assert args.checkpoint_root.name == "soccol_pipeline_final_v2"
     assert args.target_rule_summary.parent.name == "target_rules_v2"
@@ -78,7 +78,8 @@ def test_final_defaults_and_ratio_overrides_keep_reviewed_inputs(reviewed, tmp_p
     assert eval_args.context_mode == "full"
 
 
-def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, tmp_path):
+@pytest.mark.parametrize("missing_proxy_files", [False, True])
+def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, tmp_path, missing_proxy_files):
     """Use real study/manifest/summary code; replace only external model jobs.
 
     All scores and checkpoint bytes below are artificial test fixtures. No
@@ -160,6 +161,13 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
         "--storage", storage, "--device", "cpu", "--output-dir", str(tmp_path / "final"),
         "--checkpoint-root", str(tmp_path / "final_checkpoints"),
     ])
+    if missing_proxy_files:
+        _, selected_trial = final_train.load_selected_trial(train_args)
+        assert selected_trial.number == 1 and train_args.selected_trial_number is None
+        for key in ("summary_csv", "summary_json", "rows_csv", "checkpoint_path", "trial_result_json"):
+            path = Path(selected_trial.user_attrs[key])
+            assert path.is_relative_to(tmp_path)
+            path.unlink()
     manifest_path = final_train.run(train_args)
     assert not final_queries_seen
     frozen = load_frozen_final_model(manifest_path)
@@ -177,6 +185,9 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
     assert all("--epit-final-test" not in record["evaluation_command"]
                for record in manifest["checkpoint_selection"]["candidates"])
     proxy = manifest["study"]["selected_trial_fold_evaluation"]
+    if missing_proxy_files:
+        assert proxy["verification_mode"] == "optuna_journal_record"
+        assert len(proxy["missing_local_artifacts"]) == 5
     assert proxy["source_sha256"] == manifest["split"]["source_sha256"]
     assert proxy["soccol_development_selection"] == manifest["split"]["soccol_development_selection"]
 

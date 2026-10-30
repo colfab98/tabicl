@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=soccol_optuna_scm_v4
+#SBATCH --job-name=soccol_optuna_scm_v5
 #SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
@@ -10,8 +10,9 @@ set -euo pipefail
 
 cd /home/fcolanto/projects/tabicl
 source .venv/bin/activate
+export PYTHONPATH="$PWD/src:$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
-STUDY_NAME="${STUDY_NAME:-soccol_pipeline_optuna_empirical_features_scm_target_v4}"
+STUDY_NAME="${STUDY_NAME:-soccol_pipeline_optuna_empirical_features_scm_target_v5}"
 N_TRIALS="${N_TRIALS:-50}"
 N_STARTUP_TRIALS="${N_STARTUP_TRIALS:-10}"
 MAX_STEPS="${MAX_STEPS:-1000}"
@@ -19,6 +20,8 @@ SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-10000}"
 NPROC_PER_NODE="${NPROC_PER_NODE:-1}"
 NP_SEED="${NP_SEED:-42}"
 TORCH_SEED="${TORCH_SEED:-42}"
+PYTHON_SEED="${PYTHON_SEED:-42}"
+PRIOR_STREAM_SEED="${PRIOR_STREAM_SEED:-42}"
 PRIOR_N_JOBS="${PRIOR_N_JOBS:-1}"
 RANDOM_SEED="${RANDOM_SEED:-$((42 + SLURM_JOB_ID))}"
 SPLIT_MANIFEST="${SPLIT_MANIFEST:-corrosion_datasets/datasets/soccol_pitting_potential/processed/splits_v1/split_manifest.json}"
@@ -46,6 +49,8 @@ python -m scripts.soccol_pipeline.run_optuna \
   --nproc-per-node "$NPROC_PER_NODE" \
   --np-seed "$NP_SEED" \
   --torch-seed "$TORCH_SEED" \
+  --python-seed "$PYTHON_SEED" \
+  --prior-stream-seed "$PRIOR_STREAM_SEED" \
   --prior-n-jobs "$PRIOR_N_JOBS" \
   --max-steps "$MAX_STEPS" \
   --scheduler-total-steps "$SCHEDULER_TOTAL_STEPS"

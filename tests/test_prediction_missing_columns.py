@@ -128,6 +128,48 @@ def test_missing_columns_preserve_context_and_batch_invariance(
         np.testing.assert_allclose(encoded[0, :2], [7.5, -1.])
 
 
+@pytest.mark.filterwarnings("error::RuntimeWarning")
+@pytest.mark.parametrize("method", ["none", "power"])
+@pytest.mark.parametrize("kv_cache", [False, "kv", "repr"])
+def test_sparse_values_survive_missing_aware_regressor_preprocessing(checkpoints, method, kv_cache):
+    estimator = TabICLRegressor(
+        model_path=checkpoints[False, True],
+        allow_auto_download=False,
+        device="cpu",
+        use_amp=False,
+        n_estimators=1,
+        norm_methods=[method],
+        feat_shuffle_method="none",
+        remove_constant_features=False,
+        kv_cache=kv_cache,
+        random_state=42,
+    )
+    context = pd.DataFrame({
+        "pH": [5., 6., 7., 8., 9., 10.],
+        "WO4_mol_L": [np.nan] * 6,
+        "NaClO4_mol_L": [0.1, np.nan, np.nan, np.nan, np.nan, np.nan],
+    })
+    query = pd.DataFrame({
+        "pH": [6., 7.],
+        "WO4_mol_L": [0.025, np.nan],
+        "NaClO4_mol_L": [np.nan, 0.2],
+    })
+    estimator.fit(context, np.arange(6.))
+    predictions = estimator.predict(query)
+    assert np.isfinite(predictions).all()
+    assert estimator.n_features_in_prediction_ == 3
+    prep = estimator.ensemble_generator_.preprocessors_[method]
+    np.testing.assert_array_equal(prep.X_transformed_[:, 1:], context.to_numpy()[:, 1:])
+    encoded_query = estimator.X_encoder_.transform(query)
+    np.testing.assert_array_equal(prep.transform(encoded_query)[:, 1:], query.to_numpy()[:, 1:])
+    np.testing.assert_allclose(
+        predictions,
+        np.concatenate([estimator.predict(query.iloc[[i]]) for i in range(len(query))]),
+        rtol=1e-5,
+        atol=1e-5,
+    )
+
+
 @pytest.mark.parametrize("classification", [False, True])
 def test_explicit_exclusion_is_temporary_and_does_not_mutate_input(checkpoints, classification):
     estimator = fitted_estimator(checkpoints, classification, kv_cache="kv")

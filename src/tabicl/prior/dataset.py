@@ -3242,6 +3242,7 @@ class SCMPrior(Prior):
                 self.fixed_hp.get("pitting_composition_perturb_strength", 0.05)
             ),
             random_state=random_seed,
+            independent_random_streams=bool(self.fixed_hp.get("paired_prior_streams", False)),
         )
         if expanded:
             X = torch.as_tensor(batch.latent_features.copy(), device=X.device, dtype=X.dtype)

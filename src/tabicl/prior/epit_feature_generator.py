@@ -74,6 +74,7 @@ def sample_epit_feature_rows(
     composition_family_probabilities: Sequence[float] | None = None,
     perturb_strength: float = EPIT_COMPOSITION_DEFAULT_PERTURB_STRENGTH,
     random_state: int | np.random.Generator | None = None,
+    independent_random_streams: bool = False,
 ) -> EpitFeatureBatch:
     """Sample complete Fe/Ni--Cr--Mo physical inputs for the fixed EPIT schema.
 
@@ -91,6 +92,12 @@ def sample_epit_feature_rows(
         composition_family_probabilities,
     )
     rng = random_state if isinstance(random_state, np.random.Generator) else np.random.default_rng(random_state)
+    if independent_random_streams:
+        composition_seed, environment_seed = rng.integers(0, 2**32, size=2, dtype=np.uint64)
+        composition_rng = np.random.default_rng(composition_seed)
+        environment_rng = np.random.default_rng(environment_seed)
+    else:
+        composition_rng = environment_rng = rng
 
     full_family_probabilities = np.zeros(
         len(profile.composition_profile.families),
@@ -105,7 +112,7 @@ def sample_epit_feature_rows(
         profile=profile.composition_profile,
         family_probabilities=full_family_probabilities,
         perturb_strength=perturb_strength,
-        random_state=rng,
+        random_state=composition_rng,
     )
     family_to_index = {family: index for index, family in enumerate(profile.families)}
     composition_family_indices = np.asarray(
@@ -113,7 +120,7 @@ def sample_epit_feature_rows(
         dtype=np.int64,
     )
 
-    environment_indices = rng.integers(
+    environment_indices = environment_rng.integers(
         0,
         profile.n_environment_rows,
         size=int(n_samples),

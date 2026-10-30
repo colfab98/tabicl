@@ -40,15 +40,17 @@ CATEGORICAL_COLUMNS = (
 
 
 def add_evaluation_arguments(
-    parser: argparse.ArgumentParser, *, default_output_dir: Path
+    parser: argparse.ArgumentParser, *, default_output_dir: Path | None,
+    include_combined_data: bool = True, default_device: str = "cuda",
 ) -> None:
     """Share the frozen-query protocol and baseline settings between comparisons."""
     parser.add_argument("--generic-run", type=Path, default=DEFAULT_GENERIC_RUN)
-    parser.add_argument("--combined-data-dir", type=Path, default=DEFAULT_DATA_DIR)
+    if include_combined_data:
+        parser.add_argument("--combined-data-dir", type=Path, default=DEFAULT_DATA_DIR)
     parser.add_argument("--checkpoint", default="all")
     parser.add_argument("--min-checkpoint-step", type=int, default=0)
     parser.add_argument("--checkpoint-step-interval", type=int, default=500)
-    parser.add_argument("--device", default="cuda")
+    parser.add_argument("--device", default=default_device)
     parser.add_argument("--n-estimators", type=int, default=8)
     parser.add_argument("--random-state", type=int, default=42)
     parser.add_argument("--catboost-iterations", type=int, default=1000)
@@ -79,8 +81,13 @@ def comparison_command(
     model_runs: list[tuple[str, Path]],
     *,
     missing_aware_models: tuple[str, ...],
+    task_id: str = TASK_ID,
+    task_arguments: list[str] | None = None,
+    categorical_columns: tuple[str, ...] = CATEGORICAL_COLUMNS,
 ) -> list[str]:
     output_dir = args.output_dir.expanduser().resolve()
+    if task_arguments is None:
+        task_arguments = ["--combined-data-dir", str(args.combined_data_dir.expanduser().resolve())]
     command = [
         sys.executable,
         str(REPO_ROOT / "scripts" / "eval_corrosion_datasets.py"),
@@ -99,9 +106,8 @@ def comparison_command(
         str(args.checkpoint_step_interval),
         "--include-latest-common-checkpoint",
         "--task",
-        TASK_ID,
-        "--combined-data-dir",
-        str(args.combined_data_dir.expanduser().resolve()),
+        task_id,
+        *task_arguments,
         "--target-mode",
         "primary",
         "--target-binning",
@@ -136,7 +142,7 @@ def comparison_command(
         "--catboost-thread-count",
         str(args.catboost_thread_count),
     ])
-    for column in CATEGORICAL_COLUMNS:
+    for column in categorical_columns:
         command.extend(["--catboost-categorical-column", column])
     command.extend(
         [

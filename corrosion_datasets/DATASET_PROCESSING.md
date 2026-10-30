@@ -1,5 +1,10 @@
 # Dataset processing guidelines
 
+For the complete chronological procedure from source inspection through final
+training and combined-model integration, use
+[Adding a new dataset](NEW_DATASET_WORKFLOW.md). It includes the current
+implementation status, remaining MPEA work, commands and completion checks.
+
 The general rules below define how datasets will be prepared for the shared
 schema. The dataset-specific sections record completed processing in past
 tense. Each section identifies its processed export; it does not imply that
@@ -2376,3 +2381,108 @@ The reviewed checkpoint comparison, after final training, used:
 ```bash
 sbatch scripts/soccol_pipeline/evaluate_checkpoint_comparison.sbatch
 ```
+
+## EPIT and Soccol: automatic final-trial selection across nodes
+
+- **Cause:** automatic selection correctly found the best completed trial in
+  the shared Optuna journal. Final training then required that trial's local
+  evaluation CSV/JSON files and proxy checkpoint. The journal stored their
+  paths and hashes, but those worker-local files were not necessarily present
+  on another node. The previous journal fallback was enabled only when an
+  explicit trial number was supplied through the launcher.
+- **Fix:** we enabled validated journal fallback by default for both automatic
+  and explicitly pinned selection in the shared EPIT/Soccol final-training
+  implementation. Neither launcher required `SELECTED_TRIAL_NUMBER` for this
+  behavior. Final training still selected the current best completed trial.
+- **Verification:** available local evidence remained preferred. When files
+  were missing, we checked the recorded study and data identities, feature
+  profile, folds, settings, metrics and artifact records. We also checked the
+  hashes of any files that were present, so one missing file could not hide
+  another changed file. Incomplete journal records and mismatched inputs
+  remained errors. `--no-allow-missing-selected-trial-artifacts` retained an
+  explicit strict mode requiring all proxy files.
+- **Saved evidence:** the final manifest recorded journal-based verification,
+  missing files, verified local files, source/split hashes and, for reviewed
+  Soccol, the accepted-development selection. The 25/50/75/100% training
+  overrides and development-only checkpoint selection remained unchanged.
+- **Checks:** all **65 focused tests** passed. These covered automatic
+  selection with missing files, partial local evidence, corrupted files,
+  incomplete journal records, strict mode and the full mocked Soccol final
+  workflow. Using a temporary copy of the real EPIT v10 journal, we also
+  automatically selected and verified trial **2** without a trial-number
+  override. We left the shared journal unchanged and launched no training.
+
+## EPIT: reviewed comparison inputs and frozen queries
+
+- We updated EPIT's baseline-fold and final-comparison scripts to use the
+  reviewed 70 features and their category columns. Baseline folds used only
+  development rows; final comparisons retained all 152 frozen outer queries.
+- We obtained the default final candidate from its frozen model manifest,
+  accepted explicit checkpoint directories, enabled the informed model's
+  learned missing-value handling and checked actual context/query membership.
+- We retained historical inputs only through an explicit legacy option and
+  used a separate output location for reviewed development baselines.
+
+## EPIT: four informed ratios in the combined-evaluator structure
+
+- We added `--ratio-runs` for the 25%, 50%, 75% and 100% checkpoint directories.
+  We evaluated them in one invocation with generic TabICL, pretrained TabICL
+  and CatBoost, producing seven curves in the same tables and plot directory.
+- We reused the combined evaluator's command builder and common settings
+  instead of maintaining a separate copy. We retained its 500-step schedule,
+  latest endpoints, static baseline reuse, metrics and output filenames.
+- We corrected an alignment gap: EPIT's prior wrapper did not request native
+  generic/pretrained inference, and its final split implicitly forced constant
+  columns to remain. The new comparison used native baseline normalization,
+  shuffling and constant-feature handling, while the informed models retained
+  the fixed reviewed schema and learned missing-value handling.
+- We kept all 608 development context rows and all 152 frozen final queries by
+  default. Optional context-fold diagnostics still kept the same final queries.
+- We verified seven-model orchestration, native baseline settings, unequal
+  checkpoint endpoints and full/reduced context membership using mock scores.
+  We did not run the user's models or change the active training checkout.
+
+## Shared evaluation preprocessing: columns with very few known values
+
+- We corrected the shared TabICL preprocessing used by EPIT, Soccol, MPEA and
+  combined evaluations, including development-fold evaluation. Columns with
+  fewer than two known context values bypassed scaling, normalization and
+  outlier clipping. We preserved their known values and genuine NaNs without
+  changing column order or fitting any statistics to query rows.
+- We also disabled outlier clipping for columns whose preliminary outlier
+  removal left fewer than two known context values. Columns with sufficient
+  observations retained the existing processing rules.
+- We confirmed the original failure on reviewed EPIT: `WO4_mol_L` and `CP_SO4`
+  each had zero known development values and two known final-query values;
+  `NaClO4_mol_L` had one known development value. Previously, preprocessing
+  turned all five known cells into NaN. The fix preserved them.
+- We made the change in the isolated checkout and left running training,
+  processed CSVs, frozen partitions and saved model weights unchanged.
+  Evaluations started before the fix required a restart with the corrected
+  code and a fresh output directory to produce corrected scores.
+- We passed 100 focused checks covering sparse values, all five normalization
+  methods, missing-value embeddings and prediction caches, plus EPIT, Soccol,
+  MPEA and combined evaluation wrappers. We checked the five affected EPIT
+  cells directly without rerunning trained-model evaluations.
+
+## Applying the evaluation fixes to the main project
+
+- We applied the reviewed evaluator, four-ratio comparison and shared sparse-
+  column preprocessing fixes to `/home/fcolanto/projects/tabicl`. Evaluation
+  no longer required `/tmp/tabicl-standalone-fixes`.
+- We kept training/resume changes separate. We did not modify the active
+  training/prior code, Optuna or final-training launchers, datasets, frozen
+  partitions, checkpoints or existing evaluation output directories.
+- We passed 138 checks from the main checkout and verified that the local CPU
+  comparison loaded the main-project code. We ran no trained-model evaluation.
+
+
+## Shared synthetic streams for comparable training (30 October 2026)
+
+- We introduced indexed generic and informed streams for EPIT v11 and Soccol v5. All ratios consumed the same ordered source tables at different rates, with exact counts per batch.
+- We separated table seeds from mixture allocation, trial numbers, worker assignment and maximum training steps. We separated the SCM target RNG from physical draws and formula draws, and separated EPIT environment draws from composition perturbation.
+- We restored the standard generic recipe inside mixed runs: 2–100 initial features, 70/30 MLP/tree, category generation and feature permutation. This recipe no longer inherited specialist-only restrictions.
+- We fixed Python, NumPy, Torch and data-stream seed defaults at 42, and bound final training to the selected study's stream policy, seeds, schedule and process settings. Optuna's parameter-suggestion seed remained separate.
+- We saved profile and stream identities plus the consumed worker position in new checkpoints, and wrote checkpoints atomically. We did not retrofit historical checkpoints or apply the separate high-level training-resume launcher.
+- We retained all reviewed real values, frozen partitions, formula definitions, coefficient variation and search ranges. Existing models/results were retained.
+- We documented the implementation and limitations in [Shared synthetic streams](../scripts/epit_pipeline/PAIRED_STREAMS.md).

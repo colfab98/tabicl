@@ -143,7 +143,7 @@ def _training_configuration(tmp_path):
         fold_command = search.eval_command(args, params, tmp_path / "checkpoint.ckpt", "new_soccol", tmp_path / "eval")
         identity = search.empirical_feature_profile_identity()
         assert args.target_rule_summary.parent.name == "target_rules_v2"
-        assert args.study_name.endswith("_v4")
+        assert args.study_name.endswith("_v5")
         return config, fold_command, identity
     finally:
         for name, value in original.items():
@@ -182,7 +182,7 @@ def test_one_cpu_training_step_and_local_checkpoint_inference(tmp_path):
 
     config, _, _ = _training_configuration(tmp_path)
     for key, value in dict(device="cpu", prior_device="cpu", amp=False, python_seed=42, prior_n_jobs=1,
-        dataloader_num_workers=0, batch_size=1, micro_batch_size=1, max_seq_len=32,
+        dataloader_num_workers=0, batch_size=1, batch_size_per_gp=1, micro_batch_size=1, max_seq_len=32,
         num_quantiles=9, embed_dim=16, col_num_blocks=1, col_nhead=2, col_num_inds=4,
         row_num_blocks=1, row_nhead=2, row_num_cls=2, icl_num_blocks=1, icl_nhead=2,
         warmup_proportion=0., max_steps=2, wandb_log=False).items():

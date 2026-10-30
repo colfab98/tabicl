@@ -36,7 +36,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def fold_command(args: argparse.Namespace, *, fold: int, fold_dir: Path) -> list[str]:
-    command = baseline.fold_command(args, fold=fold, fold_dir=fold_dir)
+    command = baseline.fold_command(args, fold=fold, fold_dir=fold_dir, reviewed_epit=False)
     command[command.index("--task") + 1] = SOCCOL_TASK_ID
     command.append("--soccol-reviewed-data")
     for column in CATBOOST_CATEGORICAL_COLUMNS:
