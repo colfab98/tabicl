@@ -135,10 +135,10 @@ def _fake_epit_task() -> corrosion_eval.EvalTask:
     )
 
 
-def test_pipeline_defaults_use_current_v11_workflow() -> None:
+def test_pipeline_defaults_use_current_v12_workflow() -> None:
     args = search.parse_args([])
 
-    assert args.study_name == "epit_pipeline_optuna_empirical_features_scm_target_v11"
+    assert args.study_name == "epit_pipeline_optuna_empirical_features_scm_target_v12"
     assert args.pitting_composition_mode == "empirical_features_scm_target"
     assert args.n_trials == 50
     assert args.n_startup_trials == 10

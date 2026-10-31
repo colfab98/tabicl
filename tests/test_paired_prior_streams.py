@@ -136,6 +136,71 @@ def test_real_generic_recipe_and_tables_are_independent_of_specialist_settings()
         assert_batch_equal(left[:3], right[:3])
 
 
+@pytest.mark.parametrize("family,source", [("epit", 0), ("epit", 1), ("soccol", 1)])
+def test_invalid_tables_stop_after_bounded_retries(monkeypatch, family, source):
+    prior = make_prior(family)
+    attempts = []
+
+    def reject(X, y, train_size):
+        attempts.append(y.clone())
+        return False
+
+    monkeypatch.setattr(streams, "MAX_GENERATION_ATTEMPTS", 3)
+    monkeypatch.setattr(prior.priors[source], "regression_sanity_check", reject)
+    with pytest.raises(RuntimeError, match=r"failed after 3 attempts:.*task_seed=\d+"):
+        prior._group(source, 0)
+    assert len(attempts) == 3
+
+
+def test_epit_step_460_bad_mlp_retries_and_stays_identical_across_ratios(monkeypatch, tmp_path):
+    """Reproduce the exact table that stalled v11 trial 4 for over 11 hours."""
+    from scripts.epit_pipeline import run_optuna as search
+    from tabicl.train.run import Trainer
+    from tabicl.train.train_config import build_parser
+
+    args = search.parse_args([])
+    rules = search.load_target_rule_config(
+        summary_path=args.target_rule_summary, split_manifest_path=args.split_manifest,
+    )
+    params = search.trial_params_from_mapping({
+        "mlp_prob": 0.4669845975830962,
+        "informed_target_mix_weight": 0.9248433885665498,
+        "pitting_composition_perturb_strength": 0.2670749377030415,
+    }, composition_mode=args.pitting_composition_mode, fixed_informed_prior_ratio=1.)
+    command = search.training_command(args, params, tmp_path, rules)
+    entry = next(i for i, value in enumerate(command) if value.endswith("/train/run.py"))
+    config = build_parser().parse_args(command[entry + 1:])
+    config.device = "cpu"
+    config.dataloader_num_workers = 0
+    original = streams._PairedSCMPrior._generate_scm_target_from_physical_features
+    attempts = []
+
+    def observe(self, X, params, cls):
+        target = original(self, X, params, cls)
+        if params["paired_task_seed"] == 11044767929213912588:
+            attempts.append((params["generation_attempt"], bool(torch.isfinite(target).all())))
+        return target
+
+    monkeypatch.setattr(streams._PairedSCMPrior, "_generate_scm_target_from_physical_features", observe)
+    # A broken fix fails quickly instead of hanging this regression test.
+    monkeypatch.setattr(streams, "MAX_GENERATION_ATTEMPTS", 5)
+    tables = []
+    for ratio in (1., .5):
+        trainer = Trainer.__new__(Trainer)
+        trainer.config = copy.deepcopy(config)
+        trainer.config.informed_prior_ratio = ratio
+        trainer.missingness_augmenter = None
+        trainer.ddp_rank, trainer.ddp_world_size, trainer.master_process = 0, 1, False
+        trainer.configure_prior()
+        # Source group 58799 contains the bad table in source batch 459.
+        tables.append(trainer.dataloader.dataset._group(1, 58799))
+    assert [attempt for attempt, _ in attempts] == [0, 1, 0, 1]
+    assert attempts[0][1] is False  # Original first draw really is invalid.
+    for left, right in zip(*tables):
+        assert_batch_equal(left[:3], right[:3])
+        assert torch.isfinite(left[1]).all() and left[1].std() > 0
+
+
 def loader(prior, workers):
     return CheckpointablePriorLoader(dataset=prior, batch_size=None, num_workers=workers)
 

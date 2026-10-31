@@ -32,7 +32,7 @@ def reviewed():
 
 def test_reviewed_defaults_and_real_optuna_distributions(reviewed):
     args, rules = reviewed
-    assert args.study_name == "soccol_pipeline_optuna_empirical_features_scm_target_v5"
+    assert args.study_name == "soccol_pipeline_optuna_empirical_features_scm_target_v6"
     assert args.work_dir.parent.name == args.eval_output_root.parent.name == "optuna_v4"
     assert args.target_rule_summary.parent.name == "target_rules_v2"
     assert (args.n_trials, args.max_steps, args.scheduler_total_steps) == (50, 1000, 10000)

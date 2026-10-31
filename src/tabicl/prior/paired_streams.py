@@ -25,7 +25,8 @@ from .dataset import SCMPrior
 from .prior_config import DEFAULT_FIXED_HP, DEFAULT_SAMPLED_HP
 
 
-STREAM_VERSION = "paired_generic_informed_v1"
+STREAM_VERSION = "paired_generic_informed_v2"
+MAX_GENERATION_ATTEMPTS = 100
 GENERIC_RECIPE = {
     "min_features": 2, "max_features": 100,
     "mix_probs": [0.7, 0.3], "cat_prob": 0.2, "permute_features": True,
@@ -48,6 +49,8 @@ def stream_policy(seed=42):
         "identity": "source_and_table_index_independent_of_ratio_and_workers",
         "generic_recipe": GENERIC_RECIPE.copy(),
         "scm_target_rng": "separate_from_physical_features_and_formula",
+        "retry_policy": "first_attempt_unchanged_then_attempt_indexed_scm_seed",
+        "max_generation_attempts": MAX_GENERATION_ATTEMPTS,
         "implementation_sha256": implementation_identity(),
     }
 
@@ -72,9 +75,18 @@ def seeded(seed):
 
 
 class _PairedSCMPrior(SCMPrior):
+    def generate_dataset(self, params):
+        return super().generate_dataset(params, max_attempts=MAX_GENERATION_ATTEMPTS)
+
     def _generate_scm_target_from_physical_features(self, X, params, prior_cls):
         # MLP/tree choices must not change physical draws or the sampled formula.
-        with seeded(keyed_seed(params["paired_task_seed"], 1)):
+        # Keep the original first attempt, but do not rebuild the same failing
+        # network forever when rejection sampling asks for another attempt.
+        attempt = int(params.get("generation_attempt", 0))
+        seed_parts = (params["paired_task_seed"], 1)
+        if attempt:
+            seed_parts += (attempt,)
+        with seeded(keyed_seed(*seed_parts)):
             return super()._generate_scm_target_from_physical_features(X, params, prior_cls)
 
 
@@ -133,6 +145,7 @@ class PairedPriorDataset(IterableDataset):
         self._config = configuration_value({
             "version": STREAM_VERSION, "seed": self.seed,
             "implementation_sha256": implementation_identity(),
+            "max_generation_attempts": MAX_GENERATION_ATTEMPTS,
             "batch_size": batch_size, "group_size": self.group_size,
             "group_counts": self.group_counts, "rank": rank, "world_size": world_size,
             "return_source_ids": return_source_ids, "shape_settings": common,

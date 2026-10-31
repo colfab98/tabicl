@@ -4111,7 +4111,9 @@ class SCMPrior(Prior):
         return torch.nan_to_num(X), torch.nan_to_num(y)
 
     @torch.no_grad()
-    def generate_dataset(self, params: Dict[str, Any]) -> Tuple[Tensor, Tensor, Tensor]:
+    def generate_dataset(
+        self, params: Dict[str, Any], *, max_attempts: Optional[int] = None,
+    ) -> Tuple[Tensor, Tensor, Tensor]:
         """Generate a single valid dataset based on the provided parameters.
 
         Parameters
@@ -4119,6 +4121,10 @@ class SCMPrior(Prior):
         params : dict
             Hyperparameters for generating this specific dataset, including seq_len,
             train_size, num_features, num_classes, prior_type, device, etc.
+
+        max_attempts : int, optional
+            Bound rejection sampling and expose a zero-based generation_attempt
+            to the target generator. None retains the historical retry behavior.
 
         Returns
         -------
@@ -4139,8 +4145,15 @@ class SCMPrior(Prior):
         else:
             raise ValueError(f"Unknown prior type {params['prior_type']}")
 
-        while True:
-            generation_params = self._pitting_magpie_base_params(params)
+        if max_attempts is not None and max_attempts < 1:
+            raise ValueError("max_attempts must be positive.")
+        attempt = 0
+        while max_attempts is None or attempt < max_attempts:
+            attempt_params = (
+                params if max_attempts is None else {**params, "generation_attempt": attempt}
+            )
+            attempt += 1
+            generation_params = self._pitting_magpie_base_params(attempt_params)
             epit_latent_context = None
             scm_params = generation_params
             if generation_params.get("informed_mode", False) and self._empirical_pitting_composition_enabled():
@@ -4217,6 +4230,14 @@ class SCMPrior(Prior):
                     )
                     X[0, :, :missing.shape[1]].masked_fill_(missing, float("nan"))
                 return X.squeeze(0), y.squeeze(0), d.squeeze(0)
+
+        raise RuntimeError(
+            f"Synthetic dataset generation failed after {max_attempts} attempts: "
+            f"prior={params['prior_type']}, informed={params.get('informed_mode', False)}, "
+            f"task_seed={params.get('paired_task_seed')}, "
+            f"num_features={params['num_features']}, seq_len={params['seq_len']}, "
+            f"train_size={params['train_size']}. No valid table was returned."
+        )
 
     @torch.no_grad()
     def get_batch(self, batch_size: Optional[int] = None) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:

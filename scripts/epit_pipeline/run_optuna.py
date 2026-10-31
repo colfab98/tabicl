@@ -62,7 +62,7 @@ DEFAULT_TARGET_RULE_SUMMARY = (
     PIPELINE_ROOT / "target_rules_v4" / "calibration_summary.json"
 )
 DEFAULT_OPTUNA_ROOT = PIPELINE_ROOT / "optuna_v3"
-DEFAULT_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v11"
+DEFAULT_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v12"
 FIXED_VALIDATION_FOLDS = (1, 2, 3, 4, 5)
 PIPELINE_FINGERPRINT_SCHEMA = "epit_pipeline_stage3_fingerprint_v3"
 LEGACY_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v7"

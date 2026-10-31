@@ -178,7 +178,7 @@ def configure(*, reviewed_data: bool = True) -> None:
         base.FIXED_BLOCK_ALLOCATION = SOCCOL_REVIEWED_BLOCK_ALLOCATION
         base.DEFAULT_TARGET_RULE_SUMMARY = PIPELINE_ROOT / "target_rules_v2" / "calibration_summary.json"
         base.DEFAULT_OPTUNA_ROOT = PIPELINE_ROOT / "optuna_v4"
-        base.DEFAULT_STUDY_NAME = "soccol_pipeline_optuna_empirical_features_scm_target_v5"
+        base.DEFAULT_STUDY_NAME = "soccol_pipeline_optuna_empirical_features_scm_target_v6"
         base.PIPELINE_FINGERPRINT_SCHEMA = "soccol_pipeline_stage3_fingerprint_v5"
         base.load_target_rule_config = load_reviewed_target_rule_config
 

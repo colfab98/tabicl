@@ -8,13 +8,14 @@ This directory contains the reviewed-data workflow and retained historical workf
 | v8 (`epit_pipeline_optuna_empirical_features_scm_target_v8`) | Previous 28-column workflow | `epit_dataset_v2`, 24 elements | 28/38 | promoted subset of `target_rules_v3` |
 | v9 (`epit_pipeline_optuna_empirical_features_scm_target_v9`) | Reviewed inputs and refitted formulas; previous search settings | `epit_dataset_v4`, 24 elements, development only | 70/80 | nine formulas in `target_rules_v4` |
 | v10 (`epit_pipeline_optuna_empirical_features_scm_target_v10`) | Previous unpaired sampling; 100% informed search with broader ranges | `epit_dataset_v4`, 24 elements, development only | 70/80 | nine formulas in `target_rules_v4` |
-| v11 (`epit_pipeline_optuna_empirical_features_scm_target_v11`) | Current defaults; shared indexed streams and exact mixture counts | `epit_dataset_v4`, 24 elements, development only | 70/80 | nine formulas in `target_rules_v4` |
+| v11 (`epit_pipeline_optuna_empirical_features_scm_target_v11`) | Initial indexed streams; superseded after an infinite-retry defect | `epit_dataset_v4`, 24 elements, development only | 70/80 | nine formulas in `target_rules_v4` |
+| v12 (`epit_pipeline_optuna_empirical_features_scm_target_v12`) | Current defaults; deterministic bounded retries and shared streams | `epit_dataset_v4`, 24 elements, development only | 70/80 | nine formulas in `target_rules_v4` |
 
 See [Shared synthetic streams](PAIRED_STREAMS.md) for matching Optuna/final data,
 generic controls, checkpoint behavior and unchanged legacy runs.
 
 Historical split, model, and result artifacts were retained. Current launchers
-use v11 study subdirectories under `optuna_v3`, `final_v2`, and `epit_pipeline_final_v2`. The legacy
+use v12 study subdirectories under `optuna_v3`, `final_v2`, and `epit_pipeline_final_v2`. The legacy
 coefficient-variation diagnostic explicitly pins v7 and `epit_dataset_v1`.
 
 ## Current 24-element policy
@@ -117,7 +118,7 @@ claim. See `target_rules_v3/calibration_summary.json` and
 The default EPIT search fixed the informed share at **100%** and removed it
 from Optuna's sampled parameters. The three remaining settings were:
 
-| Setting | Previous range | Current v11 range |
+| Setting | Previous range | Current v12 range |
 | --- | --- | --- |
 | Formula contribution to synthetic targets | continuous 0–1 | continuous 0–1, retained in full |
 | MLP share within informed generators | 0, 0.25, 0.50, 0.70, 0.75, 1 | continuous 0–1; the tree share is the remainder |
@@ -158,8 +159,8 @@ local proxy files. This behavior is shared with Soccol final training.
 | --- | --- | --- |
 | Frozen split | `prepare_splits.py`, `split_data.py`, `split_refinement.py` | Load/audit rows; historical split construction remains reproducible and is not rerun. |
 | Rule evaluation | `formula_data.py`, `target_rules.py`, `calibrate_target_rules.py` | Load reviewed inputs, fit context-only preprocessing and coefficients, then score held-out development folds. |
-| Prior search | `run_optuna.py`, `evaluate_optuna_folds.py` | Train v11 proxy models and compare them on saved development folds. |
-| Final training | `train_final.py` | Train the selected v11 configuration and freeze a development-selected checkpoint. |
+| Prior search | `run_optuna.py`, `evaluate_optuna_folds.py` | Train v12 proxy models and compare them on saved development folds. |
+| Final training | `train_final.py` | Train the selected v12 configuration and freeze a development-selected checkpoint. |
 | Final evaluation | `evaluate_final.py` | Use all development rows as context and evaluate the untouched final-test rows once. |
 | Historical variation | `diagnose_target_variation.py`, `run_coefficient_variation.py` | Explicitly v7-only coefficient sensitivity experiment. |
 
@@ -172,9 +173,9 @@ local proxy files. This behavior is shared with Soccol final training.
 - `target_rules_v4/`: current nine-rule refit using reviewed inputs, fold scores,
   report, input-change audit and comparison against v3.
 - `optuna_v2/` and `final_v1/...v7/`: retained v7 studies and model.
-- `optuna_v3/...v11/` and `final_v2/...v11/`: current workflow destinations; earlier outputs were retained.
+- `optuna_v3/...v12/` and `final_v2/...v12/`: current workflow destinations; earlier outputs were retained.
 - `checkpoints/epit_pipeline_final_v1/...v7.../`: retained v7 checkpoints.
-- `checkpoints/epit_pipeline_final_v2/...v11.../`: current final-training destination.
+- `checkpoints/epit_pipeline_final_v2/...v12.../`: current final-training destination.
 
 The v3 comparison contains the retained `al_chloride_temperature` baseline and
 the new `al_amphoteric_environment` and `al_composition_environment`
@@ -204,10 +205,10 @@ sbatch scripts/epit_pipeline/evaluate_final.sbatch
 The Optuna launcher defaults to 50 trials, 1,000 training steps per trial,
 100% informed training, `target_rules_v4`, the same nine formulas, and 80%
 coefficient variation. Selection uses the same five development folds.
-The final-training launcher automatically selects the best completed v11 trial
+The final-training launcher automatically selects the best completed v12 trial
 unless `SELECTED_TRIAL_NUMBER` is set explicitly.
 
-### Fresh v11 search on sv1225 and sv1224
+### Fresh v12 search on sv1225 and sv1224
 
 Use the same committed files on both nodes. Include the new
 `src/tabicl/prior/paired_streams.py` and `checkpoint.py` modules when staging:
@@ -223,11 +224,11 @@ are already tracked. Checkpoints and local Optuna evaluation outputs do not
 need to be copied to start final training on the other node.
 
 From `/home/fcolanto/projects/tabicl`, submit 25 trials per node for 50 new
-trials in total. Both jobs use the same v11 journal on `RZ-Dienste`:
+trials in total. Run the following command once in each terminal. Slurm chooses
+the execution node; both jobs use the same v12 journal on `RZ-Dienste`:
 
 ```bash
-sbatch --nodelist=sv1225 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v11,N_TRIALS=25 scripts/epit_pipeline/run_optuna.sbatch
-sbatch --nodelist=sv1224 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v11,N_TRIALS=25 scripts/epit_pipeline/run_optuna.sbatch
+sbatch --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v12,N_TRIALS=25 scripts/epit_pipeline/run_optuna.sbatch
 ```
 
 `N_TRIALS` counts additional trials **per job**, not a shared study-wide limit.
@@ -242,10 +243,10 @@ The explicit ratio overrides give every run its own output directory, including
 100%. These commands train from scratch for 10,000 steps:
 
 ```bash
-sbatch --nodelist=sv1225 --job-name=epit_v11_i25 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v11,OVERRIDE_INFORMED_PRIOR_RATIO=0.25 scripts/epit_pipeline/train_final.sbatch
-sbatch --nodelist=sv1225 --job-name=epit_v11_i50 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v11,OVERRIDE_INFORMED_PRIOR_RATIO=0.50 scripts/epit_pipeline/train_final.sbatch
-sbatch --nodelist=sv1224 --job-name=epit_v11_i75 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v11,OVERRIDE_INFORMED_PRIOR_RATIO=0.75 scripts/epit_pipeline/train_final.sbatch
-sbatch --nodelist=sv1224 --job-name=epit_v11_i100 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v11,OVERRIDE_INFORMED_PRIOR_RATIO=1.0 scripts/epit_pipeline/train_final.sbatch
+sbatch --nodelist=sv1225 --job-name=epit_v12_i25 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v12,OVERRIDE_INFORMED_PRIOR_RATIO=0.25 scripts/epit_pipeline/train_final.sbatch
+sbatch --nodelist=sv1225 --job-name=epit_v12_i50 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v12,OVERRIDE_INFORMED_PRIOR_RATIO=0.50 scripts/epit_pipeline/train_final.sbatch
+sbatch --nodelist=sv1224 --job-name=epit_v12_i75 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v12,OVERRIDE_INFORMED_PRIOR_RATIO=0.75 scripts/epit_pipeline/train_final.sbatch
+sbatch --nodelist=sv1224 --job-name=epit_v12_i100 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v12,OVERRIDE_INFORMED_PRIOR_RATIO=1.0 scripts/epit_pipeline/train_final.sbatch
 ```
 
 The default scheduler horizon is 10,000 for both search and final training.
@@ -258,7 +259,7 @@ location. Final-query rows remain excluded from Optuna and checkpoint selection.
 `evaluate_baseline_folds.py` now uses the reviewed 70 columns and the five
 development folds. `evaluate_checkpoint_comparison.py` and its sbatch launcher
 use the reviewed columns and all 152 frozen final queries. The candidate is
-read from the frozen v11 final-model manifest; an explicit `--candidate-run`
+read from the frozen v12 final-model manifest; an explicit `--candidate-run`
 or `--final-model-manifest` selects another reviewed run, including a 25/50/75%
 run. The launcher accepts `CANDIDATE_RUN` and `FINAL_MODEL_MANIFEST`. It no longer
 defaults to v7/v8. Historical v8 inputs require `--legacy-data` explicitly.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=soccol_optuna_scm_v5
+#SBATCH --job-name=soccol_optuna_scm_v6
 #SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
@@ -12,7 +12,7 @@ cd /home/fcolanto/projects/tabicl
 source .venv/bin/activate
 export PYTHONPATH="$PWD/src:$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
-STUDY_NAME="${STUDY_NAME:-soccol_pipeline_optuna_empirical_features_scm_target_v5}"
+STUDY_NAME="${STUDY_NAME:-soccol_pipeline_optuna_empirical_features_scm_target_v6}"
 N_TRIALS="${N_TRIALS:-50}"
 N_STARTUP_TRIALS="${N_STARTUP_TRIALS:-10}"
 MAX_STEPS="${MAX_STEPS:-1000}"

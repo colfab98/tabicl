@@ -1,6 +1,6 @@
 # Soccol pitting-potential pipeline
 
-Current searches use **v5** with [shared indexed generic/informed streams](../epit_pipeline/PAIRED_STREAMS.md).
+Current searches use **v6** with [shared indexed generic/informed streams](../epit_pipeline/PAIRED_STREAMS.md).
 The reviewed feature profile remains v3; formula and data artifacts were retained.
 
 ## Reviewed-data migration: 58-column sampling, training and evaluation connected
@@ -192,7 +192,7 @@ range based on the historical Soccol results:
   as in EPIT. This is not an Optuna parameter or a value selected from Soccol
   scores. The same setting applies to final training at every informed ratio.
 
-The new study is `soccol_pipeline_optuna_empirical_features_scm_target_v5`.
+The new study is `soccol_pipeline_optuna_empirical_features_scm_target_v6`.
 It uses the reviewed `soccol_pitting_features_v3` bank and `target_rules_v2`
 coefficients. Search outputs go to `analysis/soccol_pipeline/optuna_v4/`.
 Coefficient sampling multiplies the fitted coefficients by independent factors
@@ -222,7 +222,7 @@ A study already bound to 0–0.30 is rejected rather than silently resumed.
 ## Current final training and evaluation
 
 Final training now defaults to the **best completed trial** in the reviewed
-v5 study; the launcher no longer pins old trial 19. It validates the selected
+v6 study; the launcher no longer pins old trial 19. It validates the selected
 trial's saved results, reviewed data, sampling bank and refitted formulas.
 When another node's proxy files are missing, automatic selection uses the
 validated shared-journal record, matching EPIT. Files available locally still
@@ -249,7 +249,7 @@ sbatch --export=ALL,OVERRIDE_INFORMED_PRIOR_RATIO=0.25 scripts/soccol_pipeline/t
 
 Reviewed final outputs use `analysis/soccol_pipeline/final_v2/` and
 `checkpoints/soccol_pipeline_final_v2/`. The default final manifest is
-`analysis/soccol_pipeline/final_v2/soccol_pipeline_optuna_empirical_features_scm_target_v5/final_model_manifest.json`.
+`analysis/soccol_pipeline/final_v2/soccol_pipeline_optuna_empirical_features_scm_target_v6/final_model_manifest.json`.
 After final training has written that manifest, evaluate it with:
 
 ```bash
@@ -293,7 +293,7 @@ sbatch scripts/soccol_pipeline/evaluate_checkpoint_comparison.sbatch
 ```
 
 The launcher calls the same Python entry point as local execution. Its default
-candidate comes from the frozen reviewed v5 final-model manifest. There is no
+candidate comes from the frozen reviewed v6 final-model manifest. There is no
 fallback to old trial 19 when the new model is missing. Use
 `FINAL_MODEL_MANIFEST` for a specific informed-ratio run, or `CANDIDATE_RUN`
 for an explicit checkpoint directory. Local equivalents are

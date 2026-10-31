@@ -143,7 +143,7 @@ def _training_configuration(tmp_path):
         fold_command = search.eval_command(args, params, tmp_path / "checkpoint.ckpt", "new_soccol", tmp_path / "eval")
         identity = search.empirical_feature_profile_identity()
         assert args.target_rule_summary.parent.name == "target_rules_v2"
-        assert args.study_name.endswith("_v5")
+        assert args.study_name.endswith("_v6")
         return config, fold_command, identity
     finally:
         for name, value in original.items():

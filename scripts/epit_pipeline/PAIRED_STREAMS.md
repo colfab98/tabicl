@@ -1,6 +1,7 @@
 # Shared synthetic streams for EPIT and Soccol
 
-Implemented on 30 October 2026. New searches use EPIT **v11** and Soccol **v5**.
+Implemented on 30 October 2026; retry handling corrected on 31 October 2026.
+New searches use EPIT **v12** and Soccol **v6**.
 The reviewed data, frozen splits, formulas, coefficient variation and search
 ranges were retained. Historical runs and checkpoints were not converted.
 
@@ -95,3 +96,32 @@ Small CPU tests compared actual EPIT and Soccol features, targets and NaN masks,
 and uninterrupted versus resumed training with spawned workers. Shared tables
 reduce sampling noise; they do not guarantee identical GPU arithmetic across
 hardware, or identical learned weights after changing the mixture.
+
+## Retry correction, 31 October 2026
+
+The original paired sampler reset the SCM seed on every rejection attempt.
+An invalid MLP could therefore be reconstructed indefinitely. EPIT v11 trials
+4 and 7 stalled after step 459; source group 58799 included the failing table
+with seed `11044767929213912588`. Its raw MLP output was non-finite and its
+processed target was constant. A CPU reproduction isolated this from GPU speed.
+
+The corrected sampler retained the original first-attempt seed. Each subsequent
+SCM attempt used a seed derived from the same table seed and the attempt index.
+Retries stayed reproducible and independent of other tables, mixture ratios and
+worker scheduling. Every paired table, generic or informed, was limited to 100
+attempts; exhaustion raised an error identifying the table seed and dimensions.
+No invalid table was returned and no formula-only fallback was introduced.
+Legacy non-paired generation retained its existing behavior.
+
+The regression test used the actual calibrated EPIT configuration and failing
+group. The failing table succeeded on its second attempt and matched exactly
+across 50% and 100% informed streams. Separate tests forced rejection and checked
+that EPIT, Soccol and generic tables stopped at the configured attempt limit.
+
+The stream version changed to `paired_generic_informed_v2`. Optuna and final
+launchers moved together to EPIT v12 and Soccol v6. Existing v11/v5 journals,
+results and checkpoints were retained, and their identity checks were not
+relaxed. Running processes retain the old implementation: stop the affected old
+workers, synchronize the corrected code on every node, and launch the new study.
+Do not append corrected runs to the old study or resume its checkpoints as if
+the generator were unchanged. Final training must use the corrected study too.
