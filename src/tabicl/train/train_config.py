@@ -2,6 +2,27 @@
 
 import argparse
 import json
+import math
+
+
+PAIRED_COEFFICIENT_SEED_POLICY = "shared_across_ranks_v1"
+
+
+def paired_batch_size(batch_size, world_size, group_size, micro_batch_size, informed_ratio):
+    """Require an exact global batch, source mixture and micro-batch partition."""
+    if min(batch_size, world_size, group_size, micro_batch_size) <= 0:
+        raise ValueError("Paired batch, process, group and micro-batch sizes must be positive.")
+    if batch_size % world_size:
+        raise ValueError("Paired global batch size must be divisible by the process count; rounding changes training.")
+    local_batch_size = batch_size // world_size
+    if local_batch_size % group_size or group_size % micro_batch_size:
+        raise ValueError("Paired per-process batches must contain whole groups and groups must contain whole micro-batches.")
+    if not math.isfinite(informed_ratio) or not 0 <= informed_ratio <= 1:
+        raise ValueError("Informed ratio must lie in [0, 1].")
+    informed_groups = local_batch_size // group_size * informed_ratio
+    if not math.isclose(informed_groups, round(informed_groups), rel_tol=0, abs_tol=1e-9):
+        raise ValueError("Paired proportions require an integer number of informed groups per process.")
+    return local_batch_size
 
 
 def str2bool(value):

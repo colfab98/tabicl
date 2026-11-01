@@ -237,17 +237,39 @@ seeds. Study initialization is locked across both identity writes so concurrent
 workers cannot read a half-written fingerprint. Incompatible settings are
 rejected before training.
 
-Wait for both searches to finish before submitting the four independent final
-runs; this lets all four select the same best completed trial automatically.
-The explicit ratio overrides give every run its own output directory, including
-100%. These commands train from scratch for 10,000 steps:
+Wait for the searches to finish, then use `train_final.sbatch` for each model.
+It selects the best completed v12 trial and preserves native informed features
+and NaNs, the learned missing-value embedding with individual columns, and no
+artificial feature masking. Generic tables retain their original recipe and
+receive no added NaNs. The final manifest records this input policy; the v12
+stream fingerprint is unchanged.
+
+Specify the GPU count and informed ratio directly on the existing script:
 
 ```bash
-sbatch --nodelist=sv1225 --job-name=epit_v12_i25 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v12,OVERRIDE_INFORMED_PRIOR_RATIO=0.25 scripts/epit_pipeline/train_final.sbatch
-sbatch --nodelist=sv1225 --job-name=epit_v12_i50 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v12,OVERRIDE_INFORMED_PRIOR_RATIO=0.50 scripts/epit_pipeline/train_final.sbatch
-sbatch --nodelist=sv1224 --job-name=epit_v12_i75 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v12,OVERRIDE_INFORMED_PRIOR_RATIO=0.75 scripts/epit_pipeline/train_final.sbatch
-sbatch --nodelist=sv1224 --job-name=epit_v12_i100 --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v12,OVERRIDE_INFORMED_PRIOR_RATIO=1.0 scripts/epit_pipeline/train_final.sbatch
+sbatch --gpus=2 scripts/epit_pipeline/train_final.sbatch --override-informed-prior-ratio 0.25
+sbatch --gpus=2 scripts/epit_pipeline/train_final.sbatch --override-informed-prior-ratio 0.50
+sbatch --gpus=2 scripts/epit_pipeline/train_final.sbatch --override-informed-prior-ratio 0.75
+sbatch --gpus=2 scripts/epit_pipeline/train_final.sbatch --override-informed-prior-ratio 1.00
 ```
+
+Use `--gpus=1` for single-GPU runs. The process count follows the allocated GPUs;
+an explicit `NPROC_PER_NODE` or `--nproc-per-node` still overrides it. Arguments
+after the script name are forwarded to `train_final.py` and override environment
+defaults. For the optional generic control, use ratio `0.0`. This control has the
+same architecture, but its missing token receives no training signal from NaNs;
+it is not a reproduction of the historical generic checkpoint.
+
+All runs train from scratch for 10,000 steps with global batch 512 and separate
+output/checkpoint directories. The script uses the shared v12 journal by
+default. Add `--selected-trial-number NUMBER` to pin the same best completed
+trial explicitly across runs; if it is no longer best when a queued job starts,
+that job stops instead of selecting another trial.
+
+The process-count change is recorded. Two-GPU training requires the seed
+correction described in
+[shared streams](PAIRED_STREAMS.md#multi-gpu-correction-1-november-2026) on the
+execution node. CPU generation and synchronization can limit the speedup.
 
 The default scheduler horizon is 10,000 for both search and final training.
 For planned 15,000-step final runs, set `SCHEDULER_TOTAL_STEPS=15000` on **all**

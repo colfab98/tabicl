@@ -79,7 +79,8 @@ def test_final_defaults_and_ratio_overrides_keep_reviewed_inputs(reviewed, tmp_p
 
 
 @pytest.mark.parametrize("missing_proxy_files", [False, True])
-def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, tmp_path, missing_proxy_files):
+@pytest.mark.parametrize("processes", [1, 2])
+def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, tmp_path, missing_proxy_files, processes):
     """Use real study/manifest/summary code; replace only external model jobs.
 
     All scores and checkpoint bytes below are artificial test fixtures. No
@@ -160,6 +161,7 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
     train_args = soccol_train.parse_args([
         "--storage", storage, "--device", "cpu", "--output-dir", str(tmp_path / "final"),
         "--checkpoint-root", str(tmp_path / "final_checkpoints"),
+        "--nproc-per-node", str(processes),
     ])
     if missing_proxy_files:
         _, selected_trial = final_train.load_selected_trial(train_args)
@@ -168,6 +170,15 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
             path = Path(selected_trial.user_attrs[key])
             assert path.is_relative_to(tmp_path)
             path.unlink()
+    # Validation must leave no checkpoint/output files and must run no model job.
+    train_args.dry_run = True
+    planned_manifest = final_train.run(train_args)
+    assert not planned_manifest.exists()
+    assert not train_args.output_dir.exists()
+    assert not train_args.checkpoint_root.exists()
+    assert len(training_commands) == 2
+    assert not final_queries_seen
+    train_args.dry_run = False
     manifest_path = final_train.run(train_args)
     assert not final_queries_seen
     frozen = load_frozen_final_model(manifest_path)
@@ -177,6 +188,20 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
     assert manifest["study"]["selected_trial_params"]["informed_prior_ratio"] == 1.
     assert manifest["selected_checkpoint"]["step"] == 500
     assert manifest["training"]["max_steps"] == 10000
+    assert manifest["training"]["nproc_per_node"] == processes
+    assert manifest["training"]["input_policy"] == {
+        "feature_schema": "native_per_source", "informed_feature_count": 58,
+        "col_missing_value_embedding": True, "col_feature_group": False,
+        "informed_missing_values": "preserve_native_nan",
+        "generic_missing_values": "none_injected", "artificial_feature_masking": False,
+    }
+    assert f"--nproc_per_node={processes}" in training_commands[-1]
+    if processes == 2:
+        assert manifest["training"]["experimental_override_run"]
+        assert manifest["training"]["overrides"]["proxy_training_overrides"]["nproc_per_node"] == {
+            "selected_study_value": 1, "effective_final_value": 2,
+        }
+        assert "_override_" in Path(manifest["training"]["checkpoint_dir"]).name
     assert manifest["split"]["original_development_rows"] == 3222
     assert manifest["split"]["development_rows"] == 2950
     assert manifest["split"]["final_test_rows"] == 805

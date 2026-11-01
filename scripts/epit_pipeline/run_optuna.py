@@ -42,6 +42,7 @@ from tabicl.prior.epit_expanded_schema import (
     EPIT_EXPANDED_FEATURE_COLUMNS, EPIT_EXPANDED_BLOCK_ALLOCATION,
 )
 from tabicl.prior.soccol_reviewed_schema import SOCCOL_REVIEWED_FEATURE_PROFILE
+from tabicl.train.train_config import PAIRED_COEFFICIENT_SEED_POLICY, paired_batch_size
 from tabicl.prior.magpie_features import (
     EPIT_BASE_FEATURE_COUNT,
     EPIT_MAGPIE_DESCRIPTOR_NAMES,
@@ -443,6 +444,10 @@ def build_pipeline_fingerprint(
             "dataloader_prefetch_factor": int(
                 args.dataloader_prefetch_factor
             ),
+            # Retain existing one-process v12/v6 fingerprints byte-for-byte.
+            # Old multi-process studies used rank-dependent coefficient draws.
+            **({"paired_coefficient_seed_policy": PAIRED_COEFFICIENT_SEED_POLICY}
+               if uses_fixed_informed_search(composition_mode) and args.nproc_per_node > 1 else {}),
         },
         "evaluation": {
             "device": str(args.device),
@@ -1156,6 +1161,12 @@ def training_command(
             ),
         ]
     )
+    if uses_fixed_informed_search(composition_mode):
+        paired_batch_size(
+            int(command[command.index("--batch_size") + 1]), args.nproc_per_node,
+            int(command[command.index("--batch_size_per_gp") + 1]),
+            int(command[command.index("--micro_batch_size") + 1]), params.informed_prior_ratio,
+        )
     return command
 
 

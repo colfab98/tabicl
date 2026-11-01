@@ -112,6 +112,10 @@ def parse_args(
     parser.add_argument("--dataloader-prefetch-factor", type=int, default=4)
     parser.add_argument("--eval-n-estimators", type=int, default=8)
     parser.add_argument(
+        "--dry-run", action="store_true",
+        help="Validate the selected trial and final-training configuration without training or writing outputs.",
+    )
+    parser.add_argument(
         "--eval-device",
         default=None,
         help=(
@@ -187,6 +191,31 @@ def validate_args(args: argparse.Namespace) -> None:
         )
     if args.selected_trial_number is not None and args.selected_trial_number < 0:
         raise ValueError("--selected-trial-number must be non-negative.")
+    if args.dry_run and args.resume_checkpoint_selection:
+        raise ValueError("--dry-run cannot be combined with --resume-checkpoint-selection.")
+
+
+def native_input_policy(args: argparse.Namespace, command: list[str]) -> dict[str, Any] | None:
+    """Verify the agreed native-schema policy without changing the v12 streams."""
+    if not (search.uses_expanded_schema(args) or search.uses_reviewed_soccol_schema(args)):
+        return None
+    from tabicl.train.train_config import build_parser
+
+    entry = next(i for i, token in enumerate(command) if token.endswith("/train/run.py"))
+    config = build_parser().parse_args(command[entry + 1:])
+    if not config.paired_prior_streams or not config.col_missing_value_embedding:
+        raise RuntimeError("Native paired final runs require the learned missing-value embedding.")
+    if config.missingness_profile_path or config.missingness_query_column_probability:
+        raise RuntimeError("Native paired final runs must not add artificial feature masking.")
+    return {
+        "feature_schema": "native_per_source",
+        "informed_feature_count": config.max_features,
+        "col_missing_value_embedding": True,
+        "col_feature_group": False,
+        "informed_missing_values": "preserve_native_nan",
+        "generic_missing_values": "none_injected",
+        "artificial_feature_masking": False,
+    }
 
 
 def load_selected_trial(args: argparse.Namespace) -> tuple[Any, Any]:
@@ -271,6 +300,25 @@ def verify_empirical_feature_profile_identity(
         raise RuntimeError(
             "Current empirical feature profile differs from the selected Optuna study."
         )
+
+
+def verify_paired_training_settings(args: argparse.Namespace, fingerprint: dict[str, Any]) -> None:
+    """Allow exact repartitioning while retaining the selected study's data recipe."""
+    from tabicl.prior.paired_streams import stream_policy
+    from tabicl.train.train_config import PAIRED_COEFFICIENT_SEED_POLICY
+
+    if fingerprint["fixed_prior"].get("paired_prior_streams") != stream_policy(args.prior_stream_seed):
+        raise RuntimeError("Final training must use the selected study's paired data-stream policy and seed.")
+    proxy = fingerprint.get("proxy_training", {})
+    study_processes = int(proxy.get("nproc_per_node", -1))
+    if study_processes < 1:
+        raise RuntimeError("Selected study has no valid training process count.")
+    if study_processes > 1 and proxy.get("paired_coefficient_seed_policy") != PAIRED_COEFFICIENT_SEED_POLICY:
+        raise RuntimeError("Selected multi-process study used unverified rank-dependent coefficient seeds; use a corrected study.")
+    for name in ("np_seed", "torch_seed", "python_seed", "scheduler_total_steps",
+                 "prior_n_jobs", "dataloader_num_workers", "dataloader_prefetch_factor"):
+        if int(getattr(args, name)) != int(proxy.get(name, -1)):
+            raise RuntimeError(f"Paired final training must match Optuna's {name}.")
 
 
 def verify_trial_file(trial: Any, path_attr: str, sha_attr: str) -> Path:
@@ -884,19 +932,13 @@ def run(args: argparse.Namespace) -> Path:
             raise RuntimeError("Final Soccol inputs differ from the selected study.")
     proxy_training = study_fingerprint.get("proxy_training", {})
     if search.uses_fixed_informed_search(composition_mode):
-        from tabicl.prior.paired_streams import stream_policy
-        if fixed_prior.get("paired_prior_streams") != stream_policy(args.prior_stream_seed):
-            raise RuntimeError("Final training must use the selected study's paired data-stream policy and seed.")
-        for name in ("np_seed", "torch_seed", "python_seed", "scheduler_total_steps",
-                     "nproc_per_node", "prior_n_jobs", "dataloader_num_workers",
-                     "dataloader_prefetch_factor"):
-            if int(getattr(args, name)) != int(proxy_training.get(name, -1)):
-                raise RuntimeError(f"Paired final training must match Optuna's {name}; only training duration and explicit prior overrides may change.")
+        verify_paired_training_settings(args, study_fingerprint)
     proxy_training_overrides: dict[str, dict[str, int]] = {}
     for argument_name, fingerprint_name in (
         ("np_seed", "np_seed"),
         ("torch_seed", "torch_seed"),
         ("prior_n_jobs", "prior_n_jobs"),
+        ("nproc_per_node", "nproc_per_node"),
     ):
         expected = int(proxy_training.get(fingerprint_name, -1))
         observed = int(getattr(args, argument_name))
@@ -980,12 +1022,25 @@ def run(args: argparse.Namespace) -> Path:
         "checkpoint_dir": str(checkpoint_dir),
         "max_steps": args.max_steps,
         "scheduler_total_steps": args.scheduler_total_steps,
+        "nproc_per_node": args.nproc_per_node,
         "save_temp_every": args.save_temp_every,
         "save_perm_every": args.save_perm_every,
         "checkpoint_selection_min_step": args.checkpoint_selection_min_step,
         "checkpoint_selection_interval": args.checkpoint_selection_interval,
         "train_command": train_command,
     }
+    input_policy = native_input_policy(args, train_command)
+    if input_policy is not None:
+        training_configuration["input_policy"] = input_policy
+    if args.dry_run:
+        for directory in (output_dir, checkpoint_dir):
+            if directory.exists() and any(directory.iterdir()):
+                raise FileExistsError(f"Final run directory is non-empty: {directory}")
+        print(json.dumps({
+            "dry_run": True, "output_dir": str(output_dir),
+            "final_model_manifest": str(manifest_path), "training": training_configuration,
+        }, indent=2, sort_keys=True))
+        return manifest_path
     if args.resume_checkpoint_selection:
         validate_resumable_training(
             args,

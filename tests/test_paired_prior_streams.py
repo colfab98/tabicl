@@ -134,6 +134,18 @@ def test_real_generic_recipe_and_tables_are_independent_of_specialist_settings()
         assert prior._get_prior_mix_probs().tolist() == [.7, .3]
     for left, right in zip(a._group(0, 0), b._group(0, 0)):
         assert_batch_equal(left[:3], right[:3])
+        assert torch.isfinite(left[0]).all()
+        assert torch.isfinite(right[0]).all()
+
+
+@pytest.mark.parametrize("family", ["epit", "soccol"])
+def test_native_informed_missingness_survives_without_shared_schema(family):
+    prior = make_prior(family)
+    for X, y, width, *_ in prior._group(1, 0):
+        assert X.shape[1] == int(width) == (70 if family == "epit" else 58)
+        assert torch.isnan(X).any()
+        assert torch.isfinite(X[:, :24]).all()
+        assert torch.isfinite(y).all()
 
 
 @pytest.mark.parametrize("family,source", [("epit", 0), ("epit", 1), ("soccol", 1)])
@@ -285,9 +297,7 @@ def test_optuna_and_final_emit_identical_stream_and_generator_settings(tmp_path,
                 setattr(search, name, value)
 
 
-@pytest.mark.parametrize("family,workers", [("epit", 0), ("epit", 2), ("soccol", 0), ("soccol", 2)])
-def test_real_training_resume_reproduces_batches_weights_and_optimizer(tmp_path, family, workers):
-    from tabicl.train.run import Trainer
+def small_training_config(tmp_path, family, workers=0):
     from tabicl.train.train_config import build_parser
 
     profile = make_prior(family, .5)
@@ -310,6 +320,14 @@ def test_real_training_resume_reproduces_batches_weights_and_optimizer(tmp_path,
         if hasattr(config, key) and key not in {"paired_prior_streams"}:
             setattr(config, key, copy.deepcopy(value))
     config.pitting_target_rule_scores = ["pren_n_linear=1.0"]
+    return config
+
+
+@pytest.mark.parametrize("family,workers", [("epit", 0), ("epit", 2), ("soccol", 0), ("soccol", 2)])
+def test_real_training_resume_reproduces_batches_weights_and_optimizer(tmp_path, family, workers):
+    from tabicl.train.run import Trainer
+
+    config = small_training_config(tmp_path, family, workers)
     uninterrupted = Trainer(config)
     if workers:
         uninterrupted.dataloader.kwargs["multiprocessing_context"] = "spawn"
@@ -343,3 +361,147 @@ def test_real_training_resume_reproduces_batches_weights_and_optimizer(tmp_path,
     resumed_config.prior_stream_seed = 43
     with pytest.raises(ValueError, match="matching recipe/profile/seed"):
         Trainer(resumed_config)
+
+
+def configured_prior(config, rank=0, world_size=1):
+    """Exercise the trainer's seed wiring, not just the dataset constructor."""
+    from tabicl.train.run import Trainer
+
+    trainer = Trainer.__new__(Trainer)
+    trainer.config = copy.deepcopy(config)
+    trainer.config.batch_size //= world_size
+    trainer.missingness_augmenter = None
+    trainer.ddp_rank, trainer.ddp_world_size, trainer.master_process = rank, world_size, False
+    trainer.configure_prior()
+    return trainer.dataloader.dataset
+
+
+@pytest.mark.parametrize("family", ["epit", "soccol"])
+@pytest.mark.parametrize("ratio", [0., .25, .5, .75, 1.])
+def test_trainer_partitions_identical_real_tables_across_processes(tmp_path, family, ratio):
+    config = small_training_config(tmp_path, family)
+    config.batch_size, config.informed_prior_ratio = 16, ratio
+    single = configured_prior(config)
+    ranks = [configured_prior(config, rank, 2) for rank in range(2)]
+    assert ranks[0].checkpoint_identity() == ranks[1].checkpoint_identity()
+    for _ in range(2):
+        batch = single.get_batch()
+        expected = {key: tuple(t[i] for t in batch) for i, key in enumerate(single.last_batch_ids)}
+        seen = set()
+        for rank in ranks:
+            actual = rank.get_batch()
+            for i, key in enumerate(rank.last_batch_ids):
+                assert key not in seen
+                seen.add(key)
+                assert_batch_equal(tuple(t[i] for t in actual), expected[key])
+        assert seen == set(expected)
+
+
+def test_nonpaired_coefficient_seed_keeps_legacy_rank_offset(tmp_path):
+    config = small_training_config(tmp_path, "epit")
+    config.paired_prior_streams = False
+    prior = configured_prior(config, 1, 2)
+    assert prior.prior.fixed_hp["pitting_coefficient_variation_seed"] == 43
+
+
+def test_paired_training_never_skips_an_oom_table(tmp_path, monkeypatch):
+    from tabicl.train.run import Trainer
+
+    trainer = Trainer(small_training_config(tmp_path, "epit"))
+    batch = next(trainer.dataloader)
+    calls = []
+
+    def out_of_memory(*args):
+        calls.append(args[1])
+        raise torch.cuda.OutOfMemoryError("injected OOM")
+
+    monkeypatch.setattr(trainer, "run_micro_batch", out_of_memory)
+    with pytest.raises(torch.cuda.OutOfMemoryError, match="injected OOM"):
+        trainer.run_batch(batch)
+    assert calls == [0]
+    assert not trainer.optimizer.state
+
+
+def _distributed_training_worker(rank, root, config):
+    """Use production setup/updates/checkpoints, replacing only CUDA transport."""
+    import os
+    from datetime import timedelta
+    from pathlib import Path
+    from unittest.mock import patch
+
+    import torch.distributed as dist
+    from torch.nn.parallel import DistributedDataParallel
+    from tabicl.train import run
+
+    torch.set_num_threads(1)
+    root = Path(root)
+    reference = torch.load(root / "single.pt", weights_only=False)
+
+    class CPUTrainer(run.Trainer):
+        def configure_ddp(self):
+            super().configure_ddp()
+            self.config.device = "cpu"
+
+    def initialize(backend):
+        assert backend == "nccl"
+        if not dist.is_initialized():
+            dist.init_process_group("gloo", init_method=(root / "rendezvous").as_uri(),
+                                    rank=rank, world_size=2, timeout=timedelta(seconds=60))
+
+    with patch.dict(os.environ, RANK=str(rank), LOCAL_RANK=str(rank), WORLD_SIZE="2"), \
+         patch.object(run, "init_process_group", initialize), \
+         patch.object(torch.cuda, "set_device"), \
+         patch.object(run, "DDP", lambda model, **kw: DistributedDataParallel(
+             model, broadcast_buffers=kw["broadcast_buffers"])):
+        try:
+            trainer = CPUTrainer(copy.deepcopy(config))
+            for step in range(3):
+                batch = next(trainer.dataloader)
+                for i, key in enumerate(trainer.dataloader.dataset.last_batch_ids):
+                    assert_batch_equal(tuple(t[i] for t in batch), reference["tables"][step][key])
+                trainer.run_batch(batch)
+                trainer.curr_step = step + 1
+                if step == 1:
+                    states = [None, None]
+                    dist.all_gather_object(states, trainer.sampling_state_dict())
+                    if rank == 0:
+                        trainer.save_checkpoint("step-2.ckpt", sampling_states=states)
+                    dist.barrier()
+            for name, parameter in trainer.raw_model.state_dict().items():
+                torch.testing.assert_close(parameter, reference["model"][name], rtol=1e-5, atol=1e-6)
+            assert trainer.scheduler.state_dict() == reference["scheduler"]
+            for key, state in trainer.optimizer.state_dict()["state"].items():
+                for name, value in state.items():
+                    torch.testing.assert_close(value, reference["optimizer"]["state"][key][name],
+                                               rtol=1e-4, atol=1e-6)
+            # Each rank must reload the same checkpoint, including its own stream boundary.
+            restored = CPUTrainer(copy.deepcopy(config))
+            assert restored.curr_step == 2
+            restored.run_batch(next(restored.dataloader))
+            assert_batch_equal(tuple(trainer.raw_model.state_dict().values()),
+                               tuple(restored.raw_model.state_dict().values()))
+            assert trainer.scheduler.state_dict() == restored.scheduler.state_dict()
+        finally:
+            if dist.is_initialized():
+                dist.destroy_process_group()
+
+
+@pytest.mark.parametrize("family", ["epit", "soccol"])
+def test_two_process_training_matches_single_and_resumes(tmp_path, family):
+    from tabicl.train.run import Trainer
+
+    config = small_training_config(tmp_path / "single", family)
+    config.batch_size, config.informed_prior_ratio = 16, .5
+    single = Trainer(copy.deepcopy(config))
+    tables = []
+    for _ in range(3):
+        batch = next(single.dataloader)
+        tables.append({key: tuple(t[i].clone() for t in batch)
+                       for i, key in enumerate(single.dataloader.dataset.last_batch_ids)})
+        single.run_batch(batch)
+    torch.save({"tables": tables, "model": single.raw_model.state_dict(),
+                "optimizer": single.optimizer.state_dict(), "scheduler": single.scheduler.state_dict()},
+               tmp_path / "single.pt")
+    config.checkpoint_dir = str(tmp_path / "distributed")
+    torch.multiprocessing.spawn(_distributed_training_worker, args=(str(tmp_path), config),
+                                nprocs=2, join=True)

@@ -32,7 +32,7 @@ from tabicl.prior.epit_feature_profile import EPIT_FEATURE_COMPOSITION_PROFILES
 from tabicl.train.missingness import MissingnessAugmenter
 from tabicl.train.optim import get_scheduler
 from tabicl.train.sampling import CheckpointablePriorLoader, rng_state_dict, load_rng_state_dict
-from tabicl.train.train_config import build_parser
+from tabicl.train.train_config import build_parser, paired_batch_size
 
 warnings.filterwarnings(
     "ignore", message=".*The PyTorch API of nested tensors is in prototype stage.*", category=UserWarning
@@ -108,6 +108,14 @@ class Trainer:
         """
         # Setup distributed training
         self.ddp = int(os.environ.get("RANK", -1)) != -1
+        if getattr(self.config, "paired_prior_streams", False):
+            # Validate before NCCL initialization; never round a paired global batch.
+            paired_batch_size(
+                self.config.batch_size, int(os.environ["WORLD_SIZE"]) if self.ddp else 1,
+                self.config.batch_size_per_gp, self.config.micro_batch_size,
+                {"mix_scm": 0.0, "informed_scm": 1.0}.get(
+                    self.config.prior_type, self.config.informed_prior_ratio),
+            )
 
         if self.ddp:
             init_process_group(backend="nccl")
@@ -289,7 +297,11 @@ class Trainer:
             if variation:
                 scm_fixed_hp.update({
                     "pitting_coefficient_variation": variation,
-                    "pitting_coefficient_variation_seed": self.config.pitting_coefficient_variation_seed + self.ddp_rank,
+                    # Paired table IDs already separate draws across ranks. A rank
+                    # offset here changes the targets when the GPU count changes.
+                    "pitting_coefficient_variation_seed": (
+                        self.config.pitting_coefficient_variation_seed + (0 if paired else self.ddp_rank)
+                    ),
                     "pitting_coefficient_upper_bounds": self.config.pitting_coefficient_upper_bounds,
                 })
 
@@ -1084,6 +1096,10 @@ class Trainer:
                 for k, v in micro_results.items():
                     results[k] += v
             except torch.cuda.OutOfMemoryError:
+                if getattr(self.config, "paired_prior_streams", False):
+                    # Skipping would change the shared batch and can leave other
+                    # DDP ranks waiting for a gradient collective that never runs.
+                    raise
                 print(
                     f"Warning: OOM error in micro-batch {idx+1}/{num_micro_batches} at step {self.curr_step}. Skipping."
                 )

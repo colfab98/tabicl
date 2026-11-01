@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=epit_final_empirical_scm_v12
+#SBATCH --nodes=1
 #SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=96:00:00
@@ -19,7 +20,8 @@ STORAGE="${STORAGE:-journal://${STUDY_DIR}/study_journal_v1.log}"
 SPLIT_MANIFEST="${SPLIT_MANIFEST:-corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json}"
 TARGET_RULE_SUMMARY="${TARGET_RULE_SUMMARY:-corrosion_datasets/analysis/epit_pipeline/target_rules_v4/calibration_summary.json}"
 SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-}"
-NPROC_PER_NODE="${NPROC_PER_NODE:-1}"
+# Use the GPUs allocated on this node unless explicitly overridden.
+NPROC_PER_NODE="${NPROC_PER_NODE:-${SLURM_GPUS_ON_NODE:-1}}"
 MAX_STEPS="${MAX_STEPS:-10000}"
 SCHEDULER_TOTAL_STEPS="${SCHEDULER_TOTAL_STEPS:-10000}"
 SAVE_TEMP_EVERY="${SAVE_TEMP_EVERY:-100}"
@@ -98,4 +100,5 @@ python -m scripts.epit_pipeline.train_final \
   --dataloader-num-workers "$DATALOADER_NUM_WORKERS" \
   --dataloader-prefetch-factor "$DATALOADER_PREFETCH_FACTOR" \
   --eval-n-estimators "$EVAL_N_ESTIMATORS" \
-  "${EXTRA_ARGS[@]}"
+  "${EXTRA_ARGS[@]}" \
+  "$@"

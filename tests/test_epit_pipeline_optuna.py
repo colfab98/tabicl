@@ -167,6 +167,107 @@ def test_pipeline_defaults_use_current_v12_workflow() -> None:
     )
 
 
+def test_paired_final_can_repartition_single_process_study_without_changing_recipe():
+    from tabicl.train.train_config import PAIRED_COEFFICIENT_SEED_POLICY
+
+    args = search.parse_args([])
+    rules = search.load_target_rule_config(
+        summary_path=args.target_rule_summary, split_manifest_path=args.split_manifest)
+    fingerprint = search.build_pipeline_fingerprint(args, rules)
+    assert "paired_coefficient_seed_policy" not in fingerprint["proxy_training"]
+    final_args = train_final.parse_args(["--storage", "journal:///unused.log", "--nproc-per-node", "2"])
+    train_final.verify_paired_training_settings(final_args, fingerprint)
+    final_args.nproc_per_node = 1
+    train_final.verify_paired_training_settings(final_args, fingerprint)
+    for field in ("np_seed", "torch_seed", "python_seed", "scheduler_total_steps",
+                  "prior_n_jobs", "dataloader_num_workers", "dataloader_prefetch_factor"):
+        changed = SimpleNamespace(**vars(final_args))
+        setattr(changed, field, getattr(changed, field) + 1)
+        with pytest.raises(RuntimeError, match=field):
+            train_final.verify_paired_training_settings(changed, fingerprint)
+    final_args.prior_stream_seed += 1
+    with pytest.raises(RuntimeError, match="stream policy and seed"):
+        train_final.verify_paired_training_settings(final_args, fingerprint)
+    final_args.prior_stream_seed -= 1
+
+    # A legacy two-process study must not silently acquire the corrected targets.
+    fingerprint["proxy_training"]["nproc_per_node"] = 2
+    with pytest.raises(RuntimeError, match="rank-dependent coefficient"):
+        train_final.verify_paired_training_settings(final_args, fingerprint)
+    args.nproc_per_node = 2
+    corrected = search.build_pipeline_fingerprint(args, rules)
+    assert corrected["proxy_training"]["paired_coefficient_seed_policy"] == PAIRED_COEFFICIENT_SEED_POLICY
+    assert corrected["fixed_prior"] == fingerprint["fixed_prior"]
+    train_final.verify_paired_training_settings(final_args, corrected)
+
+
+@pytest.mark.parametrize("processes,ratio,valid", [
+    (1, 1., True), (2, 0., True), (2, .25, True), (2, .5, True),
+    (2, .75, True), (2, 1., True), (4, .25, True),
+    (3, 1., False), (2, .1, False), (256, 1., False),
+])
+def test_paired_training_command_requires_exact_global_batch(tmp_path, processes, ratio, valid):
+    args = search.parse_args(["--nproc-per-node", str(processes)])
+    rules = search.load_target_rule_config(
+        summary_path=args.target_rule_summary, split_manifest_path=args.split_manifest)
+    params = search.trial_params_from_mapping(
+        {"mlp_prob": .5, "informed_target_mix_weight": .5, "pitting_composition_perturb_strength": .1},
+        composition_mode=args.pitting_composition_mode, fixed_informed_prior_ratio=ratio)
+    if not valid:
+        with pytest.raises(ValueError, match="Paired"):
+            search.training_command(args, params, tmp_path, rules)
+        return
+    command = search.training_command(args, params, tmp_path, rules)
+    assert f"--nproc_per_node={processes}" in command
+    assert _value_after(command, "--batch_size") == "512"
+    assert _value_after(command, "--micro_batch_size") == "4"
+    assert _value_after(command, "--lr") == "1e-4"
+    assert _value_after(command, "--pitting_coefficient_variation_seed") == "42"
+
+
+@pytest.mark.parametrize("ratio", [0., .25, .5, .75, 1.])
+def test_final_ratios_keep_native_nans_and_disable_extra_masks(tmp_path, ratio):
+    from tabicl.train.run import Trainer
+    from tabicl.train.train_config import build_parser
+
+    args = train_final.parse_args(["--storage", "journal:///unused.log", "--override-informed-prior-ratio", str(ratio)])
+    args.pitting_composition_mode = "empirical_features_scm_target"
+    selected = search.trial_params_from_mapping(
+        {"mlp_prob": .37, "informed_target_mix_weight": .42, "pitting_composition_perturb_strength": .12},
+        composition_mode=args.pitting_composition_mode, fixed_informed_prior_ratio=1.,
+    )
+    effective, _ = train_final.apply_parameter_overrides(args, selected, composition_mode=args.pitting_composition_mode)
+    rules = search.load_target_rule_config(summary_path=args.target_rule_summary, split_manifest_path=args.split_manifest)
+    command = search.training_command(args, effective, tmp_path, rules)
+    policy = train_final.native_input_policy(args, command)
+    assert policy["informed_feature_count"] == 70
+    assert policy["col_missing_value_embedding"] and not policy["col_feature_group"]
+    assert not policy["artificial_feature_masking"]
+    entry = next(i for i, token in enumerate(command) if token.endswith("/train/run.py"))
+    trainer = Trainer.__new__(Trainer)
+    trainer.config = build_parser().parse_args(command[entry + 1:])
+    trainer.configure_missingness()
+    assert trainer.config.informed_prior_ratio == ratio
+    assert trainer.missingness_augmenter is None
+    with pytest.raises(RuntimeError, match="artificial feature masking"):
+        train_final.native_input_policy(args, command + ["--missingness_profile_path", "unwanted.json"])
+    with pytest.raises(RuntimeError, match="missing-value embedding"):
+        train_final.native_input_policy(args, command + ["--col_missing_value_embedding", "false"])
+
+
+def test_paired_trainer_rejects_rounded_batch_before_starting_nccl(monkeypatch):
+    from tabicl.train import run
+    from tabicl.train.train_config import build_parser
+
+    trainer = run.Trainer.__new__(run.Trainer)
+    trainer.config = build_parser().parse_args(["--paired_prior_streams", "true", "--micro_batch_size", "4"])
+    monkeypatch.setenv("RANK", "0")
+    monkeypatch.setenv("WORLD_SIZE", "3")
+    monkeypatch.setattr(run, "init_process_group", lambda **kw: pytest.fail("NCCL initialized before validation"))
+    with pytest.raises(ValueError, match="divisible by the process count"):
+        trainer.configure_ddp()
+
+
 def test_stage4_resume_requires_matching_completed_training(tmp_path: Path) -> None:
     args = train_final.parse_args(
         [

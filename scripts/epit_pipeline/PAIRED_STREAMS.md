@@ -49,6 +49,21 @@ trainer also supported `--paired_prior_streams true --prior_type mix_scm`.
 Previously trained generic checkpoints did not retroactively acquire these
 indexed tables. Existing evaluation conventions were not changed by this work.
 
+The agreed final-run policy (1 November 2026) keeps native informed NaNs and the
+learned missing-value embedding, with feature grouping disabled for the whole
+model. Generic samples receive no added NaNs, and no artificial feature masking
+is applied to either source. A 0% informed run therefore shares the architecture
+but does not train the missing token on missing examples. Different informed
+datasets retain their own native feature sets when trained as separate tasks;
+this does not introduce a shared column-name identity into the model. The old
+combined 50-column sampler is a separate historical workflow.
+
+Use the existing `train_final.sbatch` with `sbatch --gpus=1` or `--gpus=2` and
+`--override-informed-prior-ratio 0.25`, `0.50`, `0.75`, `1.0`, or optional `0.0`
+after the script name. Its process count follows the allocated node GPUs unless
+explicitly overridden. Each final manifest records `input_policy`; the v12
+generator and stream fingerprint are unchanged.
+
 ## Optuna and final training
 
 - Training NumPy, Torch and Python seeds defaulted to 42; the separate
@@ -63,10 +78,12 @@ indexed tables. Existing evaluation conventions were not changed by this work.
 - Different formula weights still changed targets. Different perturbation
   strengths still changed composition values. Common random draws did not
   erase the parameter differences being optimized.
-- Final training required the selected study's stream policy, data seed,
-  training seeds, scheduler horizon and process/worker settings. Training
-  duration and explicit prior overrides could differ. Without overrides, the
-  final model's initial tables repeated the selected trial's tables.
+- Final training requires the selected study's stream policy, data seed,
+  training seeds, scheduler horizon and loader-worker settings. The process
+  count may change when the global batch and source groups divide exactly.
+  Training duration and explicit prior overrides may also differ. Without
+  prior overrides, the final model's initial tables repeat the selected trial's
+  tables, including when partitioned across GPUs.
 - Plan the scheduler horizon before Optuna. If final runs are intended to reach
   15,000 steps, use `SCHEDULER_TOTAL_STEPS=15000` for the 1,000-step search and
   for final training; a newly stretched schedule is a different optimization
@@ -125,3 +142,28 @@ relaxed. Running processes retain the old implementation: stop the affected old
 workers, synchronize the corrected code on every node, and launch the new study.
 Do not append corrected runs to the old study or resume its checkpoints as if
 the generator were unchanged. Final training must use the corrected study too.
+
+## Multi-GPU correction, 1 November 2026
+
+The trainer previously added the GPU rank to the formula-coefficient seed,
+even for paired streams. The second GPU therefore generated different targets
+for the same table IDs. Paired training now uses the unchanged coefficient seed
+on every rank. Legacy non-paired training retains its historical rank offset.
+The generator files and stream policy were not changed: existing single-process
+EPIT v12/Soccol v6 studies, tables and checkpoint identities remain compatible.
+Corrected multi-process studies record `paired_coefficient_seed_policy` in their
+fingerprint; final training rejects older multi-process studies without it.
+
+Final training may repartition the global batch of 512 into 256 tables on each
+of two GPUs, retaining micro-batches of four and the same learning-rate schedule.
+Both the launcher and trainer reject partitions requiring rounding or partial
+source groups. Process-count overrides are recorded and receive separate default
+run destinations. Paired training raises on OOM instead of skipping tables.
+Checkpoint resume still requires the saved process count and loader settings;
+the high-level launcher still has no training-resume flag.
+
+Regression tests compare actual EPIT/Soccol tables by source/index across all
+five mixture ratios through the trainer. Two-process CPU/Gloo tests compare
+optimizer updates with single-process training and resume both ranks from one
+checkpoint. These establish data equality and numerical agreement, not identical
+GPU arithmetic or a measured twofold speedup.
