@@ -56,7 +56,8 @@ def parse_args(
         default=None,
         help=(
             "Pin a completed trial after verifying that it is still the best "
-            "completed trial. By default Stage 4 selects study.best_trial."
+            "completed trial. With --resume-training, pin the original trial "
+            "even if a newer trial has since scored higher."
         ),
     )
     parser.add_argument(
@@ -121,6 +122,15 @@ def parse_args(
         help=(
             "Device used only for development checkpoint selection and final "
             "evaluation provenance. Defaults to --device."
+        ),
+    )
+    parser.add_argument(
+        "--resume-training",
+        action="store_true",
+        help=(
+            "Continue an interrupted, command-matched run from its latest "
+            "checkpoint, including optimizer and synthetic-stream state. "
+            "Requires --selected-trial-number and the original training settings."
         ),
     )
     parser.add_argument(
@@ -193,6 +203,10 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--selected-trial-number must be non-negative.")
     if args.dry_run and args.resume_checkpoint_selection:
         raise ValueError("--dry-run cannot be combined with --resume-checkpoint-selection.")
+    if args.resume_training and args.resume_checkpoint_selection:
+        raise ValueError("Choose either --resume-training or --resume-checkpoint-selection.")
+    if args.resume_training and args.selected_trial_number is None:
+        raise ValueError("--resume-training requires the original --selected-trial-number.")
 
 
 def native_input_policy(args: argparse.Namespace, command: list[str]) -> dict[str, Any] | None:
@@ -255,7 +269,7 @@ def load_selected_trial(args: argparse.Namespace) -> tuple[Any, Any]:
             f"Pinned trial {args.selected_trial_number} is not a completed "
             "finite trial in the study."
         )
-    if int(selected.number) != int(best_completed.number):
+    if int(selected.number) != int(best_completed.number) and not args.resume_training:
         raise RuntimeError(
             f"Pinned trial {selected.number} is not the best completed trial; "
             f"current best is trial {best_completed.number}."
@@ -863,27 +877,61 @@ def validate_resumable_training(
     output_dir: Path,
     checkpoint_dir: Path,
     train_command: list[str],
-) -> None:
-    """Verify that resume mode targets the exact completed training run."""
+) -> Path | None:
+    """Match the original command, then validate training or selection resume."""
     train_log = output_dir / "train.log"
     if not train_log.is_file():
         raise FileNotFoundError(
             f"Resume mode requires the original training log: {train_log}"
         )
-    first_line = train_log.read_text(
-        encoding="utf-8", errors="replace"
-    ).splitlines()[0].strip()
+    with train_log.open(encoding="utf-8", errors="replace") as handle:
+        first_line = handle.readline().strip()
     expected_command = " ".join(train_command)
     if first_line != expected_command:
         raise RuntimeError(
             "Existing train.log does not match the requested final-training "
-            "configuration; refusing to attach checkpoint-selection results."
+            "configuration; resume requires the original training settings."
         )
     if not checkpoint_dir.is_dir():
         raise FileNotFoundError(
             f"Resume mode requires the existing checkpoint directory: {checkpoint_dir}"
         )
-    checkpoint_candidates(args, checkpoint_dir)
+    if not args.resume_training:
+        checkpoint_candidates(args, checkpoint_dir)
+        return None
+
+    checkpoints = [
+        path for path in checkpoint_dir.glob("step-*.ckpt")
+        if path.is_file() and CHECKPOINT_RE.fullmatch(path.name)
+    ]
+    if not checkpoints:
+        raise FileNotFoundError(f"No saved training checkpoint in {checkpoint_dir}.")
+    checkpoint = max(checkpoints, key=checkpoint_step).resolve()
+    step = checkpoint_step(checkpoint)
+    if not 0 <= step <= args.max_steps:
+        raise ValueError("Latest checkpoint step exceeds the requested training horizon.")
+
+    import torch
+
+    state = torch.load(checkpoint, map_location="cpu", weights_only=True)
+    required = (
+        "state_dict", "optimizer_state", "scheduler_state", "scaler_state",
+        "curr_step", "sampling_state",
+    )
+    if any(state.get(key) is None for key in required):
+        raise ValueError("Resume requires a full checkpoint with optimizer and sampling state.")
+    if state["curr_step"] != step:
+        raise ValueError("Saved training step does not match the checkpoint filename.")
+    sampling = state["sampling_state"]
+    ranks = sampling.get("ranks", [])
+    if sampling.get("version") != 1 or len(ranks) != args.nproc_per_node:
+        raise ValueError("Resume requires the saved sampling format and original GPU/process count.")
+    if any(rank.get("rng") is None or rank.get("loader") is None for rank in ranks):
+        raise ValueError("Resume requires RNG state and a consumed dataset boundary for every rank.")
+    # The trainer also checks the paired recipe/profile/seed identity before loading.
+    if "--paired_prior_streams" in train_command and state.get("paired_prior_stream") is None:
+        raise ValueError("Paired training resume requires the saved paired-stream identity.")
+    return checkpoint
 
 
 def run(args: argparse.Namespace) -> Path:
@@ -902,8 +950,13 @@ def run(args: argparse.Namespace) -> Path:
         if candidate.state.name in {"RUNNING", "WAITING"}
     ]
     if unfinished_trials_at_selection:
+        selection = (
+            f"Using original trial {trial.number} for training resume"
+            if args.resume_training
+            else "Selecting the current best completed trial"
+        )
         print(
-            "Selecting the current best completed trial while Optuna still has "
+            f"{selection} while Optuna still has "
             f"{len(unfinished_trials_at_selection)} RUNNING/WAITING trial(s).",
             flush=True,
         )
@@ -1032,25 +1085,50 @@ def run(args: argparse.Namespace) -> Path:
     input_policy = native_input_policy(args, train_command)
     if input_policy is not None:
         training_configuration["input_policy"] = input_policy
-    if args.dry_run:
-        for directory in (output_dir, checkpoint_dir):
-            if directory.exists() and any(directory.iterdir()):
-                raise FileExistsError(f"Final run directory is non-empty: {directory}")
-        print(json.dumps({
-            "dry_run": True, "output_dir": str(output_dir),
-            "final_model_manifest": str(manifest_path), "training": training_configuration,
-        }, indent=2, sort_keys=True))
-        return manifest_path
-    if args.resume_checkpoint_selection:
-        validate_resumable_training(
+    resume_checkpoint = None
+    if args.resume_training or args.resume_checkpoint_selection:
+        resume_checkpoint = validate_resumable_training(
             args,
             output_dir=output_dir,
             checkpoint_dir=checkpoint_dir,
             train_command=train_command,
         )
-    else:
+    if resume_checkpoint is not None:
+        training_configuration["resumed_from_checkpoint"] = {
+            "path": str(resume_checkpoint),
+            "step": checkpoint_step(resume_checkpoint),
+        }
+    if args.dry_run:
+        if not args.resume_training:
+            for directory in (output_dir, checkpoint_dir):
+                if directory.exists() and any(directory.iterdir()):
+                    raise FileExistsError(f"Final run directory is non-empty: {directory}")
+        print(json.dumps({
+            "dry_run": True, "output_dir": str(output_dir),
+            "final_model_manifest": str(manifest_path), "training": training_configuration,
+        }, indent=2, sort_keys=True))
+        return manifest_path
+    if resume_checkpoint is not None:
+        step = checkpoint_step(resume_checkpoint)
+        if step < args.max_steps:
+            stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+            resume_log = output_dir / f"train_resume_step_{step}_{stamp}.log"
+            resume_command = [*train_command, "--checkpoint_path", str(resume_checkpoint)]
+            training_configuration["resume_command"] = resume_command
+            training_configuration["resume_log"] = str(resume_log)
+            print(f"Resuming from {resume_checkpoint}; training log: {resume_log}", flush=True)
+            search.original.search_utils.run_command(
+                resume_command, cwd=REPO_ROOT, log_path=resume_log,
+            )
+        else:
+            print("Training is complete; resuming development checkpoint selection.", flush=True)
+    elif not args.resume_checkpoint_selection:
         if output_dir.exists() and any(output_dir.iterdir()):
-            raise FileExistsError(f"Final output directory is non-empty: {output_dir}")
+            raise FileExistsError(
+                f"Final output directory is non-empty: {output_dir}. "
+                "To continue an interrupted run, use --resume-training with "
+                "the original --selected-trial-number and training settings."
+            )
         if checkpoint_dir.exists() and any(checkpoint_dir.iterdir()):
             raise FileExistsError(
                 f"Final checkpoint directory is non-empty: {checkpoint_dir}"
@@ -1073,7 +1151,7 @@ def run(args: argparse.Namespace) -> Path:
             output_dir=evaluation_root / f"step_{checkpoint_step(checkpoint):05d}",
             split_manifest=args.split_manifest,
             rules=rules,
-            reuse_existing=args.resume_checkpoint_selection,
+            reuse_existing=args.resume_checkpoint_selection or args.resume_training,
         )
         for checkpoint in checkpoint_candidates(args, checkpoint_dir)
     ]
@@ -1107,7 +1185,9 @@ def run(args: argparse.Namespace) -> Path:
             "storage": args.storage,
             "total_trials": len(study.trials),
             "selection_mode": (
-                "explicit_current_best_completed_trial"
+                "resume_existing_trial"
+                if args.resume_training
+                else "explicit_current_best_completed_trial"
                 if args.selected_trial_number is not None
                 else "automatic_current_best_completed_trial"
             ),
@@ -1150,7 +1230,7 @@ def run(args: argparse.Namespace) -> Path:
             "data": "five frozen development folds only",
             "primary_metric": "mean_test_spearman",
             "resumed_from_existing_training": bool(
-                args.resume_checkpoint_selection
+                args.resume_checkpoint_selection or args.resume_training
             ),
             "candidates": records,
         },

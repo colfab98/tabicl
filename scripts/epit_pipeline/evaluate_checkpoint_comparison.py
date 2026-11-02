@@ -31,7 +31,7 @@ LEGACY_CANDIDATE_RUN = (
     REPO_ROOT / "checkpoints/epit_pipeline_final_v2/final_epit_pipeline_optuna_empirical_features_scm_target_v8_trial_0017"
 )
 CATBOOST_CATEGORICAL_COLUMNS = EPIT_EXPANDED_CATEGORICAL_COLUMNS
-RATIO_LABELS = ("epit_25pct", "epit_50pct", "epit_75pct", "epit_100pct")
+RATIO_LABELS = ("epit_0pct", "epit_25pct", "epit_50pct", "epit_75pct", "epit_100pct")
 LEGACY_CATEGORICAL_COLUMNS = ("[Cl-] Test Method",)
 REQUIRED_PLOTS = tuple(f"trend_mean_test_{metric}.svg" for metric in (
     "spearman", "mae", "nmae_iqr", "nrmse_iqr", "pearson", "r2",
@@ -46,8 +46,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     source = parser.add_mutually_exclusive_group()
     source.add_argument("--candidate-run", "--trial-run", type=Path, help="Explicit run for checkpoint trends; otherwise read the frozen final-model manifest.")
     source.add_argument("--final-model-manifest", type=Path)
-    source.add_argument("--ratio-runs", type=Path, nargs=4, metavar=("RUN25", "RUN50", "RUN75", "RUN100"),
-                        help="Compare all four informed ratios together, in 25/50/75/100 order.")
+    source.add_argument("--ratio-runs", type=Path, nargs=5, metavar=("RUN0", "RUN25", "RUN50", "RUN75", "RUN100"),
+                        help="Compare five informed ratios together, in 0/25/50/75/100 order, plus three baselines.")
     parser.add_argument("--candidate-label", default=None)
     parser.add_argument("--split-manifest", type=Path, default=DEFAULT_SPLIT_MANIFEST)
     parser.add_argument("--dry-run", action="store_true", help="Print the evaluation command without loading models or writing results.")
@@ -57,10 +57,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     if args.ratio_runs is not None:
         if args.legacy_data or args.candidate_label is not None:
             parser.error("--ratio-runs uses reviewed data and fixed ratio labels; omit --legacy-data and --candidate-label.")
-        if len({path.expanduser().resolve() for path in args.ratio_runs}) != 4:
-            parser.error("--ratio-runs requires four distinct checkpoint directories.")
+        if len({path.expanduser().resolve() for path in args.ratio_runs}) != 5:
+            parser.error("--ratio-runs requires five distinct checkpoint directories.")
     if args.n_estimators <= 0 or args.checkpoint_step_interval < 0 or args.catboost_thread_count == 0:
         parser.error("Estimators must be positive, checkpoint interval nonnegative, and CatBoost threads nonzero.")
+    if args.max_checkpoint_step is not None:
+        if args.checkpoint != "all":
+            parser.error("--max-checkpoint-step requires --checkpoint all.")
+        if args.max_checkpoint_step < 0 or args.max_checkpoint_step < args.min_checkpoint_step:
+            parser.error("--max-checkpoint-step must be nonnegative and >= --min-checkpoint-step.")
     if args.candidate_label is None:
         args.candidate_label = "epit_legacy" if args.legacy_data else "epit_reviewed"
     args.candidate_label = slugify(args.candidate_label)
@@ -104,7 +109,9 @@ def output_directory(args: argparse.Namespace) -> Path:
     if args.output_dir is not None:
         return args.output_dir.expanduser().resolve()
     mode = "context_folds" if args.context_folds is not None else "full_development"
-    name = f"{'four_ratios_' if args.ratio_runs is not None else ''}final_test_{mode}_comparison"
+    name = f"{'five_ratios_' if args.ratio_runs is not None else ''}final_test_{mode}_comparison"
+    if args.max_checkpoint_step is not None:
+        name += f"_through_{args.max_checkpoint_step}"
     return DEFAULT_OUTPUT_ROOT / (name if args.legacy_data else f"reviewed_{name}")
 
 
@@ -153,6 +160,10 @@ def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: i
         raise RuntimeError("Comparison did not produce all requested models and three baselines.")
     strategy = "epit_pipeline_final_test" + (f"_context_fold_{context_fold}" if context_fold is not None else "")
     for row in rows:
+        if args.max_checkpoint_step is not None and (
+            row.get("checkpoint_step") is None or int(row["checkpoint_step"]) > args.max_checkpoint_step
+        ):
+            raise RuntimeError("Comparison exceeded the requested maximum checkpoint step.")
         if (row.get("task_id") != EPIT_TASK_ID or row.get("split_strategy") != strategy
                 or row.get("n_train") != len(expected["context_task_row_indices"])
                 or row.get("n_test") != len(expected["query_task_row_indices"]) or row.get("n_features") != 70):

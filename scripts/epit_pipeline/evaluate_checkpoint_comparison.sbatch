@@ -30,13 +30,15 @@ if [[ -n "${CANDIDATE_RUN:-}" && -n "${FINAL_MODEL_MANIFEST:-}" ]]; then
 fi
 if [[ -n "${CANDIDATE_RUN:-}" ]]; then OPTIONS+=(--candidate-run "$CANDIDATE_RUN"); fi
 if [[ -n "${FINAL_MODEL_MANIFEST:-}" ]]; then OPTIONS+=(--final-model-manifest "$FINAL_MODEL_MANIFEST"); fi
-if [[ -n "${EPIT25_RUN:-}${EPIT50_RUN:-}${EPIT75_RUN:-}${EPIT100_RUN:-}" ]]; then
+if [[ -n "${EPIT0_RUN:-}${EPIT25_RUN:-}${EPIT50_RUN:-}${EPIT75_RUN:-}${EPIT100_RUN:-}" ]]; then
   OPTIONS+=(--ratio-runs
-    "${EPIT25_RUN:?Set all four EPIT ratio run paths}"
-    "${EPIT50_RUN:?Set all four EPIT ratio run paths}"
-    "${EPIT75_RUN:?Set all four EPIT ratio run paths}"
-    "${EPIT100_RUN:?Set all four EPIT ratio run paths}")
+    "${EPIT0_RUN:?Set all five EPIT ratio run paths}"
+    "${EPIT25_RUN:?Set all five EPIT ratio run paths}"
+    "${EPIT50_RUN:?Set all five EPIT ratio run paths}"
+    "${EPIT75_RUN:?Set all five EPIT ratio run paths}"
+    "${EPIT100_RUN:?Set all five EPIT ratio run paths}")
 fi
+if [[ -n "${MAX_CHECKPOINT_STEP:-}" ]]; then OPTIONS+=(--max-checkpoint-step "$MAX_CHECKPOINT_STEP"); fi
 if [[ -n "${CANDIDATE_LABEL:-}" ]]; then OPTIONS+=(--candidate-label "$CANDIDATE_LABEL"); fi
 if [[ -n "${CONTEXT_FOLDS:-}" ]]; then OPTIONS+=(--context-folds "$CONTEXT_FOLDS"); fi
 if [[ "${LEGACY_DATA:-false}" == "true" ]]; then OPTIONS+=(--legacy-data); fi
@@ -44,4 +46,4 @@ if [[ "${DRY_RUN:-false}" == "true" ]]; then OPTIONS+=(--dry-run); fi
 
 # The Python entry point selects reviewed data, fixed final queries and all
 # checkpoints, and rejects incomplete evaluations or missing required plots.
-python -m scripts.epit_pipeline.evaluate_checkpoint_comparison "${OPTIONS[@]}"
+python -m scripts.epit_pipeline.evaluate_checkpoint_comparison "${OPTIONS[@]}" "$@"

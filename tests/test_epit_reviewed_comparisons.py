@@ -120,8 +120,11 @@ def test_manifest_selection_and_preview(tmp_path, monkeypatch, capsys):
 
 
 @pytest.mark.parametrize('context_folds', [None, 5])
-def test_four_ratios_share_one_comparison(tmp_path, mock_models, context_folds):
-    steps = [(500, 1000), (500, 1400), (500, 1500, 2300), (500, 1750), (500, 1000, 2000)]
+@pytest.mark.parametrize('max_step', [None, 5000])
+def test_five_ratios_share_one_comparison(tmp_path, mock_models, context_folds, max_step):
+    steps = [(500, 1000, 5000, 5500), (500, 1400, 4800, 5500),
+             (500, 1500, 2300, 5000, 6000), (500, 1750, 5200),
+             (500, 1000, 2000, 5000, 7000), (500, 1000, 2000, 4500, 6000)]
     labels = [*comparison.RATIO_LABELS, 'generic_baseline']
     directories = []
     for label, checkpoints in zip(labels, steps):
@@ -130,25 +133,36 @@ def test_four_ratios_share_one_comparison(tmp_path, mock_models, context_folds):
         for step in checkpoints:
             (path / f'step-{step}.ckpt').write_bytes(b'mock')
         directories.append(path)
-    argv = ['--ratio-runs', *map(str, directories[:4]), '--generic-run', str(directories[4]),
-            '--output-dir', str(tmp_path / 'results')]
+    argv = ['--ratio-runs', *map(str, directories[:5]), '--generic-run', str(directories[5]),
+            '--checkpoint-step-interval', '0', '--output-dir', str(tmp_path / 'results')]
+    if max_step is not None:
+        argv += ['--max-checkpoint-step', str(max_step)]
     if context_folds:
         argv += ['--context-folds', '5']
     options = comparison.parse_args(argv)
     output = comparison.run(options)
     payload = json.loads((output / 'results.json').read_text())
     assert {row['model'] for row in payload['rows']} == {*labels, 'pretrained_tabicl_v2', 'catboost'}
+    assert payload['max_checkpoint_step'] == max_step
     for label, expected in zip(labels, steps):
-        assert {row['checkpoint_step'] for row in payload['rows'] if row['model'] == label} == set(expected)
+        assert {row['checkpoint_step'] for row in payload['rows'] if row['model'] == label} == {
+            step for step in expected if max_step is None or step <= max_step}
+    if max_step is not None:
+        assert max(row['checkpoint_step'] for row in payload['rows']) == max_step
+        if context_folds is None:
+            bad = deepcopy(payload)
+            bad['rows'][0]['checkpoint_step'] = 5500
+            with pytest.raises(RuntimeError, match='maximum checkpoint step'):
+                comparison.validate_results(options, bad)
     frozen = frozen_membership(options.split_manifest)
     assert all(queries == frozen['query_task_row_indices'] for _, _, queries in mock_models)
     assert all(len(context) in ([121, 122] if context_folds else [608]) for _, context, _ in mock_models)
     assert all((output / 'plots' / name).is_file() for name in comparison.REQUIRED_PLOTS)
 
 
-def test_four_ratio_protocol_matches_combined_builder():
+def test_five_ratio_protocol_matches_combined_builder():
     from scripts.combined_corrosion import evaluate_final as combined
-    options = comparison.parse_args(['--ratio-runs', '/tmp/r25', '/tmp/r50', '/tmp/r75', '/tmp/r100'])
+    options = comparison.parse_args(['--ratio-runs', '/tmp/r0', '/tmp/r25', '/tmp/r50', '/tmp/r75', '/tmp/r100'])
     epit_args = ev.parse_args(comparison.evaluation_command(options)[2:])
     combined_args = ev.parse_args(combined.evaluation_command(combined.parse_args(['--device', 'cpu']))[2:])
     changed = {'run', 'local_model_label', 'fixed_schema_model', 'missing_aware_model', 'task',
@@ -165,6 +179,16 @@ def test_four_ratio_protocol_matches_combined_builder():
         assert ev.expected_missing_value_mode(epit_args, label, pretrained=pretrained) is False
 
 
-def test_four_ratios_reject_duplicate_paths():
+def test_five_ratios_reject_duplicate_paths():
     with pytest.raises(SystemExit):
-        comparison.parse_args(['--ratio-runs', '/tmp/r25', '/tmp/r25', '/tmp/r75', '/tmp/r100'])
+        comparison.parse_args(['--ratio-runs', '/tmp/r0', '/tmp/r25', '/tmp/r25', '/tmp/r75', '/tmp/r100'])
+
+
+@pytest.mark.parametrize('extra', [
+    ['--max-checkpoint-step', '-1'],
+    ['--min-checkpoint-step', '6000', '--max-checkpoint-step', '5000'],
+    ['--checkpoint', 'latest', '--max-checkpoint-step', '5000'],
+])
+def test_comparison_rejects_invalid_checkpoint_caps(extra):
+    with pytest.raises(SystemExit):
+        comparison.parse_args(['--candidate-run', '/tmp/future_run', *extra])

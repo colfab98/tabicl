@@ -157,6 +157,7 @@ def test_pipeline_defaults_use_current_v12_workflow() -> None:
     assert final_args.prior_n_jobs == 1
     assert final_args.nproc_per_node == 1
     assert final_args.eval_device is None
+    assert final_args.resume_training is False
     assert final_args.resume_checkpoint_selection is False
     assert final_args.allow_missing_selected_trial_artifacts is True
     assert evaluate_final.default_final_model_manifest() == (
@@ -305,6 +306,172 @@ def test_stage4_resume_requires_matching_completed_training(tmp_path: Path) -> N
         )
 
 
+def _resume_state(step):
+    return {
+        "state_dict": {}, "optimizer_state": {}, "scheduler_state": {},
+        "scaler_state": {}, "curr_step": step,
+        "paired_prior_stream": {"version": "test"},
+        "sampling_state": {"version": 1, "ranks": [{"rng": {}, "loader": {}}]},
+    }
+
+
+@pytest.fixture
+def interrupted_final_run(tmp_path, monkeypatch):
+    from optuna.trial import TrialState
+
+    args = train_final.parse_args([
+        "--storage", "journal:///unused.log", "--resume-training",
+        "--selected-trial-number", "15", "--override-informed-prior-ratio", "0.75",
+        "--output-dir", str(tmp_path / "analysis"),
+        "--checkpoint-root", str(tmp_path / "checkpoints"),
+    ])
+    args.pitting_composition_mode = "empirical_features_scm_target"
+    rules = search.load_target_rule_config(
+        summary_path=args.target_rule_summary, split_manifest_path=args.split_manifest,
+    )
+    trial = SimpleNamespace(
+        number=15, state=TrialState.COMPLETE, value=.7, user_attrs={},
+        params={"mlp_prob": .37, "informed_target_mix_weight": .42,
+                "pitting_composition_perturb_strength": .12},
+    )
+    study = MutableStudy()
+    search.bind_study_pipeline_fingerprint(
+        study, search.build_pipeline_fingerprint(search.parse_args([]), rules),
+    )
+    study.trials = [trial]
+    monkeypatch.setattr(train_final, "load_selected_trial", lambda _: (study, trial))
+    monkeypatch.setattr(train_final, "verify_selected_trial_provenance", lambda *a, **kw: {})
+    selected = search.trial_params_from_mapping(
+        trial.params, composition_mode=args.pitting_composition_mode,
+        fixed_informed_prior_ratio=1.,
+    )
+    params, overrides = train_final.apply_parameter_overrides(
+        args, selected, composition_mode=args.pitting_composition_mode,
+    )
+    run_name = f"final_{args.study_name}_trial_0015_override_{search.canonical_json_sha256(overrides)[:10]}"
+    checkpoint_dir = args.checkpoint_root / run_name
+    checkpoint_dir.mkdir(parents=True)
+    args.output_dir.mkdir()
+    command = search.training_command(args, params, checkpoint_dir, rules)
+    train_final.replace_option(command, "--save_temp_every", args.save_temp_every)
+    train_final.replace_option(command, "--save_perm_every", args.save_perm_every)
+    original_log = " ".join(command) + "\noriginal training output\n"
+    (args.output_dir / "train.log").write_text(original_log)
+    for step in (1000, 1600):
+        torch.save(_resume_state(step), checkpoint_dir / f"step-{step}.ckpt")
+    (checkpoint_dir / "step-1700.ckpt.tmp").write_bytes(b"interrupted write")
+    return args, checkpoint_dir, command, original_log
+
+
+@pytest.mark.parametrize("case", [
+    "settings", "empty_log", "no_checkpoint", "past_horizon", "wrong_step",
+    "missing_optimizer", "missing_rng", "missing_loader", "wrong_world_size", "missing_pairing",
+])
+def test_stage4_training_resume_rejects_incompatible_state(interrupted_final_run, case):
+    args, checkpoint_dir, command, _ = interrupted_final_run
+    latest = checkpoint_dir / "step-1600.ckpt"
+    state = _resume_state(1600)
+    if case == "settings":
+        command = [*command, "--changed"]
+    elif case == "empty_log":
+        (args.output_dir / "train.log").write_text("")
+    elif case == "no_checkpoint":
+        for path in checkpoint_dir.glob("*.ckpt"):
+            path.unlink()
+    elif case == "past_horizon":
+        torch.save(_resume_state(10100), checkpoint_dir / "step-10100.ckpt")
+    else:
+        if case == "wrong_step":
+            state["curr_step"] = 1500
+        elif case == "missing_optimizer":
+            del state["optimizer_state"]
+        elif case == "missing_rng":
+            del state["sampling_state"]["ranks"][0]["rng"]
+        elif case == "missing_loader":
+            del state["sampling_state"]["ranks"][0]["loader"]
+        elif case == "wrong_world_size":
+            state["sampling_state"]["ranks"] *= 2
+        elif case == "missing_pairing":
+            del state["paired_prior_stream"]
+        torch.save(state, latest)
+    with pytest.raises((ValueError, RuntimeError, FileNotFoundError)):
+        train_final.validate_resumable_training(
+            args, output_dir=args.output_dir,
+            checkpoint_dir=checkpoint_dir, train_command=command,
+        )
+
+
+@pytest.mark.parametrize("completed", [False, True])
+def test_stage4_training_resume_preserves_log_and_freezes_dev_selection(
+    interrupted_final_run, monkeypatch, completed,
+):
+    args, checkpoint_dir, command, original_log = interrupted_final_run
+    if completed:
+        torch.save(_resume_state(10000), checkpoint_dir / "step-10000.ckpt")
+    calls, evaluated = [], []
+
+    def resume(cmd, *, cwd, log_path):
+        assert not completed
+        assert cmd == [*command, "--checkpoint_path", str(checkpoint_dir / "step-1600.ckpt")]
+        assert log_path.name.startswith("train_resume_step_1600_")
+        assert not log_path.exists()
+        log_path.write_text("resumed training output\n")
+        calls.append(cmd)
+        torch.save(_resume_state(10000), checkpoint_dir / "step-10000.ckpt")
+
+    def evaluate(eval_args, params, *, checkpoint, output_dir, split_manifest, rules, reuse_existing):
+        assert reuse_existing
+        assert split_manifest == args.split_manifest
+        evaluated.append(checkpoint)
+        return {
+            "checkpoint_path": str(checkpoint), "checkpoint_sha256": train_final.sha256_file(checkpoint),
+            "step": train_final.checkpoint_step(checkpoint),
+            "mean_test_spearman": .7, "mean_test_mae": 100.,
+        }
+
+    monkeypatch.setattr(search.original.search_utils, "run_command", resume)
+    monkeypatch.setattr(train_final, "evaluation_record", evaluate)
+    manifest_path = train_final.run(args)
+    manifest = json.loads(manifest_path.read_text())
+    assert len(calls) == (0 if completed else 1)
+    assert [p.name for p in evaluated] == ["step-1000.ckpt", "step-10000.ckpt"]
+    assert (args.output_dir / "train.log").read_text() == original_log
+    assert manifest["training"]["train_command"] == command
+    assert manifest["training"]["resumed_from_checkpoint"]["step"] == (10000 if completed else 1600)
+    assert manifest["study"]["selection_mode"] == "resume_existing_trial"
+    assert manifest["checkpoint_selection"]["data"] == "five frozen development folds only"
+    assert not manifest["final_test_rows_used"]
+    assert (args.output_dir / FINAL_MODEL_LOCK_NAME).exists()
+    with pytest.raises(FileExistsError, match="already frozen"):
+        train_final.run(args)
+
+
+def test_stage4_training_resume_dry_run_and_accidental_restart(interrupted_final_run, monkeypatch, capsys):
+    args, checkpoint_dir, _, original_log = interrupted_final_run
+    before = sorted(args.output_dir.iterdir()), sorted(checkpoint_dir.iterdir())
+    monkeypatch.setattr(search.original.search_utils, "run_command", lambda *a, **kw: pytest.fail("training launched"))
+    args.dry_run = True
+    train_final.run(args)
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["training"]["resumed_from_checkpoint"]["step"] == 1600
+    assert before == (sorted(args.output_dir.iterdir()), sorted(checkpoint_dir.iterdir()))
+    assert (args.output_dir / "train.log").read_text() == original_log
+    args.dry_run = args.resume_training = False
+    with pytest.raises(FileExistsError, match="--resume-training"):
+        train_final.run(args)
+
+
+def test_stage4_training_resume_requires_trial_and_exclusive_mode():
+    args = train_final.parse_args(["--storage", "journal:///unused", "--resume-training"])
+    with pytest.raises(ValueError, match="original --selected-trial-number"):
+        train_final.validate_args(args)
+    args.selected_trial_number = 15
+    train_final.validate_args(args)
+    args.resume_checkpoint_selection = True
+    with pytest.raises(ValueError, match="either --resume-training"):
+        train_final.validate_args(args)
+
+
 def test_optuna_study_fingerprint_rejects_mixed_pipeline() -> None:
     args = search.parse_args([])
     rules = search.load_target_rule_config(
@@ -438,6 +605,10 @@ def test_stage4_explicit_selection_requires_best_completed_trial(
     args.selected_trial_number = 12
     with pytest.raises(RuntimeError, match="not the best completed trial"):
         train_final.load_selected_trial(args)
+    # Continuing a verified existing run must retain its original trial.
+    args.resume_training = True
+    _, selected = train_final.load_selected_trial(args)
+    assert selected is lower
 
 
 def test_stage4_automatically_selects_current_best_with_active_trials(

@@ -30,6 +30,12 @@ def comparison_args(tmp_path, steps_by_model, *extra):
     (["--checkpoint-step-interval", "1000", "--no-include-latest-common-checkpoint"],
      {1000: {"early", "late"}, 2000: {"late"}}),
     (["--min-checkpoint-step", "2000"], {2000: {"late"}, 2300: {"late"}}),
+    (["--max-checkpoint-step", "1400"],
+     {500: {"early"}, 1000: {"early", "late"}, 1400: {"early"}}),
+    (["--max-checkpoint-step", "1600", "--checkpoint-step-interval", "1000"],
+     {1000: {"early", "late"}, 1400: {"early"}}),
+    (["--max-checkpoint-step", "1600", "--checkpoint-step-interval", "1000",
+      "--no-include-latest-checkpoint"], {1000: {"early", "late"}}),
 ])
 def test_checkpoint_union_respects_filters_and_each_runs_endpoint(tmp_path, extra, expected):
     args = ev.parse_args(comparison_args(
@@ -52,6 +58,18 @@ def test_disjoint_runs_are_evaluated_but_explicit_missing_steps_fail(tmp_path):
         ev.resolve_checkpoint_eval_specs(ev.parse_args(argv + ["--checkpoint", "1000"]))
     with pytest.raises(FileNotFoundError, match="No step-"):
         ev.resolve_checkpoint_eval_specs(ev.parse_args(argv + ["--min-checkpoint-step", "1500"]))
+    with pytest.raises(FileNotFoundError, match="through 400"):
+        ev.resolve_checkpoint_eval_specs(ev.parse_args(argv + ["--max-checkpoint-step", "400"]))
+
+
+@pytest.mark.parametrize("extra", [
+    ["--max-checkpoint-step", "-1"],
+    ["--min-checkpoint-step", "1000", "--max-checkpoint-step", "500"],
+    ["--checkpoint", "latest", "--max-checkpoint-step", "5000"],
+])
+def test_invalid_checkpoint_caps_are_rejected(extra):
+    with pytest.raises(ValueError, match="max-checkpoint-step"):
+        ev.validate_args(ev.parse_args(["--checkpoint", "all", *extra]))
 
 
 @pytest.mark.parametrize("min_step", [0, 1000])

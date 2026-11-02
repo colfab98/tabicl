@@ -322,6 +322,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Minimum step to include when --checkpoint all is used.",
     )
     parser.add_argument(
+        "--max-checkpoint-step",
+        type=int,
+        default=None,
+        help="Maximum step to include with --checkpoint all, inclusive (default: no upper limit).",
+    )
+    parser.add_argument(
         "--checkpoint-step-interval",
         type=int,
         default=500,
@@ -337,7 +343,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=True,
         help=(
             "When --checkpoint all is interval-filtered, also include each run's latest checkpoint "
-            "at or above the minimum step, even if it is not on the interval."
+            "within the requested step bounds, even if it is not on the interval."
         ),
     )
     parser.add_argument(
@@ -739,6 +745,11 @@ def validate_args(args: argparse.Namespace) -> None:
             raise ValueError("--context-folds must be greater than 1.")
     if args.checkpoint_step_interval < 0:
         raise ValueError("--checkpoint-step-interval must be >= 0.")
+    if args.max_checkpoint_step is not None:
+        if args.checkpoint != "all":
+            raise ValueError("--max-checkpoint-step requires --checkpoint all.")
+        if args.max_checkpoint_step < 0 or args.max_checkpoint_step < args.min_checkpoint_step:
+            raise ValueError("--max-checkpoint-step must be nonnegative and >= --min-checkpoint-step.")
     alphas = list(args.regression_quantile_alphas or [])
     if len(alphas) != len(set(alphas)):
         raise ValueError("--regression-quantile-alphas must not contain duplicate levels.")
@@ -878,11 +889,13 @@ def select_available_checkpoint_steps(
     min_step: int,
     step_interval: int,
     include_latest: bool = True,
+    max_step: int | None = None,
 ) -> list[int]:
-    """Select the union of saved steps, retaining each run's endpoint when requested."""
+    """Select saved steps and per-run endpoints within the requested bounds."""
     selected: set[int] = set()
     for checkpoints in by_run.values():
-        eligible = [step for step in checkpoints if step >= min_step]
+        eligible = [step for step in checkpoints
+                    if step >= min_step and (max_step is None or step <= max_step)]
         selected.update(
             step for step in eligible
             if step_interval == 0 or step % step_interval == 0
@@ -937,6 +950,7 @@ def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEv
         min_step=args.min_checkpoint_step,
         step_interval=args.checkpoint_step_interval,
         include_latest=args.include_latest_common_checkpoint,
+        max_step=args.max_checkpoint_step,
     )
     if not selected_steps:
         run_list = ", ".join(runs)
@@ -945,9 +959,10 @@ def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEv
             if args.checkpoint_step_interval == 0
             else f"interval {args.checkpoint_step_interval}"
         )
+        upper_bound = f" through {args.max_checkpoint_step}" if args.max_checkpoint_step is not None else " onward"
         raise FileNotFoundError(
-            f"No step-*.ckpt checkpoints found across runs at or after "
-            f"step {args.min_checkpoint_step} with {interval_note}: {run_list}"
+            f"No step-*.ckpt checkpoints found across runs from "
+            f"step {args.min_checkpoint_step}{upper_bound} with {interval_note}: {run_list}"
         )
 
     specs: list[CheckpointEvalSpec] = []
@@ -4287,6 +4302,7 @@ def run_epit_final_context_fold_eval(args: argparse.Namespace) -> None:
         "context_folds": folds,
         "context_fold_outputs": fold_outputs,
         "query_partition": "frozen_outer_final_test",
+        "max_checkpoint_step": args.max_checkpoint_step,
         "metrics_averaged_across_context_folds": True,
         "predictions_averaged_across_context_folds": False,
         "preprocessing_partition": "full_development",
@@ -4971,6 +4987,7 @@ def main() -> None:
         "runs": expand_runs(args),
         "checkpoint": args.checkpoint,
         "min_checkpoint_step": args.min_checkpoint_step,
+        "max_checkpoint_step": args.max_checkpoint_step,
         "checkpoint_step_interval": args.checkpoint_step_interval,
         "include_latest_common_checkpoint": args.include_latest_common_checkpoint,
         "target_mode": args.target_mode,

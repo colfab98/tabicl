@@ -900,7 +900,7 @@ sbatch --export=ALL,SELECTED_TRIAL_NUMBER="$SELECTED_TRIAL_NUMBER",OVERRIDE_INFO
 
 For Soccol, repeat this pattern with the **Soccol study's** selected trial and `scripts/soccol_pipeline/train_final.sbatch`. Clear or review inherited `STUDY_NAME`, `STORAGE`, `FINAL_RUN_NAME`, `OUTPUT_DIR` and unrelated override variables before submission; an old exported value can override the expected default or make four jobs share a directory.
 
-The generated ratio suffix depends on the complete override configuration. Do not predict future directory names from the old EPIT trial-2 hashes. Record the directory printed/written for each actual run. The four-ratio comparison trusts the supplied 25/50/75/100 path order; old checkpoints do not necessarily contain enough provenance to detect a mislabeled ratio automatically.
+The generated ratio suffix depends on the complete override configuration. Do not predict future directory names from the old EPIT trial-2 hashes. Record the directory printed/written for each actual run. The EPIT comparison now includes the optional 0% control and trusts the supplied 0/25/50/75/100 path order; old checkpoints do not necessarily contain enough provenance to detect a mislabeled ratio automatically.
 
 ### Preview an existing EPIT comparison without running models
 
@@ -911,7 +911,7 @@ The generated ratio suffix depends on the complete override configuration. Do no
   --dry-run
 ```
 
-The `/path/to/...` value here is an explicitly marked placeholder. A final evaluation requires the real checkpoint path. For four ratios, use `--ratio-runs RUN25 RUN50 RUN75 RUN100` and a fresh `--output-dir`. The implemented wrapper adds generic, pretrained and CatBoost baselines and keeps frozen final queries.
+The `/path/to/...` value here is an explicitly marked placeholder. A final evaluation requires the real checkpoint path. For all five EPIT ratios, use `--ratio-runs RUN0 RUN25 RUN50 RUN75 RUN100` and a fresh `--output-dir`. Add `--max-checkpoint-step 5000` to cap evaluated checkpoints at step 5,000, including the generic baseline and latest endpoints. The implemented wrapper adds generic, pretrained and CatBoost baselines and keeps frozen final queries.
 
 Do not assume every script supports `--dry-run`, `--resume-training` or the same options. Check that script's `--help`; in particular, the deferred exact-training-resume option must not be presented as available in the current main final-training CLI.
 

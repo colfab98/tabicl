@@ -49,6 +49,8 @@ def add_evaluation_arguments(
         parser.add_argument("--combined-data-dir", type=Path, default=DEFAULT_DATA_DIR)
     parser.add_argument("--checkpoint", default="all")
     parser.add_argument("--min-checkpoint-step", type=int, default=0)
+    parser.add_argument("--max-checkpoint-step", type=int, default=None,
+                        help="Evaluate saved checkpoints up to this step, inclusive; requires --checkpoint all.")
     parser.add_argument("--checkpoint-step-interval", type=int, default=500)
     parser.add_argument("--device", default=default_device)
     parser.add_argument("--n-estimators", type=int, default=8)
@@ -142,6 +144,8 @@ def comparison_command(
         "--catboost-thread-count",
         str(args.catboost_thread_count),
     ])
+    if args.max_checkpoint_step is not None:
+        command.extend(["--max-checkpoint-step", str(args.max_checkpoint_step)])
     for column in categorical_columns:
         command.extend(["--catboost-categorical-column", column])
     command.extend(

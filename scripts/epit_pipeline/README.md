@@ -260,11 +260,31 @@ defaults. For the optional generic control, use ratio `0.0`. This control has th
 same architecture, but its missing token receives no training signal from NaNs;
 it is not a reproduction of the historical generic checkpoint.
 
-All runs train from scratch for 10,000 steps with global batch 512 and separate
+New runs train from scratch for 10,000 steps with global batch 512 and separate
 output/checkpoint directories. The script uses the shared v12 journal by
 default. Add `--selected-trial-number NUMBER` to pin the same best completed
 trial explicitly across runs; if it is no longer best when a queued job starts,
 that job stops instead of selecting another trial.
+
+To continue an interrupted run, add `--resume-training` and pin its original
+trial. For the single-GPU trial-15 run with 75% informed data:
+
+```bash
+sbatch --gpus=1 scripts/epit_pipeline/train_final.sbatch \
+  --nproc-per-node 1 --selected-trial-number 15 \
+  --override-informed-prior-ratio 0.75 --resume-training
+```
+
+Keep the original GPU/process count and all training settings. Resume verifies
+the original `train.log`, selects the highest saved checkpoint step, and restores
+model, optimizer, scheduler, scaler, RNG and synthetic-loader state. It preserves
+the original log and writes a separate `train_resume_step_*.log`. The original
+trial may be resumed even if Optuna has since found a better trial. Add
+`--dry-run` to validate without training or writing files. Missing or incompatible
+state is rejected; no restart from scratch is substituted. A completed run skips
+training and resumes development-only checkpoint selection. Frozen models cannot
+be overwritten; `--resume-checkpoint-selection` remains available for selection
+only after training has finished.
 
 The process-count change is recorded. Two-GPU training requires the seed
 correction described in
@@ -307,24 +327,36 @@ Preview without trained checkpoints:
 
 See `corrosion_datasets/analysis/leakage_policy.md` for data-use limits.
 
-To plot all four informed ratios together, pass checkpoint directories in
-25/50/75/100 order:
+To plot all five informed ratios together, pass checkpoint directories in
+0/25/50/75/100 order. Use `--max-checkpoint-step 5000` to evaluate only saved
+checkpoints at or below step 5,000:
 
 ```bash
 .venv/bin/python -m scripts.epit_pipeline.evaluate_checkpoint_comparison \
-  --ratio-runs /path/to/epit25 /path/to/epit50 /path/to/epit75 /path/to/epit100 \
+  --ratio-runs /path/to/epit0 /path/to/epit25 /path/to/epit50 /path/to/epit75 /path/to/epit100 \
+  --max-checkpoint-step 5000 \
   --generic-run /path/to/generic_run --device cpu \
   --output-dir /path/to/new/comparison
 ```
 
-This produces one comparison with seven curves (`epit_25pct`, `epit_50pct`,
-`epit_75pct`, `epit_100pct`, generic, pretrained and CatBoost), the same CSV/JSON
+This produces one comparison with eight curves (`epit_0pct`, `epit_25pct`,
+`epit_50pct`, `epit_75pct`, `epit_100pct`, generic, pretrained and CatBoost), the same CSV/JSON
 outputs as COMB, and six SVG plots. Defaults evaluate 500-step checkpoints and
-each run's latest endpoint; shorter runs do not truncate longer ones. All four
-directories must be distinct and available. The order supplies the ratio
-labels, so use the actual corresponding training runs. `--dry-run` prints the
-command without evaluating. For sbatch, set `EPIT25_RUN`, `EPIT50_RUN`,
-`EPIT75_RUN` and `EPIT100_RUN` instead of `CANDIDATE_RUN`.
+each run's latest endpoint within the requested bounds; shorter runs do not
+truncate longer ones. The maximum applies to all local runs, including the
+generic baseline, and never adds a latest checkpoint above the cap. Omitting it
+keeps the previous uncapped behavior. It does not wait for future checkpoints.
+The pretrained and CatBoost baselines are evaluated once per context selection
+and reused across checkpoint steps. The 0% model keeps the same missing-aware
+architecture as the informed models; the historical generic baseline retains
+its native preprocessing.
+
+All five directories must be distinct and available. The order supplies the
+ratio labels, so use the actual corresponding training runs. `--dry-run` prints
+the command without evaluating. The existing sbatch script accepts the same
+arguments after its filename, including `--ratio-runs` and
+`--max-checkpoint-step`. Alternatively set `EPIT0_RUN`, `EPIT25_RUN`, `EPIT50_RUN`,
+`EPIT75_RUN`, `EPIT100_RUN` and optional `MAX_CHECKPOINT_STEP` in the environment.
 
 The comparison launcher uses `PROJECT_ROOT`, then `SLURM_SUBMIT_DIR`, then
 its current directory. `VENV_PATH` may select an existing environment, and
