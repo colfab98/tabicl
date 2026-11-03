@@ -25,7 +25,7 @@ DEFAULT_GENERIC_RUN = REPO_ROOT / "checkpoints/tabicl_s1_regression_baseline"
 DEFAULT_SPLIT_MANIFEST = SPLIT_MANIFEST
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "corrosion_datasets/analysis/soccol_pipeline"
 DEFAULT_FINAL_MODEL_MANIFEST = (
-    DEFAULT_OUTPUT_ROOT / "final_v2/soccol_pipeline_optuna_empirical_features_scm_target_v7/final_model_manifest.json"
+    DEFAULT_OUTPUT_ROOT / "final_v2/soccol_pipeline_optuna_empirical_features_scm_target_v8/final_model_manifest.json"
 )
 LEGACY_CANDIDATE_RUN = (
     REPO_ROOT / "checkpoints/soccol_pipeline_final_v1/final_soccol_pipeline_optuna_empirical_features_scm_target_v1_trial_0019"

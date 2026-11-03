@@ -44,7 +44,7 @@ def test_final_defaults_and_ratio_overrides_keep_reviewed_inputs(reviewed, tmp_p
     args = soccol_train.parse_args([
         "--storage", "journal:///unused.log", "--override-informed-prior-ratio", str(ratio),
     ])
-    assert args.study_name == "soccol_pipeline_optuna_empirical_features_scm_target_v7"
+    assert args.study_name == "soccol_pipeline_optuna_empirical_features_scm_target_v8"
     assert args.selected_trial_number is None
     assert args.allow_missing_selected_trial_artifacts
     assert args.max_steps == 10000

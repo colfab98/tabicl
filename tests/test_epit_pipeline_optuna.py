@@ -135,10 +135,10 @@ def _fake_epit_task() -> corrosion_eval.EvalTask:
     )
 
 
-def test_pipeline_defaults_use_current_v13_workflow() -> None:
+def test_pipeline_defaults_use_current_v14_workflow() -> None:
     args = search.parse_args([])
 
-    assert args.study_name == "epit_pipeline_optuna_empirical_features_scm_target_v13"
+    assert args.study_name == "epit_pipeline_optuna_empirical_features_scm_target_v14"
     assert args.pitting_composition_mode == "empirical_features_scm_target"
     assert args.n_trials == 50
     assert args.n_startup_trials == 10
@@ -1007,6 +1007,25 @@ def test_fold_evaluator_command_passes_fixed_manifest(tmp_path: Path) -> None:
     )
     assert "--no-compare-pretrained-tabicl" in command
     assert _value_after(command, "--tabicl-norm-methods") == "none"
+
+
+def test_original_fold_evaluation_defaults_match_effective_protocol(tmp_path):
+    checkpoint = tmp_path / "checkpoint.ckpt"
+    checkpoint.touch()
+    args = evaluate_optuna_folds.parse_args([
+        "--local-ckpt-path", str(checkpoint), "--original-tabicl-evaluation",
+        "--split-manifest", str(search.DEFAULT_SPLIT_MANIFEST),
+    ])
+    evaluate_optuna_folds.validate_args(args)
+    assert args.tabicl_feat_shuffle_method == "latin"
+    assert args.tabicl_norm_methods == ["none", "power"]
+    args.tabicl_feat_shuffle_method = "none"
+    with pytest.raises(ValueError, match="Latin feature shuffling"):
+        evaluate_optuna_folds.validate_args(args)
+    args.tabicl_feat_shuffle_method = "latin"
+    args.tabicl_norm_methods = ["none"]
+    with pytest.raises(ValueError, match="none power"):
+        evaluate_optuna_folds.validate_args(args)
 
 
 def test_baseline_fold_command_uses_only_development_references(

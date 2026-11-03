@@ -1,10 +1,17 @@
 # CorrPFN EPIT pipeline
 
-## Current experiment: v13
+## Current experiment: v14
 
-EPIT v13 and Soccol v7 use the original grouped TabICL encoder (group size 3)
+EPIT v14 and Soccol v8 use the original grouped TabICL encoder (group size 3)
 for both generic and informed tables, without a missing-value embedding or
 artificial feature masking. Both sources shuffle features.
+
+The follow-up audit fixed grouping of padded training tables: circular groups
+now wrap within each table's real columns, preserving the original rule for
+unpadded tables. Padding from another table no longer changes the relationships
+presented to the model. This applies to both sources. Model implementation hashes
+are included in study/resume identities. Use fresh studies and retrain every
+ratio, including 0%; v13/v7 runs cannot be resumed across this training fix.
 
 The local generic generator uses its original full-batch parameter plan,
 preprocessing and rejection sampling. A 0% run is that generic path. Mixed runs
@@ -30,7 +37,7 @@ Launch the new search from the repository on the cluster:
 
 ```bash
 sbatch --gpus=1 \
-  --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v13,N_TRIALS=50 \
+  --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v14,N_TRIALS=50 \
   scripts/epit_pipeline/run_optuna.sbatch
 ```
 
@@ -42,11 +49,11 @@ GPU work is divided, but CPU generation does not become cheaper. Resume retains
 the saved worker/RNG state and requires the original process count.
 
 New runs use new study/checkpoint directories and reject incompatible old
-fingerprints. Existing checkpoints cannot be resumed into v13. There is no
+fingerprints. Existing checkpoints cannot be resumed into v14. There is no
 runtime dependency on another checkout of TabICL. Regression support remains
 shared across every ratio; historical seeds are not reproduced automatically.
 
-The sections below record the earlier workflow and data preparation. The v13
+The sections below record the earlier workflow and data preparation. The v14
 settings above supersede their training/evaluation settings and launch commands.
 
 This directory contains the reviewed-data workflow and retained historical workflows.
@@ -59,13 +66,14 @@ This directory contains the reviewed-data workflow and retained historical workf
 | v10 (`epit_pipeline_optuna_empirical_features_scm_target_v10`) | Previous unpaired sampling; 100% informed search with broader ranges | `epit_dataset_v4`, 24 elements, development only | 70/80 | nine formulas in `target_rules_v4` |
 | v11 (`epit_pipeline_optuna_empirical_features_scm_target_v11`) | Initial indexed streams; superseded after an infinite-retry defect | `epit_dataset_v4`, 24 elements, development only | 70/80 | nine formulas in `target_rules_v4` |
 | v12 (`epit_pipeline_optuna_empirical_features_scm_target_v12`) | Historical missing-aware paired streams | `epit_dataset_v4`, 24 elements, development only | 70/80 | nine formulas in `target_rules_v4` |
-| v13 (`epit_pipeline_optuna_empirical_features_scm_target_v13`) | Current defaults; original generic batches, grouped encoder, common evaluation | `epit_dataset_v4`, 24 elements, development only | 70 | nine formulas in `target_rules_v4` |
+| v13 (`epit_pipeline_optuna_empirical_features_scm_target_v13`) | Superseded: grouped training allowed padding to change feature groups | `epit_dataset_v4`, 24 elements, development only | 70 | nine formulas in `target_rules_v4` |
+| v14 (`epit_pipeline_optuna_empirical_features_scm_target_v14`) | Current defaults; original generic batches, corrected grouping for padded tables, common evaluation | `epit_dataset_v4`, 24 elements, development only | 70 | nine formulas in `target_rules_v4` |
 
 See [Shared synthetic streams](PAIRED_STREAMS.md) for matching Optuna/final data,
 generic controls, checkpoint behavior and unchanged legacy runs.
 
 Historical split, model, and result artifacts were retained. Current launchers
-use v12 study subdirectories under `optuna_v3`, `final_v2`, and `epit_pipeline_final_v2`. The legacy
+use v14 study subdirectories under `optuna_v3`, `final_v2`, and `epit_pipeline_final_v2`. The legacy
 coefficient-variation diagnostic explicitly pins v7 and `epit_dataset_v1`.
 
 ## Current 24-element policy

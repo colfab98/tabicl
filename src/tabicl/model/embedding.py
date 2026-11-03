@@ -226,7 +226,7 @@ class ColEmbedding(nn.Module):
 
         return mapping
 
-    def feature_grouping(self, X: Tensor) -> Tensor:
+    def feature_grouping(self, X: Tensor, d: Optional[Tensor] = None) -> Tensor:
         """Group features into fixed-size groups.
 
         Parameters
@@ -236,6 +236,10 @@ class ColEmbedding(nn.Module):
              - B is the number of tables
              - T is the number of samples (rows)
              - H is the number of features (columns)
+
+        d : Optional[Tensor], default=None
+            Real feature counts per table, excluding batch padding. Circular
+            groups wrap within each table's real columns.
 
         Returns
         -------
@@ -254,9 +258,18 @@ class ColEmbedding(nn.Module):
         if mode == "same":
             # Group through circular permutation
             idxs = torch.arange(H, dtype=torch.long, device=X.device)
-            X = torch.stack([X[:, :, (idxs + 2**i) % H] for i in range(size)], dim=-1)
+            if d is None:
+                X = torch.stack([X[:, :, (idxs + 2**i) % H] for i in range(size)], dim=-1)
+            else:
+                X = torch.stack([
+                    X.gather(2, ((idxs + 2**i) % d[:, None])[:, None, :].expand(B, T, H))
+                    for i in range(size)
+                ], dim=-1)
         else:
             # Group through padding and reshaping
+            if d is not None:
+                padding = torch.arange(H, device=X.device)[None, :] >= d[:, None]
+                X = X.masked_fill(padding[:, None, :], 0)
             x_pad_cols = (size - H % size) % size
             if x_pad_cols > 0:
                 X = F.pad(X, (0, x_pad_cols), value=0)
@@ -460,7 +473,7 @@ class ColEmbedding(nn.Module):
 
         d : Optional[Tensor], default=None
             The number of features per dataset of shape (B,).
-            Only supported when feature grouping is disabled.
+            Excludes batch padding from feature grouping and embedding.
 
         embed_with_test : bool, default=False
             If True, inducing points attend to all samples (train + test).
@@ -477,15 +490,16 @@ class ColEmbedding(nn.Module):
              - E is embedding dimension.
         """
         if self.feature_group:
-            assert d is None, "d is not supported when feature grouping is enabled."
-            return self._train_forward_with_feature_group(X, y_train, embed_with_test)
+            return self._train_forward_with_feature_group(X, y_train, embed_with_test, d=d)
         else:
             return self._train_forward_without_feature_group(X, y_train, d, embed_with_test)
 
-    def _train_forward_with_feature_group(self, X: Tensor, y_train: Tensor, embed_with_test: bool) -> Tensor:
+    def _train_forward_with_feature_group(
+        self, X: Tensor, y_train: Tensor, embed_with_test: bool, d: Optional[Tensor] = None
+    ) -> Tensor:
         """Training path when feature grouping is enabled."""
         train_size = y_train.shape[1]
-        X = self.feature_grouping(X)  # (B, T, G, group_size)
+        X = self.feature_grouping(X, d=d)  # (B, T, G, group_size)
         if self.reserve_cls_tokens > 0:
             X = F.pad(X, (0, 0, self.reserve_cls_tokens, 0), value=-100.0)
 

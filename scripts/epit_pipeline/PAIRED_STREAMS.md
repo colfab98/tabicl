@@ -1,7 +1,7 @@
 # Shared synthetic streams for EPIT and Soccol
 
 This document describes historical EPIT v12 / Soccol v6. Current runs use
-[EPIT v13 / Soccol v7](README.md#current-experiment-v13), which restore original
+[EPIT v14 / Soccol v8](README.md#current-experiment-v14), which restore original
 batch-level sampling and the grouped encoder. Do not use the policy below to
 resume old checkpoints into the new experiment.
 

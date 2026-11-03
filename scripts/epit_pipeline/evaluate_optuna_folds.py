@@ -69,14 +69,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--tabicl-feat-shuffle-method",
         choices=("none", "random", "latin", "shift"),
-        default="none",
+        default=None,
     )
     parser.add_argument(
         "--tabicl-norm-methods",
         nargs="+",
         choices=("none", "power", "quantile", "quantile_rtdl", "robust"),
-        default=["none"],
-        help="Fixed EPIT inference permits only 'none'; power is disabled.",
+        default=None,
+        help="Original evaluation uses 'none power'; historical fixed-schema evaluation uses 'none'.",
     )
     parser.add_argument(
         "--regression-output",
@@ -91,7 +91,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--keep-fold-outputs", action="store_true")
     parser.add_argument("--print-subcommands", action="store_true")
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.tabicl_feat_shuffle_method is None:
+        args.tabicl_feat_shuffle_method = "latin" if args.original_tabicl_evaluation else "none"
+    if args.tabicl_norm_methods is None:
+        args.tabicl_norm_methods = ["none", "power"] if args.original_tabicl_evaluation else ["none"]
+    return args
 
 
 def validate_args(args: argparse.Namespace) -> None:
@@ -106,7 +111,10 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--validation-folds values must be between 1 and 5.")
     if args.n_estimators <= 0:
         raise ValueError("--n-estimators must be positive.")
-    if not getattr(args, "original_tabicl_evaluation", False) and list(args.tabicl_norm_methods) != ["none"]:
+    if getattr(args, "original_tabicl_evaluation", False):
+        if args.tabicl_feat_shuffle_method != "latin" or list(args.tabicl_norm_methods) != ["none", "power"]:
+            raise ValueError("Original TabICL evaluation requires Latin feature shuffling and --tabicl-norm-methods none power.")
+    elif list(args.tabicl_norm_methods) != ["none"]:
         raise ValueError(
             "EPIT pipeline evaluation requires --tabicl-norm-methods none."
         )

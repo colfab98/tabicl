@@ -24,6 +24,53 @@ def make(family="epit", ratio=.5, **kwargs):
     return make_prior(family, ratio, dataset_cls=OriginalPriorMixture, **kwargs)
 
 
+@pytest.mark.parametrize("mode", ["same", "valid"])
+def test_grouped_padding_matches_separate_unpadded_tables_and_gradients(mode):
+    from tabicl.model.tabicl import TabICL
+
+    torch.manual_seed(42)
+    model = TabICL(max_classes=0, num_quantiles=9, embed_dim=16, ff_factor=2,
+        col_num_blocks=1, col_nhead=2, col_num_inds=4, col_feature_group=mode,
+        row_num_blocks=1, row_nhead=2, row_num_cls=2, icl_num_blocks=1, icl_nhead=2)
+    # Initial attention outputs are zero: exercise weights that actually use X.
+    for name, param in model.named_parameters():
+        if name.endswith("attn.out_proj.weight"):
+            torch.nn.init.xavier_uniform_(param)
+    reference = copy.deepcopy(model)
+    widths = torch.tensor([1, 5, 9])
+    X = torch.randn(3, 16, 9)
+    for i, width in enumerate(widths):
+        X[i, :, width:] = float("nan")  # Padding must never enter the groups.
+    X.requires_grad_()
+    y = torch.randn(3, 8)
+    actual = model(X, y, widths)
+    expected = torch.cat([
+        reference(X[i:i+1, :, :width], y[i:i+1]) for i, width in enumerate(widths)
+    ])
+    torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-6)
+    actual.square().sum().backward()
+    expected.square().sum().backward()
+    for (name, param), (_, ref) in zip(model.named_parameters(), reference.named_parameters()):
+        if param.grad is None:
+            assert ref.grad is None, name
+        else:
+            torch.testing.assert_close(param.grad, ref.grad, rtol=1e-4, atol=1e-5, msg=name)
+    for i, width in enumerate(widths):
+        assert not X.grad[i, :, width:].any()
+
+
+def test_grouping_without_padding_keeps_original_circular_rule():
+    from tabicl.model.embedding import ColEmbedding
+
+    model = ColEmbedding(embed_dim=8, num_blocks=1, nhead=2, dim_feedforward=16,
+                         num_inds=4, feature_group="same", feature_group_size=3)
+    X = torch.arange(30.).reshape(2, 3, 5)
+    indices = torch.arange(5)
+    expected = torch.stack([X[:, :, (indices + offset) % 5] for offset in (1, 2, 4)], dim=-1)
+    torch.testing.assert_close(model.feature_grouping(X), expected, rtol=0, atol=0)
+    torch.testing.assert_close(model.feature_grouping(X, torch.tensor([5,5])), expected, rtol=0, atol=0)
+
+
 def test_zero_ratio_is_exact_original_generic_batch():
     prior = make(ratio=0.)
     for step in range(2):

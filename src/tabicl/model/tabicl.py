@@ -337,12 +337,9 @@ class TabICL(nn.Module):
         if d is not None and len(d.unique()) == 1 and d[0] == H:
             d = None
 
-        # Feature-grouped column embedding does not consume per-table d directly.
-        # Keep d for row masking, remapping it when grouping changes the number of column tokens.
-        d_col = d
+        # Group within each table's real columns, then mask unused group tokens.
         d_row = d
         if self.col_embedder.feature_group:
-            d_col = None
             if d_row is not None:
                 mode = "same" if self.col_embedder.feature_group is True else self.col_embedder.feature_group
                 if mode == "valid":
@@ -354,7 +351,7 @@ class TabICL(nn.Module):
             self.col_embedder(
                 X,
                 y_train=y_train,
-                d=d_col,
+                d=d,
                 embed_with_test=embed_with_test,
             ),
             d=d_row,

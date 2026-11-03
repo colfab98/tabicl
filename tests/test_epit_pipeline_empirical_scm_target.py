@@ -549,7 +549,7 @@ def test_v8_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_pa
         / "train_final.sbatch"
     ).read_text(encoding="utf-8")
     for launcher in (optuna_launcher, final_launcher):
-        assert "epit_pipeline_optuna_empirical_features_scm_target_v13" in launcher
+        assert "epit_pipeline_optuna_empirical_features_scm_target_v14" in launcher
         assert 'NP_SEED="${NP_SEED:-42}"' in launcher
         assert 'TORCH_SEED="${TORCH_SEED:-42}"' in launcher
         assert 'PRIOR_N_JOBS="${PRIOR_N_JOBS:-1}"' in launcher

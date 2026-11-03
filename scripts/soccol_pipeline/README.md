@@ -1,6 +1,6 @@
 # Soccol pitting-potential pipeline
 
-Current searches use **v7** with the [same original TabICL policy as EPIT v13](../epit_pipeline/README.md#current-experiment-v13).
+Current searches use **v8** with the [same original TabICL policy as EPIT v14](../epit_pipeline/README.md#current-experiment-v14).
 The reviewed feature profile remains v3; formula and data artifacts were retained.
 
 Both streams use grouping size 3 and feature shuffling. The missingness embedding
@@ -9,14 +9,19 @@ preprocessing. The generic generator retains its original full-batch sampling.
 Optuna, final checkpoint selection and final evaluation use the common eight-view
 TabICL ensemble. Frozen development/final-query membership is unchanged.
 
+v8 fixes grouping when training tables have different real feature counts.
+Use fresh studies/checkpoints; v7 training cannot be resumed across this fix.
+The final-training launcher now forwards command-line ratio/resume arguments
+and derives its process count from the GPU allocation, matching EPIT.
+
 ```bash
 sbatch --gpus=1 \
-  --export=ALL,STUDY_NAME=soccol_pipeline_optuna_empirical_features_scm_target_v7,N_TRIALS=50 \
+  --export=ALL,STUDY_NAME=soccol_pipeline_optuna_empirical_features_scm_target_v8,N_TRIALS=50 \
   scripts/soccol_pipeline/run_optuna.sbatch
 ```
 
 Use fresh studies and checkpoints. The sections below document historical
-versions; v7 supersedes their missingness, grouping and evaluation settings.
+versions; v8 supersedes their missingness, grouping and evaluation settings.
 
 ## Reviewed-data migration: 58-column sampling, training and evaluation connected
 

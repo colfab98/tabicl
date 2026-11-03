@@ -37,6 +37,13 @@ def stream_policy(seed=42):
         "split": "one_original_split_per_global_batch",
         "informed_input": "context_mean_imputation_then_original_feature_preprocessing",
         "informed_target_rng": "separate_from_physical_features",
+        "grouped_padding": "wrap_within_each_table_real_features_v1",
+        # Training fixes must invalidate study/resume identities too, even when
+        # they leave the synthetic samples and model parameter shapes unchanged.
+        "training_model_sha256": {
+            name: hashlib.sha256((Path(__file__).parents[1] / "model" / name).read_bytes()).hexdigest()
+            for name in ("tabicl.py", "embedding.py")
+        },
         "implementation_sha256": {
             **implementation_identity(),
             "original_mixture.py": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
