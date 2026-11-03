@@ -44,7 +44,7 @@ def test_final_defaults_and_ratio_overrides_keep_reviewed_inputs(reviewed, tmp_p
     args = soccol_train.parse_args([
         "--storage", "journal:///unused.log", "--override-informed-prior-ratio", str(ratio),
     ])
-    assert args.study_name == "soccol_pipeline_optuna_empirical_features_scm_target_v6"
+    assert args.study_name == "soccol_pipeline_optuna_empirical_features_scm_target_v7"
     assert args.selected_trial_number is None
     assert args.allow_missing_selected_trial_artifacts
     assert args.max_steps == 10000
@@ -68,7 +68,7 @@ def test_final_defaults_and_ratio_overrides_keep_reviewed_inputs(reviewed, tmp_p
     assert config.informed_prior_ratio == ratio
     assert config.min_features == config.max_features == 58
     assert config.pitting_feature_profile == "soccol_pitting_features_v3"
-    assert config.col_missing_value_embedding
+    assert not config.col_missing_value_embedding
     assert config.pitting_composition_perturb_strength == .12
     assert config.pitting_coefficient_variation == .8
     assert config.pitting_coefficient_variation_seed == 42
@@ -119,7 +119,7 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
         pd.DataFrame([row]).to_csv(args.output_csv, index=False)
         if args.epit_final_test:
             payload = {
-                "tabicl_feat_shuffle_method": "none", "n_estimators": args.n_estimators,
+                "tabicl_feat_shuffle_method": args.tabicl_feat_shuffle_method, "n_estimators": args.n_estimators,
                 "random_state": args.random_state, "max_samples_per_task": 0,
                 "regression_uncertainty": False, "regression_output": "median",
                 "local_checkpoint": str(args.local_ckpt_path[0].resolve()), "errors": [], "rows": [row],
@@ -134,7 +134,7 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
             entry = next(i for i, token in enumerate(command) if token.endswith("/train/run.py"))
             config = build_parser().parse_args(command[entry + 1:])
             assert config.min_features == config.max_features == 58
-            assert config.col_missing_value_embedding
+            assert not config.col_missing_value_embedding
             directory = Path(config.checkpoint_dir)
             directory.mkdir(parents=True, exist_ok=True)
             steps = {config.max_steps}
@@ -191,8 +191,9 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
     assert manifest["training"]["nproc_per_node"] == processes
     assert manifest["training"]["input_policy"] == {
         "feature_schema": "native_per_source", "informed_feature_count": 58,
-        "col_missing_value_embedding": True, "col_feature_group": False,
-        "informed_missing_values": "preserve_native_nan",
+        "col_missing_value_embedding": False, "col_feature_group": "same",
+        "col_feature_group_size": 3, "feature_permutation": True,
+        "informed_missing_values": "context_mean_imputation",
         "generic_missing_values": "none_injected", "artificial_feature_masking": False,
     }
     assert f"--nproc_per_node={processes}" in training_commands[-1]

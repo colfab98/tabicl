@@ -43,7 +43,8 @@ def make_prior(family="epit", ratio=.5, **kwargs):
           "num_layers": 2, "hidden_dim": 12, "noise_std": .01,
           **kwargs.pop("hp", {})}
     width = 58 if soccol else 70
-    return streams.PairedPriorDataset(batch_size=8, batch_size_per_gp=2,
+    dataset_cls = kwargs.pop("dataset_cls", streams.PairedPriorDataset)
+    return dataset_cls(batch_size=8, batch_size_per_gp=2,
         min_features=width, max_features=width, max_seq_len=32,
         min_train_size=.5, max_train_size=.8, scm_fixed_hp=hp, scm_sampled_hp={},
         informed_prior_ratio=ratio, return_source_ids=True, **kwargs)
@@ -183,6 +184,10 @@ def test_epit_step_460_bad_mlp_retries_and_stays_identical_across_ratios(monkeyp
     entry = next(i for i, value in enumerate(command) if value.endswith("/train/run.py"))
     config = build_parser().parse_args(command[entry + 1:])
     config.device = "cpu"
+    # This regression reproduces a historical v12 table and its retry seed.
+    config.original_prior_mix = False
+    config.col_missing_value_embedding = True
+    config.permute_features = False
     config.dataloader_num_workers = 0
     original = streams._PairedSCMPrior._generate_scm_target_from_physical_features
     attempts = []
@@ -288,7 +293,8 @@ def test_optuna_and_final_emit_identical_stream_and_generator_settings(tmp_path,
             if key not in {"max_steps", "save_temp_every", "save_perm_every"}:
                 assert configs[0][key] == configs[1][key], key
         fingerprint = search.build_pipeline_fingerprint(args, rules)
-        assert fingerprint["fixed_prior"]["paired_prior_streams"] == streams.stream_policy(42)
+        from tabicl.prior.original_mixture import stream_policy
+        assert fingerprint["fixed_prior"]["paired_prior_streams"] == stream_policy(42)
         args.prior_stream_seed = 43
         assert search.build_pipeline_fingerprint(args, rules) != fingerprint
     finally:

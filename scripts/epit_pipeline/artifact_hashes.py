@@ -158,10 +158,10 @@ def load_frozen_final_model(manifest_path: Path) -> FrozenFinalModel:
         raise RuntimeError("Unsupported final-model manifest schema.")
     if bool(manifest.get("final_test_rows_used", True)):
         raise RuntimeError("Final-model selection used final-test rows.")
-    if manifest.get("evaluation_configuration", {}).get(
-        "tabicl_norm_methods"
-    ) != ["none"]:
-        raise RuntimeError("Frozen final model does not explicitly disable power.")
+    evaluation = manifest.get("evaluation_configuration", {})
+    expected_norms = ["none", "power"] if evaluation.get("original_tabicl_evaluation", False) else ["none"]
+    if evaluation.get("tabicl_norm_methods") != expected_norms:
+        raise RuntimeError("Frozen final model changed its normalization protocol.")
 
     artifacts = lock.get("immutable_artifacts")
     if not isinstance(artifacts, dict) or "selected_checkpoint" not in artifacts:

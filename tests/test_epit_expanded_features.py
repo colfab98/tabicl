@@ -162,7 +162,8 @@ def _training_config(tmp_path):
     config = build_parser().parse_args(command[entry + 1:])
     assert config.min_features == config.max_features == 70
     assert config.pitting_feature_profile == PROFILE
-    assert config.col_missing_value_embedding
+    assert not config.col_missing_value_embedding
+    assert config.original_prior_mix and config.permute_features
     assert tuple(config.informed_normal_block_allocation) == BLOCKS
     return args, params, config
 
@@ -174,11 +175,12 @@ def test_new_training_and_fold_commands_use_matching_schema(tmp_path):
     assert parsed.epit_expanded_features
     fold = evaluate_optuna_folds.fold_command(parsed, fold=1, fold_dir=tmp_path)
     assert "--epit-expanded-features" in fold
-    assert fold[fold.index("--missing-aware-model") + 1] == "new_epit"
+    assert "--missing-aware-model" not in fold
+    assert "--native-tabicl-baselines" in fold
     assert "--epit-validation-fold" in fold
 
 
-def test_one_cpu_training_step_preserves_sampled_missingness(tmp_path):
+def test_one_cpu_training_step_uses_finite_grouped_inputs(tmp_path):
     from tabicl.train.run import Trainer
     _, _, config = _training_config(tmp_path)
     overrides = dict(device="cpu", prior_device="cpu", amp=False, python_seed=42, prior_n_jobs=1,
@@ -192,16 +194,17 @@ def test_one_cpu_training_step_preserves_sampled_missingness(tmp_path):
     assert trainer.missingness_augmenter is None
     batch = trainer.dataloader.dataset.get_batch()
     assert batch[0].shape == (1, 32, 70)
-    assert torch.isnan(batch[0]).any() and torch.isfinite(batch[0][..., :24]).all()
+    assert torch.isfinite(batch[0]).all()
+    assert trainer.model.col_embedder.in_linear.weight.shape[1] == 3
     seen = []
     handle = trainer.model.register_forward_pre_hook(lambda module, args: seen.append(args[0].clone()))
     try:
         results = trainer.run_batch(batch)
     finally:
         handle.remove()
-    torch.testing.assert_close(seen[0], batch[0], equal_nan=True)
+    torch.testing.assert_close(seen[0], batch[0][..., :int(batch[2].max())])
     assert all(math.isfinite(value) for value in results.values())
     assert all(torch.isfinite(p).all() for p in trainer.model.parameters())
-    config.col_missing_value_embedding = False
+    config.original_prior_mix = False  # Historical NaN-preserving mode still needs its encoder.
     with pytest.raises(ValueError, match="require --col_missing_value_embedding"):
         trainer.configure_missingness()

@@ -40,6 +40,7 @@ REQUIRED_PLOTS = tuple(f"trend_mean_test_{metric}.svg" for metric in (
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--legacy-model-inputs", action="store_true", help="Evaluate historical v12 missing-embedding checkpoints with their old input policy.")
     parser.add_argument("--legacy-data", action="store_true", help="Use the historical 28-column inputs and v8 trial-17 default.")
     parser.add_argument("--context-folds", type=int, choices=[5], help="Use each accepted development fold as context; keep all 152 final queries.")
     add_evaluation_arguments(parser, default_output_dir=None, include_combined_data=False, default_device="cpu")
@@ -127,7 +128,7 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
         task_arguments.extend(["--context-folds", str(args.context_folds)])
     command = comparison_command(
         options, [*models, ("generic_baseline", args.generic_run)],
-        missing_aware_models=labels if not args.legacy_data else (),
+        missing_aware_models=labels if args.legacy_model_inputs and not args.legacy_data else (),
         task_id=EPIT_TASK_ID, task_arguments=task_arguments,
         categorical_columns=LEGACY_CATEGORICAL_COLUMNS if args.legacy_data else CATBOOST_CATEGORICAL_COLUMNS,
     )
@@ -153,8 +154,9 @@ def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: i
     if payload.get("epit_reviewed_split") != expected:
         raise RuntimeError("Comparison changed EPIT context or frozen final-query membership.")
     labels = set(candidate_labels(args))
-    if not labels.issubset(payload.get("missing_aware_models", [])):
-        raise RuntimeError("Comparison disabled EPIT missing-value handling.")
+    expected_missing = labels if args.legacy_model_inputs else set()
+    if set(payload.get("missing_aware_models", [])) != expected_missing:
+        raise RuntimeError("Comparison changed EPIT missing-value handling.")
     rows = payload.get("rows", [])
     if {row.get("model") for row in rows} != labels | {"generic_baseline", "pretrained_tabicl_v2", "catboost"}:
         raise RuntimeError("Comparison did not produce all requested models and three baselines.")

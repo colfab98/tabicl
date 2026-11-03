@@ -53,8 +53,8 @@ def empirical_feature_profile_identity(
             "feature_columns": list(SOCCOL_REVIEWED_FEATURE_COLUMNS),
             "feature_count": SOCCOL_REVIEWED_FEATURE_COUNT,
             "development_selection": profile.metadata["development_selection"],
-            "missing_value_policy": "paired_environment_row_nan",
-            "col_missing_value_embedding": True,
+            "missing_value_policy": "context_mean_imputation",
+            "col_missing_value_embedding": False,
             "formula_input_policy": "existing_soccol_formulas_with_named_column_lookup",
             "composition_sampling_policy": profile.metadata["sampling"]["composition_sampling_policy"],
             "distinct_composition_templates": len(profile.composition_template_indices),
@@ -95,9 +95,11 @@ def eval_command(
         "--n-estimators",
         str(args.eval_n_estimators),
         "--tabicl-feat-shuffle-method",
-        "none",
+        "latin",
         "--tabicl-norm-methods",
         "none",
+        "power",
+        "--original-tabicl-evaluation",
         "--output-dir",
         str(output_dir),
     ]
@@ -118,7 +120,7 @@ def training_command(
     if base.EPIT_FEATURE_PROFILE == SOCCOL_REVIEWED_FEATURE_PROFILE:
         if args.pitting_composition_mode != "empirical_features_scm_target" or params.use_magpie:
             raise ValueError("Reviewed Soccol requires empirical_features_scm_target without Magpie.")
-        command.extend(["--col_missing_value_embedding", "true"])
+        command.extend(["--col_missing_value_embedding", "false"])
     return command
 
 
@@ -178,8 +180,8 @@ def configure(*, reviewed_data: bool = True) -> None:
         base.FIXED_BLOCK_ALLOCATION = SOCCOL_REVIEWED_BLOCK_ALLOCATION
         base.DEFAULT_TARGET_RULE_SUMMARY = PIPELINE_ROOT / "target_rules_v2" / "calibration_summary.json"
         base.DEFAULT_OPTUNA_ROOT = PIPELINE_ROOT / "optuna_v4"
-        base.DEFAULT_STUDY_NAME = "soccol_pipeline_optuna_empirical_features_scm_target_v6"
-        base.PIPELINE_FINGERPRINT_SCHEMA = "soccol_pipeline_stage3_fingerprint_v5"
+        base.DEFAULT_STUDY_NAME = "soccol_pipeline_optuna_empirical_features_scm_target_v7"
+        base.PIPELINE_FINGERPRINT_SCHEMA = "soccol_pipeline_stage3_fingerprint_v6"
         base.load_target_rule_config = load_reviewed_target_rule_config
 
 

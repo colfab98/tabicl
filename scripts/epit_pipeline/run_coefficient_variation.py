@@ -114,6 +114,7 @@ def load_experiment(args):
     eval_args = SimpleNamespace(
         split_manifest=args.split_manifest, device=args.device,
         eval_n_estimators=int(evaluation["n_estimators"]),
+        original_tabicl_evaluation=False,
     )
     study_dir = args.work_root / args.study_name
     checkpoint_dir = args.checkpoint_root / args.study_name
@@ -224,10 +225,10 @@ def run_trial(plan, experiment):
         search.original.search_utils.run_command(
             evaluation["command"], cwd=ROOT, log_path=trial_dir / f"eval_{evaluation['step']}.log",
         )
-        payload = search.verify_no_power_fold_evaluation(output)
+        payload = search.verify_original_fold_evaluation(output, original_evaluation=False)
         search.verify_trial_fold_evaluation(
             payload, rules=experiment.rules, checkpoint_path=checkpoint,
-            params=SimpleNamespace(use_magpie=False),
+            params=SimpleNamespace(use_magpie=False), original_evaluation=False,
         )
         if payload.get("validation_folds") != list(search.FIXED_VALIDATION_FOLDS) or payload.get("development_rows_only") is not True:
             raise RuntimeError("Evaluation did not use exactly the five development folds.")

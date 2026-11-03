@@ -1,7 +1,22 @@
 # Soccol pitting-potential pipeline
 
-Current searches use **v6** with [shared indexed generic/informed streams](../epit_pipeline/PAIRED_STREAMS.md).
+Current searches use **v7** with the [same original TabICL policy as EPIT v13](../epit_pipeline/README.md#current-experiment-v13).
 The reviewed feature profile remains v3; formula and data artifacts were retained.
+
+Both streams use grouping size 3 and feature shuffling. The missingness embedding
+is disabled. Informed NaNs are filled from context means before original feature
+preprocessing. The generic generator retains its original full-batch sampling.
+Optuna, final checkpoint selection and final evaluation use the common eight-view
+TabICL ensemble. Frozen development/final-query membership is unchanged.
+
+```bash
+sbatch --gpus=1 \
+  --export=ALL,STUDY_NAME=soccol_pipeline_optuna_empirical_features_scm_target_v7,N_TRIALS=50 \
+  scripts/soccol_pipeline/run_optuna.sbatch
+```
+
+Use fresh studies and checkpoints. The sections below document historical
+versions; v7 supersedes their missingness, grouping and evaluation settings.
 
 ## Reviewed-data migration: 58-column sampling, training and evaluation connected
 

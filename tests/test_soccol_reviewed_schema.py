@@ -143,7 +143,7 @@ def _training_configuration(tmp_path):
         fold_command = search.eval_command(args, params, tmp_path / "checkpoint.ckpt", "new_soccol", tmp_path / "eval")
         identity = search.empirical_feature_profile_identity()
         assert args.target_rule_summary.parent.name == "target_rules_v2"
-        assert args.study_name.endswith("_v6")
+        assert args.study_name.endswith("_v7")
         return config, fold_command, identity
     finally:
         for name, value in original.items():
@@ -156,15 +156,17 @@ def test_reviewed_training_and_fold_commands_use_the_same_schema(tmp_path):
     assert config.min_features == config.max_features == 58
     assert config.pitting_feature_profile == PROFILE
     assert tuple(config.informed_normal_block_allocation) == BLOCKS
-    assert config.col_missing_value_embedding
+    assert not config.col_missing_value_embedding
+    assert config.original_prior_mix and config.permute_features
     assert identity["feature_columns"] == list(COLUMNS)
     assert identity["development_selection"]["source_rows"] == 2950
     parsed = evaluate_optuna_folds.parse_args(command[2:])
     assert parsed.soccol_reviewed_data
     fold = evaluate_optuna_folds.fold_command(parsed, fold=1, fold_dir=tmp_path)
     assert "--soccol-reviewed-data" in fold
-    assert fold[fold.index("--missing-aware-model") + 1] == "new_soccol"
-    assert fold[fold.index("--fixed-schema-model") + 1] == "new_soccol"
+    assert "--missing-aware-model" not in fold
+    assert "--native-tabicl-baselines" in fold
+    assert "--fixed-schema-model" not in fold
     assert "--epit-final-test" not in fold
 
 
@@ -191,14 +193,15 @@ def test_one_cpu_training_step_and_local_checkpoint_inference(tmp_path):
     assert trainer.missingness_augmenter is None
     batch = trainer.dataloader.dataset.get_batch()
     assert batch[0].shape == (1, 32, 58)
-    assert torch.isnan(batch[0]).any() and torch.isfinite(batch[0][..., :24]).all()
+    assert torch.isfinite(batch[0]).all()
+    assert trainer.model.col_embedder.in_linear.weight.shape[1] == 3
     seen = []
     handle = trainer.model.register_forward_pre_hook(lambda module, args: seen.append(args[0].clone()))
     try:
         result = trainer.run_batch(batch)
     finally:
         handle.remove()
-    torch.testing.assert_close(seen[0], batch[0], equal_nan=True)
+    torch.testing.assert_close(seen[0], batch[0][..., :int(batch[2].max())])
     assert all(math.isfinite(value) for value in result.values())
     checkpoint = tmp_path / "schema_smoke.ckpt"
     torch.save({"config": trainer.model_config, "state_dict": trainer.model.state_dict()}, checkpoint)
@@ -206,14 +209,16 @@ def test_one_cpu_training_step_and_local_checkpoint_inference(tmp_path):
     # A tiny development-only smoke check; no final-model scores are produced.
     train, query = evaluation.preprocess_soccol_split(selected.features.iloc[:24], selected.features.iloc[24:28])
     estimator = TabICLRegressor(model_path=checkpoint, allow_auto_download=False, device="cpu",
-        use_amp=False, n_estimators=1, norm_methods=["none"], feat_shuffle_method="none", remove_constant_features=False)
+        use_amp=False, n_estimators=8, norm_methods=["none", "power"], feat_shuffle_method="latin")
     estimator.fit(train, selected.targets.iloc[:24])
-    assert estimator.preserve_missing_values_
+    assert not estimator.preserve_missing_values_
     prediction = estimator.predict(query)
     assert prediction.shape == (4,) and np.isfinite(prediction).all()
-    assert estimator.ensemble_generator_.n_features_in_ == 58
+    assert 0 < estimator.ensemble_generator_.n_features_in_ <= 58
+    assert sum(map(len, estimator.ensemble_generator_.ensemble_configs_.values())) == min(
+        8, 2 * estimator.ensemble_generator_.n_features_in_)  # Original Latin permutations do not repeat views.
     encoded = estimator.X_encoder_.transform(query)
-    np.testing.assert_array_equal(np.isnan(encoded), query.isna())
-    config.col_missing_value_embedding = False
+    assert np.isfinite(encoded).all()
+    config.original_prior_mix = False  # Historical NaN-preserving mode still needs its encoder.
     with pytest.raises(ValueError, match="require --col_missing_value_embedding"):
         trainer.configure_missingness()

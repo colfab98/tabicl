@@ -26,6 +26,7 @@ from tabicl import TabICL
 from tabicl.prior.combined_corrosion import CombinedCorrosionPriorDataset
 from tabicl.prior.dataset import PriorDataset
 from tabicl.prior.paired_streams import PairedPriorDataset
+from tabicl.prior.original_mixture import OriginalPriorMixture
 from tabicl.prior.genload import LoadPriorDataset
 from tabicl.prior.prior_config import DEFAULT_FIXED_HP
 from tabicl.prior.epit_feature_profile import EPIT_FEATURE_COMPOSITION_PROFILES
@@ -274,6 +275,9 @@ class Trainer:
                 raise ValueError("The combined corrosion prior requires --prior_n_jobs 1.")
 
         paired = getattr(self.config, "paired_prior_streams", False)
+        original_mix = getattr(self.config, "original_prior_mix", False)
+        if original_mix and (not paired or self.config.col_missing_value_embedding):
+            raise ValueError("Original mixture requires checkpointable streams and the original grouped encoder.")
         if paired:
             if combined_config is not None or self.config.prior_dir is not None:
                 raise ValueError("Paired standalone streams cannot use a combined config or stored prior.")
@@ -486,7 +490,7 @@ class Trainer:
                 )
                 self.prior_provenance = dataset.provenance
             else:
-                dataset_class = PairedPriorDataset if paired else PriorDataset
+                dataset_class = OriginalPriorMixture if original_mix else (PairedPriorDataset if paired else PriorDataset)
                 stream_args = dict(seed=self.config.prior_stream_seed, rank=self.ddp_rank,
                                    world_size=self.ddp_world_size) if paired else {}
                 dataset = dataset_class(
@@ -556,7 +560,7 @@ class Trainer:
             and (getattr(self.config, "pitting_feature_profile", None) or EPIT_FEATURE_PROFILE) in (EPIT_EXPANDED_FEATURE_PROFILE, *SOCCOL_REVIEWED_FEATURE_PROFILES)
         )
         if not bool(getattr(self.config, "col_missing_value_embedding", False)):
-            if native_reviewed:
+            if native_reviewed and not getattr(self.config, "original_prior_mix", False):
                 raise ValueError("Reviewed EPIT/Soccol samples retain NaNs and require --col_missing_value_embedding true.")
             if getattr(self.config, "missingness_query_column_probability", 0.0) != 0.0 or getattr(
                 self.config, "missingness_preserve_observed_composition", False

@@ -86,6 +86,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--pitting-magpie-features", action="store_true")
     parser.add_argument("--epit-expanded-features", action="store_true")
     parser.add_argument("--soccol-reviewed-data", action="store_true")
+    parser.add_argument("--original-tabicl-evaluation", action="store_true",
+                        help="Use standard imputation/filtering and the original ensemble for new grouped models.")
     parser.add_argument("--output-dir", type=Path, default=None)
     parser.add_argument("--keep-fold-outputs", action="store_true")
     parser.add_argument("--print-subcommands", action="store_true")
@@ -104,7 +106,7 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--validation-folds values must be between 1 and 5.")
     if args.n_estimators <= 0:
         raise ValueError("--n-estimators must be positive.")
-    if list(args.tabicl_norm_methods) != ["none"]:
+    if not getattr(args, "original_tabicl_evaluation", False) and list(args.tabicl_norm_methods) != ["none"]:
         raise ValueError(
             "EPIT pipeline evaluation requires --tabicl-norm-methods none."
         )
@@ -150,7 +152,7 @@ def fold_command(
         "--tabicl-feat-shuffle-method",
         args.tabicl_feat_shuffle_method,
         "--tabicl-norm-methods",
-        "none",
+        *args.tabicl_norm_methods,
         "--regression-output",
         args.regression_output,
         "--no-regression-uncertainty",
@@ -166,16 +168,17 @@ def fold_command(
     ]
     if args.pitting_magpie_features:
         command.append("--pitting-magpie-features")
+    original_eval = getattr(args, "original_tabicl_evaluation", False)
+    if original_eval:
+        command.append("--native-tabicl-baselines")
     if getattr(args, "epit_expanded_features", False):
-        command.extend([
-            "--epit-expanded-features", "--missing-aware-model", args.model_label,
-            "--fixed-schema-model", args.model_label,
-        ])
+        command.append("--epit-expanded-features")
+        if not original_eval:
+            command.extend(["--missing-aware-model", args.model_label, "--fixed-schema-model", args.model_label])
     if getattr(args, "soccol_reviewed_data", False):
-        command.extend([
-            "--soccol-reviewed-data", "--missing-aware-model", args.model_label,
-            "--fixed-schema-model", args.model_label,
-        ])
+        command.append("--soccol-reviewed-data")
+        if not original_eval:
+            command.extend(["--missing-aware-model", args.model_label, "--fixed-schema-model", args.model_label])
     return command
 
 
@@ -313,6 +316,7 @@ def main() -> None:
                     "n_estimators": args.n_estimators,
                     "tabicl_feat_shuffle_method": args.tabicl_feat_shuffle_method,
                     "tabicl_norm_methods": list(args.tabicl_norm_methods),
+                    "original_tabicl_evaluation": bool(args.original_tabicl_evaluation),
                     "regression_output": args.regression_output,
                     "pitting_magpie_features": bool(
                         args.pitting_magpie_features

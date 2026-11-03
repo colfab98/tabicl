@@ -210,23 +210,25 @@ def validate_args(args: argparse.Namespace) -> None:
 
 
 def native_input_policy(args: argparse.Namespace, command: list[str]) -> dict[str, Any] | None:
-    """Verify the agreed native-schema policy without changing the v12 streams."""
+    """Verify original architecture and source-native, imputed inputs."""
     if not (search.uses_expanded_schema(args) or search.uses_reviewed_soccol_schema(args)):
         return None
     from tabicl.train.train_config import build_parser
 
     entry = next(i for i, token in enumerate(command) if token.endswith("/train/run.py"))
     config = build_parser().parse_args(command[entry + 1:])
-    if not config.paired_prior_streams or not config.col_missing_value_embedding:
-        raise RuntimeError("Native paired final runs require the learned missing-value embedding.")
+    if not config.paired_prior_streams or not config.original_prior_mix or config.col_missing_value_embedding or not config.permute_features:
+        raise RuntimeError("Final runs require original mixtures, feature shuffling, and no missing-value embedding.")
     if config.missingness_profile_path or config.missingness_query_column_probability:
         raise RuntimeError("Native paired final runs must not add artificial feature masking.")
     return {
         "feature_schema": "native_per_source",
         "informed_feature_count": config.max_features,
-        "col_missing_value_embedding": True,
-        "col_feature_group": False,
-        "informed_missing_values": "preserve_native_nan",
+        "col_missing_value_embedding": False,
+        "col_feature_group": "same",
+        "col_feature_group_size": 3,
+        "feature_permutation": True,
+        "informed_missing_values": "context_mean_imputation",
         "generic_missing_values": "none_injected",
         "artificial_feature_masking": False,
     }
@@ -318,7 +320,7 @@ def verify_empirical_feature_profile_identity(
 
 def verify_paired_training_settings(args: argparse.Namespace, fingerprint: dict[str, Any]) -> None:
     """Allow exact repartitioning while retaining the selected study's data recipe."""
-    from tabicl.prior.paired_streams import stream_policy
+    from tabicl.prior.original_mixture import stream_policy
     from tabicl.train.train_config import PAIRED_COEFFICIENT_SEED_POLICY
 
     if fingerprint["fixed_prior"].get("paired_prior_streams") != stream_policy(args.prior_stream_seed):
@@ -419,7 +421,7 @@ def verify_selected_trial_evaluation(
     if summary_json != summary_csv.parent / "summary.json":
         raise RuntimeError("Selected trial summary files come from different runs.")
     eval_dir = summary_csv.parent
-    payload = search.verify_no_power_fold_evaluation(eval_dir)
+    payload = search.verify_original_fold_evaluation(eval_dir)
     if not bool(payload.get("development_rows_only", False)):
         raise RuntimeError("Selected trial was not evaluated development-only.")
     if payload.get("validation_folds") != list(search.FIXED_VALIDATION_FOLDS):
@@ -439,8 +441,8 @@ def verify_selected_trial_evaluation(
         raise RuntimeError("Selected trial evaluation checkpoint hash changed.")
     settings = payload.get("settings", {})
     search.validate_reviewed_soccol_fold_selection(payload)
-    if settings.get("tabicl_feat_shuffle_method") != "none":
-        raise RuntimeError("Selected trial changed the fixed feature order.")
+    if settings.get("tabicl_feat_shuffle_method") != "latin":
+        raise RuntimeError("Selected trial changed the original Latin feature permutations.")
     if "pitting_magpie_features" not in settings or bool(
         settings["pitting_magpie_features"]
     ) != bool(params.use_magpie):
@@ -514,18 +516,18 @@ def verify_selected_trial_journal_record(
         trial.user_attrs["pitting_magpie_features"]
     ) != bool(params.use_magpie):
         raise RuntimeError("Selected trial has inconsistent Magpie provenance.")
-    if trial.user_attrs.get("tabicl_norm_methods") != ["none"]:
-        raise RuntimeError("Selected trial did not record disabled power normalization.")
+    if trial.user_attrs.get("tabicl_norm_methods") != ["none", "power"]:
+        raise RuntimeError("Selected trial did not record the original none/power ensemble.")
     if not isinstance(trial.user_attrs.get("sampler_seed"), int):
         raise RuntimeError("Selected trial has no recorded sampler seed.")
 
     evaluation = study_fingerprint.get("evaluation", {})
     if evaluation.get("validation_folds") != list(search.FIXED_VALIDATION_FOLDS):
         raise RuntimeError("Study fingerprint does not contain all development folds.")
-    if evaluation.get("feature_shuffle_method") != "none":
-        raise RuntimeError("Study fingerprint changed the fixed feature order.")
-    if evaluation.get("norm_methods") != ["none"]:
-        raise RuntimeError("Study fingerprint did not disable power normalization.")
+    if evaluation.get("feature_shuffle_method") != "latin":
+        raise RuntimeError("Study fingerprint changed the original Latin feature permutations.")
+    if evaluation.get("norm_methods") != ["none", "power"]:
+        raise RuntimeError("Study fingerprint did not use the original none/power ensemble.")
     if evaluation.get("regression_output") != "median":
         raise RuntimeError("Study fingerprint changed regression output.")
 
@@ -590,8 +592,8 @@ def verify_selected_trial_journal_record(
         "settings": {
             "n_estimators": int(evaluation["n_estimators"]),
             "pitting_magpie_features": bool(params.use_magpie),
-            "tabicl_feat_shuffle_method": "none",
-            "tabicl_norm_methods": ["none"],
+            "tabicl_feat_shuffle_method": "latin",
+            "tabicl_norm_methods": ["none", "power"],
             "regression_output": "median",
         },
         "pipeline_fingerprint_sha256": study_fingerprint_sha256,
@@ -760,8 +762,8 @@ def validate_fold_evaluation_payload(
     n_estimators: int,
     expanded_schema: bool | None = None,
 ) -> None:
-    if payload.get("settings", {}).get("tabicl_norm_methods") != ["none"]:
-        raise RuntimeError("Checkpoint evaluation did not disable power.")
+    if payload.get("settings", {}).get("tabicl_norm_methods") != ["none", "power"]:
+        raise RuntimeError("Checkpoint evaluation did not use the original none/power ensemble.")
     if not bool(payload.get("development_rows_only", False)):
         raise RuntimeError("Checkpoint selection touched final-test rows.")
     if payload.get("validation_folds") != list(search.FIXED_VALIDATION_FOLDS):
@@ -785,8 +787,8 @@ def validate_fold_evaluation_payload(
         raise RuntimeError("Checkpoint evaluation changed the EPIT feature schema.")
     if int(settings.get("n_estimators", -1)) != n_estimators:
         raise RuntimeError("Checkpoint evaluation changed n_estimators.")
-    if settings.get("tabicl_feat_shuffle_method") != "none":
-        raise RuntimeError("Checkpoint evaluation changed the feature order.")
+    if settings.get("tabicl_feat_shuffle_method") != "latin":
+        raise RuntimeError("Checkpoint evaluation changed the original Latin feature permutations.")
     if "pitting_magpie_features" not in settings or bool(
         settings["pitting_magpie_features"]
     ) != bool(use_magpie):
@@ -823,7 +825,7 @@ def evaluation_record(
             log_path=output_dir.parent / f"step_{step:05d}.log",
         )
 
-    payload = search.verify_no_power_fold_evaluation(output_dir)
+    payload = search.verify_original_fold_evaluation(output_dir)
     validate_fold_evaluation_payload(
         payload,
         checkpoint=checkpoint,
@@ -1162,8 +1164,10 @@ def run(args: argparse.Namespace) -> Path:
         "device": evaluation_args.device,
         "random_state": 42,
         "n_estimators": args.eval_n_estimators,
-        "tabicl_feat_shuffle_method": "none",
-        "tabicl_norm_methods": ["none"],
+        "original_tabicl_evaluation": True,
+        "col_missing_value_embedding": False,
+        "tabicl_feat_shuffle_method": "latin",
+        "tabicl_norm_methods": ["none", "power"],
         "regression_output": "median",
         "regression_uncertainty": False,
         "pitting_magpie_features": bool(params.use_magpie),
@@ -1174,7 +1178,7 @@ def run(args: argparse.Namespace) -> Path:
     if reviewed_split_metadata:
         evaluation_configuration.update({
             "soccol_reviewed_data": True,
-            "col_missing_value_embedding": True,
+            "col_missing_value_embedding": False,
             "soccol_feature_profile": search.SOCCOL_REVIEWED_FEATURE_PROFILE,
         })
     manifest = {

@@ -84,6 +84,8 @@ def build_parser():
     parser.add_argument("--python_seed", type=int, default=None, help="Optional seed for Python random; legacy default unchanged")
     parser.add_argument("--paired_prior_streams", type=str2bool, default=False,
                         help="Use indexed generic/informed streams with exact per-batch proportions")
+    parser.add_argument("--original_prior_mix", type=str2bool, default=False,
+                        help="Use original generic batching with context-imputed, shuffled informed tables")
     parser.add_argument("--prior_stream_seed", type=int, default=42,
                         help="Shared data-stream seed, independent of Optuna's search seed")
     parser.add_argument("--max_steps", type=int, default=60000, help="Training steps")

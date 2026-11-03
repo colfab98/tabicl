@@ -63,9 +63,9 @@ DEFAULT_TARGET_RULE_SUMMARY = (
     PIPELINE_ROOT / "target_rules_v4" / "calibration_summary.json"
 )
 DEFAULT_OPTUNA_ROOT = PIPELINE_ROOT / "optuna_v3"
-DEFAULT_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v12"
+DEFAULT_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v13"
 FIXED_VALIDATION_FOLDS = (1, 2, 3, 4, 5)
-PIPELINE_FINGERPRINT_SCHEMA = "epit_pipeline_stage3_fingerprint_v3"
+PIPELINE_FINGERPRINT_SCHEMA = "epit_pipeline_stage3_fingerprint_v4"
 LEGACY_STUDY_NAME = "epit_pipeline_optuna_empirical_features_scm_target_v7"
 STUDY_FINGERPRINT_ATTR = "epit_pipeline_fingerprint"
 STUDY_FINGERPRINT_SHA256_ATTR = "epit_pipeline_fingerprint_sha256"
@@ -332,14 +332,17 @@ def build_pipeline_fingerprint(
         "material_style": "composition_like",
         "composition_mode": composition_mode,
         "physical_marginal_probability": 1.0,
-        "feature_permutation": False,
+        "feature_permutation": True,
+        "col_feature_group": "same",
+        "col_feature_group_size": 3,
+        "col_missing_value_embedding": False,
         "pitting_coefficient_variation": coefficient_variation_for_mode(
             composition_mode
         ),
         "pitting_coefficient_variation_seed": PITTING_COEFFICIENT_VARIATION_SEED,
     }
     if uses_fixed_informed_search(composition_mode):
-        from tabicl.prior.paired_streams import stream_policy
+        from tabicl.prior.original_mixture import stream_policy
         fixed_prior["paired_prior_streams"] = stream_policy(getattr(args, "prior_stream_seed", 42))
         search_space.pop("informed_prior_ratio")
         search_space["mlp_prob"] = {
@@ -354,8 +357,8 @@ def build_pipeline_fingerprint(
             fixed_prior.update({
                 "feature_columns": list(EPIT_EXPANDED_FEATURE_COLUMNS),
                 "feature_count": EPIT_EXPANDED_FEATURE_COUNT,
-                "missing_value_policy": "paired_environment_row_nan",
-                "col_missing_value_embedding": True,
+                "missing_value_policy": "context_mean_imputation",
+                "col_missing_value_embedding": False,
                 "formula_input_policy": "private_28_column_projection_with_auxiliary_test_method",
             })
         search_space["pitting_composition_perturb_strength"] = list(
@@ -391,10 +394,8 @@ def build_pipeline_fingerprint(
                     "scm_target_topology": "direct_noncausal",
                     "epit_target_input": "raw_physical_features",
                     "final_target_standardization": "population_zscore",
-                    "transformer_input_standardization": (
-                        "per_dataset_column_population_zscore"
-                    ),
-                    "informed_reg2cls_policy": "bypass",
+                    "transformer_input_standardization": "original_reg2cls_feature_preprocessing",
+                    "informed_reg2cls_policy": "feature_preprocessing_only",
                     "generic_scm_mix_probs": list(GENERIC_SCM_MIX_PROBS),
                 }
             )
@@ -444,8 +445,7 @@ def build_pipeline_fingerprint(
             "dataloader_prefetch_factor": int(
                 args.dataloader_prefetch_factor
             ),
-            # Retain existing one-process v12/v6 fingerprints byte-for-byte.
-            # Old multi-process studies used rank-dependent coefficient draws.
+            # Record the corrected coefficient seed policy for distributed runs.
             **({"paired_coefficient_seed_policy": PAIRED_COEFFICIENT_SEED_POLICY}
                if uses_fixed_informed_search(composition_mode) and args.nproc_per_node > 1 else {}),
         },
@@ -453,8 +453,8 @@ def build_pipeline_fingerprint(
             "device": str(args.device),
             "validation_folds": list(FIXED_VALIDATION_FOLDS),
             "n_estimators": int(args.eval_n_estimators),
-            "feature_shuffle_method": "none",
-            "norm_methods": ["none"],
+            "feature_shuffle_method": "latin",
+            "norm_methods": ["none", "power"],
             "regression_output": "median",
         },
         "optuna_sampler": {
@@ -1099,11 +1099,12 @@ def training_command(
     feature_count = model_feature_count(args, params.use_magpie)
     _replace_option(command, "--min_features", str(feature_count))
     _replace_option(command, "--max_features", str(feature_count))
-    if uses_expanded_schema(args):
-        command.extend(["--col_missing_value_embedding", "true"])
+    _replace_option(command, "--permute_features", "true")
+    command.extend(["--col_missing_value_embedding", "false"])
     if uses_fixed_informed_search(composition_mode):
         command.extend([
             "--paired_prior_streams", "true",
+            "--original_prior_mix", "true",
             "--prior_stream_seed", str(getattr(args, "prior_stream_seed", 42)),
             "--python_seed", str(getattr(args, "python_seed", 42)),
         ])
@@ -1193,9 +1194,11 @@ def eval_command(
         "--n-estimators",
         str(args.eval_n_estimators),
         "--tabicl-feat-shuffle-method",
-        "none",
+        "latin",
         "--tabicl-norm-methods",
         "none",
+        "power",
+        "--original-tabicl-evaluation",
         "--output-dir",
         str(output_dir),
     ]
@@ -1203,6 +1206,12 @@ def eval_command(
         command.append("--pitting-magpie-features")
     if uses_expanded_schema(args):
         command.append("--epit-expanded-features")
+    if not getattr(args, "original_tabicl_evaluation", True):
+        # Frozen historical coefficient diagnostics retain their own protocol.
+        _replace_option(command, "--tabicl-feat-shuffle-method", "none")
+        index = command.index("--tabicl-norm-methods")
+        command[index + 1:index + 3] = ["none"]
+        command.remove("--original-tabicl-evaluation")
     return command
 
 
@@ -1215,15 +1224,15 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
 
 
-def verify_no_power_fold_evaluation(eval_dir: Path) -> dict[str, Any]:
+def verify_original_fold_evaluation(eval_dir: Path, *, original_evaluation: bool = True) -> dict[str, Any]:
     summary_path = eval_dir / "summary.json"
     if not summary_path.is_file():
         raise FileNotFoundError(f"Fold-evaluation provenance not found: {summary_path}")
     payload = json.loads(summary_path.read_text(encoding="utf-8"))
     norm_methods = payload.get("settings", {}).get("tabicl_norm_methods")
-    if norm_methods != ["none"]:
+    if norm_methods != (["none", "power"] if original_evaluation else ["none"]):
         raise RuntimeError(
-            "Optuna fold evaluation did not explicitly disable the power transform."
+            "Optuna fold evaluation did not use the original none/power ensemble."
         )
     return payload
 
@@ -1235,6 +1244,7 @@ def verify_trial_fold_evaluation(
     checkpoint_path: Path,
     params: TrialParams,
     expanded_schema: bool | None = None,
+    original_evaluation: bool = True,
 ) -> None:
     """Reject stale evaluation output before it can enter Optuna storage."""
     if payload.get("split_manifest_sha256") != rules.split_manifest_sha256:
@@ -1258,8 +1268,8 @@ def verify_trial_fold_evaluation(
         settings["pitting_magpie_features"]
     ) != bool(params.use_magpie):
         raise RuntimeError("Trial evaluation changed the Magpie feature setting.")
-    if settings.get("tabicl_feat_shuffle_method") != "none":
-        raise RuntimeError("Trial evaluation changed the fixed feature order.")
+    if settings.get("tabicl_feat_shuffle_method") != ("latin" if original_evaluation else "none"):
+        raise RuntimeError("Trial evaluation changed the original Latin feature permutations.")
 
 
 def run_trial(
@@ -1332,8 +1342,8 @@ def run_trial(
         "split_lock_sha256": rules.split_lock_sha256,
         "development_validation_folds": list(FIXED_VALIDATION_FOLDS),
         "final_test_rows_used": False,
-        "evaluation_norm_methods": ["none"],
-        "evaluation_feature_shuffle_method": "none",
+        "evaluation_norm_methods": ["none", "power"],
+        "evaluation_feature_shuffle_method": "latin",
         "target_rule_summary": rules.summary_path,
         "target_rule_summary_sha256": rules.summary_sha256,
         "target_rule_scores": rules.scores,
@@ -1416,7 +1426,7 @@ def run_trial(
         eval_dir / "summary.csv",
         model_label,
     )
-    evaluation_payload = verify_no_power_fold_evaluation(eval_dir)
+    evaluation_payload = verify_original_fold_evaluation(eval_dir)
     verify_trial_fold_evaluation(
         evaluation_payload,
         rules=rules,
@@ -1527,7 +1537,7 @@ def run_optuna(args: argparse.Namespace) -> None:
             pipeline_artifact_identity(args.target_rules),
         )
         trial.set_user_attr("pitting_magpie_features", bool(params.use_magpie))
-        trial.set_user_attr("tabicl_norm_methods", ["none"])
+        trial.set_user_attr("tabicl_norm_methods", ["none", "power"])
         return float(result["mean_test_spearman"])
 
     study.optimize(objective, n_trials=args.n_trials)

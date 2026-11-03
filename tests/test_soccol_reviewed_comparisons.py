@@ -125,7 +125,7 @@ def test_frozen_manifest_finds_reviewed_run_and_rejects_historical_schema(tmp_pa
         "selected_checkpoint": {"path": str(checkpoint), "sha256": sha256_file(checkpoint)},
         "evaluation_configuration": {"task_id": comparison.SOCCOL_TASK_ID, "tabicl_norm_methods": ["none"],
                                      "soccol_reviewed_data": True, "soccol_feature_profile": "soccol_pitting_features_v3",
-                                     "expected_n_features": 58, "col_missing_value_embedding": True},
+                                     "expected_n_features": 58, "col_missing_value_embedding": False},
     }
     def save():
         manifest_path.write_text(json.dumps(manifest))
@@ -153,6 +153,7 @@ def test_candidate_labels_match_evaluator_normalization():
     args = comparison.parse_args(["--candidate-label", "Soccol 25 percent", "--candidate-run", "/tmp/future_run"])
     assert args.candidate_label == ev.slugify("Soccol 25 percent")
     command = comparison.evaluation_command(args)
-    assert command[command.index("--missing-aware-model") + 1] == args.candidate_label
+    assert "--missing-aware-model" not in command
+    assert "--native-tabicl-baselines" in command
     with pytest.raises(SystemExit):
         comparison.parse_args(["--candidate-label", "generic_baseline"])

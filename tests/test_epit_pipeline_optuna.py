@@ -135,10 +135,10 @@ def _fake_epit_task() -> corrosion_eval.EvalTask:
     )
 
 
-def test_pipeline_defaults_use_current_v12_workflow() -> None:
+def test_pipeline_defaults_use_current_v13_workflow() -> None:
     args = search.parse_args([])
 
-    assert args.study_name == "epit_pipeline_optuna_empirical_features_scm_target_v12"
+    assert args.study_name == "epit_pipeline_optuna_empirical_features_scm_target_v13"
     assert args.pitting_composition_mode == "empirical_features_scm_target"
     assert args.n_trials == 50
     assert args.n_startup_trials == 10
@@ -227,7 +227,7 @@ def test_paired_training_command_requires_exact_global_batch(tmp_path, processes
 
 
 @pytest.mark.parametrize("ratio", [0., .25, .5, .75, 1.])
-def test_final_ratios_keep_native_nans_and_disable_extra_masks(tmp_path, ratio):
+def test_final_ratios_use_original_architecture_without_extra_masks(tmp_path, ratio):
     from tabicl.train.run import Trainer
     from tabicl.train.train_config import build_parser
 
@@ -242,7 +242,8 @@ def test_final_ratios_keep_native_nans_and_disable_extra_masks(tmp_path, ratio):
     command = search.training_command(args, effective, tmp_path, rules)
     policy = train_final.native_input_policy(args, command)
     assert policy["informed_feature_count"] == 70
-    assert policy["col_missing_value_embedding"] and not policy["col_feature_group"]
+    assert not policy["col_missing_value_embedding"] and policy["col_feature_group"] == "same"
+    assert policy["informed_missing_values"] == "context_mean_imputation"
     assert not policy["artificial_feature_masking"]
     entry = next(i for i, token in enumerate(command) if token.endswith("/train/run.py"))
     trainer = Trainer.__new__(Trainer)
@@ -253,7 +254,7 @@ def test_final_ratios_keep_native_nans_and_disable_extra_masks(tmp_path, ratio):
     with pytest.raises(RuntimeError, match="artificial feature masking"):
         train_final.native_input_policy(args, command + ["--missingness_profile_path", "unwanted.json"])
     with pytest.raises(RuntimeError, match="missing-value embedding"):
-        train_final.native_input_policy(args, command + ["--col_missing_value_embedding", "false"])
+        train_final.native_input_policy(args, command + ["--col_missing_value_embedding", "true"])
 
 
 def test_paired_trainer_rejects_rounded_batch_before_starting_nccl(monkeypatch):
@@ -658,7 +659,7 @@ def test_stage4_validates_missing_worker_files_from_journal(tmp_path: Path, case
         search.STUDY_FINGERPRINT_SHA256_ATTR: fingerprint_sha256,
         "pipeline_artifact_identity": search.pipeline_artifact_identity(rules),
         "pitting_magpie_features": True,
-        "tabicl_norm_methods": ["none"],
+        "tabicl_norm_methods": ["none", "power"],
         "sampler_seed": 42,
         "mean_test_mae": 210.36,
         "median_test_mae": 196.70,
@@ -769,8 +770,8 @@ def test_stage4_verifies_selected_trial_files_and_objective(tmp_path: Path) -> N
             "local_ckpt_sha256": train_final.sha256_file(checkpoint),
         },
         "settings": {
-            "tabicl_norm_methods": ["none"],
-            "tabicl_feat_shuffle_method": "none",
+            "tabicl_norm_methods": ["none", "power"],
+            "tabicl_feat_shuffle_method": "latin",
             "pitting_magpie_features": False,
         },
         "summary_csv": str(summary_csv),
@@ -1197,9 +1198,9 @@ def test_epit_comparison_wrapper_needs_only_context_fold_count() -> None:
     assert "--compare-pretrained-tabicl" in command
     assert "--compare-catboost" in command
     assert _value_after(command, "--device") == "cpu"
-    assert _value_after(command, "--fixed-schema-model") == "epit_reviewed"
+    assert "--fixed-schema-model" not in command
     assert "--epit-expanded-features" in command
-    assert "--missing-aware-model" in command
+    assert "--missing-aware-model" not in command
 
 
 def test_absolute_checkpoint_run_path_does_not_require_run_prefix(

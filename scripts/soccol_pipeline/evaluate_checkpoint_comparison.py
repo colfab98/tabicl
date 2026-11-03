@@ -25,7 +25,7 @@ DEFAULT_GENERIC_RUN = REPO_ROOT / "checkpoints/tabicl_s1_regression_baseline"
 DEFAULT_SPLIT_MANIFEST = SPLIT_MANIFEST
 DEFAULT_OUTPUT_ROOT = REPO_ROOT / "corrosion_datasets/analysis/soccol_pipeline"
 DEFAULT_FINAL_MODEL_MANIFEST = (
-    DEFAULT_OUTPUT_ROOT / "final_v2/soccol_pipeline_optuna_empirical_features_scm_target_v4/final_model_manifest.json"
+    DEFAULT_OUTPUT_ROOT / "final_v2/soccol_pipeline_optuna_empirical_features_scm_target_v7/final_model_manifest.json"
 )
 LEGACY_CANDIDATE_RUN = (
     REPO_ROOT / "checkpoints/soccol_pipeline_final_v1/final_soccol_pipeline_optuna_empirical_features_scm_target_v1_trial_0019"
@@ -39,6 +39,7 @@ REQUIRED_PLOTS = tuple(f"trend_mean_test_{metric}.svg" for metric in (
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--legacy-model-inputs", action="store_true", help="Evaluate historical missing-embedding checkpoints with their old input policy.")
     parser.add_argument("--legacy-data", action="store_true", help="Use the historical 37-column inputs and trial-19 default.")
     parser.add_argument("--context-folds", type=int, choices=[5], help="Use each accepted development fold as context; keep all 805 final queries.")
     parser.add_argument("--device", default="cpu")
@@ -87,7 +88,7 @@ def candidate_run(args: argparse.Namespace) -> Path:
         or not config.get("soccol_reviewed_data")
         or config.get("soccol_feature_profile") not in SOCCOL_REVIEWED_FEATURE_PROFILES
         or config.get("expected_n_features") != 58
-        or not config.get("col_missing_value_embedding")
+        or bool(config.get("col_missing_value_embedding")) != args.legacy_model_inputs
         or any(frozen.manifest.get("split", {}).get(k) != v for k, v in expected.items())
     ):
         raise RuntimeError("Final manifest does not match reviewed Soccol inputs and frozen queries.")
@@ -108,7 +109,6 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
         sys.executable, str(REPO_ROOT / "scripts/eval_corrosion_datasets.py"),
         "--run", str(candidate_run(args)), "--run", str(args.generic_run.expanduser().resolve()),
         "--local-model-label", args.candidate_label, "--local-model-label", "generic_baseline",
-        "--fixed-schema-model", args.candidate_label,
         "--checkpoint", "all", "--min-checkpoint-step", "0",
         "--checkpoint-step-interval", str(args.checkpoint_step_interval), "--include-latest-common-checkpoint",
         "--task", SOCCOL_TASK_ID, "--target-mode", "primary", "--target-binning", "continuous",
@@ -122,7 +122,12 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
         "--catboost-thread-count", str(args.catboost_thread_count),
     ]
     if not args.legacy_data:
-        command.extend(["--soccol-reviewed-data", "--missing-aware-model", args.candidate_label])
+        command.append("--soccol-reviewed-data")
+    command.append("--native-tabicl-baselines")
+    if args.legacy_model_inputs or args.legacy_data:
+        command.extend(["--fixed-schema-model", args.candidate_label])
+        if not args.legacy_data:
+            command.extend(["--missing-aware-model", args.candidate_label])
     categories = LEGACY_CATEGORICAL_COLUMNS if args.legacy_data else CATBOOST_CATEGORICAL_COLUMNS
     for column in categories:
         command.extend(["--catboost-categorical-column", column])
@@ -155,8 +160,8 @@ def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: i
                 "query_task_row_indices": metadata["final_query_task_row_indices"]}
     if payload.get("soccol_final_split") != expected:
         raise RuntimeError("Comparison changed the accepted context or frozen query membership.")
-    if args.candidate_label not in payload.get("missing_aware_models", []):
-        raise RuntimeError("Comparison disabled Soccol missing-value handling.")
+    if (args.candidate_label in payload.get("missing_aware_models", [])) != args.legacy_model_inputs:
+        raise RuntimeError("Comparison changed Soccol missing-value handling.")
     rows = payload.get("rows", [])
     if {row.get("model") for row in rows} != {args.candidate_label, "generic_baseline", "pretrained_tabicl_v2", "catboost"}:
         raise RuntimeError("Comparison did not produce all four expected models.")

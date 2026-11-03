@@ -489,10 +489,8 @@ def test_v8_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_pa
     assert fixed_prior["scm_target_constant_column_policy"] == "zero"
     assert fixed_prior["scm_target_topology"] == "direct_noncausal"
     assert fixed_prior["epit_target_input"] == "raw_physical_features"
-    assert fixed_prior["transformer_input_standardization"] == (
-        "per_dataset_column_population_zscore"
-    )
-    assert fixed_prior["informed_reg2cls_policy"] == "bypass"
+    assert fixed_prior["transformer_input_standardization"] == "original_reg2cls_feature_preprocessing"
+    assert fixed_prior["informed_reg2cls_policy"] == "feature_preprocessing_only"
     assert fixed_prior["generic_scm_mix_probs"] == [0.7, 0.3]
     train_final.verify_empirical_feature_profile_identity(fixed_prior)
     assert _value_after(command, "--pitting_composition_mode") == (
@@ -551,7 +549,7 @@ def test_v8_search_and_final_training_are_bound_to_scm_epit_target_policy(tmp_pa
         / "train_final.sbatch"
     ).read_text(encoding="utf-8")
     for launcher in (optuna_launcher, final_launcher):
-        assert "epit_pipeline_optuna_empirical_features_scm_target_v12" in launcher
+        assert "epit_pipeline_optuna_empirical_features_scm_target_v13" in launcher
         assert 'NP_SEED="${NP_SEED:-42}"' in launcher
         assert 'TORCH_SEED="${TORCH_SEED:-42}"' in launcher
         assert 'PRIOR_N_JOBS="${PRIOR_N_JOBS:-1}"' in launcher

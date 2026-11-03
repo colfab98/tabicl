@@ -21,11 +21,11 @@ def mock_models(monkeypatch):
         task, split = kwargs['task'], kwargs['task_split']
         assert tuple(task.X.columns) == EPIT_EXPANDED_FEATURE_COLUMNS
         if split.split_strategy.startswith('epit_pipeline_final_test'):
-            baseline = kwargs['model_label'] in {'generic_baseline', 'pretrained_tabicl_v2'}
+            baseline = 'tabicl' in kwargs['model_kind']
             assert kwargs['native_tabicl_baseline'] == baseline
             assert ev.should_preserve_feature_schema(
                 kwargs['model_kind'], split, kwargs['preserve_feature_schema'], native_baseline=baseline,
-            ) == kwargs['model_label'].startswith('epit_')
+            ) is False
         indices = np.arange(len(task.X))
         if split.split_strategy.startswith('epit_pipeline_development_fold_'):
             indices = np.asarray(frozen_membership(comparison.DEFAULT_SPLIT_MANIFEST)['context_task_row_indices'])
@@ -172,8 +172,8 @@ def test_five_ratio_protocol_matches_combined_builder():
     assert {k: v for k, v in vars(epit_args).items() if k not in changed} == {
         k: v for k, v in vars(combined_args).items() if k not in changed}
     for label in comparison.RATIO_LABELS:
-        assert ev.tabicl_inference_settings(epit_args, label) == ('none', ['none'])
-        assert ev.expected_missing_value_mode(epit_args, label) is True
+        assert ev.tabicl_inference_settings(epit_args, label) == ('latin', None)
+        assert ev.expected_missing_value_mode(epit_args, label) is False
     for label, pretrained in [('generic_baseline', False), ('pretrained_tabicl_v2', True)]:
         assert ev.tabicl_inference_settings(epit_args, label, pretrained=pretrained) == ('latin', None)
         assert ev.expected_missing_value_mode(epit_args, label, pretrained=pretrained) is False

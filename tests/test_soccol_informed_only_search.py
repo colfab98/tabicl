@@ -32,7 +32,7 @@ def reviewed():
 
 def test_reviewed_defaults_and_real_optuna_distributions(reviewed):
     args, rules = reviewed
-    assert args.study_name == "soccol_pipeline_optuna_empirical_features_scm_target_v6"
+    assert args.study_name == "soccol_pipeline_optuna_empirical_features_scm_target_v7"
     assert args.work_dir.parent.name == args.eval_output_root.parent.name == "optuna_v4"
     assert args.target_rule_summary.parent.name == "target_rules_v2"
     assert (args.n_trials, args.max_steps, args.scheduler_total_steps) == (50, 1000, 10000)
@@ -90,7 +90,8 @@ def test_new_ranges_reach_soccol_training_and_matching_evaluation(reviewed, tmp_
     assert config.min_features == config.max_features == 58
     assert tuple(config.informed_normal_block_allocation) == (24, 34, 0, 0, 0, 0, 0, 0, 0)
     assert config.pitting_feature_profile == SOCCOL_REVIEWED_FEATURE_PROFILE
-    assert config.col_missing_value_embedding
+    assert not config.col_missing_value_embedding
+    assert config.original_prior_mix and config.permute_features
     assert config.pitting_coefficient_variation == .8
     assert config.pitting_coefficient_variation_seed == 42
     assert not base.uses_expanded_schema(args)

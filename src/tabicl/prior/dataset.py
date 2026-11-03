@@ -249,6 +249,14 @@ class InhibitorEfficiencyProfileInfo:
             self.categorical_columns.append(col)
 
 
+def context_mean_impute(X: Tensor, train_size: int) -> Tensor:
+    """Fill missing cells from context means; wholly missing columns use zero."""
+    if not 0 < train_size < X.shape[0]:
+        raise ValueError("Imputation requires nonempty context and query rows.")
+    means = torch.nanmean(X[:train_size], dim=0).nan_to_num(nan=0.0)
+    return torch.where(torch.isnan(X), means, X)
+
+
 class Prior:
     """Abstract base class for dataset prior generators.
 
@@ -4201,7 +4209,23 @@ class SCMPrior(Prior):
             if self._pitting_magpie_features_enabled() and generation_params.get("informed_mode", False):
                 X = append_magpie_descriptors_torch(X)
             active_feature_count = int(X.shape[-1])
-            if empirical_scm_target:
+            original_input = empirical_scm_target and params.get("original_tabicl_input", False)
+            if original_input:
+                # Do not move query rows into context after fitting imputation.
+                # Reject a degenerate split rather than repairing it by shuffling.
+                if not self.regression_sanity_check(X.unsqueeze(0), y.unsqueeze(0), params["train_size"], n_attempts=0):
+                    continue
+                # Target calculation above uses the physical, finite internal
+                # copy. Restore observed missingness only for model inputs.
+                if self._expanded_epit_features_enabled() or self._reviewed_soccol_features_enabled():
+                    missing = torch.as_tensor(np.isnan(self.last_pitting_feature_batch.features), device=X.device)
+                    X = X.clone()
+                    X[:, :missing.shape[1]].masked_fill_(missing, float("nan"))
+                X = context_mean_impute(X, params["train_size"])
+                # Same feature preprocessing as generic, without categorical
+                # conversion or recomputing the already generated target.
+                X = Reg2Cls(params)._process_features(X)
+            elif empirical_scm_target:
                 X = self._standardize_features_for_scm_target(X)
             else:
                 X, y = Reg2Cls(reg2cls_params)(X, y)
@@ -4214,15 +4238,21 @@ class SCMPrior(Prior):
             preserve_fixed_epit_schema = (
                 generation_params.get("informed_mode", False)
                 and self._empirical_pitting_feature_profile_enabled()
+                and not original_input
             )
             if not preserve_fixed_epit_schema:
                 X, d = self.delete_unique_features(X, d)
+            # Original TabICL rejects empty tables before attempting split
+            # repair. Repairing an already rejected table consumes extra RNG
+            # draws and changes every subsequent generic sample.
+            if not (d > 0).all():
+                continue
             if params["num_classes"] == 0:
                 valid_target = self.regression_sanity_check(X, y, params["train_size"])
             else:
                 valid_target = self.sanity_check(X, y, params["train_size"])
-            if (d > 0).all() and valid_target:
-                if empirical_scm_target and (self._expanded_epit_features_enabled() or self._reviewed_soccol_features_enabled()):
+            if valid_target:
+                if empirical_scm_target and not original_input and (self._expanded_epit_features_enabled() or self._reviewed_soccol_features_enabled()):
                     # Restore the exact mask from the sampled environment row,
                     # after all finite target calculations and standardization.
                     missing = torch.as_tensor(
@@ -4240,13 +4270,17 @@ class SCMPrior(Prior):
         )
 
     @torch.no_grad()
-    def get_batch(self, batch_size: Optional[int] = None) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
+    def get_batch(self, batch_size: Optional[int] = None, *, prefix_size: Optional[int] = None) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]:
         """Generate a batch of datasets by first creating a parameter list and then processing it.
 
         Parameters
         ----------
         batch_size : int, optional
             Batch size override. If None, uses self.batch_size.
+
+        prefix_size : int, optional
+            Generate only the first tables of the original full-batch parameter
+            plan. None generates the entire batch, preserving original behavior.
 
         Returns
         -------
@@ -4350,6 +4384,14 @@ class SCMPrior(Prior):
                         "device": self.device,
                     }
                     param_list.append(params)
+
+        # Mixtures may consume a prefix of an otherwise unchanged full-batch
+        # parameter plan. In particular this retains all original RNG draws
+        # before generating the first generic table.
+        if prefix_size is not None:
+            if not 0 < prefix_size <= batch_size:
+                raise ValueError("prefix_size must be between 1 and batch_size.")
+            param_list = param_list[:prefix_size]
 
         # Use joblib to generate datasets in parallel.
         # When PriorDataset runs inside a DataLoader worker, we're already in a multiprocessing

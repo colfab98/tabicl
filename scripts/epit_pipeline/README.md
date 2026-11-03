@@ -1,5 +1,54 @@
 # CorrPFN EPIT pipeline
 
+## Current experiment: v13
+
+EPIT v13 and Soccol v7 use the original grouped TabICL encoder (group size 3)
+for both generic and informed tables, without a missing-value embedding or
+artificial feature masking. Both sources shuffle features.
+
+The local generic generator uses its original full-batch parameter plan,
+preprocessing and rejection sampling. A 0% run is that generic path. Mixed runs
+consume a prefix of that same generic batch and an independently generated
+informed batch; informed Optuna parameters never enter generic generation.
+One original context/query split is sampled per global training batch.
+Informed targets are calculated before filling missing inputs from synthetic
+context means (zero for a wholly missing context column). The resulting inputs
+use the original feature preprocessing, shuffling and constant-column filtering.
+The physical feature profiles and fitted formulas are unchanged.
+
+Optuna still searches the three informed-prior parameters at 100% informed.
+Final training can override the ratio to 0, .25, .5, .75 or 1 using the existing
+`train_final.sbatch`. Grouping and model architecture are not search parameters.
+
+All new TabICL evaluations use Latin permutations and `none`/`power`
+normalization, with eight ensemble views by default, standard imputation and
+constant-column removal. Optuna/checkpoint selection use development folds;
+final evaluation uses the frozen outer queries. Historical missing-aware
+checkpoint comparisons require `--legacy-model-inputs`.
+
+Launch the new search from the repository on the cluster:
+
+```bash
+sbatch --gpus=1 \
+  --export=ALL,STUDY_NAME=epit_pipeline_optuna_empirical_features_scm_target_v13,N_TRIALS=50 \
+  scripts/epit_pipeline/run_optuna.sbatch
+```
+
+For two GPUs also set `NPROC_PER_NODE=2` and request `--gpus=2`. Final training
+already derives its process count from the requested GPU count. Global batch
+size and schedule stay fixed. To preserve the original sequential generic RNG,
+each rank reproduces the global CPU batch and trains only its assigned slice;
+GPU work is divided, but CPU generation does not become cheaper. Resume retains
+the saved worker/RNG state and requires the original process count.
+
+New runs use new study/checkpoint directories and reject incompatible old
+fingerprints. Existing checkpoints cannot be resumed into v13. There is no
+runtime dependency on another checkout of TabICL. Regression support remains
+shared across every ratio; historical seeds are not reproduced automatically.
+
+The sections below record the earlier workflow and data preparation. The v13
+settings above supersede their training/evaluation settings and launch commands.
+
 This directory contains the reviewed-data workflow and retained historical workflows.
 
 | Workflow | Status | Composition schema | Base/with-Magpie width | Rule artifacts |
@@ -9,7 +58,8 @@ This directory contains the reviewed-data workflow and retained historical workf
 | v9 (`epit_pipeline_optuna_empirical_features_scm_target_v9`) | Reviewed inputs and refitted formulas; previous search settings | `epit_dataset_v4`, 24 elements, development only | 70/80 | nine formulas in `target_rules_v4` |
 | v10 (`epit_pipeline_optuna_empirical_features_scm_target_v10`) | Previous unpaired sampling; 100% informed search with broader ranges | `epit_dataset_v4`, 24 elements, development only | 70/80 | nine formulas in `target_rules_v4` |
 | v11 (`epit_pipeline_optuna_empirical_features_scm_target_v11`) | Initial indexed streams; superseded after an infinite-retry defect | `epit_dataset_v4`, 24 elements, development only | 70/80 | nine formulas in `target_rules_v4` |
-| v12 (`epit_pipeline_optuna_empirical_features_scm_target_v12`) | Current defaults; deterministic bounded retries and shared streams | `epit_dataset_v4`, 24 elements, development only | 70/80 | nine formulas in `target_rules_v4` |
+| v12 (`epit_pipeline_optuna_empirical_features_scm_target_v12`) | Historical missing-aware paired streams | `epit_dataset_v4`, 24 elements, development only | 70/80 | nine formulas in `target_rules_v4` |
+| v13 (`epit_pipeline_optuna_empirical_features_scm_target_v13`) | Current defaults; original generic batches, grouped encoder, common evaluation | `epit_dataset_v4`, 24 elements, development only | 70 | nine formulas in `target_rules_v4` |
 
 See [Shared synthetic streams](PAIRED_STREAMS.md) for matching Optuna/final data,
 generic controls, checkpoint behavior and unchanged legacy runs.

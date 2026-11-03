@@ -124,7 +124,7 @@ def validate_frozen_model(frozen: FrozenFinalModel) -> dict[str, Any]:
         original_development_rows = reviewed["original_development_rows"]
         if (
             config.get("soccol_feature_profile") not in SOCCOL_REVIEWED_FEATURE_PROFILES
-            or not config.get("col_missing_value_embedding", False)
+            or bool(config.get("col_missing_value_embedding", False)) == bool(config.get("original_tabicl_evaluation", False))
             or config.get("epit_expanded_features", False)
             or config.get("pitting_magpie_features", False)
         ):
@@ -143,10 +143,11 @@ def validate_frozen_model(frozen: FrozenFinalModel) -> dict[str, Any]:
 
     if config.get("task_id") != PITTING_TASK_ID:
         raise RuntimeError("Frozen evaluation task is not the EPIT task.")
-    if config.get("tabicl_norm_methods") != ["none"]:
-        raise RuntimeError("Final evaluation must explicitly disable power.")
-    if config.get("tabicl_feat_shuffle_method") != "none":
-        raise RuntimeError("Final evaluation must preserve the fixed feature order.")
+    original_eval = bool(config.get("original_tabicl_evaluation", False))
+    if config.get("tabicl_norm_methods") != (["none", "power"] if original_eval else ["none"]):
+        raise RuntimeError("Final evaluation changed its frozen transformations.")
+    if config.get("tabicl_feat_shuffle_method") != ("latin" if original_eval else "none"):
+        raise RuntimeError("Final evaluation changed its frozen feature permutations.")
     if config.get("regression_output") != "median":
         raise RuntimeError("Unsupported frozen regression output.")
     if bool(config.get("regression_uncertainty", True)):
@@ -185,8 +186,6 @@ def final_evaluation_command(
         str(frozen.checkpoint_path),
         "--local-model-label",
         FINAL_MODEL_LABEL,
-        "--fixed-schema-model",
-        FINAL_MODEL_LABEL,
         "--task",
         PITTING_TASK_ID,
         "--target-mode",
@@ -205,9 +204,9 @@ def final_evaluation_command(
         "--n-estimators",
         str(config["n_estimators"]),
         "--tabicl-feat-shuffle-method",
-        "none",
+        config["tabicl_feat_shuffle_method"],
         "--tabicl-norm-methods",
-        "none",
+        *config["tabicl_norm_methods"],
         "--regression-output",
         "median",
         "--no-regression-uncertainty",
@@ -225,10 +224,16 @@ def final_evaluation_command(
         command.extend(["--epit-final-context-fold", str(context_fold)])
     if bool(config["pitting_magpie_features"]):
         command.extend(["--pitting-magpie-model", FINAL_MODEL_LABEL])
+    if config.get("original_tabicl_evaluation", False):
+        command.append("--native-tabicl-baselines")
+    else:
+        command.extend(["--fixed-schema-model", FINAL_MODEL_LABEL])
+        if config.get("epit_expanded_features") or config.get("soccol_reviewed_data"):
+            command.extend(["--missing-aware-model", FINAL_MODEL_LABEL])
     if config.get("epit_expanded_features", False):
-        command.extend(["--epit-expanded-features", "--missing-aware-model", FINAL_MODEL_LABEL])
+        command.append("--epit-expanded-features")
     if config.get("soccol_reviewed_data", False):
-        command.extend(["--soccol-reviewed-data", "--missing-aware-model", FINAL_MODEL_LABEL])
+        command.append("--soccol-reviewed-data")
     return command
 
 
@@ -242,8 +247,8 @@ def validate_final_results(
 ) -> dict[str, Any]:
     if expected_context_rows is None:
         expected_context_rows = DEVELOPMENT_ROWS
-    if payload.get("tabicl_feat_shuffle_method") != "none":
-        raise RuntimeError("Final evaluation changed the feature order.")
+    if payload.get("tabicl_feat_shuffle_method") != config["tabicl_feat_shuffle_method"]:
+        raise RuntimeError("Final evaluation changed the feature permutations.")
     if int(payload.get("n_estimators", -1)) != int(config["n_estimators"]):
         raise RuntimeError("Final evaluation changed n_estimators.")
     if int(payload.get("random_state", -1)) != int(config["random_state"]):
@@ -273,8 +278,8 @@ def validate_final_results(
         }
         if payload.get("soccol_final_split") != expected:
             raise RuntimeError("Final Soccol evaluation changed the frozen context/query membership.")
-        if FINAL_MODEL_LABEL not in payload.get("missing_aware_models", []):
-            raise RuntimeError("Final Soccol evaluation disabled missing-aware inputs.")
+        if (FINAL_MODEL_LABEL in payload.get("missing_aware_models", [])) != (not config.get("original_tabicl_evaluation", False)):
+            raise RuntimeError("Final Soccol evaluation changed its missing-value handling.")
 
     rows = list(payload.get("rows", []))
     if len(rows) != 1 or rows[0].get("model") != FINAL_MODEL_LABEL:
