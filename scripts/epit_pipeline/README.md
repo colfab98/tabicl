@@ -534,6 +534,8 @@ the selected v14 Optuna trial as a starting point and records these changes:
 - One formula/SCM weight is sampled uniformly per synthetic table. Its mean
   stays at the selected trial's weight. For trial 27, the range is
   0–0.573195 and the mean is 0.286598. It is separate from the informed-table ratio.
+  EPIT and Soccol share this weight sampling and target calculation through
+  `src/tabicl/prior/target_mixing.py`; each keeps its own formulas and mean.
 - The new formula uses its saved development-fitted scales, method offsets and
   heat/cooling coefficients. Missing or unsupported heat/cooling labels add no
   correction. The existing 0.8 coefficient variation also applies to the new
@@ -543,7 +545,8 @@ The fitted equation is bundled in `src/tabicl/prior/assets/epit_target_v5.json`.
 It was fitted on 452 Fe/Ni development rows, with final-test targets excluded.
 This is an experimental final-training override, not an Optuna-tuned v5 result.
 The weaker result on unseen papers still applies; improved model performance
-has not been established. Optuna and Soccol continue using their existing recipes.
+has not been established. Optuna keeps its existing recipe. Soccol final training
+keeps its own formulas and now varies the weight using the same implementation.
 
 ```bash
 sbatch --gpus=1 scripts/epit_pipeline/train_final.sbatch \
@@ -552,13 +555,69 @@ sbatch --gpus=1 scripts/epit_pipeline/train_final.sbatch \
 
 Change `--gpus` and the informed ratio in that same command. Checkpoints go to
 `checkpoints/epit_pipeline_final_v2/epit_targetv5_trial0027_ratio_0p50_override_<hash>/`.
-The hash includes the formula artifact and its runtime code. Resume checks also
-include both, so an old target recipe cannot silently resume as v5. Use
+The hash includes the formula artifact, its runtime code and the shared weight
+mixing code. Resume checks include them too, so an old target recipe cannot
+silently resume as v5. Use
 `--epit-target-version v4` to reproduce the previous final-training recipe.
 The Python entry point defaults to v4 for compatibility; pass
 `--epit-target-version v5` when invoking it directly.
 
 Sync `scripts/epit_pipeline/train_final.py`, `train_final.sbatch`,
 `src/tabicl/train/run.py`, `train_config.py`,
-`src/tabicl/prior/epit_target_v5.py`, and `src/tabicl/prior/assets/epit_target_v5.json`
+`src/tabicl/prior/epit_target_v5.py`, `src/tabicl/prior/target_mixing.py`,
+and `src/tabicl/prior/assets/epit_target_v5.json`
 to training nodes. The formula-research outputs are not runtime dependencies.
+
+## Generic 10k continuation with fixed Stage 2 optimization
+
+Both branches load only the weights from
+`checkpoints/tabicl_s1_regression_baseline/step-10000.ckpt`. A new AdamW optimizer
+uses the original Stage 2 schedule: 2,000 additional steps, learning rate
+`2e-5` to `5e-6`, polynomial power 2, no warmup, global batch 512, microbatch 1,
+gradient clipping 1, and weight decay 0. Both use seed 43 and the existing
+1,024-row tables with context fractions 0.1–0.9. The architecture and regression
+head are retained. This does not introduce Stage 2's long-table curriculum.
+
+The informed branch uses 100% EPIT v5 tables, MLP share 0.70, composition
+perturbation 0.30, and variable formula weight with trial 27's mean
+`0.28659758621052106`. The control uses 100% generic tables. All other training
+settings match. The launcher rejects changes to the predeclared recipe.
+
+```bash
+sbatch --gpus=1 scripts/epit_pipeline/finetune.sbatch \
+  --final-run-name generic10k_epit100_s2 --override-informed-prior-ratio 1
+
+sbatch --gpus=1 scripts/epit_pipeline/finetune.sbatch \
+  --final-run-name generic10k_generic_s2 --override-informed-prior-ratio 0
+```
+
+Use the same GPU count for both branches. Add `--dry-run` to either command to
+validate and print the effective configuration without training. Add
+`--resume-training` to the original command to resume an interrupted stage;
+this restores its full optimizer, schedule, RNG and sampler state, with the
+original worker and process counts. It does not repeat weight-only loading.
+
+Checkpoints are written under `checkpoints/epit_finetuning/<run-name>/`.
+`step-0.ckpt` contains the unchanged 10k weights with the fresh optimizer and
+sampler, before any training batches are consumed. Subsequent checkpoint steps
+count only the new updates, and every 100th step is retained. `finetuning.json`
+records the parent hash, fixed recipe, command and split identity.
+
+Step 2,000 is frozen as the predeclared primary endpoint. Training does not run
+development checkpoint selection or final-test evaluation. Frozen manifests
+are saved under `corrosion_datasets/analysis/epit_pipeline/final_v2/manual/<run-name>/`.
+
+Compare the two trajectories, including step zero, on the frozen 152 outer
+queries with all 608 development rows as labeled context:
+
+```bash
+sbatch --gpus=1 scripts/epit_pipeline/evaluate_finetuning.sbatch \
+  --finetune-run checkpoints/epit_finetuning/generic10k_epit100_s2 \
+  --control-run checkpoints/epit_finetuning/generic10k_generic_s2 \
+  --output-dir corrosion_datasets/analysis/epit_pipeline/generic10k_s2_comparison
+```
+
+The comparison uses the reviewed 70-column schema and the existing eight-view
+Latin/none–power evaluation. It checks that the two branches share their parent
+and training settings. The result metadata identifies step 2,000 as primary;
+the other checkpoints describe the trajectory and do not select a winner.

@@ -118,6 +118,8 @@ def parse_args(
     parser.add_argument("--dataloader-num-workers", type=int, default=4)
     parser.add_argument("--dataloader-prefetch-factor", type=int, default=4)
     parser.add_argument("--eval-n-estimators", type=int, default=8)
+    parser.add_argument("--finetune-from", type=Path, default=None,
+                        help="Initialize a new stage from a generic step-10000 checkpoint (weights only).")
     parser.add_argument(
         "--dry-run", action="store_true",
         help="Validate the selected trial and final-training configuration without training or writing outputs.",
@@ -158,7 +160,10 @@ def parse_args(
         help="Manual final runs and EPIT v5 use uniform_per_table by default; historical study recipes use fixed.",
     )
     parser.add_argument("--override-mlp-prob", type=float, default=None)
-    parser.add_argument("--override-informed-target-mix-weight", type=float, default=None)
+    parser.add_argument(
+        "--override-informed-target-mix-weight", type=float, default=None,
+        help="Formula weight within informed targets; its mean when using uniform_per_table mixing.",
+    )
     parser.add_argument(
         "--override-pitting-composition-perturb-strength",
         type=float,
@@ -210,13 +215,19 @@ def validate_args(args: argparse.Namespace) -> None:
         "--scheduler-total-steps": args.scheduler_total_steps,
         "--save-temp-every": args.save_temp_every,
         "--save-perm-every": args.save_perm_every,
-        "--checkpoint-selection-min-step": args.checkpoint_selection_min_step,
         "--checkpoint-selection-interval": args.checkpoint_selection_interval,
         "--eval-n-estimators": args.eval_n_estimators,
     }
     for option, value in positive.items():
         if value <= 0:
             raise ValueError(f"{option} must be positive.")
+    if args.checkpoint_selection_min_step < 0:
+        raise ValueError("--checkpoint-selection-min-step must be nonnegative.")
+    if args.finetune_from is not None:
+        if not args.manual_hyperparameters:
+            raise ValueError("Fine-tuning requires an explicit recipe via --manual-hyperparameters.")
+        if args.scheduler_total_steps != args.max_steps:
+            raise ValueError("Fine-tuning schedule must span exactly the additional training steps.")
     if args.scheduler_total_steps < args.max_steps:
         raise ValueError("--scheduler-total-steps must be >= --max-steps.")
     if args.max_steps % args.save_perm_every:
@@ -775,6 +786,12 @@ def checkpoint_candidates(args: argparse.Namespace, checkpoint_dir: Path) -> lis
         ):
             candidates.append(path.resolve())
     candidates.sort(key=checkpoint_step)
+    if getattr(args, "finetune_from", None) is not None:
+        initial = (checkpoint_dir / "step-0.ckpt").resolve()
+        if not initial.is_file():
+            raise FileNotFoundError(f"Fine-tuning did not save its unchanged starting model: {initial}")
+        if initial not in candidates:
+            candidates.insert(0, initial)
     final_checkpoint = checkpoint_dir / f"step-{args.max_steps}.ckpt"
     if not final_checkpoint.is_file():
         raise FileNotFoundError(
@@ -932,6 +949,10 @@ def validate_resumable_training(
         raise FileNotFoundError(
             f"Resume mode requires the existing checkpoint directory: {checkpoint_dir}"
         )
+    if getattr(args, "finetune_from", None) is not None:
+        saved = json.loads((checkpoint_dir / "finetuning.json").read_text())
+        if saved["overrides"]["finetuning"] != args.finetuning_identity:
+            raise RuntimeError("Fine-tuning initialization changed; resume requires the original parent and schedule.")
     if not args.resume_training:
         checkpoint_candidates(args, checkpoint_dir)
         return None
@@ -968,6 +989,18 @@ def validate_resumable_training(
     if "--paired_prior_streams" in train_command and state.get("paired_prior_stream") is None:
         raise ValueError("Paired training resume requires the saved paired-stream identity.")
     return checkpoint
+
+
+def training_resume_command(command: list[str], checkpoint: Path) -> list[str]:
+    """Resume the new stage fully; do not repeat weight-only initialization."""
+    command = list(command)
+    if "--checkpoint_path" in command:
+        replace_option(command, "--checkpoint_path", checkpoint)
+    else:
+        command.extend(["--checkpoint_path", str(checkpoint)])
+    if "--only_load_model" in command:
+        replace_option(command, "--only_load_model", "false")
+    return command
 
 
 def run(args: argparse.Namespace) -> Path:
@@ -1097,6 +1130,10 @@ def run(args: argparse.Namespace) -> Path:
         overrides["epit_target_recipe"] = recipe_identity(params.informed_target_mix_weight)
     if proxy_training_overrides:
         overrides["proxy_training_overrides"] = proxy_training_overrides
+    if args.finetune_from is not None:
+        from scripts.epit_pipeline.finetune import parent_identity
+        args.finetuning_identity = parent_identity(args)
+        overrides["finetuning"] = args.finetuning_identity
     ratio_label = f"{params.informed_prior_ratio:.2f}".replace(".", "p")
     if args.manual_hyperparameters:
         dataset_name = "soccol" if search.uses_reviewed_soccol_schema(args) else "epit"
@@ -1106,6 +1143,8 @@ def run(args: argparse.Namespace) -> Path:
     if args.epit_target_version == "v5":
         origin = "manual" if args.manual_hyperparameters else f"trial{trial.number:04d}"
         default_run_name = f"epit_targetv5_{origin}_ratio_{ratio_label}"
+    if args.finetune_from is not None:
+        default_run_name = f"epit_finetune_generic10k_ratio_{ratio_label}"
     is_experimental = bool(overrides)
     if is_experimental:
         override_sha256 = search.canonical_json_sha256(overrides)
@@ -1146,6 +1185,9 @@ def run(args: argparse.Namespace) -> Path:
         )
     replace_option(train_command, "--save_temp_every", args.save_temp_every)
     replace_option(train_command, "--save_perm_every", args.save_perm_every)
+    if args.finetune_from is not None:
+        from scripts.epit_pipeline.finetune import configure_initialization
+        configure_initialization(args, train_command)
     training_configuration = {
         "configuration_source": "manual_hyperparameters" if args.manual_hyperparameters else "optuna_trial",
         "study_name": None if args.manual_hyperparameters else args.study_name,
@@ -1203,7 +1245,7 @@ def run(args: argparse.Namespace) -> Path:
         if step < args.max_steps:
             stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
             resume_log = output_dir / f"train_resume_step_{step}_{stamp}.log"
-            resume_command = [*train_command, "--checkpoint_path", str(resume_checkpoint)]
+            resume_command = training_resume_command(train_command, resume_checkpoint)
             training_configuration["resume_command"] = resume_command
             training_configuration["resume_log"] = str(resume_log)
             print(f"Resuming from {resume_checkpoint}; training log: {resume_log}", flush=True)
@@ -1224,6 +1266,8 @@ def run(args: argparse.Namespace) -> Path:
                 f"Final checkpoint directory is non-empty: {checkpoint_dir}"
             )
         output_dir.mkdir(parents=True, exist_ok=True)
+        if args.finetune_from is not None:
+            write_json(checkpoint_dir / "finetuning.json", training_configuration, exclusive=True)
         search.original.search_utils.run_command(
             train_command,
             cwd=REPO_ROOT,
@@ -1233,7 +1277,7 @@ def run(args: argparse.Namespace) -> Path:
     evaluation_root = output_dir / "development_checkpoint_evaluations"
     evaluation_args = argparse.Namespace(**vars(args))
     evaluation_args.device = args.eval_device or args.device
-    records = [
+    records = [] if args.finetune_from is not None else [
         evaluation_record(
             evaluation_args,
             params,
@@ -1245,7 +1289,11 @@ def run(args: argparse.Namespace) -> Path:
         )
         for checkpoint in checkpoint_candidates(args, checkpoint_dir)
     ]
-    selected = max(records, key=lambda record: float(record["mean_test_spearman"]))
+    if args.finetune_from is not None:
+        from scripts.epit_pipeline.finetune import terminal_checkpoint
+        selected = terminal_checkpoint(args, checkpoint_dir)
+    else:
+        selected = max(records, key=lambda record: float(record["mean_test_spearman"]))
     selected_checkpoint = Path(selected["checkpoint_path"])
     evaluation_configuration = {
         "task_id": PITTING_TASK_ID,
@@ -1319,8 +1367,9 @@ def run(args: argparse.Namespace) -> Path:
         },
         "training": training_configuration,
         "checkpoint_selection": {
-            "data": "five frozen development folds only",
-            "primary_metric": "mean_test_spearman",
+            "policy": "predeclared_terminal_step" if args.finetune_from is not None else "best_development_score",
+            "data": "none" if args.finetune_from is not None else "five frozen development folds only",
+            "primary_metric": None if args.finetune_from is not None else "mean_test_spearman",
             "resumed_from_existing_training": bool(
                 args.resume_checkpoint_selection or args.resume_training
             ),
@@ -1330,10 +1379,8 @@ def run(args: argparse.Namespace) -> Path:
             "path": str(selected_checkpoint),
             "sha256": selected["checkpoint_sha256"],
             "step": selected["step"],
-            "mean_development_fold_spearman": selected[
-                "mean_test_spearman"
-            ],
-            "mean_development_fold_mae": selected["mean_test_mae"],
+            **({"mean_development_fold_spearman": selected["mean_test_spearman"],
+                "mean_development_fold_mae": selected["mean_test_mae"]} if records else {}),
         },
         "evaluation_configuration": evaluation_configuration,
         "final_test_rows_used": False,
@@ -1345,7 +1392,8 @@ def run(args: argparse.Namespace) -> Path:
     )
     write_json(lock_path, lock, exclusive=True)
     print(f"Frozen final checkpoint: {selected_checkpoint}")
-    print(f"Development-fold mean Spearman: {selected['mean_test_spearman']:.6g}")
+    if records:
+        print(f"Development-fold mean Spearman: {selected['mean_test_spearman']:.6g}")
     print(f"Final-model manifest: {manifest_path}")
     print(f"Final-model lock: {lock_path}")
     return manifest_path

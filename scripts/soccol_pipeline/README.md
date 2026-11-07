@@ -16,9 +16,11 @@ and derives its process count from the GPU allocation, matching EPIT.
 
 Reviewed Soccol final training now defaults to **manual settings, without an
 Optuna study**: **MLP 0.70 / tree 0.30**, **composition perturbation 0.30**, and
-**formula/SCM target weight 0.28** (28% formula / 72% SCM per informed table).
-Soccol uses its existing calibrated formulas and fixed target weight. These
-settings are independent of the generic/informed table ratio. Explicit options
+**mean formula/SCM target weight 0.28**. Each informed table draws one weight
+uniformly between **0 and 0.56**; the SCM weight is the remainder. Soccol and
+EPIT v5 use the same weight sampling and target calculation in
+`src/tabicl/prior/target_mixing.py`, with their own formulas and configured means.
+These settings are independent of the generic/informed table ratio. Explicit options
 still take precedence. Optuna search settings and `--legacy-data` are unchanged.
 
 ```bash
@@ -37,8 +39,11 @@ manual training, repeat the same command with `--resume-training`; no trial
 number is needed. To explicitly use a study instead, pass
 `--no-manual-hyperparameters --storage <journal-url> --study-name <name>`.
 
-Sync `scripts/soccol_pipeline/train_final.py`, `train_final.sbatch`, and the shared
-`scripts/epit_pipeline/train_final.py` to each training node before launching.
+Sync `scripts/soccol_pipeline/train_final.py`, `train_final.sbatch`, the shared
+`scripts/epit_pipeline/train_final.py`, `src/tabicl/train/run.py`, `train_config.py`,
+and `src/tabicl/prior/target_mixing.py` to each training node before launching.
+The weight policy and its code hash are recorded in the run identity, so these
+runs use new checkpoint folders and cannot resume the earlier fixed-weight runs.
 
 ```bash
 sbatch --gpus=1 \

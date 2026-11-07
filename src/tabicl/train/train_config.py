@@ -345,7 +345,7 @@ def build_parser():
         "--informed_target_mix_weight",
         type=false_or_float,
         default=None,
-        help="EPIT target mixture weight between standardized generic and informed targets.",
+        help="Formula contribution to the informed target; the mean weight when using uniform_per_table mixing.",
     )
     parser.add_argument(
         "--epit_target_version", choices=("v4", "v5"), default="v4",
@@ -737,5 +737,7 @@ def build_parser():
     )
     parser.add_argument("--checkpoint_path", default=None, type=str, help="Path to specific checkpoint file to load")
     parser.add_argument("--only_load_model", default=False, type=str2bool, help="Whether to only load model weights")
+    parser.add_argument("--save_initial_checkpoint", default=False, type=str2bool,
+                        help="Save a full step-0 checkpoint before consuming any training batches.")
 
     return parser

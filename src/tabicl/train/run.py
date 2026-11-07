@@ -184,30 +184,33 @@ class Trainer:
         else:
             self.wandb_run = None
 
-    def build_model(self):
-        """Build and initialize the TabICL model."""
-
-        self.model_config = {
-            "max_classes": self.config.max_classes,
-            "num_quantiles": self.config.num_quantiles,
-            "embed_dim": self.config.embed_dim,
-            "col_num_blocks": self.config.col_num_blocks,
-            "col_nhead": self.config.col_nhead,
-            "col_num_inds": self.config.col_num_inds,
-            "col_feature_group": False if self.config.col_missing_value_embedding else "same",
-            "col_missing_value_embedding": self.config.col_missing_value_embedding,
-            "row_num_blocks": self.config.row_num_blocks,
-            "row_nhead": self.config.row_nhead,
-            "row_num_cls": self.config.row_num_cls,
-            "row_rope_base": self.config.row_rope_base,
-            "icl_num_blocks": self.config.icl_num_blocks,
-            "icl_nhead": self.config.icl_nhead,
-            "ff_factor": self.config.ff_factor,
-            "dropout": self.config.dropout,
-            "activation": self.config.activation,
-            "norm_first": self.config.norm_first,
+    @staticmethod
+    def model_configuration(config):
+        """Architecture identity, also used to validate weight-only initialization."""
+        return {
+            "max_classes": config.max_classes,
+            "num_quantiles": config.num_quantiles,
+            "embed_dim": config.embed_dim,
+            "col_num_blocks": config.col_num_blocks,
+            "col_nhead": config.col_nhead,
+            "col_num_inds": config.col_num_inds,
+            "col_feature_group": False if config.col_missing_value_embedding else "same",
+            "col_missing_value_embedding": config.col_missing_value_embedding,
+            "row_num_blocks": config.row_num_blocks,
+            "row_nhead": config.row_nhead,
+            "row_num_cls": config.row_num_cls,
+            "row_rope_base": config.row_rope_base,
+            "icl_num_blocks": config.icl_num_blocks,
+            "icl_nhead": config.icl_nhead,
+            "ff_factor": config.ff_factor,
+            "dropout": config.dropout,
+            "activation": config.activation,
+            "norm_first": config.norm_first,
         }
 
+    def build_model(self):
+        """Build and initialize the TabICL model."""
+        self.model_config = self.model_configuration(self.config)
         model = TabICL(**self.model_config)
         model.to(device=self.config.device)
 
@@ -814,6 +817,19 @@ class Trainer:
         Iterates through batches, processes them, updates model parameters,
         and handles checkpoint saving and metric logging.
         """
+
+        if getattr(self.config, "save_initial_checkpoint", False) and self.curr_step == 0:
+            # Save before iterating the loader, including an untouched sampler
+            # and fresh optimizer, so step zero can itself be resumed exactly.
+            sampling_states = [self.sampling_state_dict()]
+            if self.ddp_world_size > 1:
+                local_sampling = sampling_states[0]
+                sampling_states = [None] * self.ddp_world_size
+                all_gather_object(sampling_states, local_sampling)
+            if self.master_process:
+                initial_path = os.path.join(self.config.checkpoint_dir, "step-0.ckpt")
+                if not os.path.exists(initial_path):
+                    self.save_checkpoint("step-0.ckpt", sampling_states=sampling_states)
 
         if self.master_process:
             step_progress = tqdm(range(self.curr_step, self.config.max_steps), desc="Step", leave=True)
