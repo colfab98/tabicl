@@ -348,6 +348,14 @@ def build_parser():
         help="EPIT target mixture weight between standardized generic and informed targets.",
     )
     parser.add_argument(
+        "--epit_target_version", choices=("v4", "v5"), default="v4",
+        help="Opt-in EPIT final target experiment: heat/cooling formula and variable per-table mix.",
+    )
+    parser.add_argument(
+        "--informed_target_mix_policy", choices=("fixed", "uniform_per_table"), default=None,
+        help="Formula/SCM mixing: fixed weight or one uniform draw per table with the configured mean.",
+    )
+    parser.add_argument(
         "--informed_history_strength",
         type=false_or_float,
         default=None,

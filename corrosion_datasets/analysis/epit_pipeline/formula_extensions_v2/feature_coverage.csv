@@ -1,0 +1,71 @@
+column,observed_rows,missing_fraction,distinct_observed_values,note
+Fe,452,0.0,238,
+Cr,452,0.0,154,
+Ni,452,0.0,130,
+Mo,452,0.0,140,
+W,452,0.0,18,
+N,452,0.0,95,
+Nb,452,0.0,12,
+C,452,0.0,57,
+Si,452,0.0,66,
+Mn,452,0.0,89,
+Cu,452,0.0,25,
+P,452,0.0,31,
+S,452,0.0,30,
+Al,452,0.0,8,
+V,452,0.0,4,
+Ta,452,0.0,4,
+Re,452,0.0,2,
+Ce,452,0.0,4,
+Ti,452,0.0,7,
+Co,452,0.0,1,constant among observed values
+B,452,0.0,2,
+Mg,452,0.0,1,constant among observed values
+Y,452,0.0,1,constant among observed values
+Gd,452,0.0,1,constant among observed values
+CP_temp,415,0.08185840707964602,17,
+CP_pH,414,0.084070796460177,17,
+CP_Cl,451,0.0022123893805309734,25,
+scan_rate,356,0.21238938053097345,21,
+test_solution_type,452,0.0,16,
+CP_aeration,153,0.661504424778761,7,
+H2SO4_eq_L,31,0.9314159292035398,3,
+H2SO4_mol_L,18,0.9601769911504425,4,
+H2S_partial_pressure_atm,6,0.9867256637168141,1,constant among observed values
+HCl_eq_L,35,0.922566371681416,3,
+HCl_mol_L,21,0.9535398230088495,4,
+KCl_eq_L,0,1.0,0,constant among observed values
+KCl_mol_L,7,0.9845132743362832,1,constant among observed values
+MgCl2_mol_L,7,0.9845132743362832,1,constant among observed values
+Na2S2O3_mol_L,1,0.9977876106194691,1,constant among observed values
+Na2SO4_mol_L,6,0.9867256637168141,1,constant among observed values
+NaBr_eq_L,6,0.9867256637168141,1,constant among observed values
+NaBr_mol_L,4,0.9911504424778761,1,constant among observed values
+NaClO4_mol_L,0,1.0,0,constant among observed values
+NaCl_eq_L,73,0.838495575221239,3,
+NaCl_mol_L,138,0.6946902654867256,11,
+NaCl_wt_percent,21,0.9535398230088495,2,
+NaHCO3_mol_L,30,0.9336283185840708,1,constant among observed values
+Test_area_cm2,119,0.7367256637168141,5,
+WO4_mol_L,0,1.0,0,constant among observed values
+heat_treatment_type,287,0.36504424778761063,9,
+heat_treatment_temperature_C,210,0.5353982300884956,20,
+heat_treatment_duration_h,245,0.4579646017699115,11,
+heat_treatment_cooling,189,0.581858407079646,4,
+heat_treatment_2_type,67,0.8517699115044248,5,
+heat_treatment_2_temperature_C,51,0.8871681415929203,9,
+heat_treatment_2_duration_h,48,0.8938053097345132,4,
+heat_treatment_2_cooling,43,0.9048672566371682,3,
+phase_FCC,86,0.8097345132743363,1,constant among observed values
+phase_BCC,61,0.8650442477876106,2,
+phase_HCP,9,0.9800884955752213,1,constant among observed values
+phase_IM,24,0.9469026548672567,1,constant among observed values
+Prep_grinding_grit,105,0.7676991150442478,4,
+surface_preparation_method,213,0.5287610619469026,16,
+preparation_solution_type,74,0.8362831858407079,4,
+Prep_time,49,0.8915929203539823,5,
+CP_time,109,0.7588495575221239,5,
+CP_agitation,6,0.9867256637168141,1,constant among observed values
+CP_Br,4,0.9911504424778761,1,constant among observed values
+CP_SO4,0,1.0,0,constant among observed values
+reference_type,452,0.0,1,constant among observed values

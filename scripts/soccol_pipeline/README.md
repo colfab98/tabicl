@@ -14,6 +14,32 @@ Use fresh studies/checkpoints; v7 training cannot be resumed across this fix.
 The final-training launcher now forwards command-line ratio/resume arguments
 and derives its process count from the GPU allocation, matching EPIT.
 
+Reviewed Soccol final training now defaults to **manual settings, without an
+Optuna study**: **MLP 0.70 / tree 0.30**, **composition perturbation 0.30**, and
+**formula/SCM target weight 0.28** (28% formula / 72% SCM per informed table).
+Soccol uses its existing calibrated formulas and fixed target weight. These
+settings are independent of the generic/informed table ratio. Explicit options
+still take precedence. Optuna search settings and `--legacy-data` are unchanged.
+
+```bash
+sbatch --gpus=1 scripts/soccol_pipeline/train_final.sbatch --override-informed-prior-ratio 0.0
+sbatch --gpus=1 scripts/soccol_pipeline/train_final.sbatch --override-informed-prior-ratio 0.25
+sbatch --gpus=1 scripts/soccol_pipeline/train_final.sbatch --override-informed-prior-ratio 0.5
+sbatch --gpus=1 scripts/soccol_pipeline/train_final.sbatch --override-informed-prior-ratio 0.75
+sbatch --gpus=1 scripts/soccol_pipeline/train_final.sbatch --override-informed-prior-ratio 1.0
+```
+
+No study, journal or trial number is required. Checkpoints use
+`checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_<ratio>_override_<hash>/`;
+analysis/manifest files use `analysis/soccol_pipeline/final_v2/manual/<run>/`.
+Use the final manifest printed by the run for evaluation. To resume interrupted
+manual training, repeat the same command with `--resume-training`; no trial
+number is needed. To explicitly use a study instead, pass
+`--no-manual-hyperparameters --storage <journal-url> --study-name <name>`.
+
+Sync `scripts/soccol_pipeline/train_final.py`, `train_final.sbatch`, and the shared
+`scripts/epit_pipeline/train_final.py` to each training node before launching.
+
 ```bash
 sbatch --gpus=1 \
   --export=ALL,STUDY_NAME=soccol_pipeline_optuna_empirical_features_scm_target_v8,N_TRIALS=50 \

@@ -409,9 +409,14 @@ and reused across checkpoint steps. The 0% model keeps the same missing-aware
 architecture as the informed models; the historical generic baseline retains
 its native preprocessing.
 
-All five directories must be distinct and available. The order supplies the
-ratio labels, so use the actual corresponding training runs. `--dry-run` prints
-the command without evaluating. The existing sbatch script accepts the same
+Supply five distinct paths in 0/25/50/75/100 order. Missing directories, empty
+runs, and models without checkpoints in the requested range are skipped
+automatically, including a missing local generic baseline. Remaining models keep
+their original ratio labels. Skipped models are printed and recorded in
+`results.json` under `skipped_models`. At least one local model must be available;
+model-loading or prediction errors still fail the comparison. `--dry-run`
+previews the requested command without checking checkpoint availability.
+The existing sbatch script accepts the same
 arguments after its filename, including `--ratio-runs` and
 `--max-checkpoint-step`. Alternatively set `EPIT0_RUN`, `EPIT25_RUN`, `EPIT50_RUN`,
 `EPIT75_RUN`, `EPIT100_RUN` and optional `MAX_CHECKPOINT_STEP` in the environment.
@@ -472,3 +477,88 @@ Run the tracked version against an exported bundle with:
 .venv/bin/python -m scripts.epit_pipeline.run_pysr_discovery \
   --bundle-dir standalone/epit_pysr --dry-run
 ```
+
+## Explicit formula extensions without PySR
+
+`discover_formula_extensions.py` compares the nine current Fe/Ni formulas with
+28 explicit extensions or alternative equations. Candidate effects cover scan
+rate, exposed area, surface preparation, heat treatment, solution conditions,
+and material/environment interactions. This is an offline formula study; it
+does not change the prior generator or promote equations to training.
+
+```bash
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 .venv/bin/python \
+  -m scripts.epit_pipeline.discover_formula_extensions \
+  --output-dir corrosion_datasets/analysis/epit_pipeline/formula_extensions_repeat
+```
+
+Use a new output directory. The study uses the same 452 Fe/Ni development rows
+and frozen five-fold assignments as formula calibration. Coefficients, missing
+value fills, scales and supported categories are fitted within each training
+split. An inner four-fold comparison selects regularization and formula for
+each held-out fold. A second nested comparison holds out entire source
+publications. Final-test targets are masked and never evaluated.
+
+The first run (`formula_extensions_v1`) compared 27 candidates; the follow-up
+(`formula_extensions_v2`) added ten heat/surface ablations after examining the
+development results. These are exploratory comparisons. Individual winning
+formula scores have selection optimism; the `nested_new_and_existing` row
+assesses the complete selection procedure. Compare it with
+`nested_existing_only` and the unchanged `existing_method_aware_pren_n` rule.
+
+Artifacts include `report.html`, `summary.csv`/`fold_scores.csv`/`predictions.csv`
+inside each evaluation subdirectory, fold-specific fitted equations,
+coefficient stability, feature coverage and full-development equation JSONs.
+Full-development fits are candidates for final training only: they must not be
+used to generate an Optuna prior evaluated on development rows used to fit them.
+Categorical corrections are empirical associations, not established physical
+laws. Unknown categories have a neutral correction; missingness itself is not
+an added predictor. Numeric term definitions and all preprocessing constants
+are saved with the equations.
+
+The November 6 follow-up found a heat-type/cooling correction with mean fold
+Spearman 0.648 versus 0.591 for the current strongest formula. Its advantage
+did not transfer to publication-held-out folds (0.349 versus 0.378), so no
+formula was promoted. The saved follow-up report also includes an independent
+artifact audit, selected-candidate uncertainty and `candidate_coefficients.csv`.
+
+## EPIT final-training target v5
+
+The final-training launcher now defaults to `--epit-target-version v5`. It uses
+the selected v14 Optuna trial as a starting point and records these changes:
+
+- Informed MLP/tree proportions are 70/30; composition perturbation is 0.30.
+- The nine v4 formulas remain. `extend_heat_categories` is added as a tenth
+  formula, with selection probability proportional to its development score
+  (0.648288), using the same weighting rule as the existing formulas.
+- One formula/SCM weight is sampled uniformly per synthetic table. Its mean
+  stays at the selected trial's weight. For trial 27, the range is
+  0–0.573195 and the mean is 0.286598. It is separate from the informed-table ratio.
+- The new formula uses its saved development-fitted scales, method offsets and
+  heat/cooling coefficients. Missing or unsupported heat/cooling labels add no
+  correction. The existing 0.8 coefficient variation also applies to the new
+  formula's signed extension coefficients; its underlying base fit stays fixed.
+
+The fitted equation is bundled in `src/tabicl/prior/assets/epit_target_v5.json`.
+It was fitted on 452 Fe/Ni development rows, with final-test targets excluded.
+This is an experimental final-training override, not an Optuna-tuned v5 result.
+The weaker result on unseen papers still applies; improved model performance
+has not been established. Optuna and Soccol continue using their existing recipes.
+
+```bash
+sbatch --gpus=1 scripts/epit_pipeline/train_final.sbatch \
+  --selected-trial-number 27 --override-informed-prior-ratio 0.5
+```
+
+Change `--gpus` and the informed ratio in that same command. Checkpoints go to
+`checkpoints/epit_pipeline_final_v2/epit_targetv5_trial0027_ratio_0p50_override_<hash>/`.
+The hash includes the formula artifact and its runtime code. Resume checks also
+include both, so an old target recipe cannot silently resume as v5. Use
+`--epit-target-version v4` to reproduce the previous final-training recipe.
+The Python entry point defaults to v4 for compatibility; pass
+`--epit-target-version v5` when invoking it directly.
+
+Sync `scripts/epit_pipeline/train_final.py`, `train_final.sbatch`,
+`src/tabicl/train/run.py`, `train_config.py`,
+`src/tabicl/prior/epit_target_v5.py`, and `src/tabicl/prior/assets/epit_target_v5.json`
+to training nodes. The formula-research outputs are not runtime dependencies.

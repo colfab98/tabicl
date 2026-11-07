@@ -276,6 +276,13 @@ class Trainer:
 
         paired = getattr(self.config, "paired_prior_streams", False)
         original_mix = getattr(self.config, "original_prior_mix", False)
+        epit_v5 = getattr(self.config, "epit_target_version", "v4") == "v5"
+        from tabicl.prior.target_mixing import resolve_mix_policy
+        variable_target_mix = resolve_mix_policy(
+            getattr(self.config, "informed_target_mix_policy", None), epit_v5=epit_v5,
+        ) == "uniform_per_table"
+        if variable_target_mix and (not paired or not original_mix or combined_config is not None or self.config.prior_dir is not None):
+            raise ValueError("Variable target mixing requires on-the-fly original paired streams.")
         if original_mix and (not paired or self.config.col_missing_value_embedding):
             raise ValueError("Original mixture requires checkpointable streams and the original grouped encoder.")
         if paired:
@@ -491,6 +498,12 @@ class Trainer:
                 self.prior_provenance = dataset.provenance
             else:
                 dataset_class = OriginalPriorMixture if original_mix else (PairedPriorDataset if paired else PriorDataset)
+                if epit_v5:
+                    from tabicl.prior.epit_target_v5 import EpitV5PriorMixture
+                    dataset_class = EpitV5PriorMixture
+                elif variable_target_mix:
+                    from tabicl.prior.target_mixing import VariableTargetMixture
+                    dataset_class = VariableTargetMixture
                 stream_args = dict(seed=self.config.prior_stream_seed, rank=self.ddp_rank,
                                    world_size=self.ddp_world_size) if paired else {}
                 dataset = dataset_class(

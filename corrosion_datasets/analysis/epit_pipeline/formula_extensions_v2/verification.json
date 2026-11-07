@@ -1,0 +1,8 @@
+{
+  "final_query_rows_excluded": true,
+  "all_nine_current_baselines_reproduced": true,
+  "saved_metrics_recomputed": true,
+  "fold_fit_validation_disjoint": true,
+  "equation_json_reloads_exactly": true,
+  "source_code_hashes_match": true
+}

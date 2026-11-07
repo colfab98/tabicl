@@ -184,6 +184,57 @@ def test_five_ratios_reject_duplicate_paths():
         comparison.parse_args(['--ratio-runs', '/tmp/r0', '/tmp/r25', '/tmp/r25', '/tmp/r75', '/tmp/r100'])
 
 
+@pytest.mark.parametrize('case,context_folds', [
+    ('missing', None), ('missing', 5), ('empty', None),
+    ('out_of_range', None), ('explicit_checkpoint', None), ('missing_generic', None),
+])
+def test_unavailable_model_is_skipped_without_relabeling_or_changing_queries(
+    tmp_path, mock_models, capsys, case, context_folds,
+):
+    labels = [*comparison.RATIO_LABELS, 'generic_baseline']
+    skipped_label = 'generic_baseline' if case == 'missing_generic' else 'epit_25pct'
+    directories = [tmp_path / label for label in labels]
+    for label, path in zip(labels, directories):
+        if label == skipped_label and case in {'missing', 'missing_generic'}:
+            continue
+        path.mkdir()
+        steps = [500, 1000]
+        if label == skipped_label:
+            steps = {'empty': [], 'out_of_range': [100], 'explicit_checkpoint': [500]}[case]
+        for step in steps:
+            (path / f'step-{step}.ckpt').write_bytes(b'mock')
+    argv = ['--ratio-runs', *map(str, directories[:5]), '--generic-run', str(directories[5]),
+            '--min-checkpoint-step', '500', '--output-dir', str(tmp_path / 'results')]
+    if case == 'explicit_checkpoint':
+        argv += ['--checkpoint', '1000']
+    else:
+        argv += ['--max-checkpoint-step', '1000']
+    if context_folds:
+        argv += ['--context-folds', '5']
+    args = comparison.parse_args(argv)
+    output = comparison.run(args)
+    payload = json.loads((output / 'results.json').read_text())
+    expected_labels = set(labels) - {skipped_label} | {'pretrained_tabicl_v2', 'catboost'}
+    assert {row['model'] for row in payload['rows']} == expected_labels
+    assert [record['model'] for record in payload['skipped_models']] == [skipped_label]
+    assert f'Skipping {skipped_label}:' in capsys.readouterr().out
+    frozen = frozen_membership(args.split_manifest)
+    assert all(queries == frozen['query_task_row_indices'] for _, _, queries in mock_models)
+    assert all(len(context) in ([121, 122] if context_folds else [608]) for _, context, _ in mock_models)
+    if args.checkpoint == 'all':
+        assert all((output / 'plots' / name).is_file() for name in comparison.REQUIRED_PLOTS)
+
+
+def test_comparison_rejects_no_available_local_models(tmp_path):
+    paths = [tmp_path / label for label in comparison.RATIO_LABELS]
+    output = tmp_path / 'results'
+    args = comparison.parse_args(['--ratio-runs', *map(str, paths),
+        '--generic-run', str(tmp_path / 'missing_generic'), '--output-dir', str(output)])
+    with pytest.raises(FileNotFoundError, match='No local models have checkpoints available'):
+        comparison.run(args)
+    assert not output.exists()
+
+
 @pytest.mark.parametrize('extra', [
     ['--max-checkpoint-step', '-1'],
     ['--min-checkpoint-step', '6000', '--max-checkpoint-step', '5000'],

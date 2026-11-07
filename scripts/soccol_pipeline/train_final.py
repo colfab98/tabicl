@@ -44,7 +44,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     mode_parser = soccol_search.data_mode_parser()
     mode, _ = mode_parser.parse_known_args(argv)
     configure(reviewed_data=not mode.legacy_data)
-    return base.parse_args(argv, parents=(mode_parser,))
+    args = base.parse_args(argv, parents=(mode_parser,), manual_hyperparameters_default=not mode.legacy_data)
+    if not mode.legacy_data:
+        if args.override_mlp_prob is None:
+            args.override_mlp_prob = 0.70
+        if args.override_pitting_composition_perturb_strength is None:
+            args.override_pitting_composition_perturb_strength = 0.30
+        if args.manual_hyperparameters and args.override_informed_target_mix_weight is None:
+            args.override_informed_target_mix_weight = 0.28
+    return args
 
 
 def main() -> None:

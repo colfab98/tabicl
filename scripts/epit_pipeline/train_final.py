@@ -47,6 +47,7 @@ def parse_bool(value: str) -> bool:
 
 def parse_args(
     argv: list[str] | None = None, *, parents: tuple[argparse.ArgumentParser, ...] = (),
+    manual_hyperparameters_default: bool = False,
 ) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, parents=parents)
     parser.add_argument("--study-name", default=search.DEFAULT_STUDY_NAME)
@@ -80,8 +81,13 @@ def parse_args(
     )
     parser.add_argument(
         "--storage",
-        required=True,
+        default=None,
         help="The Stage 3 Optuna storage URL (including journal://).",
+    )
+    parser.add_argument(
+        "--manual-hyperparameters", action=argparse.BooleanOptionalAction,
+        default=manual_hyperparameters_default,
+        help="Train with explicit MLP, perturbation and target-mix values without opening an Optuna study.",
     )
     parser.add_argument(
         "--split-manifest",
@@ -143,7 +149,16 @@ def parse_args(
         ),
     )
     parser.add_argument("--override-informed-prior-ratio", type=float, default=None)
+    parser.add_argument(
+        "--epit-target-version", choices=("v4", "v5"), default="v4",
+        help="v5 adds the heat/cooling formula and variable target weight; defaults MLP to .70 and perturbation to .30.",
+    )
+    parser.add_argument(
+        "--informed-target-mix-policy", choices=("fixed", "uniform_per_table"), default=None,
+        help="Manual final runs and EPIT v5 use uniform_per_table by default; historical study recipes use fixed.",
+    )
     parser.add_argument("--override-mlp-prob", type=float, default=None)
+    parser.add_argument("--override-informed-target-mix-weight", type=float, default=None)
     parser.add_argument(
         "--override-pitting-composition-perturb-strength",
         type=float,
@@ -178,6 +193,17 @@ def write_json(path: Path, payload: dict[str, Any], *, exclusive: bool = False) 
 
 
 def validate_args(args: argparse.Namespace) -> None:
+    if args.manual_hyperparameters:
+        if args.selected_trial_number is not None:
+            raise ValueError("Manual final training cannot select an Optuna trial.")
+        if args.prior_n_jobs != 1:
+            raise ValueError("Manual paired final training requires --prior-n-jobs 1.")
+        for name in ("override_mlp_prob", "override_informed_target_mix_weight",
+                     "override_pitting_composition_perturb_strength"):
+            if getattr(args, name) is None:
+                raise ValueError(f"Manual final training requires --{name.replace('_', '-')}.")
+    elif not args.storage:
+        raise ValueError("Study-based final training requires --storage; or use --manual-hyperparameters.")
     positive = {
         "--nproc-per-node": args.nproc_per_node,
         "--max-steps": args.max_steps,
@@ -205,7 +231,7 @@ def validate_args(args: argparse.Namespace) -> None:
         raise ValueError("--dry-run cannot be combined with --resume-checkpoint-selection.")
     if args.resume_training and args.resume_checkpoint_selection:
         raise ValueError("Choose either --resume-training or --resume-checkpoint-selection.")
-    if args.resume_training and args.selected_trial_number is None:
+    if args.resume_training and args.selected_trial_number is None and not args.manual_hyperparameters:
         raise ValueError("--resume-training requires the original --selected-trial-number.")
 
 
@@ -665,11 +691,19 @@ def apply_parameter_overrides(
     requested = {
         "informed_prior_ratio": args.override_informed_prior_ratio,
         "mlp_prob": args.override_mlp_prob,
+        "informed_target_mix_weight": args.override_informed_target_mix_weight,
         "pitting_composition_perturb_strength": (
             args.override_pitting_composition_perturb_strength
         ),
         "use_magpie": args.override_use_magpie,
     }
+    if getattr(args, "epit_target_version", "v4") == "v5":
+        if not search.uses_expanded_schema(args):
+            raise ValueError("The v5 target recipe is only supported for reviewed EPIT final training.")
+        if requested["mlp_prob"] is None:
+            requested["mlp_prob"] = 0.70
+        if requested["pitting_composition_perturb_strength"] is None:
+            requested["pitting_composition_perturb_strength"] = 0.30
     family_probs = args.override_pitting_composition_family_probs
     if not any(value is not None for value in requested.values()) and (
         family_probs is None
@@ -681,7 +715,7 @@ def apply_parameter_overrides(
             "empirical_features_scm_target studies."
         )
 
-    for name in ("informed_prior_ratio", "mlp_prob"):
+    for name in ("informed_prior_ratio", "mlp_prob", "informed_target_mix_weight"):
         value = requested[name]
         if value is not None and (
             not math.isfinite(value) or not 0.0 <= value <= 1.0
@@ -867,7 +901,7 @@ def output_dir_for(
 ) -> Path:
     if args.output_dir is not None:
         return args.output_dir.expanduser().resolve()
-    study_root = DEFAULT_FINAL_ROOT / search.slugify(args.study_name)
+    study_root = DEFAULT_FINAL_ROOT / ("manual" if args.manual_hyperparameters else search.slugify(args.study_name))
     if isolate_run:
         return (study_root / search.slugify(run_name)).resolve()
     return study_root.resolve()
@@ -945,10 +979,10 @@ def run(args: argparse.Namespace) -> Path:
         summary_path=args.target_rule_summary,
         split_manifest_path=args.split_manifest,
     )
-    study, trial = load_selected_trial(args)
+    study, trial = (None, None) if args.manual_hyperparameters else load_selected_trial(args)
     unfinished_trials_at_selection = [
         {"number": int(candidate.number), "state": candidate.state.name}
-        for candidate in study.trials
+        for candidate in (study.trials if study is not None else [])
         if candidate.state.name in {"RUNNING", "WAITING"}
     ]
     if unfinished_trials_at_selection:
@@ -962,9 +996,23 @@ def run(args: argparse.Namespace) -> Path:
             f"{len(unfinished_trials_at_selection)} RUNNING/WAITING trial(s).",
             flush=True,
         )
-    study_fingerprint, study_fingerprint_sha256 = (
-        verify_study_pipeline_identity(study, rules)
-    )
+    if args.manual_hyperparameters:
+        from tabicl.prior.original_mixture import stream_policy
+        args.pitting_composition_mode = "empirical_features_scm_target"
+        if not search.uses_fixed_informed_search(args.pitting_composition_mode):
+            raise ValueError("Manual final training requires a current reviewed EPIT or Soccol prior.")
+        study_fingerprint = {
+            "schema_version": "manual_final_pipeline_identity_v1",
+            "artifacts": search.pipeline_artifact_identity(rules),
+            "fixed_prior": {
+                "composition_mode": args.pitting_composition_mode,
+                **search.empirical_feature_profile_identity(),
+                "paired_prior_streams": stream_policy(args.prior_stream_seed),
+            },
+        }
+        study_fingerprint_sha256 = search.canonical_json_sha256(study_fingerprint)
+    else:
+        study_fingerprint, study_fingerprint_sha256 = verify_study_pipeline_identity(study, rules)
     fixed_prior = study_fingerprint.get("fixed_prior", {})
     composition_mode = str(fixed_prior.get("composition_mode", "legacy"))
     if composition_mode not in search.PITTING_COMPOSITION_MODES:
@@ -986,7 +1034,7 @@ def run(args: argparse.Namespace) -> Path:
         ):
             raise RuntimeError("Final Soccol inputs differ from the selected study.")
     proxy_training = study_fingerprint.get("proxy_training", {})
-    if search.uses_fixed_informed_search(composition_mode):
+    if not args.manual_hyperparameters and search.uses_fixed_informed_search(composition_mode):
         verify_paired_training_settings(args, study_fingerprint)
     proxy_training_overrides: dict[str, dict[str, int]] = {}
     for argument_name, fingerprint_name in (
@@ -997,7 +1045,7 @@ def run(args: argparse.Namespace) -> Path:
     ):
         expected = int(proxy_training.get(fingerprint_name, -1))
         observed = int(getattr(args, argument_name))
-        if observed != expected:
+        if not args.manual_hyperparameters and observed != expected:
             proxy_training_overrides[argument_name] = {
                 "selected_study_value": expected,
                 "effective_final_value": observed,
@@ -1009,10 +1057,15 @@ def run(args: argparse.Namespace) -> Path:
             flush=True,
         )
     selected_params = search.trial_params_from_mapping(
-        dict(trial.params), composition_mode=composition_mode,
-        fixed_informed_prior_ratio=fixed_prior.get("informed_prior_ratio"),
+        {
+            "mlp_prob": args.override_mlp_prob,
+            "informed_target_mix_weight": args.override_informed_target_mix_weight,
+            "pitting_composition_perturb_strength": args.override_pitting_composition_perturb_strength,
+        } if args.manual_hyperparameters else dict(trial.params),
+        composition_mode=composition_mode,
+        fixed_informed_prior_ratio=1.0 if args.manual_hyperparameters else fixed_prior.get("informed_prior_ratio"),
     )
-    trial_eval = verify_selected_trial_provenance(
+    trial_eval = None if args.manual_hyperparameters else verify_selected_trial_provenance(
         trial, args=args, rules=rules, params=selected_params,
         study_fingerprint=study_fingerprint, study_fingerprint_sha256=study_fingerprint_sha256,
     )
@@ -1021,11 +1074,38 @@ def run(args: argparse.Namespace) -> Path:
         selected_params,
         composition_mode=composition_mode,
     )
+    if args.manual_hyperparameters:
+        overrides.pop("trial_parameter_overrides", None)
+        overrides["manual_hyperparameters"] = search.trial_params_payload(params)
+        overrides["manual_pipeline_identity_sha256"] = study_fingerprint_sha256
+    from tabicl.prior.target_mixing import mix_policy_identity, resolve_mix_policy
+    target_mix_policy = resolve_mix_policy(
+        args.informed_target_mix_policy,
+        epit_v5=args.epit_target_version == "v5", manual=args.manual_hyperparameters,
+    )
+    if target_mix_policy == "uniform_per_table":
+        overrides["informed_target_mix_policy"] = mix_policy_identity(params.informed_target_mix_weight)
+    if args.epit_target_version == "v5":
+        from tabicl.prior.epit_target_v5 import load_recipe, recipe_identity
+        recipe = load_recipe()
+        if (recipe["split_manifest_sha256"] != frozen_split.manifest_sha256
+                or recipe["split_lock_sha256"] != frozen_split.lock_sha256):
+            raise RuntimeError("EPIT v5 formula used a different frozen split.")
+        from scripts.epit_pipeline.formula_data import reviewed_formula_input_identity
+        if recipe["reviewed_formula_inputs"] != reviewed_formula_input_identity():
+            raise RuntimeError("EPIT v5 formula used different reviewed inputs.")
+        overrides["epit_target_recipe"] = recipe_identity(params.informed_target_mix_weight)
     if proxy_training_overrides:
         overrides["proxy_training_overrides"] = proxy_training_overrides
-    default_run_name = (
-        f"final_{search.slugify(args.study_name)}_trial_{trial.number:04d}"
-    )
+    ratio_label = f"{params.informed_prior_ratio:.2f}".replace(".", "p")
+    if args.manual_hyperparameters:
+        dataset_name = "soccol" if search.uses_reviewed_soccol_schema(args) else "epit"
+        default_run_name = f"{dataset_name}_manual_v1_ratio_{ratio_label}"
+    else:
+        default_run_name = f"final_{search.slugify(args.study_name)}_trial_{trial.number:04d}"
+    if args.epit_target_version == "v5":
+        origin = "manual" if args.manual_hyperparameters else f"trial{trial.number:04d}"
+        default_run_name = f"epit_targetv5_{origin}_ratio_{ratio_label}"
     is_experimental = bool(overrides)
     if is_experimental:
         override_sha256 = search.canonical_json_sha256(overrides)
@@ -1048,6 +1128,11 @@ def run(args: argparse.Namespace) -> Path:
         )
 
     train_command = search.training_command(args, params, checkpoint_dir, rules)
+    if args.epit_target_version == "v5":
+        train_command.extend(["--epit_target_version", "v5"])
+    if target_mix_policy == "uniform_per_table":
+        train_command.extend(["--informed_target_mix_policy", target_mix_policy])
+        replace_option(train_command, "--informed_target_mix_weight", repr(params.informed_target_mix_weight))
     fixed_prior_overrides = overrides.get("fixed_prior_overrides", {})
     family_probs = fixed_prior_overrides.get(
         "pitting_composition_family_probs"
@@ -1062,12 +1147,13 @@ def run(args: argparse.Namespace) -> Path:
     replace_option(train_command, "--save_temp_every", args.save_temp_every)
     replace_option(train_command, "--save_perm_every", args.save_perm_every)
     training_configuration = {
-        "study_name": args.study_name,
-        "storage": args.storage,
-        "trial_number": int(trial.number),
-        "trial_value": float(trial.value),
+        "configuration_source": "manual_hyperparameters" if args.manual_hyperparameters else "optuna_trial",
+        "study_name": None if args.manual_hyperparameters else args.study_name,
+        "storage": None if args.manual_hyperparameters else args.storage,
+        "trial_number": None if trial is None else int(trial.number),
+        "trial_value": None if trial is None else float(trial.value),
         "trial_params": search.trial_params_payload(params),
-        "selected_trial_params": search.trial_params_payload(selected_params),
+        "selected_trial_params": None if args.manual_hyperparameters else search.trial_params_payload(selected_params),
         "effective_trial_params": search.trial_params_payload(params),
         "overrides": overrides,
         "experimental_override_run": is_experimental,
@@ -1084,6 +1170,8 @@ def run(args: argparse.Namespace) -> Path:
         "checkpoint_selection_interval": args.checkpoint_selection_interval,
         "train_command": train_command,
     }
+    if args.manual_hyperparameters:
+        training_configuration["manual_pipeline_identity"] = study_fingerprint
     input_policy = native_input_policy(args, train_command)
     if input_policy is not None:
         training_configuration["input_policy"] = input_policy
@@ -1129,7 +1217,7 @@ def run(args: argparse.Namespace) -> Path:
             raise FileExistsError(
                 f"Final output directory is non-empty: {output_dir}. "
                 "To continue an interrupted run, use --resume-training with "
-                "the original --selected-trial-number and training settings."
+                "the original training settings and, for study-based runs, --selected-trial-number."
             )
         if checkpoint_dir.exists() and any(checkpoint_dir.iterdir()):
             raise FileExistsError(
@@ -1184,7 +1272,7 @@ def run(args: argparse.Namespace) -> Path:
     manifest = {
         "schema_version": "epit_final_model_manifest_v1",
         "frozen_utc": utc_now(),
-        "study": {
+        "study": None if args.manual_hyperparameters else {
             "name": args.study_name,
             "storage": args.storage,
             "total_trials": len(study.trials),

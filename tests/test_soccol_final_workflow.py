@@ -39,13 +39,14 @@ def reviewed():
                     setattr(module, name, value)
 
 
-@pytest.mark.parametrize("ratio", [.25, .50, .75, 1.])
+@pytest.mark.parametrize("ratio", [0., .25, .50, .75, 1.])
 def test_final_defaults_and_ratio_overrides_keep_reviewed_inputs(reviewed, tmp_path, ratio):
     args = soccol_train.parse_args([
         "--storage", "journal:///unused.log", "--override-informed-prior-ratio", str(ratio),
     ])
     assert args.study_name == "soccol_pipeline_optuna_empirical_features_scm_target_v8"
     assert args.selected_trial_number is None
+    assert args.manual_hyperparameters
     assert args.allow_missing_selected_trial_artifacts
     assert args.max_steps == 10000
     assert args.checkpoint_root.name == "soccol_pipeline_final_v2"
@@ -60,7 +61,12 @@ def test_final_defaults_and_ratio_overrides_keep_reviewed_inputs(reviewed, tmp_p
     )
     assert effective.informed_prior_ratio == ratio
     assert selected.informed_prior_ratio == 1.
-    assert provenance["trial_parameter_overrides"] == {"informed_prior_ratio": ratio}
+    assert provenance["trial_parameter_overrides"] == {
+        "informed_prior_ratio": ratio, "mlp_prob": .70,
+        "pitting_composition_perturb_strength": .30, "informed_target_mix_weight": .28,
+    }
+    assert selected.mlp_prob == .37
+    assert selected.pitting_composition_perturb_strength == .12
     rules = search.load_target_rule_config(summary_path=args.target_rule_summary, split_manifest_path=args.split_manifest)
     command = search.training_command(args, effective, tmp_path, rules)
     entry = next(i for i, token in enumerate(command) if token.endswith("/train/run.py"))
@@ -69,7 +75,11 @@ def test_final_defaults_and_ratio_overrides_keep_reviewed_inputs(reviewed, tmp_p
     assert config.min_features == config.max_features == 58
     assert config.pitting_feature_profile == "soccol_pitting_features_v3"
     assert not config.col_missing_value_embedding
-    assert config.pitting_composition_perturb_strength == .12
+    assert config.pitting_composition_perturb_strength == .30
+    assert config.informed_mix_probs == [.70, .30]
+    assert config.mix_probs == [.70, .30]
+    assert config.informed_target_mix_weight == .28
+    assert config.epit_target_version == "v4"
     assert config.pitting_coefficient_variation == .8
     assert config.pitting_coefficient_variation_seed == 42
     eval_args = soccol_eval.parse_args([])
@@ -78,9 +88,22 @@ def test_final_defaults_and_ratio_overrides_keep_reviewed_inputs(reviewed, tmp_p
     assert eval_args.context_mode == "full"
 
 
-@pytest.mark.parametrize("missing_proxy_files", [False, True])
+def test_final_explicit_overrides_and_legacy_defaults_are_preserved(reviewed):
+    args = soccol_train.parse_args([
+        "--storage", "journal:///unused.log", "--override-mlp-prob", "0",
+        "--override-pitting-composition-perturb-strength", "0",
+    ])
+    assert args.override_mlp_prob == 0.
+    assert args.override_pitting_composition_perturb_strength == 0.
+    legacy = soccol_train.parse_args(["--storage", "journal:///unused.log", "--legacy-data"])
+    assert not legacy.manual_hyperparameters
+    assert legacy.override_mlp_prob is None
+    assert legacy.override_pitting_composition_perturb_strength is None
+
+
+@pytest.mark.parametrize("manual,missing_proxy_files", [(False, False), (False, True), (True, False)])
 @pytest.mark.parametrize("processes", [1, 2])
-def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, tmp_path, missing_proxy_files, processes):
+def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, tmp_path, missing_proxy_files, processes, manual):
     """Use real study/manifest/summary code; replace only external model jobs.
 
     All scores and checkpoint bytes below are artificial test fixtures. No
@@ -135,6 +158,8 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
             config = build_parser().parse_args(command[entry + 1:])
             assert config.min_features == config.max_features == 58
             assert not config.col_missing_value_embedding
+            if manual and config.max_steps == 10000:
+                assert config.informed_target_mix_policy == 'uniform_per_table'
             directory = Path(config.checkpoint_dir)
             directory.mkdir(parents=True, exist_ok=True)
             steps = {config.max_steps}
@@ -156,10 +181,16 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
         "--work-dir", str(tmp_path / "trials"), "--checkpoint-root", str(tmp_path / "proxy_checkpoints"),
         "--eval-output-root", str(tmp_path / "folds"),
     ])
-    search.run_search(optuna_args)
+    if not manual:
+        search.run_search(optuna_args)
+    else:
+        def no_study(*args, **kwargs):
+            pytest.fail("Manual training must not read an Optuna study.")
+        monkeypatch.setattr(final_train, 'load_selected_trial', no_study)
     assert not final_queries_seen
     train_args = soccol_train.parse_args([
-        "--storage", storage, "--device", "cpu", "--output-dir", str(tmp_path / "final"),
+        *([] if manual else ["--storage", storage, "--no-manual-hyperparameters"]),
+        "--device", "cpu", "--output-dir", str(tmp_path / "final"),
         "--checkpoint-root", str(tmp_path / "final_checkpoints"),
         "--nproc-per-node", str(processes),
     ])
@@ -176,18 +207,30 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
     assert not planned_manifest.exists()
     assert not train_args.output_dir.exists()
     assert not train_args.checkpoint_root.exists()
-    assert len(training_commands) == 2
+    assert len(training_commands) == (0 if manual else 2)
     assert not final_queries_seen
     train_args.dry_run = False
     manifest_path = final_train.run(train_args)
     assert not final_queries_seen
     frozen = load_frozen_final_model(manifest_path)
     manifest = frozen.manifest
-    assert manifest["study"]["selected_trial_number"] == 1
-    assert manifest["study"]["selection_mode"] == "automatic_current_best_completed_trial"
-    assert manifest["study"]["selected_trial_params"]["informed_prior_ratio"] == 1.
+    if manual:
+        assert manifest['study'] is None
+        assert manifest['training']['configuration_source'] == 'manual_hyperparameters'
+        assert manifest['training']['trial_number'] is None
+        assert manifest['training']['storage'] is None
+        assert manifest['training']['effective_trial_params']['informed_target_mix_weight'] == .28
+        mix = manifest['training']['overrides']['informed_target_mix_policy']
+        assert mix['distribution'] == 'uniform_per_table'
+        assert (mix['low'], mix['high'], mix['mean']) == (0., .56, .28)
+    else:
+        assert manifest["study"]["selected_trial_number"] == 1
+        assert manifest["study"]["selection_mode"] == "automatic_current_best_completed_trial"
+        assert manifest["study"]["selected_trial_params"]["informed_prior_ratio"] == 1.
     assert manifest["selected_checkpoint"]["step"] == 500
     assert manifest["training"]["max_steps"] == 10000
+    assert manifest["training"]["effective_trial_params"]["mlp_prob"] == .70
+    assert manifest["training"]["effective_trial_params"]["pitting_composition_perturb_strength"] == .30
     assert manifest["training"]["nproc_per_node"] == processes
     assert manifest["training"]["input_policy"] == {
         "feature_schema": "native_per_source", "informed_feature_count": 58,
@@ -197,7 +240,7 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
         "generic_missing_values": "none_injected", "artificial_feature_masking": False,
     }
     assert f"--nproc_per_node={processes}" in training_commands[-1]
-    if processes == 2:
+    if processes == 2 and not manual:
         assert manifest["training"]["experimental_override_run"]
         assert manifest["training"]["overrides"]["proxy_training_overrides"]["nproc_per_node"] == {
             "selected_study_value": 1, "effective_final_value": 2,
@@ -207,15 +250,16 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
     assert manifest["split"]["development_rows"] == 2950
     assert manifest["split"]["final_test_rows"] == 805
     assert len(manifest["split"]["final_query_row_ids"]) == 805
-    assert len(training_commands) == 3
+    assert len(training_commands) == (1 if manual else 3)
     assert all("--epit-final-test" not in record["evaluation_command"]
                for record in manifest["checkpoint_selection"]["candidates"])
-    proxy = manifest["study"]["selected_trial_fold_evaluation"]
-    if missing_proxy_files:
-        assert proxy["verification_mode"] == "optuna_journal_record"
-        assert len(proxy["missing_local_artifacts"]) == 5
-    assert proxy["source_sha256"] == manifest["split"]["source_sha256"]
-    assert proxy["soccol_development_selection"] == manifest["split"]["soccol_development_selection"]
+    if not manual:
+        proxy = manifest["study"]["selected_trial_fold_evaluation"]
+        if missing_proxy_files:
+            assert proxy["verification_mode"] == "optuna_journal_record"
+            assert len(proxy["missing_local_artifacts"]) == 5
+        assert proxy["source_sha256"] == manifest["split"]["source_sha256"]
+        assert proxy["soccol_development_selection"] == manifest["split"]["soccol_development_selection"]
 
     eval_args = soccol_eval.parse_args(["--final-model-manifest", str(manifest_path)])
     result = json.loads(final_eval.run(eval_args).read_text())
@@ -258,10 +302,24 @@ def test_reviewed_final_selection_and_queries_end_to_end(reviewed, monkeypatch, 
     with pytest.raises(RuntimeError, match="context/query selection"):
         final_eval.validate_frozen_model(frozen)
     frozen.manifest["split"] = changed_split
-    malformed_fold = deepcopy(proxy)
-    malformed_fold["soccol_development_selection"]["source_rows"] = 3222
-    with pytest.raises(RuntimeError, match="accepted development selection"):
-        search.validate_reviewed_soccol_fold_selection(malformed_fold)
+    if not manual:
+        malformed_fold = deepcopy(proxy)
+        malformed_fold["soccol_development_selection"]["source_rows"] = 3222
+        with pytest.raises(RuntimeError, match="accepted development selection"):
+            search.validate_reviewed_soccol_fold_selection(malformed_fold)
+
+
+def test_manual_resume_needs_no_trial_and_requires_complete_settings(reviewed):
+    args = soccol_train.parse_args(['--resume-training'])
+    assert args.storage is None and args.selected_trial_number is None
+    final_train.validate_args(args)
+    args.selected_trial_number = 27
+    with pytest.raises(ValueError, match='cannot select an Optuna trial'):
+        final_train.validate_args(args)
+    args.selected_trial_number = None
+    args.override_informed_target_mix_weight = None
+    with pytest.raises(ValueError, match='requires --override-informed-target-mix-weight'):
+        final_train.validate_args(args)
 
 
 def test_legacy_final_route_requires_explicit_selection(reviewed):

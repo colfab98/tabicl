@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=soccol_final_scm_v8
+#SBATCH --job-name=soccol_final_manual
 #SBATCH --gpus=1
 #SBATCH --mem=32G
 #SBATCH --time=48:00:00
@@ -12,10 +12,8 @@ cd /home/fcolanto/projects/tabicl
 source .venv/bin/activate
 export PYTHONPATH="$PWD/src:$PWD${PYTHONPATH:+:$PYTHONPATH}"
 
-STUDY_NAME="${STUDY_NAME:-soccol_pipeline_optuna_empirical_features_scm_target_v8}"
-OPTUNA_STORAGE_ROOT="${OPTUNA_STORAGE_ROOT:-/home/fcolanto/RZ-Dienste/hpc-user/fcolanto/optuna}"
-STUDY_DIR="${OPTUNA_STORAGE_ROOT}/${STUDY_NAME}"
-STORAGE="${STORAGE:-journal://${STUDY_DIR}/study_journal_v1.log}"
+STUDY_NAME="${STUDY_NAME:-}"
+STORAGE="${STORAGE:-}"
 SPLIT_MANIFEST="${SPLIT_MANIFEST:-corrosion_datasets/datasets/soccol_pitting_potential/processed/splits_v1/split_manifest.json}"
 TARGET_RULE_SUMMARY="${TARGET_RULE_SUMMARY:-corrosion_datasets/analysis/soccol_pipeline/target_rules_v2/calibration_summary.json}"
 SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-}"
@@ -38,11 +36,18 @@ FINAL_RUN_NAME="${FINAL_RUN_NAME:-}"
 OUTPUT_DIR="${OUTPUT_DIR:-}"
 OVERRIDE_INFORMED_PRIOR_RATIO="${OVERRIDE_INFORMED_PRIOR_RATIO:-}"
 OVERRIDE_MLP_PROB="${OVERRIDE_MLP_PROB:-}"
+OVERRIDE_INFORMED_TARGET_MIX_WEIGHT="${OVERRIDE_INFORMED_TARGET_MIX_WEIGHT:-}"
 OVERRIDE_PITTING_COMPOSITION_PERTURB_STRENGTH="${OVERRIDE_PITTING_COMPOSITION_PERTURB_STRENGTH:-}"
 OVERRIDE_USE_MAGPIE="${OVERRIDE_USE_MAGPIE:-}"
 OVERRIDE_PITTING_COMPOSITION_FAMILY_PROBS="${OVERRIDE_PITTING_COMPOSITION_FAMILY_PROBS:-}"
 
 EXTRA_ARGS=()
+if [[ -n "$STUDY_NAME" ]]; then
+  EXTRA_ARGS+=(--study-name "$STUDY_NAME")
+fi
+if [[ -n "$STORAGE" ]]; then
+  EXTRA_ARGS+=(--storage "$STORAGE")
+fi
 if [[ -n "$SELECTED_TRIAL_NUMBER" ]]; then
   EXTRA_ARGS+=(
     --selected-trial-number "$SELECTED_TRIAL_NUMBER"
@@ -59,6 +64,9 @@ if [[ -n "$OVERRIDE_INFORMED_PRIOR_RATIO" ]]; then
 fi
 if [[ -n "$OVERRIDE_MLP_PROB" ]]; then
   EXTRA_ARGS+=(--override-mlp-prob "$OVERRIDE_MLP_PROB")
+fi
+if [[ -n "$OVERRIDE_INFORMED_TARGET_MIX_WEIGHT" ]]; then
+  EXTRA_ARGS+=(--override-informed-target-mix-weight "$OVERRIDE_INFORMED_TARGET_MIX_WEIGHT")
 fi
 if [[ -n "$OVERRIDE_PITTING_COMPOSITION_PERTURB_STRENGTH" ]]; then
   EXTRA_ARGS+=(
@@ -79,8 +87,6 @@ fi
 
 python -m scripts.soccol_pipeline.train_final \
   --soccol-reviewed-data \
-  --study-name "$STUDY_NAME" \
-  --storage "$STORAGE" \
   --split-manifest "$SPLIT_MANIFEST" \
   --target-rule-summary "$TARGET_RULE_SUMMARY" \
   --device cuda \

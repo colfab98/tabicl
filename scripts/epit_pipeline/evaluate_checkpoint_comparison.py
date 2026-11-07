@@ -15,7 +15,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.epit_pipeline.artifact_hashes import load_frozen_final_model, load_frozen_split
-from scripts.eval_corrosion_datasets import slugify
+from scripts.eval_corrosion_datasets import checkpoint_step_from_path, slugify
 from scripts.epit_pipeline.run_optuna import DEFAULT_SPLIT_MANIFEST, DEFAULT_STUDY_NAME
 from scripts.combined_corrosion.evaluate_final import add_evaluation_arguments, comparison_command
 from tabicl.prior.epit_expanded_schema import EPIT_EXPANDED_CATEGORICAL_COLUMNS
@@ -48,7 +48,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     source.add_argument("--candidate-run", "--trial-run", type=Path, help="Explicit run for checkpoint trends; otherwise read the frozen final-model manifest.")
     source.add_argument("--final-model-manifest", type=Path)
     source.add_argument("--ratio-runs", type=Path, nargs=5, metavar=("RUN0", "RUN25", "RUN50", "RUN75", "RUN100"),
-                        help="Compare five informed ratios together, in 0/25/50/75/100 order, plus three baselines.")
+                        help="Provide ratios in 0/25/50/75/100 order; models without available checkpoints are skipped.")
     parser.add_argument("--candidate-label", default=None)
     parser.add_argument("--split-manifest", type=Path, default=DEFAULT_SPLIT_MANIFEST)
     parser.add_argument("--dry-run", action="store_true", help="Print the evaluation command without loading models or writing results.")
@@ -82,7 +82,50 @@ def candidate_models(args: argparse.Namespace) -> list[tuple[str, Path]]:
 
 
 def candidate_labels(args: argparse.Namespace) -> tuple[str, ...]:
-    return RATIO_LABELS if args.ratio_runs is not None else (args.candidate_label,)
+    return tuple(label for label, _ in model_runs(args) if label != "generic_baseline")
+
+
+def model_runs(args: argparse.Namespace) -> list[tuple[str, Path]]:
+    selected = getattr(args, "_selected_model_runs", None)
+    if selected is not None:
+        return selected
+    return [*candidate_models(args), ("generic_baseline", args.generic_run.expanduser().resolve())]
+
+
+def select_available_models(args: argparse.Namespace) -> tuple[list[tuple[str, Path]], list[dict[str, str]]]:
+    """Select once, so checkpoints arriving during evaluation cannot change labels."""
+    available, skipped = [], []
+    for label, directory in model_runs(args):
+        reason = None
+        if not directory.is_dir():
+            reason = "checkpoint directory not found"
+        elif args.checkpoint in {"all", "latest"}:
+            steps = [step for path in directory.glob("step-*.ckpt")
+                     if path.is_file() and (step := checkpoint_step_from_path(path)) is not None]
+            if not steps:
+                reason = "no saved step checkpoints"
+            elif args.checkpoint == "all" and not any(
+                step >= args.min_checkpoint_step
+                and (args.max_checkpoint_step is None or step <= args.max_checkpoint_step)
+                for step in steps
+            ):
+                reason = "no checkpoints in the requested step range"
+        else:
+            filename = args.checkpoint
+            if filename.isdigit():
+                filename = f"step-{filename}.ckpt"
+            elif filename.startswith("step-") and not filename.endswith(".ckpt"):
+                filename += ".ckpt"
+            if not (directory / filename).is_file():
+                reason = f"checkpoint not found: {filename}"
+        if reason is None:
+            available.append((label, directory))
+        else:
+            skipped.append({"model": label, "run_dir": str(directory), "reason": reason})
+            print(f"Skipping {label}: {reason} ({directory})", flush=True)
+    if not available:
+        raise FileNotFoundError("No local models have checkpoints available for the requested comparison.")
+    return available, skipped
 
 
 def candidate_run(args: argparse.Namespace) -> Path:
@@ -119,7 +162,7 @@ def output_directory(args: argparse.Namespace) -> Path:
 def evaluation_command(args: argparse.Namespace) -> list[str]:
     options = copy(args)
     options.output_dir = output_directory(args)
-    models = candidate_models(args)
+    models = model_runs(args)
     labels = candidate_labels(args)
     task_arguments = ["--epit-split-manifest", str(args.split_manifest.expanduser().resolve()), "--epit-final-test"]
     if not args.legacy_data:
@@ -127,12 +170,12 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
     if args.context_folds is not None:
         task_arguments.extend(["--context-folds", str(args.context_folds)])
     command = comparison_command(
-        options, [*models, ("generic_baseline", args.generic_run)],
+        options, models,
         missing_aware_models=labels if args.legacy_model_inputs and not args.legacy_data else (),
         task_id=EPIT_TASK_ID, task_arguments=task_arguments,
         categorical_columns=LEGACY_CATEGORICAL_COLUMNS if args.legacy_data else CATBOOST_CATEGORICAL_COLUMNS,
     )
-    if args.legacy_data:
+    if args.legacy_data and args.candidate_label in labels:
         command.extend(["--fixed-schema-model", args.candidate_label])
     return command
 
@@ -158,8 +201,9 @@ def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: i
     if set(payload.get("missing_aware_models", [])) != expected_missing:
         raise RuntimeError("Comparison changed EPIT missing-value handling.")
     rows = payload.get("rows", [])
-    if {row.get("model") for row in rows} != labels | {"generic_baseline", "pretrained_tabicl_v2", "catboost"}:
-        raise RuntimeError("Comparison did not produce all requested models and three baselines.")
+    expected_models = {label for label, _ in model_runs(args)} | {"pretrained_tabicl_v2", "catboost"}
+    if {row.get("model") for row in rows} != expected_models:
+        raise RuntimeError("Comparison did not produce all available models and requested baselines.")
     strategy = "epit_pipeline_final_test" + (f"_context_fold_{context_fold}" if context_fold is not None else "")
     for row in rows:
         if args.max_checkpoint_step is not None and (
@@ -174,19 +218,26 @@ def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: i
 
 
 def run(args: argparse.Namespace) -> Path:
-    command = evaluation_command(args)
     output = output_directory(args)
     if args.dry_run:
-        print(shlex.join(command))
+        print(shlex.join(evaluation_command(args)))
         return output
     if output.exists() and (not output.is_dir() or any(output.iterdir())):
         raise FileExistsError(f"Comparison output is not empty: {output}")
+    args = copy(args)
+    args._selected_model_runs, skipped = select_available_models(args)
+    command = evaluation_command(args)
     subprocess.run(command, cwd=REPO_ROOT, check=True)
-    validate_results(args, json.loads((output / "results.json").read_text()))
-    for filename in REQUIRED_PLOTS:
-        path = output / "plots" / filename
-        if not path.is_file() or path.stat().st_size == 0:
-            raise RuntimeError(f"Required plot missing: {path}")
+    result_path = output / "results.json"
+    payload = json.loads(result_path.read_text())
+    payload["skipped_models"] = skipped
+    result_path.write_text(json.dumps(payload, indent=2) + "\n")
+    validate_results(args, payload)
+    if args.checkpoint == "all":
+        for filename in REQUIRED_PLOTS:
+            path = output / "plots" / filename
+            if not path.is_file() or path.stat().st_size == 0:
+                raise RuntimeError(f"Required plot missing: {path}")
     return output
 
 

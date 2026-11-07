@@ -1,0 +1,18 @@
+{
+  "current_best_formula_mean_spearman": 0.5907727994017612,
+  "strongest_development_candidate": "extend_heat",
+  "parsimonious_development_selection": "extend_heat_categories",
+  "finding": "Heat-treatment type and cooling explain most of the development improvement; numeric heat temperature/duration alone do not.",
+  "robustness": "The heat-category gain does not carry to source-publication-held-out development folds. It may encode source-specific associations; this is not proof of causation.",
+  "training_decision": "No formula was promoted to the generator. No change to generic generation, model architecture, Optuna defaults, or final training.",
+  "scope": "452 Fe/Ni development rows only. Not a final TabICL comparison and not evidence that a trained informed model beats ratio 0.",
+  "nested_selection": "Full candidate selection is weaker than the retrospectively best family. Paired intervals include zero; candidate selection is not robustly superior.",
+  "verification": {
+    "final_query_rows_excluded": true,
+    "all_nine_current_baselines_reproduced": true,
+    "saved_metrics_recomputed": true,
+    "fold_fit_validation_disjoint": true,
+    "equation_json_reloads_exactly": true,
+    "source_code_hashes_match": true
+  }
+}

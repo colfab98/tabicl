@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=epit_final_empirical_scm_v14
+#SBATCH --job-name=epit_final_target_v5
 #SBATCH --nodes=1
 #SBATCH --gpus=1
 #SBATCH --mem=32G
@@ -19,6 +19,7 @@ STUDY_DIR="${OPTUNA_STORAGE_ROOT}/${STUDY_NAME}"
 STORAGE="${STORAGE:-journal://${STUDY_DIR}/study_journal_v1.log}"
 SPLIT_MANIFEST="${SPLIT_MANIFEST:-corrosion_datasets/analysis/epit_pipeline/splits_v2/split_manifest.json}"
 TARGET_RULE_SUMMARY="${TARGET_RULE_SUMMARY:-corrosion_datasets/analysis/epit_pipeline/target_rules_v4/calibration_summary.json}"
+EPIT_TARGET_VERSION="${EPIT_TARGET_VERSION:-v5}"
 SELECTED_TRIAL_NUMBER="${SELECTED_TRIAL_NUMBER:-}"
 # Use the GPUs allocated on this node unless explicitly overridden.
 NPROC_PER_NODE="${NPROC_PER_NODE:-${SLURM_GPUS_ON_NODE:-1}}"
@@ -84,6 +85,7 @@ python -m scripts.epit_pipeline.train_final \
   --storage "$STORAGE" \
   --split-manifest "$SPLIT_MANIFEST" \
   --target-rule-summary "$TARGET_RULE_SUMMARY" \
+  --epit-target-version "$EPIT_TARGET_VERSION" \
   --device cuda \
   --nproc-per-node "$NPROC_PER_NODE" \
   --max-steps "$MAX_STEPS" \

@@ -1,0 +1,90 @@
+[
+  {
+    "paired_mean_spearman_gain_ci95": [
+      0.010788984247768942,
+      0.11346902444637014
+    ],
+    "bootstrap_samples": 1000,
+    "interpretation": "Uncertainty from evaluation groups conditional on fitted fold models; does not include training/search instability.",
+    "split": "frozen_development_folds",
+    "candidate": "extend_heat",
+    "selection_note": "Exploratory candidate interval after examining development results; not corrected for candidate selection."
+  },
+  {
+    "paired_mean_spearman_gain_ci95": [
+      0.008723609780207506,
+      0.11203843063559002
+    ],
+    "bootstrap_samples": 1000,
+    "interpretation": "Uncertainty from evaluation groups conditional on fitted fold models; does not include training/search instability.",
+    "split": "frozen_development_folds",
+    "candidate": "extend_heat_categories",
+    "selection_note": "Exploratory candidate interval after examining development results; not corrected for candidate selection."
+  },
+  {
+    "paired_mean_spearman_gain_ci95": [
+      -0.022453045546825944,
+      0.05429239956487069
+    ],
+    "bootstrap_samples": 1000,
+    "interpretation": "Uncertainty from evaluation groups conditional on fitted fold models; does not include training/search instability.",
+    "split": "frozen_development_folds",
+    "candidate": "extend_heat_cooling",
+    "selection_note": "Exploratory candidate interval after examining development results; not corrected for candidate selection."
+  },
+  {
+    "paired_mean_spearman_gain_ci95": [
+      -0.02534885573265533,
+      0.059225795533233414
+    ],
+    "bootstrap_samples": 1000,
+    "interpretation": "Uncertainty from evaluation groups conditional on fitted fold models; does not include training/search instability.",
+    "split": "frozen_development_folds",
+    "candidate": "extend_surface",
+    "selection_note": "Exploratory candidate interval after examining development results; not corrected for candidate selection."
+  },
+  {
+    "paired_mean_spearman_gain_ci95": [
+      -0.11875757424855427,
+      0.034891311366670834
+    ],
+    "bootstrap_samples": 1000,
+    "interpretation": "Uncertainty from evaluation groups conditional on fitted fold models; does not include training/search instability.",
+    "split": "source_publication_folds",
+    "candidate": "extend_heat",
+    "selection_note": "Exploratory candidate interval after examining development results; not corrected for candidate selection."
+  },
+  {
+    "paired_mean_spearman_gain_ci95": [
+      -0.14463287607414413,
+      0.01976240065826535
+    ],
+    "bootstrap_samples": 1000,
+    "interpretation": "Uncertainty from evaluation groups conditional on fitted fold models; does not include training/search instability.",
+    "split": "source_publication_folds",
+    "candidate": "extend_heat_categories",
+    "selection_note": "Exploratory candidate interval after examining development results; not corrected for candidate selection."
+  },
+  {
+    "paired_mean_spearman_gain_ci95": [
+      -0.004398438304905968,
+      0.051240100347945045
+    ],
+    "bootstrap_samples": 1000,
+    "interpretation": "Uncertainty from evaluation groups conditional on fitted fold models; does not include training/search instability.",
+    "split": "source_publication_folds",
+    "candidate": "extend_heat_cooling",
+    "selection_note": "Exploratory candidate interval after examining development results; not corrected for candidate selection."
+  },
+  {
+    "paired_mean_spearman_gain_ci95": [
+      -0.008493612416400302,
+      0.1036498407057853
+    ],
+    "bootstrap_samples": 1000,
+    "interpretation": "Uncertainty from evaluation groups conditional on fitted fold models; does not include training/search instability.",
+    "split": "source_publication_folds",
+    "candidate": "extend_surface",
+    "selection_note": "Exploratory candidate interval after examining development results; not corrected for candidate selection."
+  }
+]
