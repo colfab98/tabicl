@@ -371,7 +371,7 @@ default normalization and native constant-feature handling, matching COMB.
 The informed models retain fixed order, no extra normalization and learned
 missing-value handling. CatBoost uses the same fixed settings as COMB.
 The comparison passes the reviewed category columns to CatBoost, retains
-each run's available checkpoints and latest endpoint, and validates actual
+each run's interval-filtered checkpoints, and validates actual
 row membership. `--context-folds 5` changes development context only; all 152
 queries remain fixed. Final-query curves must not be used to change the
 checkpoint selected on development folds.
@@ -412,8 +412,8 @@ checkpoints at or below step 5,000:
 
 This produces one comparison with eight curves (`epit_0pct`, `epit_25pct`,
 `epit_50pct`, `epit_75pct`, `epit_100pct`, generic, pretrained and CatBoost), the same CSV/JSON
-outputs as COMB, and six SVG plots. Defaults evaluate 500-step checkpoints and
-each run's latest endpoint within the requested bounds; shorter runs do not
+outputs as COMB, and six SVG plots. Defaults evaluate only 500-step checkpoints within the requested bounds;
+shorter runs do not
 truncate longer ones. The maximum applies to all local runs, including the
 generic baseline, and never adds a latest checkpoint above the cap. Omitting it
 keeps the previous uncapped behavior. It does not wait for future checkpoints.
@@ -634,3 +634,27 @@ The comparison uses the reviewed 70-column schema and the existing eight-view
 Latin/none–power evaluation. It checks that the two branches share their parent
 and training settings. The result metadata identifies step 2,000 as primary;
 the other checkpoints describe the trajectory and do not select a winner.
+
+### CV checkpoint consistency and recovery
+
+Exploratory CV saves `cv_checkpoints.json` before running any fold and uses
+that same checkpoint list for all five folds. Checkpoints arriving during the
+run are left for the next evaluation. EPIT and Soccol use the same driver.
+
+If an older run saved all five fold results but failed because its checkpoint
+list changed between folds, rebuild summaries without rerunning models:
+
+```bash
+.venv/bin/python -m scripts.recover_exploratory_cv --output-dir /path/to/existing/cv/results
+```
+
+Recovery leaves individual fold files intact. It averages only model/checkpoint
+pairs present in all five folds and lists excluded incomplete pairs in
+`results.json`. Model errors, inconsistent row membership, and different
+scoring settings still fail rather than being silently averaged.
+
+Checkpoint intervals are strict in the EPIT and Soccol comparison wrappers:
+`--checkpoint-step-interval 500` selects only multiples of 500. Add
+`--include-latest-checkpoint` explicitly to include each run's latest checkpoint
+outside that interval. Recovery uses the saved interval by default; pass
+`--checkpoint-step-interval 0` to retain every complete saved checkpoint.

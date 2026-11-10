@@ -358,7 +358,7 @@ columns, including the reference type. Numeric `CP_agitation` is not marked as
 a category. Category codes and source NaNs come from the reviewed input path.
 
 The comparison retains every run's available interval-filtered checkpoints
-and latest endpoint, including steps present in only one run. It requires all
+including steps present in only one run. It requires all
 four models, exact context/query membership and all six metric SVGs. Output
 directories must be empty; reviewed defaults are separate from old results.
 Optional `--context-folds 5` / `CONTEXT_FOLDS=5` changes only the context and
@@ -387,7 +387,7 @@ with `--exploratory-cv-folds 5` and labels the models `soccol_25pct`,
 `soccol_50pct`, `soccol_75pct`, and `soccol_100pct`, alongside generic,
 pretrained and CatBoost baselines. Every ratio directory must contain saved
 checkpoints; missing runs fail before evaluation starts. Each run retains its
-own available checkpoints and latest endpoint. Use a new output directory.
+own interval-filtered checkpoints. Use a new output directory.
 
 Preview before the new run exists:
 
@@ -452,3 +452,27 @@ The historical final stages reuse the EPIT implementation through Soccol-only
 wrappers. Their output roots remain
 `corrosion_datasets/analysis/soccol_pipeline/final_v1/` and
 `checkpoints/soccol_pipeline_final_v1/`.
+
+### CV checkpoint consistency and recovery
+
+Exploratory CV saves `cv_checkpoints.json` before running any fold and uses
+that same checkpoint list for all five folds. Checkpoints arriving during the
+run are left for the next evaluation. EPIT and Soccol use the same driver.
+
+If an older run saved all five fold results but failed because its checkpoint
+list changed between folds, rebuild summaries without rerunning models:
+
+```bash
+.venv/bin/python -m scripts.recover_exploratory_cv --output-dir /path/to/existing/cv/results
+```
+
+Recovery leaves individual fold files intact. It averages only model/checkpoint
+pairs present in all five folds and lists excluded incomplete pairs in
+`results.json`. Model errors, inconsistent row membership, and different
+scoring settings still fail rather than being silently averaged.
+
+Checkpoint intervals are strict in the EPIT and Soccol comparison wrappers:
+`--checkpoint-step-interval 500` selects only multiples of 500. Add
+`--include-latest-checkpoint` explicitly to include each run's latest checkpoint
+outside that interval. Recovery uses the saved interval by default; pass
+`--checkpoint-step-interval 0` to retain every complete saved checkpoint.

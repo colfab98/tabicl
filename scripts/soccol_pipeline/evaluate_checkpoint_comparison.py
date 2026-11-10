@@ -42,6 +42,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--legacy-model-inputs", action="store_true", help="Evaluate historical missing-embedding checkpoints with their old input policy.")
     parser.add_argument("--legacy-data", action="store_true", help="Use the historical 37-column inputs and trial-19 default.")
     parser.add_argument("--context-folds", type=int, choices=[5], help="Use each accepted development fold as context; keep all 805 final queries.")
+    parser.add_argument("--include-latest-checkpoint", action="store_true",
+                        help="Also evaluate each run's latest checkpoint outside the requested interval.")
     parser.add_argument("--exploratory-cv-folds", type=int, choices=[5],
                         help="Original test fold plus four accepted-development folds; average scores.")
     parser.add_argument("--device", default="cpu")
@@ -133,7 +135,8 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
         sys.executable, str(REPO_ROOT / "scripts/eval_corrosion_datasets.py"),
         *model_arguments,
         "--checkpoint", "all", "--min-checkpoint-step", "0",
-        "--checkpoint-step-interval", str(args.checkpoint_step_interval), "--include-latest-common-checkpoint",
+        "--checkpoint-step-interval", str(args.checkpoint_step_interval),
+        "--include-latest-checkpoint" if args.include_latest_checkpoint else "--no-include-latest-checkpoint",
         "--task", SOCCOL_TASK_ID, "--target-mode", "primary", "--target-binning", "continuous",
         "--max-samples-per-task", "0", "--epit-split-manifest", str(args.split_manifest.expanduser().resolve()),
         "--epit-final-test", "--device", args.device, "--n-estimators", str(args.n_estimators),

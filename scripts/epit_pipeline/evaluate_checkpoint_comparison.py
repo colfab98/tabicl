@@ -43,6 +43,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--legacy-model-inputs", action="store_true", help="Evaluate historical v12 missing-embedding checkpoints with their old input policy.")
     parser.add_argument("--legacy-data", action="store_true", help="Use the historical 28-column inputs and v8 trial-17 default.")
     parser.add_argument("--context-folds", type=int, choices=[5], help="Use each accepted development fold as context; keep all 152 final queries.")
+    parser.add_argument("--include-latest-checkpoint", action="store_true",
+                        help="Also evaluate each run's latest checkpoint outside the requested interval.")
     parser.add_argument("--exploratory-cv-folds", type=int, choices=[5],
                         help="Evaluate original test fold plus four equal development folds; average scores.")
     add_evaluation_arguments(parser, default_output_dir=None, include_combined_data=False, default_device="cpu")
@@ -184,6 +186,8 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
         task_id=EPIT_TASK_ID, task_arguments=task_arguments,
         categorical_columns=LEGACY_CATEGORICAL_COLUMNS if args.legacy_data else CATBOOST_CATEGORICAL_COLUMNS,
     )
+    if not args.include_latest_checkpoint:
+        command[command.index("--include-latest-common-checkpoint")] = "--no-include-latest-checkpoint"
     if args.legacy_data and args.candidate_label in labels:
         command.extend(["--fixed-schema-model", args.candidate_label])
     return command

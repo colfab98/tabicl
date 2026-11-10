@@ -53,7 +53,7 @@ def test_comparisons_keep_all_frozen_queries(tmp_path, mock_models, context_fold
         path.mkdir()
         for step in steps:
             (path / f'step-{step}.ckpt').write_bytes(b'mock')
-    argv = ['--candidate-run', str(candidate), '--generic-run', str(generic), '--output-dir', str(tmp_path / 'results')]
+    argv = ['--include-latest-checkpoint', '--candidate-run', str(candidate), '--generic-run', str(generic), '--output-dir', str(tmp_path / 'results')]
     if context_folds:
         argv += ['--context-folds', '5']
     args = comparison.parse_args(argv)
@@ -168,7 +168,9 @@ def test_five_ratio_protocol_matches_combined_builder():
     changed = {'run', 'local_model_label', 'fixed_schema_model', 'missing_aware_model', 'task',
                'combined_data_dir', 'epit_split_manifest', 'epit_final_test', 'epit_expanded_features',
                'catboost_categorical_column', 'output_json', 'output_csv', 'output_wide_csv',
-               'output_summary_csv', 'output_plot_dir'}
+               'output_summary_csv', 'output_plot_dir', 'include_latest_common_checkpoint'}
+    assert epit_args.include_latest_common_checkpoint is False
+    assert combined_args.include_latest_common_checkpoint is True
     assert {k: v for k, v in vars(epit_args).items() if k not in changed} == {
         k: v for k, v in vars(combined_args).items() if k not in changed}
     for label in comparison.RATIO_LABELS:

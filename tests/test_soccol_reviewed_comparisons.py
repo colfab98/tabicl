@@ -77,7 +77,7 @@ def test_comparison_all_models_keep_frozen_queries_and_checkpoint_endpoints(tmp_
     for directory, steps in ((candidate, [500, 1400]), (generic, [500, 1000, 2000])):
         for step in steps:
             (directory / f"step-{step}.ckpt").write_bytes(b"mock checkpoint")
-    argv = ["--candidate-run", str(candidate), "--generic-run", str(generic), "--output-dir", str(tmp_path / "results")]
+    argv = ["--include-latest-checkpoint", "--candidate-run", str(candidate), "--generic-run", str(generic), "--output-dir", str(tmp_path / "results")]
     if context_folds:
         argv += ["--context-folds", str(context_folds)]
     args = comparison.parse_args(argv)
@@ -179,7 +179,7 @@ def test_exploratory_cv_preserves_original_queries_and_accepted_rows(tmp_path, m
         for step in steps:
             (path / f'step-{step}.ckpt').write_bytes(b'mock')
     args = comparison.parse_args([
-        '--candidate-run', str(candidate), '--generic-run', str(generic),
+        '--include-latest-checkpoint', '--candidate-run', str(candidate), '--generic-run', str(generic),
         '--exploratory-cv-folds', '5', '--output-dir', str(tmp_path / 'cv'),
     ])
     command = comparison.evaluation_command(args)
@@ -231,7 +231,7 @@ def test_four_ratio_cv_labels_and_checkpoints(tmp_path, mock_models):
         for step in (500, 1000 + i * 100):
             (directory / f'step-{step}.ckpt').write_bytes(b'mock')
     args = comparison.parse_args([
-        '--ratio-runs', *map(str, ratios), '--generic-run', str(generic),
+        '--include-latest-checkpoint', '--ratio-runs', *map(str, ratios), '--generic-run', str(generic),
         '--exploratory-cv-folds', '5', '--output-dir', str(tmp_path / 'results'),
     ])
     output = comparison.run(args)

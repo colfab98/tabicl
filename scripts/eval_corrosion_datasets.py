@@ -489,6 +489,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "across folds. Requires --epit-final-test."
         ),
     )
+    parser.add_argument("--cv-checkpoint-manifest", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--exploratory-cv-folds", type=int, choices=[5],
                         help="Exploratory EPIT/Soccol CV: original test fold plus four development folds.")
     parser.add_argument("--epit-exploratory-cv-fold", type=int, choices=range(1, 6),
@@ -919,6 +920,9 @@ def select_available_checkpoint_steps(
 
 
 def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEvalSpec]:
+    if getattr(args, "cv_checkpoint_manifest", None) is not None:
+        from scripts.epit_pipeline.exploratory_cv import load_checkpoint_snapshot
+        return load_checkpoint_snapshot(args.cv_checkpoint_manifest, sys.modules[__name__])
     if args.checkpoint != "all":
         runs = expand_runs(args)
         local_ckpt_paths = list(args.local_ckpt_path or [])
