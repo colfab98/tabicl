@@ -376,6 +376,19 @@ row membership. `--context-folds 5` changes development context only; all 152
 queries remain fixed. Final-query curves must not be used to change the
 checkpoint selected on development folds.
 
+For exploratory five-fold evaluation of existing checkpoints, add
+`--exploratory-cv-folds 5` to the same comparison command and choose a new
+`--output-dir`. Fold 1 uses the original 152 final-test rows; folds 2–5 split
+the 608 development rows into four groups of 152 (fixed shuffle seed 42).
+Each fold uses the other 608 rows as context. `cv_fold_1/` through `cv_fold_5/`
+contain individual results; the top-level `summary.csv` contains five-fold
+means, `std_test_*` sample standard deviations, and `n_cv_folds`. Top-level
+plots show mean scores. All models use identical folds. This reuses existing
+checkpoints without refitting priors, so the average is exploratory: four
+query folds influenced informed training. The original split files and default
+final-test evaluation are unchanged. This option cannot combine with
+`--context-folds` or `--legacy-data`.
+
 Preview without trained checkpoints:
 
 ```bash

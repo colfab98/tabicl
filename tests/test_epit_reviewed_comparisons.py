@@ -243,3 +243,78 @@ def test_comparison_rejects_no_available_local_models(tmp_path):
 def test_comparison_rejects_invalid_checkpoint_caps(extra):
     with pytest.raises(SystemExit):
         comparison.parse_args(['--candidate-run', '/tmp/future_run', *extra])
+
+
+def test_exploratory_cv_covers_each_row_once(tmp_path, mock_models, monkeypatch):
+    from scripts.epit_pipeline.exploratory_cv import fold_membership
+    original_evaluate = ev.evaluate_estimator
+
+    def scored(**kwargs):
+        split = kwargs['task_split']
+        assert np.array_equal(split.preprocessing_index, split.train_index)
+        assert not set(split.preprocessing_index) & set(split.test_index)
+        row = original_evaluate(**kwargs)
+        fold = int(row['split_strategy'].rsplit('_', 1)[1])
+        row['test_mae'] = float(fold) * (2 if row['model'] == 'epit_reviewed' else 1)
+        return row
+
+    monkeypatch.setattr(ev, 'evaluate_estimator', scored)
+    candidate, generic = tmp_path / 'informed', tmp_path / 'generic'
+    for path in (candidate, generic):
+        path.mkdir()
+        (path / 'step-100.ckpt').write_bytes(b'mock')
+        (path / 'step-200.ckpt').write_bytes(b'mock')
+    args = comparison.parse_args([
+        '--candidate-run', str(candidate), '--generic-run', str(generic),
+        '--exploratory-cv-folds', '5', '--checkpoint', 'all',
+        '--min-checkpoint-step', '100', '--max-checkpoint-step', '200',
+        '--checkpoint-step-interval', '100', '--output-dir', str(tmp_path / 'cv'),
+    ])
+    command = comparison.evaluation_command(args)
+    assert '--exploratory-cv-folds' in command
+    assert '--epit-final-test' not in command
+    output = comparison.run(args)
+    payload = json.loads((output / 'results.json').read_text())
+    assert payload['exploratory_cv'] is True
+    assert payload['original_final_test_fold'] == 1
+    memberships = [fold_membership(args.split_manifest, f) for f in range(1, 6)]
+    assert memberships[0] == frozen_membership(args.split_manifest)
+    assert memberships == [fold_membership(args.split_manifest, f) for f in range(1, 6)]
+    queries = []
+    for membership in memberships:
+        context, query = membership.values()
+        assert len(context) == 608 and len(query) == 152
+        assert not set(context) & set(query)
+        assert set(context) | set(query) == set(range(760))
+        queries.extend(query)
+    assert sorted(queries) == list(range(760))
+    for _, context, query in mock_models:
+        assert {'context_task_row_indices': context, 'query_task_row_indices': query} in memberships
+    for summary in payload['summary']:
+        assert summary['n_cv_folds'] == 5
+        factor = 2 if summary['model'] == 'epit_reviewed' else 1
+        assert summary['mean_test_mae'] == pytest.approx(3 * factor)
+        assert summary['std_test_mae'] == pytest.approx(factor * np.std([1, 2, 3, 4, 5], ddof=1))
+        assert summary['mean_delta_test_mae_vs_pretrained_tabicl_v2'] == pytest.approx(3 * (factor - 1))
+    first = json.loads((output / 'cv_fold_1/results.json').read_text())
+    assert first['epit_reviewed_split'] == frozen_membership(args.split_manifest)
+    assert next(r for r in first['rows'] if r['model'] == 'pretrained_tabicl_v2')['test_mae'] == 1
+
+
+def test_exploratory_cv_rejects_mixed_modes():
+    with pytest.raises(SystemExit):
+        comparison.parse_args(['--exploratory-cv-folds', '5', '--context-folds', '5'])
+    with pytest.raises(SystemExit):
+        comparison.parse_args(['--exploratory-cv-folds', '5', '--legacy-data'])
+    args = ev.parse_args(['--exploratory-cv-folds', '5', '--epit-final-test'])
+    with pytest.raises(ValueError, match='cannot mix split modes'):
+        ev.validate_args(args)
+
+
+def test_exploratory_cv_incomplete_scores_fail():
+    from scripts.epit_pipeline.exploratory_cv import child_arguments
+    assert child_arguments(['--exploratory-cv-folds=5', '--output-json=x',
+                            '--n-estimators', '8']) == ['--n-estimators', '8']
+    rows = [{'model': 'informed', 'task_id': 'epit', 'context_fold': f} for f in range(1, 5)]
+    with pytest.raises(RuntimeError, match='every model'):
+        ev.require_complete_context_folds(rows, [], [1, 2, 3, 4, 5])

@@ -438,7 +438,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help=(
             "Fixed EPIT pipeline split manifest. Requires exactly one of "
-            "--epit-validation-fold or --epit-final-test."
+            "--epit-validation-fold, --epit-final-test, or an exploratory CV mode."
         ),
     )
     parser.add_argument(
@@ -489,6 +489,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "across folds. Requires --epit-final-test."
         ),
     )
+    parser.add_argument("--exploratory-cv-folds", type=int, choices=[5],
+                        help="Exploratory EPIT CV: original test fold plus four development folds.")
+    parser.add_argument("--epit-exploratory-cv-fold", type=int, choices=range(1, 6),
+                        help=argparse.SUPPRESS)
     parser.add_argument("--target-mode", choices=("primary", "all"), default="primary")
     parser.add_argument(
         "--target-binning",
@@ -694,7 +698,16 @@ def validate_args(args: argparse.Namespace) -> None:
     if getattr(args, "soccol_reviewed_data", False):
         if args.pitting_magpie_features or args.epit_expanded_features:
             raise ValueError("Reviewed Soccol uses its own 58-column schema without EPIT expansion or Magpie.")
-    epit_mode_count = int(args.epit_validation_fold is not None) + int(
+    cv = args.exploratory_cv_folds is not None or args.epit_exploratory_cv_fold is not None
+    if cv:
+        if (not args.epit_expanded_features or args.epit_split_manifest is None
+                or args.epit_final_test or args.epit_validation_fold is not None
+                or args.epit_final_context_fold is not None or args.epit_final_context_folds is not None
+                or args.split_seeds is not None or args.combined_data_dir is not None):
+            raise ValueError("Exploratory CV requires expanded EPIT data and cannot mix split modes.")
+        if args.exploratory_cv_folds is not None and args.epit_exploratory_cv_fold is not None:
+            raise ValueError("Choose the CV driver or one CV fold, not both.")
+    epit_mode_count = int(cv) + int(args.epit_validation_fold is not None) + int(
         args.epit_final_test
     )
     if args.combined_data_dir is not None:
@@ -720,7 +733,7 @@ def validate_args(args: argparse.Namespace) -> None:
     if args.epit_split_manifest is not None and epit_mode_count != 1:
         raise ValueError(
             "--epit-split-manifest requires exactly one of "
-            "--epit-validation-fold or --epit-final-test."
+            "--epit-validation-fold, --epit-final-test, or an exploratory CV mode."
         )
     if args.epit_split_manifest is not None and args.split_seeds is not None:
         raise ValueError(
@@ -3408,7 +3421,7 @@ def make_summary_dataframe(
             metric: {model: 0 for model in model_order} for metric in METRIC_COLUMNS
         }
         comparison_group_cols = ["task_id"]
-        for replicate_column in ("split_seed", "context_fold"):
+        for replicate_column in ("split_seed", "context_fold", "cv_fold"):
             if replicate_column in checkpoint_df.columns:
                 comparison_group_cols.append(replicate_column)
         if not checkpoint_df.empty:
@@ -4493,6 +4506,12 @@ def run_repeated_split_eval(args: argparse.Namespace) -> None:
 def main() -> None:
     args = parse_args()
     validate_args(args)
+    if (args.exploratory_cv_folds is not None or args.epit_exploratory_cv_fold is not None) and str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    if args.exploratory_cv_folds is not None:
+        from scripts.epit_pipeline.exploratory_cv import run_cv
+        run_cv(args, sys.modules[__name__])
+        return
     if args.epit_final_context_folds is not None:
         run_epit_final_context_fold_eval(args)
         return
@@ -4510,7 +4529,10 @@ def main() -> None:
     )
     tasks = make_tasks(args)
     if args.epit_split_manifest is not None:
-        if args.epit_final_test:
+        if args.epit_exploratory_cv_fold is not None:
+            from scripts.epit_pipeline.exploratory_cv import apply_fold
+            apply_fold(tasks, args, sys.modules[__name__])
+        elif args.epit_final_test:
             apply_epit_pipeline_final_test(
                 tasks,
                 manifest_path=args.epit_split_manifest,

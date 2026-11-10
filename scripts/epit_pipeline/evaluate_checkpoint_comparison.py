@@ -43,6 +43,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--legacy-model-inputs", action="store_true", help="Evaluate historical v12 missing-embedding checkpoints with their old input policy.")
     parser.add_argument("--legacy-data", action="store_true", help="Use the historical 28-column inputs and v8 trial-17 default.")
     parser.add_argument("--context-folds", type=int, choices=[5], help="Use each accepted development fold as context; keep all 152 final queries.")
+    parser.add_argument("--exploratory-cv-folds", type=int, choices=[5],
+                        help="Evaluate original test fold plus four equal development folds; average scores.")
     add_evaluation_arguments(parser, default_output_dir=None, include_combined_data=False, default_device="cpu")
     source = parser.add_mutually_exclusive_group()
     source.add_argument("--candidate-run", "--trial-run", type=Path, help="Explicit run for checkpoint trends; otherwise read the frozen final-model manifest.")
@@ -53,6 +55,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--split-manifest", type=Path, default=DEFAULT_SPLIT_MANIFEST)
     parser.add_argument("--dry-run", action="store_true", help="Print the evaluation command without loading models or writing results.")
     args = parser.parse_args(argv)
+    if args.exploratory_cv_folds is not None and (args.context_folds is not None or args.legacy_data):
+        parser.error("--exploratory-cv-folds cannot be combined with --context-folds or --legacy-data.")
     if args.legacy_data and args.final_model_manifest is not None:
         parser.error("--final-model-manifest is for reviewed models; use --candidate-run for a legacy run.")
     if args.ratio_runs is not None:
@@ -154,6 +158,8 @@ def output_directory(args: argparse.Namespace) -> Path:
         return args.output_dir.expanduser().resolve()
     mode = "context_folds" if args.context_folds is not None else "full_development"
     name = f"{'five_ratios_' if args.ratio_runs is not None else ''}final_test_{mode}_comparison"
+    if args.exploratory_cv_folds is not None:
+        name = f"{'five_ratios_' if args.ratio_runs is not None else ''}exploratory_cv5_comparison"
     if args.max_checkpoint_step is not None:
         name += f"_through_{args.max_checkpoint_step}"
     return DEFAULT_OUTPUT_ROOT / (name if args.legacy_data else f"reviewed_{name}")
@@ -165,6 +171,9 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
     models = model_runs(args)
     labels = candidate_labels(args)
     task_arguments = ["--epit-split-manifest", str(args.split_manifest.expanduser().resolve()), "--epit-final-test"]
+    if args.exploratory_cv_folds is not None:
+        task_arguments.remove("--epit-final-test")
+        task_arguments.extend(["--exploratory-cv-folds", "5"])
     if not args.legacy_data:
         task_arguments.append("--epit-expanded-features")
     if args.context_folds is not None:
@@ -180,9 +189,16 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
     return command
 
 
-def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: int | None = None) -> None:
+def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: int | None = None, cv_fold: int | None = None) -> None:
     if payload.get("errors"):
         raise RuntimeError(f"Comparison reported model errors: {payload['errors']}")
+    if args.exploratory_cv_folds is not None and cv_fold is None:
+        outputs = payload.get("cv_fold_outputs", [])
+        if [item["cv_fold"] for item in outputs] != [1, 2, 3, 4, 5]:
+            raise RuntimeError("Comparison did not evaluate all five CV folds.")
+        for item in outputs:
+            validate_results(args, json.loads(Path(item["json"]).read_text()), cv_fold=item["cv_fold"])
+        return
     if args.context_folds is not None and context_fold is None:
         outputs = payload.get("context_fold_outputs", [])
         if [item["context_fold"] for item in outputs] != [1, 2, 3, 4, 5]:
@@ -194,6 +210,9 @@ def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: i
         return
     from scripts.epit_pipeline.evaluation_identity import frozen_membership
     expected = frozen_membership(args.split_manifest, context_fold=context_fold)
+    if cv_fold is not None:
+        from scripts.epit_pipeline.exploratory_cv import fold_membership
+        expected = fold_membership(args.split_manifest, cv_fold)
     if payload.get("epit_reviewed_split") != expected:
         raise RuntimeError("Comparison changed EPIT context or frozen final-query membership.")
     labels = set(candidate_labels(args))
@@ -205,6 +224,8 @@ def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: i
     if {row.get("model") for row in rows} != expected_models:
         raise RuntimeError("Comparison did not produce all available models and requested baselines.")
     strategy = "epit_pipeline_final_test" + (f"_context_fold_{context_fold}" if context_fold is not None else "")
+    if cv_fold is not None:
+        strategy = f"epit_pipeline_exploratory_cv_fold_{cv_fold}"
     for row in rows:
         if args.max_checkpoint_step is not None and (
             row.get("checkpoint_step") is None or int(row["checkpoint_step"]) > args.max_checkpoint_step
