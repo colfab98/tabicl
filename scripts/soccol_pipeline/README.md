@@ -364,6 +364,23 @@ directories must be empty; reviewed defaults are separate from old results.
 Optional `--context-folds 5` / `CONTEXT_FOLDS=5` changes only the context and
 averages its five evaluations; all 805 final queries remain fixed.
 
+For exploratory CV of existing checkpoints, add `--exploratory-cv-folds 5`
+to the comparison command and use a new output directory. Fold 1 keeps the
+805 original final queries and 2,950 accepted development context rows.
+Folds 2–5 split accepted development into 738/738/737/737 query rows using
+shuffle seed 42; each uses all other accepted-development and original-final
+rows as context. Withheld development rows remain excluded. This is row-wise
+exploratory CV, not publication- or composition-group CV, and no prior is refit.
+The five-fold mean mixes previously used development rows with original final
+queries and must not be treated as an independent final-test estimate.
+
+`cv_fold_1/` through `cv_fold_5/` preserve individual results. Top-level
+`summary.csv` reports mean scores, `std_test_*` sample standard deviations,
+and `n_cv_folds`; plots show mean scores. `mean_test_*` gives each fold equal
+weight despite their different sizes. The default evaluation and frozen split
+artifacts are unchanged.
+This option cannot combine with `--context-folds` or `--legacy-data`.
+
 Preview before the new run exists:
 
 ```bash

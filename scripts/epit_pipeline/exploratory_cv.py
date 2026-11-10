@@ -67,9 +67,11 @@ def child_arguments(argv):
     return result
 
 
-def run_cv(args, ev):
+def run_cv(args, ev, *, membership_fn=fold_membership,
+           membership_key="epit_reviewed_split", dataset_label="EPIT",
+           split_strategy="epit_pipeline_exploratory_cv"):
     # Validate the split before launching any models.
-    memberships = {fold: fold_membership(args.epit_split_manifest, fold) for fold in FOLDS}
+    memberships = {fold: membership_fn(args.epit_split_manifest, fold) for fold in FOLDS}
     output_json, output_csv, output_wide, output_summary, plot_dir = ev.repeated_split_output_paths(args)
     for path in (output_json, output_csv, output_wide, output_summary):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -85,10 +87,10 @@ def run_cv(args, ev):
         for flag, key in (("--output-json", "json"), ("--output-csv", "rows_csv"),
                           ("--output-wide-csv", "wide_csv"), ("--output-summary-csv", "summary_csv")):
             command.extend([flag, str(paths[key])])
-        print(f"\nExploratory EPIT CV fold {fold}/5", flush=True)
+        print(f"\nExploratory {dataset_label} CV fold {fold}/5", flush=True)
         subprocess.run(command, cwd=ev.REPO_ROOT, check=True)
         payload = json.loads(paths["json"].read_text())
-        if payload.get("epit_reviewed_split") != memberships[fold]:
+        if payload.get(membership_key) != memberships[fold]:
             raise RuntimeError(f"CV fold {fold} changed row membership.")
         rows.extend({**row, "cv_fold": fold} for row in payload.get("rows", []))
         errors.extend({**row, "cv_fold": fold} for row in payload.get("errors", []))
@@ -106,7 +108,7 @@ def run_cv(args, ev):
         columns={"n_context_folds": "n_cv_folds"})
     wide = ev.make_repeated_split_wide_dataframe(rows, summary)
     if not wide.empty:
-        wide["split_strategy"] = "epit_pipeline_exploratory_cv"
+        wide["split_strategy"] = split_strategy
         wide["n_cv_folds"] = 5
     plots = []
     if args.checkpoint == "all" and args.checkpoint_plots:

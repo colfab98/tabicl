@@ -157,3 +157,67 @@ def test_candidate_labels_match_evaluator_normalization():
     assert "--native-tabicl-baselines" in command
     with pytest.raises(SystemExit):
         comparison.parse_args(["--candidate-label", "generic_baseline"])
+
+
+def test_exploratory_cv_preserves_original_queries_and_accepted_rows(tmp_path, mock_models, monkeypatch):
+    from scripts.soccol_pipeline.exploratory_cv import fold_membership
+    original_evaluate = ev.evaluate_estimator
+
+    def scored(**kwargs):
+        split = kwargs['task_split']
+        assert np.array_equal(split.preprocessing_index, split.train_index)
+        assert not set(split.train_index) & set(split.test_index)
+        row = original_evaluate(**kwargs)
+        fold = int(split.split_strategy.rsplit('_', 1)[1])
+        row['test_mae'] = float(fold) * (2 if row['model'] == 'soccol_reviewed' else 1)
+        return row
+
+    monkeypatch.setattr(ev, 'evaluate_estimator', scored)
+    candidate, generic = tmp_path / 'candidate', tmp_path / 'generic'
+    for path, steps in ((candidate, [500, 1400]), (generic, [500, 1000, 2000])):
+        path.mkdir()
+        for step in steps:
+            (path / f'step-{step}.ckpt').write_bytes(b'mock')
+    args = comparison.parse_args([
+        '--candidate-run', str(candidate), '--generic-run', str(generic),
+        '--exploratory-cv-folds', '5', '--output-dir', str(tmp_path / 'cv'),
+    ])
+    command = comparison.evaluation_command(args)
+    assert '--exploratory-cv-folds' in command and '--epit-final-test' not in command
+    output = comparison.run(args)
+    payload = json.loads((output / 'results.json').read_text())
+    metadata = reviewed_final_split_metadata(args.split_manifest)
+    development = metadata['soccol_development_selection']['source_task_row_indices']
+    final = metadata['final_query_task_row_indices']
+    eligible = set(development) | set(final)
+    memberships = [fold_membership(args.split_manifest, f) for f in range(1, 6)]
+    assert memberships[0] == {'context_task_row_indices': development, 'query_task_row_indices': final}
+    assert [len(m['query_task_row_indices']) for m in memberships] == [805, 738, 738, 737, 737]
+    queries = [i for m in memberships for i in m['query_task_row_indices']]
+    assert len(queries) == len(set(queries)) == 3755
+    assert set(queries) == eligible
+    assert memberships == [fold_membership(args.split_manifest, f) for f in range(1, 6)]
+    for _, context, query in mock_models:
+        assert set(context) | set(query) == eligible
+        assert {'context_task_row_indices': context, 'query_task_row_indices': query} in memberships
+    assert payload['original_final_test_fold'] == 1
+    assert payload['exploratory_cv'] is True
+    for summary in payload['summary']:
+        factor = 2 if summary['model'] == 'soccol_reviewed' else 1
+        assert summary['n_cv_folds'] == 5
+        assert summary['mean_test_mae'] == pytest.approx(3 * factor)
+        assert summary['std_test_mae'] == pytest.approx(factor * np.std([1, 2, 3, 4, 5], ddof=1))
+        assert summary['mean_delta_test_mae_vs_pretrained_tabicl_v2'] == pytest.approx(3 * (factor - 1))
+    first = json.loads((output / 'cv_fold_1/results.json').read_text())
+    assert first['soccol_exploratory_cv_split'] == memberships[0]
+    first['soccol_exploratory_cv_split']['query_task_row_indices'][0] = -1
+    with pytest.raises(RuntimeError, match='membership'):
+        comparison.validate_results(args, first, cv_fold=1)
+    assert {r['checkpoint_step'] for r in payload['rows'] if r['model'] == 'soccol_reviewed'} == {500, 1400}
+    assert {r['checkpoint_step'] for r in payload['rows'] if r['model'] == 'generic_baseline'} == {500, 1000, 2000}
+
+
+@pytest.mark.parametrize('extra', [['--context-folds', '5'], ['--legacy-data']])
+def test_exploratory_cv_rejects_mixed_modes(extra):
+    with pytest.raises(SystemExit):
+        comparison.parse_args(['--exploratory-cv-folds', '5', *extra])

@@ -490,7 +490,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument("--exploratory-cv-folds", type=int, choices=[5],
-                        help="Exploratory EPIT CV: original test fold plus four development folds.")
+                        help="Exploratory EPIT/Soccol CV: original test fold plus four development folds.")
     parser.add_argument("--epit-exploratory-cv-fold", type=int, choices=range(1, 6),
                         help=argparse.SUPPRESS)
     parser.add_argument("--target-mode", choices=("primary", "all"), default="primary")
@@ -700,11 +700,11 @@ def validate_args(args: argparse.Namespace) -> None:
             raise ValueError("Reviewed Soccol uses its own 58-column schema without EPIT expansion or Magpie.")
     cv = args.exploratory_cv_folds is not None or args.epit_exploratory_cv_fold is not None
     if cv:
-        if (not args.epit_expanded_features or args.epit_split_manifest is None
+        if (not (args.epit_expanded_features or args.soccol_reviewed_data) or args.epit_split_manifest is None
                 or args.epit_final_test or args.epit_validation_fold is not None
                 or args.epit_final_context_fold is not None or args.epit_final_context_folds is not None
                 or args.split_seeds is not None or args.combined_data_dir is not None):
-            raise ValueError("Exploratory CV requires expanded EPIT data and cannot mix split modes.")
+            raise ValueError("Exploratory CV requires reviewed EPIT or Soccol data and cannot mix split modes.")
         if args.exploratory_cv_folds is not None and args.epit_exploratory_cv_fold is not None:
             raise ValueError("Choose the CV driver or one CV fold, not both.")
     epit_mode_count = int(cv) + int(args.epit_validation_fold is not None) + int(
@@ -4509,7 +4509,10 @@ def main() -> None:
     if (args.exploratory_cv_folds is not None or args.epit_exploratory_cv_fold is not None) and str(REPO_ROOT) not in sys.path:
         sys.path.insert(0, str(REPO_ROOT))
     if args.exploratory_cv_folds is not None:
-        from scripts.epit_pipeline.exploratory_cv import run_cv
+        if args.soccol_reviewed_data:
+            from scripts.soccol_pipeline.exploratory_cv import run_cv
+        else:
+            from scripts.epit_pipeline.exploratory_cv import run_cv
         run_cv(args, sys.modules[__name__])
         return
     if args.epit_final_context_folds is not None:
@@ -4530,7 +4533,10 @@ def main() -> None:
     tasks = make_tasks(args)
     if args.epit_split_manifest is not None:
         if args.epit_exploratory_cv_fold is not None:
-            from scripts.epit_pipeline.exploratory_cv import apply_fold
+            if args.soccol_reviewed_data:
+                from scripts.soccol_pipeline.exploratory_cv import apply_fold
+            else:
+                from scripts.epit_pipeline.exploratory_cv import apply_fold
             apply_fold(tasks, args, sys.modules[__name__])
         elif args.epit_final_test:
             apply_epit_pipeline_final_test(
@@ -5082,6 +5088,14 @@ def main() -> None:
             "context_task_row_indices": source_indices[task.fixed_split.train_index].tolist(),
             "query_task_row_indices": source_indices[task.fixed_split.test_index].tolist(),
         }
+        payload["missing_aware_models"] = sorted({slugify(label) for label in args.missing_aware_model})
+    if args.soccol_reviewed_data and args.epit_exploratory_cv_fold is not None:
+        task = next(task for task in tasks if task.task_id == SOCCOL_PIPELINE_TASK_ID)
+        payload["soccol_exploratory_cv_split"] = {
+            "context_task_row_indices": task.fixed_split.train_index.tolist(),
+            "query_task_row_indices": task.fixed_split.test_index.tolist(),
+        }
+        payload["soccol_development_selection"] = task.X.attrs["soccol_development_selection"]
         payload["missing_aware_models"] = sorted({slugify(label) for label in args.missing_aware_model})
     if args.soccol_reviewed_data and args.epit_final_test:
         payload["soccol_final_split"] = _reviewed_soccol_final_provenance(tasks)

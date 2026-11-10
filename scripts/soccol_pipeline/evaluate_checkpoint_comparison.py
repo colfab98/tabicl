@@ -42,6 +42,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--legacy-model-inputs", action="store_true", help="Evaluate historical missing-embedding checkpoints with their old input policy.")
     parser.add_argument("--legacy-data", action="store_true", help="Use the historical 37-column inputs and trial-19 default.")
     parser.add_argument("--context-folds", type=int, choices=[5], help="Use each accepted development fold as context; keep all 805 final queries.")
+    parser.add_argument("--exploratory-cv-folds", type=int, choices=[5],
+                        help="Original test fold plus four accepted-development folds; average scores.")
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--n-estimators", type=int, default=8)
     parser.add_argument("--random-state", type=int, default=42)
@@ -56,6 +58,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--dry-run", action="store_true", help="Print the evaluation command without loading models or writing results.")
     args = parser.parse_args(argv)
+    if args.exploratory_cv_folds is not None and (args.context_folds is not None or args.legacy_data):
+        parser.error("--exploratory-cv-folds cannot be combined with --context-folds or --legacy-data.")
     if args.legacy_data and args.final_model_manifest is not None:
         parser.error("--final-model-manifest is for reviewed models; use --candidate-run for a legacy run.")
     if args.n_estimators <= 0 or args.checkpoint_step_interval < 0 or args.catboost_thread_count == 0:
@@ -99,7 +103,7 @@ def output_directory(args: argparse.Namespace) -> Path:
     if args.output_dir is not None:
         return args.output_dir.expanduser().resolve()
     mode = "context_folds" if args.context_folds is not None else "full_development"
-    name = f"final_test_{mode}_comparison"
+    name = "exploratory_cv5_comparison" if args.exploratory_cv_folds is not None else f"final_test_{mode}_comparison"
     return DEFAULT_OUTPUT_ROOT / (name if args.legacy_data else f"reviewed_{name}")
 
 
@@ -121,6 +125,9 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
         "--catboost-learning-rate", "0.03", "--catboost-l2-leaf-reg", "3.0",
         "--catboost-thread-count", str(args.catboost_thread_count),
     ]
+    if args.exploratory_cv_folds is not None:
+        command.remove("--epit-final-test")
+        command.extend(["--exploratory-cv-folds", "5"])
     if not args.legacy_data:
         command.append("--soccol-reviewed-data")
     command.append("--native-tabicl-baselines")
@@ -140,9 +147,16 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
     return command
 
 
-def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: int | None = None) -> None:
+def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: int | None = None, cv_fold: int | None = None) -> None:
     if payload.get("errors"):
         raise RuntimeError(f"Comparison reported model errors: {payload['errors']}")
+    if args.exploratory_cv_folds is not None and cv_fold is None:
+        outputs = payload.get("cv_fold_outputs", [])
+        if [item["cv_fold"] for item in outputs] != [1, 2, 3, 4, 5]:
+            raise RuntimeError("Comparison did not evaluate all five CV folds.")
+        for item in outputs:
+            validate_results(args, json.loads(Path(item["json"]).read_text()), cv_fold=item["cv_fold"])
+        return
     if args.context_folds is not None and context_fold is None:
         outputs = payload.get("context_fold_outputs", [])
         if [item["context_fold"] for item in outputs] != [1, 2, 3, 4, 5]:
@@ -158,7 +172,15 @@ def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: i
                if context_fold is None or f == context_fold]
     expected = {"soccol_development_selection": selection, "context_task_row_indices": context,
                 "query_task_row_indices": metadata["final_query_task_row_indices"]}
-    if payload.get("soccol_final_split") != expected:
+    membership_key = "soccol_final_split"
+    if cv_fold is not None:
+        from scripts.soccol_pipeline.exploratory_cv import fold_membership
+        expected = fold_membership(args.split_manifest, cv_fold)
+        context = expected["context_task_row_indices"]
+        membership_key = "soccol_exploratory_cv_split"
+        if payload.get("soccol_development_selection") != selection:
+            raise RuntimeError("Comparison changed accepted-development selection.")
+    if payload.get(membership_key) != expected:
         raise RuntimeError("Comparison changed the accepted context or frozen query membership.")
     if (args.candidate_label in payload.get("missing_aware_models", [])) != args.legacy_model_inputs:
         raise RuntimeError("Comparison changed Soccol missing-value handling.")
@@ -166,9 +188,11 @@ def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: i
     if {row.get("model") for row in rows} != {args.candidate_label, "generic_baseline", "pretrained_tabicl_v2", "catboost"}:
         raise RuntimeError("Comparison did not produce all four expected models.")
     strategy = "epit_pipeline_final_test" + (f"_context_fold_{context_fold}" if context_fold is not None else "")
+    if cv_fold is not None:
+        strategy = f"soccol_pipeline_exploratory_cv_fold_{cv_fold}"
     for row in rows:
         if (row.get("task_id") != SOCCOL_TASK_ID or row.get("split_strategy") != strategy
-                or row.get("n_train") != len(context) or row.get("n_test") != 805 or row.get("n_features") != 58):
+                or row.get("n_train") != len(context) or row.get("n_test") != len(expected["query_task_row_indices"]) or row.get("n_features") != 58):
             raise RuntimeError("Comparison used the wrong dataset, schema or split.")
 
 
