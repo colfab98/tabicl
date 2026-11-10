@@ -52,6 +52,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     source = parser.add_mutually_exclusive_group()
     source.add_argument("--candidate-run", type=Path, help="Explicit run for checkpoint trends; otherwise read the frozen final-model manifest.")
     source.add_argument("--final-model-manifest", type=Path)
+    source.add_argument("--ratio-runs", type=Path, nargs=4, metavar=("RUN25", "RUN50", "RUN75", "RUN100"),
+                        help="Checkpoint directories in 25/50/75/100 percent informed order.")
     parser.add_argument("--candidate-label", default=None)
     parser.add_argument("--generic-run", type=Path, default=DEFAULT_GENERIC_RUN)
     parser.add_argument("--split-manifest", type=Path, default=DEFAULT_SPLIT_MANIFEST)
@@ -64,6 +66,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("--final-model-manifest is for reviewed models; use --candidate-run for a legacy run.")
     if args.n_estimators <= 0 or args.checkpoint_step_interval < 0 or args.catboost_thread_count == 0:
         parser.error("Estimators must be positive, checkpoint interval nonnegative, and CatBoost threads nonzero.")
+    if args.ratio_runs is not None:
+        if args.legacy_data or args.candidate_label is not None:
+            parser.error("--ratio-runs uses reviewed data and fixed ratio labels; omit --legacy-data and --candidate-label.")
+        if len({path.expanduser().resolve() for path in args.ratio_runs}) != 4:
+            parser.error("--ratio-runs requires four distinct checkpoint directories.")
     if args.candidate_label is None:
         args.candidate_label = "soccol_trial19" if args.legacy_data else "soccol_reviewed"
     args.candidate_label = slugify(args.candidate_label)
@@ -99,20 +106,32 @@ def candidate_run(args: argparse.Namespace) -> Path:
     return frozen.checkpoint_path.parent
 
 
+def candidate_models(args: argparse.Namespace) -> list[tuple[str, Path]]:
+    if args.ratio_runs is not None:
+        return list(zip(("soccol_25pct", "soccol_50pct", "soccol_75pct", "soccol_100pct"),
+                        (path.expanduser().resolve() for path in args.ratio_runs), strict=True))
+    return [(args.candidate_label, candidate_run(args))]
+
+
 def output_directory(args: argparse.Namespace) -> Path:
     if args.output_dir is not None:
         return args.output_dir.expanduser().resolve()
     mode = "context_folds" if args.context_folds is not None else "full_development"
     name = "exploratory_cv5_comparison" if args.exploratory_cv_folds is not None else f"final_test_{mode}_comparison"
+    if args.ratio_runs is not None:
+        name = "four_ratios_" + name
     return DEFAULT_OUTPUT_ROOT / (name if args.legacy_data else f"reviewed_{name}")
 
 
 def evaluation_command(args: argparse.Namespace) -> list[str]:
     output = output_directory(args)
+    models = candidate_models(args)
+    model_arguments = []
+    for label, path in [*models, ("generic_baseline", args.generic_run.expanduser().resolve())]:
+        model_arguments.extend(["--run", str(path), "--local-model-label", label])
     command = [
         sys.executable, str(REPO_ROOT / "scripts/eval_corrosion_datasets.py"),
-        "--run", str(candidate_run(args)), "--run", str(args.generic_run.expanduser().resolve()),
-        "--local-model-label", args.candidate_label, "--local-model-label", "generic_baseline",
+        *model_arguments,
         "--checkpoint", "all", "--min-checkpoint-step", "0",
         "--checkpoint-step-interval", str(args.checkpoint_step_interval), "--include-latest-common-checkpoint",
         "--task", SOCCOL_TASK_ID, "--target-mode", "primary", "--target-binning", "continuous",
@@ -132,9 +151,10 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
         command.append("--soccol-reviewed-data")
     command.append("--native-tabicl-baselines")
     if args.legacy_model_inputs or args.legacy_data:
-        command.extend(["--fixed-schema-model", args.candidate_label])
-        if not args.legacy_data:
-            command.extend(["--missing-aware-model", args.candidate_label])
+        for label, _ in models:
+            command.extend(["--fixed-schema-model", label])
+            if not args.legacy_data:
+                command.extend(["--missing-aware-model", label])
     categories = LEGACY_CATEGORICAL_COLUMNS if args.legacy_data else CATBOOST_CATEGORICAL_COLUMNS
     for column in categories:
         command.extend(["--catboost-categorical-column", column])
@@ -182,11 +202,12 @@ def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: i
             raise RuntimeError("Comparison changed accepted-development selection.")
     if payload.get(membership_key) != expected:
         raise RuntimeError("Comparison changed the accepted context or frozen query membership.")
-    if (args.candidate_label in payload.get("missing_aware_models", [])) != args.legacy_model_inputs:
+    labels = {label for label, _ in candidate_models(args)}
+    if set(payload.get("missing_aware_models", [])) != (labels if args.legacy_model_inputs else set()):
         raise RuntimeError("Comparison changed Soccol missing-value handling.")
     rows = payload.get("rows", [])
-    if {row.get("model") for row in rows} != {args.candidate_label, "generic_baseline", "pretrained_tabicl_v2", "catboost"}:
-        raise RuntimeError("Comparison did not produce all four expected models.")
+    if {row.get("model") for row in rows} != labels | {"generic_baseline", "pretrained_tabicl_v2", "catboost"}:
+        raise RuntimeError("Comparison did not produce all expected models.")
     strategy = "epit_pipeline_final_test" + (f"_context_fold_{context_fold}" if context_fold is not None else "")
     if cv_fold is not None:
         strategy = f"soccol_pipeline_exploratory_cv_fold_{cv_fold}"
@@ -202,6 +223,10 @@ def run(args: argparse.Namespace) -> Path:
     if args.dry_run:
         print(shlex.join(command))
         return output
+    if args.ratio_runs is not None:
+        for label, path in candidate_models(args):
+            if not path.is_dir() or not any(path.glob("step-*.ckpt")):
+                raise FileNotFoundError(f"{label}: no checkpoint files found in {path}")
     if output.exists() and (not output.is_dir() or any(output.iterdir())):
         raise FileExistsError(f"Comparison output is not empty: {output}")
     subprocess.run(command, cwd=REPO_ROOT, check=True)

@@ -381,6 +381,14 @@ weight despite their different sizes. The default evaluation and frozen split
 artifacts are unchanged.
 This option cannot combine with `--context-folds` or `--legacy-data`.
 
+To compare all four informed ratios together, replace `--candidate-run` with
+`--ratio-runs RUN25 RUN50 RUN75 RUN100` (directories in that order). This works
+with `--exploratory-cv-folds 5` and labels the models `soccol_25pct`,
+`soccol_50pct`, `soccol_75pct`, and `soccol_100pct`, alongside generic,
+pretrained and CatBoost baselines. Every ratio directory must contain saved
+checkpoints; missing runs fail before evaluation starts. Each run retains its
+own available checkpoints and latest endpoint. Use a new output directory.
+
 Preview before the new run exists:
 
 ```bash

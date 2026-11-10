@@ -221,3 +221,33 @@ def test_exploratory_cv_preserves_original_queries_and_accepted_rows(tmp_path, m
 def test_exploratory_cv_rejects_mixed_modes(extra):
     with pytest.raises(SystemExit):
         comparison.parse_args(['--exploratory-cv-folds', '5', *extra])
+
+
+def test_four_ratio_cv_labels_and_checkpoints(tmp_path, mock_models):
+    ratios = [tmp_path / f'ratio_{ratio}' for ratio in (25, 50, 75, 100)]
+    generic = tmp_path / 'generic'
+    for i, directory in enumerate([*ratios, generic]):
+        directory.mkdir()
+        for step in (500, 1000 + i * 100):
+            (directory / f'step-{step}.ckpt').write_bytes(b'mock')
+    args = comparison.parse_args([
+        '--ratio-runs', *map(str, ratios), '--generic-run', str(generic),
+        '--exploratory-cv-folds', '5', '--output-dir', str(tmp_path / 'results'),
+    ])
+    output = comparison.run(args)
+    payload = json.loads((output / 'results.json').read_text())
+    labels = {'soccol_25pct', 'soccol_50pct', 'soccol_75pct', 'soccol_100pct',
+              'generic_baseline', 'pretrained_tabicl_v2', 'catboost'}
+    assert {r['model'] for r in payload['rows']} == labels
+    for label, last_step in zip(('soccol_25pct', 'soccol_50pct', 'soccol_75pct', 'soccol_100pct'), (1000, 1100, 1200, 1300)):
+        rows = [r for r in payload['rows'] if r['model'] == label]
+        assert {r['checkpoint_step'] for r in rows} == {500, last_step}
+        assert {r['cv_fold'] for r in rows} == {1, 2, 3, 4, 5}
+    assert all(r['n_cv_folds'] == 5 for r in payload['summary'])
+
+
+def test_ratio_cv_missing_model_fails_before_evaluation(tmp_path, monkeypatch):
+    args = comparison.parse_args(['--ratio-runs', *[str(tmp_path / str(i)) for i in range(4)]])
+    monkeypatch.setattr(comparison.subprocess, 'run', lambda *a, **k: pytest.fail('Launched with missing model'))
+    with pytest.raises(FileNotFoundError, match='soccol_25pct'):
+        comparison.run(args)
