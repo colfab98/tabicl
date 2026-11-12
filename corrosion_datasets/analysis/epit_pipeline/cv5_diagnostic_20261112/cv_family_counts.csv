@@ -1,0 +1,26 @@
+cv_fold,family,n_query,in_formula_fit
+1,Al Alloy,24,0
+1,Fe Alloy,103,0
+1,HEA,5,0
+1,NiCrMo Alloy,10,0
+1,Other,10,0
+2,Al Alloy,26,0
+2,Fe Alloy,104,104
+2,HEA,6,0
+2,NiCrMo Alloy,9,9
+2,Other,7,0
+3,Al Alloy,23,0
+3,Fe Alloy,96,96
+3,HEA,4,0
+3,NiCrMo Alloy,13,13
+3,Other,16,0
+4,Al Alloy,20,0
+4,Fe Alloy,110,110
+4,HEA,8,0
+4,NiCrMo Alloy,6,6
+4,Other,8,0
+5,Al Alloy,25,0
+5,Fe Alloy,101,101
+5,HEA,4,0
+5,NiCrMo Alloy,13,13
+5,Other,9,0

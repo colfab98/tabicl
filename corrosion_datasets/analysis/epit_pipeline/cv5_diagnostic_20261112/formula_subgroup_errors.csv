@@ -1,0 +1,1107 @@
+protocol,formula,group_type,group,n,publications,mae_mV,bias_mV,median_abs_error_mV
+frozen_development_folds,existing_method_aware_pren_n,Material class,Fe Alloy,411,41,206.80866674959947,-3.493368575000753,159.02007323891627
+frozen_development_folds,existing_method_aware_pren_n,Material class,NiCrMo Alloy,41,1,125.52678794984247,61.61942990507256,106.10309416847792
+frozen_development_folds,existing_mns_inclusion_penalty,Material class,Fe Alloy,411,41,213.25063032303987,-12.35357824039011,164.99877721688745
+frozen_development_folds,existing_mns_inclusion_penalty,Material class,NiCrMo Alloy,41,1,163.38418072338735,151.55277026285705,148.64930945760148
+frozen_development_folds,extend_heat_categories,Material class,Fe Alloy,411,41,198.62688941660554,3.8904123225879053,142.62321606463752
+frozen_development_folds,extend_heat_categories,Material class,NiCrMo Alloy,41,1,126.13644641242068,62.51734889259818,110.6962503318382
+frozen_development_folds,extend_heat_without_method,Material class,Fe Alloy,411,41,197.72543759994085,-3.9933717364851877,147.1065244819237
+frozen_development_folds,extend_heat_without_method,Material class,NiCrMo Alloy,41,1,183.88892350356844,170.46133953138303,178.36314976366634
+frozen_development_folds,extend_material,Material class,Fe Alloy,411,41,205.68028932771017,-2.6375352110448804,155.7949852175953
+frozen_development_folds,extend_material,Material class,NiCrMo Alloy,41,1,123.0482003999674,49.10889249857806,105.77697357287968
+frozen_development_folds,extend_solution,Material class,Fe Alloy,411,41,202.72763121433124,-2.513445490855108,152.50133948578858
+frozen_development_folds,extend_solution,Material class,NiCrMo Alloy,41,1,129.24675350838993,66.28355492240449,106.73451402541536
+frozen_development_folds,extend_surface,Material class,Fe Alloy,411,41,206.2866736512928,1.1858715739121923,156.68118703207932
+frozen_development_folds,extend_surface,Material class,NiCrMo Alloy,41,1,129.83647275706784,70.59906747333984,116.23596398158224
+frozen_development_folds,existing_method_aware_pren_n,heat_treatment_type,annealing,74,13,161.5159421070962,-61.581870483981945,92.05733985231512
+frozen_development_folds,existing_method_aware_pren_n,heat_treatment_type,denitriding,1,1,20.339576448709522,20.339576448709522,20.339576448709522
+frozen_development_folds,existing_method_aware_pren_n,heat_treatment_type,heat_treatment,71,4,150.3520738157034,77.473455206198,96.26221259289957
+frozen_development_folds,existing_method_aware_pren_n,heat_treatment_type,homogenization,26,3,282.11145301142545,204.44171741385315,282.70395275972965
+frozen_development_folds,existing_method_aware_pren_n,heat_treatment_type,sensitization,2,1,225.77055177185093,-225.77055177185093,225.77055177185093
+frozen_development_folds,existing_method_aware_pren_n,heat_treatment_type,soaking,27,1,234.66111617721432,167.54603489843424,211.14098695196458
+frozen_development_folds,existing_method_aware_pren_n,heat_treatment_type,solution_annealing,27,5,240.91567952971312,-59.3315909137454,205.40629422616064
+frozen_development_folds,existing_method_aware_pren_n,heat_treatment_type,solution_treatment,41,5,258.63339239055495,40.72093919906311,249.63203039822872
+frozen_development_folds,existing_method_aware_pren_n,heat_treatment_type,tempering,18,1,181.9402552804938,-181.9402552804938,131.9388104443528
+frozen_development_folds,existing_method_aware_pren_n,heat_treatment_type,nan,165,14,199.94871368333767,-36.688738105498274,145.86923306673265
+frozen_development_folds,existing_mns_inclusion_penalty,heat_treatment_type,annealing,74,13,162.34428442275546,-76.0987675981708,80.81771738564822
+frozen_development_folds,existing_mns_inclusion_penalty,heat_treatment_type,denitriding,1,1,87.32406570352191,-87.32406570352191,87.32406570352191
+frozen_development_folds,existing_mns_inclusion_penalty,heat_treatment_type,heat_treatment,71,4,156.54961655303285,84.08529546345365,114.99275496226252
+frozen_development_folds,existing_mns_inclusion_penalty,heat_treatment_type,homogenization,26,3,339.80083074343514,287.0406363209535,257.1038001106249
+frozen_development_folds,existing_mns_inclusion_penalty,heat_treatment_type,sensitization,2,1,138.30423590906219,-138.30423590906219,138.30423590906219
+frozen_development_folds,existing_mns_inclusion_penalty,heat_treatment_type,soaking,27,1,294.8782477380704,286.2212872407483,274.1612653812802
+frozen_development_folds,existing_mns_inclusion_penalty,heat_treatment_type,solution_annealing,27,5,247.15625664263305,-72.87688897603756,226.26087488030691
+frozen_development_folds,existing_mns_inclusion_penalty,heat_treatment_type,solution_treatment,41,5,202.10113688218345,7.165105098269326,178.39095401787725
+frozen_development_folds,existing_mns_inclusion_penalty,heat_treatment_type,tempering,18,1,165.98948824176958,-165.98948824176958,92.6669185111001
+frozen_development_folds,existing_mns_inclusion_penalty,heat_treatment_type,nan,165,14,218.84010602562233,-56.77445777158361,174.80248126767378
+frozen_development_folds,extend_heat_categories,heat_treatment_type,annealing,74,13,168.70245756744598,1.2728912371061891,123.74711137244003
+frozen_development_folds,extend_heat_categories,heat_treatment_type,denitriding,1,1,20.04921623006112,20.04921623006112,20.04921623006112
+frozen_development_folds,extend_heat_categories,heat_treatment_type,heat_treatment,71,4,117.93156805763716,8.334968741402754,65.32794435519355
+frozen_development_folds,extend_heat_categories,heat_treatment_type,homogenization,26,3,275.03462413920676,187.25467696121768,259.99846913439916
+frozen_development_folds,extend_heat_categories,heat_treatment_type,sensitization,2,1,226.99647468710157,-226.99647468710157,226.99647468710157
+frozen_development_folds,extend_heat_categories,heat_treatment_type,soaking,27,1,190.6362552484115,61.259202038541844,174.2888503949635
+frozen_development_folds,extend_heat_categories,heat_treatment_type,solution_annealing,27,5,240.6630205824953,20.89300987088298,244.1308605450006
+frozen_development_folds,extend_heat_categories,heat_treatment_type,solution_treatment,41,5,278.1650820127092,60.16821619824631,305.93600081314617
+frozen_development_folds,extend_heat_categories,heat_treatment_type,tempering,18,1,131.83040372311405,7.865302098763664,88.22760229302429
+frozen_development_folds,extend_heat_categories,heat_treatment_type,nan,165,14,199.4083890354887,-35.06100517765534,145.98249853466854
+frozen_development_folds,extend_heat_without_method,heat_treatment_type,annealing,74,13,162.8311644252374,3.8701272995929785,109.05954205712422
+frozen_development_folds,extend_heat_without_method,heat_treatment_type,denitriding,1,1,285.53155582273973,-285.53155582273973,285.53155582273973
+frozen_development_folds,extend_heat_without_method,heat_treatment_type,heat_treatment,71,4,110.20612796625748,7.328749157854027,64.32947053969383
+frozen_development_folds,extend_heat_without_method,heat_treatment_type,homogenization,26,3,325.71880833589205,253.48148045701095,242.12952593838472
+frozen_development_folds,extend_heat_without_method,heat_treatment_type,sensitization,2,1,102.40436815099883,-102.40436815099883,102.40436815099883
+frozen_development_folds,extend_heat_without_method,heat_treatment_type,soaking,27,1,191.21009558860376,102.45735495392663,173.53298220949
+frozen_development_folds,extend_heat_without_method,heat_treatment_type,solution_annealing,27,5,238.12394062455985,18.233982177323075,222.3146868564383
+frozen_development_folds,extend_heat_without_method,heat_treatment_type,solution_treatment,41,5,237.663854702472,58.164470055978114,252.50565991066978
+frozen_development_folds,extend_heat_without_method,heat_treatment_type,tempering,18,1,146.13590946888294,23.60058049314471,101.65777264490274
+frozen_development_folds,extend_heat_without_method,heat_treatment_type,nan,165,14,218.21058645027608,-46.22720907126799,172.4159897775288
+frozen_development_folds,extend_material,heat_treatment_type,annealing,74,13,163.25915437157545,-58.11961718417776,93.36522262849483
+frozen_development_folds,extend_material,heat_treatment_type,denitriding,1,1,19.144679021430022,19.144679021430022,19.144679021430022
+frozen_development_folds,extend_material,heat_treatment_type,heat_treatment,71,4,146.1530379827871,74.4201089053174,95.60193278771601
+frozen_development_folds,extend_material,heat_treatment_type,homogenization,26,3,284.1502778427517,205.62912589370563,286.83190205478866
+frozen_development_folds,extend_material,heat_treatment_type,sensitization,2,1,216.59259807296166,-216.59259807296166,216.59259807296166
+frozen_development_folds,extend_material,heat_treatment_type,soaking,27,1,234.52738165415062,168.15439616109603,209.14132535913632
+frozen_development_folds,extend_material,heat_treatment_type,solution_annealing,27,5,245.2225809470941,-60.24320025131152,212.94166348097718
+frozen_development_folds,extend_material,heat_treatment_type,solution_treatment,41,5,259.1384869473833,44.81095482060866,253.3350540459263
+frozen_development_folds,extend_material,heat_treatment_type,tempering,18,1,174.0929083178736,-174.0929083178736,111.53162468740098
+frozen_development_folds,extend_material,heat_treatment_type,nan,165,14,197.39209458143105,-40.0183895972448,142.69188593911207
+frozen_development_folds,extend_solution,heat_treatment_type,annealing,74,13,164.90784485078848,-55.151609831783006,100.48917494680126
+frozen_development_folds,extend_solution,heat_treatment_type,denitriding,1,1,25.6242994846354,25.6242994846354,25.6242994846354
+frozen_development_folds,extend_solution,heat_treatment_type,heat_treatment,71,4,132.1265923626134,51.60355510541442,75.37503526111828
+frozen_development_folds,extend_solution,heat_treatment_type,homogenization,26,3,280.9712348522602,202.52304467779413,284.2069801729651
+frozen_development_folds,extend_solution,heat_treatment_type,sensitization,2,1,223.51214441324169,-223.51214441324169,223.51214441324169
+frozen_development_folds,extend_solution,heat_treatment_type,soaking,27,1,235.63115611506703,167.34687351294818,204.2292683397667
+frozen_development_folds,extend_solution,heat_treatment_type,solution_annealing,27,5,235.47065303337715,-56.55459187467091,205.4202875428487
+frozen_development_folds,extend_solution,heat_treatment_type,solution_treatment,41,5,257.4175687667979,50.26685508272452,252.75998985302144
+frozen_development_folds,extend_solution,heat_treatment_type,tempering,18,1,181.03387546233824,-181.03387546233824,136.00524067617928
+frozen_development_folds,extend_solution,heat_treatment_type,nan,165,14,198.33712198176696,-27.490640645086376,145.96397950911984
+frozen_development_folds,extend_surface,heat_treatment_type,annealing,74,13,179.62817528079313,-20.021101154670294,133.1873201646406
+frozen_development_folds,extend_surface,heat_treatment_type,denitriding,1,1,85.13740558011602,85.13740558011602,85.13740558011602
+frozen_development_folds,extend_surface,heat_treatment_type,heat_treatment,71,4,128.728997734902,33.79677682128591,64.86136999486851
+frozen_development_folds,extend_surface,heat_treatment_type,homogenization,26,3,283.41339122763793,211.5324234228095,280.8836160846429
+frozen_development_folds,extend_surface,heat_treatment_type,sensitization,2,1,217.5225411021595,-217.5225411021595,217.5225411021595
+frozen_development_folds,extend_surface,heat_treatment_type,soaking,27,1,213.8429728529252,94.9830980664616,172.30849119121348
+frozen_development_folds,extend_surface,heat_treatment_type,solution_annealing,27,5,238.17669536859134,-54.371921202928085,196.82679745919756
+frozen_development_folds,extend_surface,heat_treatment_type,solution_treatment,41,5,276.4206802382816,114.80932998588486,293.9727239831674
+frozen_development_folds,extend_surface,heat_treatment_type,tempering,18,1,175.8350062146993,-175.8350062146993,123.8398059448534
+frozen_development_folds,extend_surface,heat_treatment_type,nan,165,14,200.50384691179568,-32.27057097467754,151.90743937057698
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,abrasion,8,1,239.16743066353052,239.16743066353052,248.5424306635305
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,242.6281376409049,138.74439806070856,162.589020676534
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,air_passivation + grinding,6,1,79.12907564594725,-19.501175615787513,63.38819534058152
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,cathodic_reduction,3,2,52.884144458028,-52.884144458028,46.27209566820409
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.44029312076475,-6.519658409472868,287.44029312076475
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,342.5576570373132,-342.5576570373132,342.5576570373132
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,387.1063414039631,215.16891974080983,224.56060751978518
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,cathodic_reduction + polishing,2,1,433.5460802947193,-433.5460802947193,433.5460802947193
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,degreasing + polishing + rinsing,12,1,155.6478257905582,155.6478257905582,131.45671463442238
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,diamond_polishing,14,2,195.19967767886092,-164.18623965968212,88.95127549273272
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,74.6304745982051,28.685298058365134,62.288839475322675
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,grinding,36,5,209.08428724384905,115.92569123599252,226.44579739704176
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,grinding + pickling + rinsing,27,1,234.66111617721432,167.54603489843424,211.14098695196458
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,grinding + potentiostatic_treatment,30,1,248.881616787461,137.01779973028258,231.85559768178808
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,polishing,26,4,111.5399057136158,-32.00230983450929,68.83654815070427
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,potentiostatic_treatment,9,2,126.3570452325817,126.3570452325817,62.65261487873761
+frozen_development_folds,existing_method_aware_pren_n,surface_preparation_method,nan,239,18,204.93438899872356,-65.62588126045722,139.61308259961174
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,abrasion,8,1,248.88570819473767,248.88570819473767,241.26087488030691
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,324.90014176529127,280.926973346639,247.1540714366725
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,air_passivation + grinding,6,1,111.80645869737886,-111.80645869737886,68.13970806128935
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,cathodic_reduction,3,2,105.48281943550012,-105.48281943550012,135.36084692912732
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.5,34.070833963593486,287.5
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,330.6881350653325,-330.6881350653325,330.6881350653325
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,307.8493995514194,194.01383113179685,141.85872977856835
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,cathodic_reduction + polishing,2,1,233.08688760772407,-233.08688760772407,233.08688760772407
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,degreasing + polishing + rinsing,12,1,107.904932150128,104.57413435649921,76.20874489999132
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,diamond_polishing,14,2,189.4339405943594,-170.41700225856593,77.34560733362966
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,61.65092466247182,29.52848584776335,47.69612355499751
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,grinding,36,5,182.58928683249226,35.76030689228779,156.1148731961526
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,grinding + pickling + rinsing,27,1,294.8782477380704,286.2212872407483,274.1612653812802
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,grinding + potentiostatic_treatment,30,1,260.56176691762124,147.00131213990474,246.1347135198955
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,polishing,26,4,139.51549402519842,-18.313074967824225,90.12243523752778
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,potentiostatic_treatment,9,2,80.56880836089113,59.53749793926972,87.4955819470153
+frozen_development_folds,existing_mns_inclusion_penalty,surface_preparation_method,nan,239,18,215.90867944281015,-73.29346951668941,157.34409414164747
+frozen_development_folds,extend_heat_categories,surface_preparation_method,abrasion,8,1,313.409618856931,313.409618856931,322.784618856931
+frozen_development_folds,extend_heat_categories,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,243.09926015036405,138.34236147108155,161.27083106171133
+frozen_development_folds,extend_heat_categories,surface_preparation_method,air_passivation + grinding,6,1,95.54269271469532,29.4581898053106,87.9297567470085
+frozen_development_folds,extend_heat_categories,surface_preparation_method,cathodic_reduction,3,2,101.14659218851568,-65.99052417145538,108.08245847531907
+frozen_development_folds,extend_heat_categories,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.4398059098937,39.06105126822408,287.4398059098937
+frozen_development_folds,extend_heat_categories,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,341.5803843244022,-341.5803843244022,341.5803843244022
+frozen_development_folds,extend_heat_categories,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,395.4867071443189,216.43937194662652,233.2081416601556
+frozen_development_folds,extend_heat_categories,surface_preparation_method,cathodic_reduction + polishing,2,1,432.7945723465326,-432.7945723465326,432.7945723465326
+frozen_development_folds,extend_heat_categories,surface_preparation_method,degreasing + polishing + rinsing,12,1,139.24208557623197,139.24208557623197,114.74409612223052
+frozen_development_folds,extend_heat_categories,surface_preparation_method,diamond_polishing,14,2,208.85994164730397,-130.1764833323255,120.13973200217765
+frozen_development_folds,extend_heat_categories,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,95.08556365728651,77.78295388857006,71.58416244629989
+frozen_development_folds,extend_heat_categories,surface_preparation_method,grinding,36,5,232.8351411697648,152.88577874717933,281.12427061527893
+frozen_development_folds,extend_heat_categories,surface_preparation_method,grinding + pickling + rinsing,27,1,190.6362552484115,61.259202038541844,174.2888503949635
+frozen_development_folds,extend_heat_categories,surface_preparation_method,grinding + potentiostatic_treatment,30,1,167.70712887700608,-22.663880635572625,117.87583248508584
+frozen_development_folds,extend_heat_categories,surface_preparation_method,polishing,26,4,122.72968445487406,12.494963633703955,84.7789513597036
+frozen_development_folds,extend_heat_categories,surface_preparation_method,potentiostatic_treatment,9,2,126.75076368101674,126.75076368101674,63.0251108325661
+frozen_development_folds,extend_heat_categories,surface_preparation_method,nan,239,18,196.30999933002474,-39.535445503194026,126.69888704027147
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,abrasion,8,1,323.0601226468957,323.0601226468957,314.9351226468957
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,333.367596715892,289.5951628785896,245.48317275929168
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,air_passivation + grinding,6,1,104.49464462073404,44.31141393917873,114.77626344468356
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,cathodic_reduction,3,2,202.55628775027222,-146.0466267852567,238.77587911747776
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.5,71.74291095512012,287.5
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,349.56701374152243,-349.56701374152243,349.56701374152243
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,337.57498635339937,199.92337418949467,172.4287264709079
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,cathodic_reduction + polishing,2,1,227.22027468787485,-227.22027468787485,227.22027468787485
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,degreasing + polishing + rinsing,12,1,116.42709317133104,113.09130023975187,84.87198342714717
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,diamond_polishing,14,2,179.3622493732023,-136.91957627124754,93.43733777268775
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,84.72597787122552,44.687841411234345,72.08876380007564
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,grinding,36,5,218.58215012628136,96.9885963517099,236.37965040574232
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,grinding + pickling + rinsing,27,1,191.21009558860376,102.45735495392663,173.53298220949
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,grinding + potentiostatic_treatment,30,1,152.45891810890484,-24.99990091943923,93.7463016178935
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,polishing,26,4,145.26609542428474,32.88338852013803,117.07745759150887
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,potentiostatic_treatment,9,2,75.36901981339977,49.92816881401986,84.15966685870889
+frozen_development_folds,extend_heat_without_method,surface_preparation_method,nan,239,18,206.12751844808614,-38.05167203009882,156.40184161951152
+frozen_development_folds,extend_material,surface_preparation_method,abrasion,8,1,247.22002101305736,247.22002101305736,256.59502101305736
+frozen_development_folds,extend_material,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,243.98482277382269,138.52920443655566,160.38205574497184
+frozen_development_folds,extend_material,surface_preparation_method,air_passivation + grinding,6,1,78.82648026174606,-19.600786362093846,63.39407430270029
+frozen_development_folds,extend_material,surface_preparation_method,cathodic_reduction,3,2,53.381788853446615,-53.381788853446615,44.618595990759786
+frozen_development_folds,extend_material,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.4392475522554,-6.42318731407596,287.4392475522554
+frozen_development_folds,extend_material,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,349.69526862950363,-349.69526862950363,349.69526862950363
+frozen_development_folds,extend_material,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,393.2587567931934,220.10706807554436,229.64799063476283
+frozen_development_folds,extend_material,surface_preparation_method,cathodic_reduction + polishing,2,1,430.79694475024877,-430.79694475024877,430.79694475024877
+frozen_development_folds,extend_material,surface_preparation_method,degreasing + polishing + rinsing,12,1,156.87753070901735,156.87753070901735,131.81400356629126
+frozen_development_folds,extend_material,surface_preparation_method,diamond_polishing,14,2,193.3743326417998,-163.65270070682553,91.67367875520236
+frozen_development_folds,extend_material,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,79.21081807236298,38.42573354103854,63.170227127353044
+frozen_development_folds,extend_material,surface_preparation_method,grinding,36,5,210.19911985882027,111.73790519852693,228.33939425249795
+frozen_development_folds,extend_material,surface_preparation_method,grinding + pickling + rinsing,27,1,234.52738165415062,168.15439616109603,209.14132535913632
+frozen_development_folds,extend_material,surface_preparation_method,grinding + potentiostatic_treatment,30,1,239.84573310595673,126.23691624933389,217.61161774943452
+frozen_development_folds,extend_material,surface_preparation_method,polishing,26,4,110.47246678747231,-30.43593106394695,69.97433538290173
+frozen_development_folds,extend_material,surface_preparation_method,potentiostatic_treatment,9,2,118.62521940531067,118.62521940531067,53.23733631215646
+frozen_development_folds,extend_material,surface_preparation_method,nan,239,18,203.2214694885289,-65.33137870655142,137.29038424085763
+frozen_development_folds,extend_solution,surface_preparation_method,abrasion,8,1,232.25614232271985,232.25614232271985,241.63114232271982
+frozen_development_folds,extend_solution,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,242.70938306870121,136.52612886183616,158.33738652835308
+frozen_development_folds,extend_solution,surface_preparation_method,air_passivation + grinding,6,1,80.79135873754643,-13.995770434570792,63.36169792592574
+frozen_development_folds,extend_solution,surface_preparation_method,cathodic_reduction,3,2,50.342270011888026,-50.342270011888026,41.34354434810996
+frozen_development_folds,extend_solution,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.43971743956297,-10.863937425292647,287.43971743956297
+frozen_development_folds,extend_solution,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,344.3579985259579,-344.3579985259579,344.3579985259579
+frozen_development_folds,extend_solution,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,392.80571286961634,248.85736860633375,230.44167653930953
+frozen_development_folds,extend_solution,surface_preparation_method,cathodic_reduction + polishing,2,1,434.9305156936537,-434.9305156936537,434.9305156936537
+frozen_development_folds,extend_solution,surface_preparation_method,degreasing + polishing + rinsing,12,1,165.44950285508307,165.44950285508307,150.1773673953807
+frozen_development_folds,extend_solution,surface_preparation_method,diamond_polishing,14,2,187.90800919393627,-128.04346434154382,121.25788020858263
+frozen_development_folds,extend_solution,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,78.7031276602228,35.30722504443919,64.62172631963523
+frozen_development_folds,extend_solution,surface_preparation_method,grinding,36,5,213.39138021247845,131.36146808011603,226.10719863023468
+frozen_development_folds,extend_solution,surface_preparation_method,grinding + pickling + rinsing,27,1,235.63115611506703,167.34687351294818,204.2292683397667
+frozen_development_folds,extend_solution,surface_preparation_method,grinding + potentiostatic_treatment,30,1,198.89452358876937,63.388373597449224,179.51080277191605
+frozen_development_folds,extend_solution,surface_preparation_method,polishing,26,4,109.75047602104654,-29.955015852733013,77.68112641828043
+frozen_development_folds,extend_solution,surface_preparation_method,potentiostatic_treatment,9,2,125.68287645783491,125.68287645783491,61.96639913652973
+frozen_development_folds,extend_solution,surface_preparation_method,nan,239,18,204.05434022102986,-59.74025550197218,140.64098320376002
+frozen_development_folds,extend_surface,surface_preparation_method,abrasion,8,1,241.3388550083462,241.3388550083462,250.71385500834617
+frozen_development_folds,extend_surface,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,239.91981855627705,143.23045216725745,173.8840017286136
+frozen_development_folds,extend_surface,surface_preparation_method,air_passivation + grinding,6,1,81.52579229693158,-12.039646291504397,63.374328269274145
+frozen_development_folds,extend_surface,surface_preparation_method,cathodic_reduction,3,2,46.14223534053384,-46.14223534053384,38.77329375419686
+frozen_development_folds,extend_surface,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.4439141132594,-55.78473552481289,287.4439141132594
+frozen_development_folds,extend_surface,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,377.85030225927966,-377.85030225927966,377.85030225927966
+frozen_development_folds,extend_surface,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,389.5367166792324,196.80675806119598,227.06846383751085
+frozen_development_folds,extend_surface,surface_preparation_method,cathodic_reduction + polishing,2,1,427.20450317473615,-427.20450317473615,427.20450317473615
+frozen_development_folds,extend_surface,surface_preparation_method,degreasing + polishing + rinsing,12,1,224.69890144297437,224.69890144297437,202.0796663289151
+frozen_development_folds,extend_surface,surface_preparation_method,diamond_polishing,14,2,188.90956650293933,-3.400478369792251,204.0826169510529
+frozen_development_folds,extend_surface,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,82.46111539463399,43.946905629199875,64.1876673892931
+frozen_development_folds,extend_surface,surface_preparation_method,grinding,36,5,235.01148862643453,150.85243839638574,282.47358259136996
+frozen_development_folds,extend_surface,surface_preparation_method,grinding + pickling + rinsing,27,1,213.8429728529252,94.9830980664616,172.30849119121348
+frozen_development_folds,extend_surface,surface_preparation_method,grinding + potentiostatic_treatment,30,1,183.21987988162917,4.762390826738206,107.64820710662926
+frozen_development_folds,extend_surface,surface_preparation_method,polishing,26,4,146.34205863970644,40.166062544263156,130.29030087843395
+frozen_development_folds,extend_surface,surface_preparation_method,potentiostatic_treatment,9,2,129.12927043197624,95.37206168295914,133.09256062942302
+frozen_development_folds,extend_surface,surface_preparation_method,nan,239,18,203.96054070134568,-56.94187095736757,134.3238479419494
+frozen_development_folds,existing_method_aware_pren_n,pH_group,3–6,16,3,91.55555411428172,74.46018678266408,50.95488967060183
+frozen_development_folds,existing_method_aware_pren_n,pH_group,6–9,301,22,174.3195545227418,30.74647711813467,127.94878075350869
+frozen_development_folds,existing_method_aware_pren_n,pH_group,<=3,97,19,267.44860733575894,-84.99898137350588,220.8254322854495
+frozen_development_folds,existing_method_aware_pren_n,pH_group,missing,38,5,270.1939645075401,-29.22445437022172,325.1718683716173
+frozen_development_folds,existing_mns_inclusion_penalty,pH_group,3–6,16,3,74.35854850072056,36.59937182576532,61.3869739193007
+frozen_development_folds,existing_mns_inclusion_penalty,pH_group,6–9,301,22,190.16414532512727,33.54580800993748,157.34409414164747
+frozen_development_folds,existing_mns_inclusion_penalty,pH_group,<=3,97,19,257.5229783685639,-94.28604346704353,207.91296629046002
+frozen_development_folds,existing_mns_inclusion_penalty,pH_group,missing,38,5,287.78650136322955,-10.547079471668498,283.7005885683957
+frozen_development_folds,extend_heat_categories,pH_group,3–6,16,3,109.3662495092846,104.37082240746966,76.9987988407535
+frozen_development_folds,extend_heat_categories,pH_group,6–9,301,22,165.76874101382523,34.68175769257305,111.89020683333808
+frozen_development_folds,extend_heat_categories,pH_group,<=3,97,19,258.697981872509,-65.81063402666477,213.5594647174628
+frozen_development_folds,extend_heat_categories,pH_group,missing,38,5,264.9286993208109,-41.1405251109833,284.9333935624687
+frozen_development_folds,extend_heat_without_method,pH_group,3–6,16,3,70.78385089113601,56.73399171072379,46.46439845671969
+frozen_development_folds,extend_heat_without_method,pH_group,6–9,301,22,178.57089000804012,39.810356846621,129.07297291428796
+frozen_development_folds,extend_heat_without_method,pH_group,<=3,97,19,247.27403949469183,-67.71439141327578,212.54770400441583
+frozen_development_folds,extend_heat_without_method,pH_group,missing,38,5,261.49050998838493,-25.650688790143676,238.1051980423849
+frozen_development_folds,extend_material,pH_group,3–6,16,3,86.74455454989183,68.66004071080695,47.938479567962986
+frozen_development_folds,extend_material,pH_group,6–9,301,22,173.03479404385314,30.014895603436393,130.16818569124848
+frozen_development_folds,extend_material,pH_group,<=3,97,19,266.65182551240207,-84.76862023633123,221.87812532966421
+frozen_development_folds,extend_material,pH_group,missing,38,5,269.55163619438076,-25.81711695739162,331.71590524277724
+frozen_development_folds,extend_solution,pH_group,3–6,16,3,98.31754480897878,91.82405181795413,57.15451681029907
+frozen_development_folds,extend_solution,pH_group,6–9,301,22,169.53219164269024,26.202582997906063,116.97725288348892
+frozen_development_folds,extend_solution,pH_group,<=3,97,19,267.05382330598337,-69.5748997273015,218.51214441324169
+frozen_development_folds,extend_solution,pH_group,missing,38,5,266.14952791737693,-24.28414165346346,309.09827946926737
+frozen_development_folds,extend_surface,pH_group,3–6,16,3,150.46163933801643,150.46163933801643,166.76003233981672
+frozen_development_folds,extend_surface,pH_group,6–9,301,22,171.47210277407376,23.581038503012604,118.15102184583634
+frozen_development_folds,extend_surface,pH_group,<=3,97,19,260.97824855292066,-61.30493801041563,209.74577334975285
+frozen_development_folds,extend_surface,pH_group,missing,38,5,283.4668152548252,-4.651180224207746,327.60392087174154
+frozen_development_folds,existing_method_aware_pren_n,temperature_group,30–60 C,115,8,186.36838170954738,12.741412529648574,147.97170117402595
+frozen_development_folds,existing_method_aware_pren_n,temperature_group,<=30 C,190,23,233.4695805685077,-41.504457919183885,175.82558749352557
+frozen_development_folds,existing_method_aware_pren_n,temperature_group,>60 C,110,11,163.14432853889193,43.096876501476544,87.80510243754361
+frozen_development_folds,existing_method_aware_pren_n,temperature_group,missing,37,6,173.1756755712544,74.8797375771783,190.99010889102422
+frozen_development_folds,existing_mns_inclusion_penalty,temperature_group,30–60 C,115,8,199.7648862482778,-29.908804928131936,167.22043620134423
+frozen_development_folds,existing_mns_inclusion_penalty,temperature_group,<=30 C,190,23,251.32186598188963,-6.632488588138988,218.33076953283
+frozen_development_folds,existing_mns_inclusion_penalty,temperature_group,>60 C,110,11,161.80003961004485,47.564615373198706,87.92718103271824
+frozen_development_folds,existing_mns_inclusion_penalty,temperature_group,missing,37,6,157.36863946519884,16.322179227203378,153.95103718760495
+frozen_development_folds,extend_heat_categories,temperature_group,30–60 C,115,8,186.70215625030914,18.04066037162606,152.12749179490459
+frozen_development_folds,extend_heat_categories,temperature_group,<=30 C,190,23,222.15624726180286,-28.068875744603325,166.67617470077508
+frozen_development_folds,extend_heat_categories,temperature_group,>60 C,110,11,167.17517170586146,56.13593175937169,103.00634366255537
+frozen_development_folds,extend_heat_categories,temperature_group,missing,37,6,128.04167613408836,33.66564119964601,90.97248684894089
+frozen_development_folds,extend_heat_without_method,temperature_group,30–60 C,115,8,199.15457239977385,-11.740817874673176,178.36314976366634
+frozen_development_folds,extend_heat_without_method,temperature_group,<=30 C,190,23,230.15536903179844,4.189321621175141,178.2315364386999
+frozen_development_folds,extend_heat_without_method,temperature_group,>60 C,110,11,167.18178399011632,64.71619576337618,97.21871245106598
+frozen_development_folds,extend_heat_without_method,temperature_group,missing,37,6,102.22455503495962,-32.88971484637703,65.15406333157989
+frozen_development_folds,extend_material,temperature_group,30–60 C,115,8,183.62493531781558,11.397838033671166,142.69188593911207
+frozen_development_folds,extend_material,temperature_group,<=30 C,190,23,231.93570870635187,-41.20683603849224,175.5066839207384
+frozen_development_folds,extend_material,temperature_group,>60 C,110,11,165.18603318774578,44.90082308178816,93.36522262849483
+frozen_development_folds,extend_material,temperature_group,missing,37,6,168.2286287481039,67.8079609499163,178.06472968930285
+frozen_development_folds,extend_solution,temperature_group,30–60 C,115,8,185.6724694031247,19.069463386502456,152.1243798685408
+frozen_development_folds,extend_solution,temperature_group,<=30 C,190,23,228.78223532515327,-40.65365817118232,174.59756449033853
+frozen_development_folds,extend_solution,temperature_group,>60 C,110,11,164.60727132192753,47.84821928510088,91.82094991608713
+frozen_development_folds,extend_solution,temperature_group,missing,37,6,153.849048226585,52.770332345753964,105.25514495323432
+frozen_development_folds,extend_surface,temperature_group,30–60 C,115,8,195.21385153027117,32.62487391562078,164.1087743335023
+frozen_development_folds,extend_surface,temperature_group,<=30 C,190,23,226.6788504783296,-43.912959822247096,169.92065386427566
+frozen_development_folds,extend_surface,temperature_group,>60 C,110,11,166.4872594743145,52.06431071713825,95.45941795512039
+frozen_development_folds,extend_surface,temperature_group,missing,37,6,169.59311336980326,60.71574784676203,136.58790216745592
+frozen_development_folds,existing_method_aware_pren_n,Reference,1,17,1,242.6281376409049,138.74439806070856,162.589020676534
+frozen_development_folds,existing_method_aware_pren_n,Reference,2,11,1,391.95933064605447,-387.46902984161375,545.3659350052953
+frozen_development_folds,existing_method_aware_pren_n,Reference,3,42,1,54.86480271274625,17.215139405222036,41.904670763568944
+frozen_development_folds,existing_method_aware_pren_n,Reference,6,3,1,132.06341093535335,-132.06341093535335,52.063410935353346
+frozen_development_folds,existing_method_aware_pren_n,Reference,8,8,1,328.8118861029224,194.98961664438542,433.60331173245197
+frozen_development_folds,existing_method_aware_pren_n,Reference,11,12,1,155.32331154562394,-79.61124335935158,109.65936122853662
+frozen_development_folds,existing_method_aware_pren_n,Reference,12,21,1,174.92935030230757,-167.56422072813933,132.9388104443528
+frozen_development_folds,existing_method_aware_pren_n,Reference,16,12,1,307.4379629176378,-247.6337029259802,343.535615616715
+frozen_development_folds,existing_method_aware_pren_n,Reference,31,1,1,31.95765703731317,-31.95765703731317,31.95765703731317
+frozen_development_folds,existing_method_aware_pren_n,Reference,33,1,1,103.82473532185406,-103.82473532185406,103.82473532185406
+frozen_development_folds,existing_method_aware_pren_n,Reference,34,9,1,249.94686419915226,-130.38114175308104,151.3272938700693
+frozen_development_folds,existing_method_aware_pren_n,Reference,35,2,1,63.34738816838541,-63.34738816838541,63.34738816838541
+frozen_development_folds,existing_method_aware_pren_n,Reference,36,2,1,153.5510903816063,153.5510903816063,153.5510903816063
+frozen_development_folds,existing_method_aware_pren_n,Reference,37,6,1,79.12907564594725,-19.501175615787513,63.38819534058152
+frozen_development_folds,existing_method_aware_pren_n,Reference,38,17,1,258.0685654346556,232.11459839730955,251.86489266119062
+frozen_development_folds,existing_method_aware_pren_n,Reference,40,4,1,317.89154602155406,317.89154602155406,326.39154602155406
+frozen_development_folds,existing_method_aware_pren_n,Reference,41,6,1,396.4897471194767,-396.4897471194767,369.04204307088946
+frozen_development_folds,existing_method_aware_pren_n,Reference,42,4,1,91.46137818053336,-65.4239987120688,59.97903661909794
+frozen_development_folds,existing_method_aware_pren_n,Reference,44,41,1,125.52678794984247,61.61942990507256,106.10309416847792
+frozen_development_folds,existing_method_aware_pren_n,Reference,45,4,1,208.56858603955604,-208.56858603955604,174.43807243501192
+frozen_development_folds,existing_method_aware_pren_n,Reference,46,8,1,239.16743066353052,239.16743066353052,248.5424306635305
+frozen_development_folds,existing_method_aware_pren_n,Reference,47,7,1,118.58731804714613,118.58731804714613,62.65261487873761
+frozen_development_folds,existing_method_aware_pren_n,Reference,49,55,1,159.5850440220386,-77.45853253284609,117.38238961344712
+frozen_development_folds,existing_method_aware_pren_n,Reference,54,27,1,234.66111617721432,167.54603489843424,211.14098695196458
+frozen_development_folds,existing_method_aware_pren_n,Reference,57,15,1,337.16685237525076,-221.68949716419604,259.1894252338434
+frozen_development_folds,existing_method_aware_pren_n,Reference,58,4,1,346.4345526728464,-16.898161732367242,269.648700359743
+frozen_development_folds,existing_method_aware_pren_n,Reference,59,2,1,433.5460802947193,-433.5460802947193,433.5460802947193
+frozen_development_folds,existing_method_aware_pren_n,Reference,61,1,1,342.5576570373132,-342.5576570373132,342.5576570373132
+frozen_development_folds,existing_method_aware_pren_n,Reference,63,2,1,287.44029312076475,-6.519658409472868,287.44029312076475
+frozen_development_folds,existing_method_aware_pren_n,Reference,65,9,1,33.93731110878677,20.548146688850597,21.763335326817383
+frozen_development_folds,existing_method_aware_pren_n,Reference,66,6,1,298.8131361579948,156.84615357440705,402.57421529140055
+frozen_development_folds,existing_method_aware_pren_n,Reference,67,8,1,44.232125598399094,10.041390935163825,32.77207856246228
+frozen_development_folds,existing_method_aware_pren_n,Reference,68,2,1,167.2658886106911,167.2658886106911,167.2658886106911
+frozen_development_folds,existing_method_aware_pren_n,Reference,70,3,1,128.36106105750892,-128.36106105750892,79.92673530434183
+frozen_development_folds,existing_method_aware_pren_n,Reference,71,30,1,248.881616787461,137.01779973028258,231.85559768178808
+frozen_development_folds,existing_method_aware_pren_n,Reference,73,12,1,155.6478257905582,155.6478257905582,131.45671463442238
+frozen_development_folds,existing_method_aware_pren_n,Reference,74,7,1,440.5035231521297,440.5035231521297,377.3774682875656
+frozen_development_folds,existing_method_aware_pren_n,Reference,76,8,1,108.79460724995539,-42.652084267127734,72.89789628418083
+frozen_development_folds,existing_method_aware_pren_n,Reference,77,4,1,387.1063414039631,215.16891974080983,224.56060751978518
+frozen_development_folds,existing_method_aware_pren_n,Reference,78,3,1,374.1681989569632,-374.1681989569632,349.9083566673975
+frozen_development_folds,existing_method_aware_pren_n,Reference,84,11,1,253.47782720294424,-110.12275175275157,220.77055177185093
+frozen_development_folds,existing_method_aware_pren_n,Reference,85,5,1,293.8960895170551,-252.92289130554815,404.03163168088133
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,1,17,1,324.90014176529127,280.926973346639,247.1540714366725
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,2,11,1,388.1503307464978,-387.94523908529413,538.7857069925963
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,3,42,1,49.14357450958023,19.784451626618953,40.037261592441595
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,6,3,1,150.0215548879785,-150.0215548879785,70.02155488797851
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,8,8,1,303.9499275648693,122.96453606193322,380.29940041562224
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,11,12,1,161.60095364487873,-99.94561100225799,90.12243523752778
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,12,21,1,157.00020043009027,-154.0993780630658,94.9707568329095
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,16,12,1,347.9857313307228,-303.19771388144187,419.8505720701104
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,31,1,1,4.337862372782752,-4.337862372782752,4.337862372782752
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,33,1,1,226.57101321196933,-226.57101321196933,226.57101321196933
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,34,9,1,257.6491004472266,-177.27447868252924,139.28208017070352
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,35,2,1,156.0552979668588,-156.0552979668588,156.0552979668588
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,36,2,1,142.5,55.004418052984704,142.5
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,37,6,1,111.80645869737886,-111.80645869737886,68.13970806128935
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,38,17,1,179.25397003682494,137.90060724618093,163.409725311494
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,40,4,1,234.20623279137067,234.20623279137067,242.70623279137067
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,41,6,1,370.671416920186,-370.671416920186,363.04540772538223
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,42,4,1,168.84103345901443,-168.84103345901443,138.7459015054293
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,44,41,1,163.38418072338735,151.55277026285705,148.64930945760148
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,45,4,1,289.977648305046,-289.977648305046,259.0226354503402
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,46,8,1,248.88570819473767,248.88570819473767,241.26087488030691
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,47,7,1,62.874182178288585,60.83266362106544,7.7221259094641255
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,49,55,1,191.9850619393771,-166.0127442351406,157.34409414164747
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,54,27,1,294.8782477380704,286.2212872407483,274.1612653812802
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,57,15,1,355.1648124494537,-244.07227222757086,329.59150251719257
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,58,4,1,316.87697186044454,-40.57528141607446,276.3016904443701
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,59,2,1,233.08688760772407,-233.08688760772407,233.08688760772407
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,61,1,1,330.6881350653325,-330.6881350653325,330.6881350653325
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,63,2,1,287.5,34.070833963593486,287.5
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,65,9,1,68.22711195783849,61.021035432829926,84.7347070797901
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,66,6,1,267.7517375522215,108.72268334313617,361.047343751564
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,67,8,1,53.505833349989416,-20.226191262350813,61.3869739193007
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,68,2,1,312.04136431606605,312.04136431606605,312.04136431606605
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,70,3,1,138.98770015371707,-138.98770015371707,88.25602067133053
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,71,30,1,260.56176691762124,147.00131213990474,246.1347135198955
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,73,12,1,107.904932150128,104.57413435649921,76.20874489999132
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,74,7,1,428.4869419122351,428.4869419122351,396.0758689083416
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,76,8,1,136.2186202967723,-109.9547409331677,104.28152376918993
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,77,4,1,307.8493995514194,194.01383113179685,141.85872977856835
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,78,3,1,262.13922202893895,-262.13922202893895,249.28828931429877
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,84,11,1,225.9177669539321,-18.088843060070406,151.91640730422
+frozen_development_folds,existing_mns_inclusion_penalty,Reference,85,5,1,264.36063871203703,-136.65277685044938,295.6872676919183
+frozen_development_folds,extend_heat_categories,Reference,1,17,1,243.09926015036405,138.34236147108155,161.27083106171133
+frozen_development_folds,extend_heat_categories,Reference,2,11,1,334.65442544630173,-307.9178226715279,460.9113015226473
+frozen_development_folds,extend_heat_categories,Reference,3,42,1,63.77658052021239,33.44240098366133,51.137904426595185
+frozen_development_folds,extend_heat_categories,Reference,6,3,1,86.34433750112231,-86.34433750112231,6.344337501122311
+frozen_development_folds,extend_heat_categories,Reference,8,8,1,332.17844528558817,196.8553560890182,436.22654405982075
+frozen_development_folds,extend_heat_categories,Reference,11,12,1,170.81628225246024,-8.31256589725299,141.7991270038023
+frozen_development_folds,extend_heat_categories,Reference,12,21,1,131.5140008606401,2.63952535617615,91.86078122176502
+frozen_development_folds,extend_heat_categories,Reference,16,12,1,305.8556369525523,-245.36198533587526,340.9788592895598
+frozen_development_folds,extend_heat_categories,Reference,31,1,1,52.73410202559046,52.73410202559046,52.73410202559046
+frozen_development_folds,extend_heat_categories,Reference,33,1,1,105.58695329730085,-105.58695329730085,105.58695329730085
+frozen_development_folds,extend_heat_categories,Reference,34,9,1,253.84745160511076,-41.43543008817176,203.4199799255743
+frozen_development_folds,extend_heat_categories,Reference,35,2,1,125.3528372699783,-125.3528372699783,125.3528372699783
+frozen_development_folds,extend_heat_categories,Reference,36,2,1,154.0726815890419,154.0726815890419,154.0726815890419
+frozen_development_folds,extend_heat_categories,Reference,37,6,1,95.54269271469532,29.4581898053106,87.9297567470085
+frozen_development_folds,extend_heat_categories,Reference,38,17,1,314.0604066919141,295.5550712177213,315.3069408289773
+frozen_development_folds,extend_heat_categories,Reference,40,4,1,428.2134794938131,428.2134794938131,436.7134794938131
+frozen_development_folds,extend_heat_categories,Reference,41,6,1,388.8819263404812,-388.8819263404812,395.19150414895824
+frozen_development_folds,extend_heat_categories,Reference,42,4,1,79.23150910891823,-28.835245255158867,60.04219456009395
+frozen_development_folds,extend_heat_categories,Reference,44,41,1,126.13644641242068,62.51734889259818,110.6962503318382
+frozen_development_folds,extend_heat_categories,Reference,45,4,1,115.00096630566443,-90.94079017596533,68.00788277491895
+frozen_development_folds,extend_heat_categories,Reference,46,8,1,313.409618856931,313.409618856931,322.784618856931
+frozen_development_folds,extend_heat_categories,Reference,47,7,1,118.94450142158098,118.94450142158098,63.0251108325661
+frozen_development_folds,extend_heat_categories,Reference,49,55,1,157.10299641024972,-75.50676798154382,112.2322788198577
+frozen_development_folds,extend_heat_categories,Reference,54,27,1,190.6362552484115,61.259202038541844,174.2888503949635
+frozen_development_folds,extend_heat_categories,Reference,57,15,1,333.8224660794375,-218.58811443406998,257.64979091580483
+frozen_development_folds,extend_heat_categories,Reference,58,4,1,353.77348073338794,-9.375257604396324,277.54494888106
+frozen_development_folds,extend_heat_categories,Reference,59,2,1,432.7945723465326,-432.7945723465326,432.7945723465326
+frozen_development_folds,extend_heat_categories,Reference,61,1,1,341.5803843244022,-341.5803843244022,341.5803843244022
+frozen_development_folds,extend_heat_categories,Reference,63,2,1,287.4398059098937,39.06105126822408,287.4398059098937
+frozen_development_folds,extend_heat_categories,Reference,65,9,1,38.67188462063504,16.617380337620496,32.9826341236996
+frozen_development_folds,extend_heat_categories,Reference,66,6,1,306.1055234773335,160.34819959525578,402.321774459077
+frozen_development_folds,extend_heat_categories,Reference,67,8,1,73.84345312742113,63.85259892379125,69.95120023886744
+frozen_development_folds,extend_heat_categories,Reference,68,2,1,267.04821735406057,267.04821735406057,267.04821735406057
+frozen_development_folds,extend_heat_categories,Reference,70,3,1,86.94500056432452,-73.77499311130094,25.348146047353623
+frozen_development_folds,extend_heat_categories,Reference,71,30,1,167.70712887700608,-22.663880635572625,117.87583248508584
+frozen_development_folds,extend_heat_categories,Reference,73,12,1,139.24208557623197,139.24208557623197,114.74409612223052
+frozen_development_folds,extend_heat_categories,Reference,74,7,1,395.3581615033186,395.3581615033186,306.26082069813003
+frozen_development_folds,extend_heat_categories,Reference,76,8,1,108.88191774414726,-43.60909290719541,72.96622043339659
+frozen_development_folds,extend_heat_categories,Reference,77,4,1,395.4867071443189,216.43937194662652,233.2081416601556
+frozen_development_folds,extend_heat_categories,Reference,78,3,1,328.38622450343246,-328.38622450343246,287.6629729280868
+frozen_development_folds,extend_heat_categories,Reference,84,11,1,243.53499858335206,-99.98798889728356,221.99647468710157
+frozen_development_folds,extend_heat_categories,Reference,85,5,1,303.6861222517893,-270.4077125806278,422.450694118673
+frozen_development_folds,extend_heat_without_method,Reference,1,17,1,333.367596715892,289.5951628785896,245.48317275929168
+frozen_development_folds,extend_heat_without_method,Reference,2,11,1,312.2735008099469,-287.73704423734705,399.866134726178
+frozen_development_folds,extend_heat_without_method,Reference,3,42,1,59.041579861026364,19.514717575908993,54.24907822004212
+frozen_development_folds,extend_heat_without_method,Reference,6,3,1,89.53553208066052,-89.53553208066052,9.535532080660516
+frozen_development_folds,extend_heat_without_method,Reference,8,8,1,327.57207391153145,143.2617918637802,413.9032869454238
+frozen_development_folds,extend_heat_without_method,Reference,11,12,1,185.71130432423027,-9.719177678751999,167.42019242370995
+frozen_development_folds,extend_heat_without_method,Reference,12,21,1,142.2727362995393,23.68145341119827,92.78611314728738
+frozen_development_folds,extend_heat_without_method,Reference,16,12,1,336.5661078990945,-288.12025812936486,396.6500125136114
+frozen_development_folds,extend_heat_without_method,Reference,31,1,1,84.76449144752331,84.76449144752331,84.76449144752331
+frozen_development_folds,extend_heat_without_method,Reference,33,1,1,201.52321575403516,-201.52321575403516,201.52321575403516
+frozen_development_folds,extend_heat_without_method,Reference,34,9,1,249.2857353695639,-54.541073891729766,207.13203961762605
+frozen_development_folds,extend_heat_without_method,Reference,35,2,1,261.4521859016467,-261.4521859016467,261.4521859016467
+frozen_development_folds,extend_heat_without_method,Reference,36,2,1,142.5,57.5362306773136,142.5
+frozen_development_folds,extend_heat_without_method,Reference,37,6,1,104.49464462073404,44.31141393917873,114.77626344468356
+frozen_development_folds,extend_heat_without_method,Reference,38,17,1,266.4772611282577,243.14541358852716,263.0444998341004
+frozen_development_folds,extend_heat_without_method,Reference,40,4,1,370.1846565349566,370.1846565349566,378.4059029146508
+frozen_development_folds,extend_heat_without_method,Reference,41,6,1,355.18232770706237,-355.18232770706237,362.8691651076612
+frozen_development_folds,extend_heat_without_method,Reference,42,4,1,141.14212938227072,-100.83849455143209,122.79881862652041
+frozen_development_folds,extend_heat_without_method,Reference,44,41,1,183.88892350356844,170.46133953138303,178.36314976366634
+frozen_development_folds,extend_heat_without_method,Reference,45,4,1,167.04727249962974,-167.04727249962974,135.05981393426515
+frozen_development_folds,extend_heat_without_method,Reference,46,8,1,323.0601226468957,323.0601226468957,314.9351226468957
+frozen_development_folds,extend_heat_without_method,Reference,47,7,1,56.188739760085426,47.75443685307879,12.396707481688509
+frozen_development_folds,extend_heat_without_method,Reference,49,55,1,177.43159267611327,-156.3992541967054,118.66594056896429
+frozen_development_folds,extend_heat_without_method,Reference,54,27,1,191.21009558860376,102.45735495392663,173.53298220949
+frozen_development_folds,extend_heat_without_method,Reference,57,15,1,331.37525972927756,-221.44248043864334,253.14316166776962
+frozen_development_folds,extend_heat_without_method,Reference,58,4,1,343.64026800617376,-100.24398352947156,237.01051687049545
+frozen_development_folds,extend_heat_without_method,Reference,59,2,1,227.22027468787485,-227.22027468787485,227.22027468787485
+frozen_development_folds,extend_heat_without_method,Reference,61,1,1,349.56701374152243,-349.56701374152243,349.56701374152243
+frozen_development_folds,extend_heat_without_method,Reference,63,2,1,287.5,71.74291095512012,287.5
+frozen_development_folds,extend_heat_without_method,Reference,65,9,1,54.92942152202257,50.53259896779317,55.703681374632794
+frozen_development_folds,extend_heat_without_method,Reference,66,6,1,272.0620067359056,118.48869191204103,366.3595876060515
+frozen_development_folds,extend_heat_without_method,Reference,67,8,1,47.49719062280725,26.77748730561362,46.46439845671969
+frozen_development_folds,extend_heat_without_method,Reference,68,2,1,392.7057196002278,392.7057196002278,392.7057196002278
+frozen_development_folds,extend_heat_without_method,Reference,70,3,1,89.21492484799198,-89.21492484799198,38.08140081055541
+frozen_development_folds,extend_heat_without_method,Reference,71,30,1,152.45891810890484,-24.99990091943923,93.7463016178935
+frozen_development_folds,extend_heat_without_method,Reference,73,12,1,116.42709317133104,113.09130023975187,84.87198342714717
+frozen_development_folds,extend_heat_without_method,Reference,74,7,1,325.50507153710527,312.9007278213648,237.13117668773992
+frozen_development_folds,extend_heat_without_method,Reference,76,8,1,139.01067925538402,-114.95534527897055,103.32637677046468
+frozen_development_folds,extend_heat_without_method,Reference,77,4,1,337.57498635339937,199.92337418949467,172.4287264709079
+frozen_development_folds,extend_heat_without_method,Reference,78,3,1,221.81997760645996,-221.81997760645996,207.638493766546
+frozen_development_folds,extend_heat_without_method,Reference,84,11,1,213.98107351439057,25.70371078282575,116.70584178027411
+frozen_development_folds,extend_heat_without_method,Reference,85,5,1,257.04606423397775,-114.81503943835423,270.39664272476455
+frozen_development_folds,extend_material,Reference,1,17,1,243.98482277382269,138.52920443655566,160.38205574497184
+frozen_development_folds,extend_material,Reference,2,11,1,396.38595771625273,-390.8935651685496,546.4264809537917
+frozen_development_folds,extend_material,Reference,3,42,1,58.06145850245294,25.593883041433006,42.19668361236833
+frozen_development_folds,extend_material,Reference,6,3,1,129.827853445639,-129.827853445639,49.82785344563899
+frozen_development_folds,extend_material,Reference,8,8,1,337.06258026740477,202.12385339376078,438.4136198058426
+frozen_development_folds,extend_material,Reference,11,12,1,156.99699004645177,-74.27346311891647,120.62249165431408
+frozen_development_folds,extend_material,Reference,12,21,1,168.92669154508025,-160.57692037094793,111.77211361180599
+frozen_development_folds,extend_material,Reference,16,12,1,306.7322286881861,-245.13067712786298,342.10945992288885
+frozen_development_folds,extend_material,Reference,31,1,1,35.74314708951076,-35.74314708951076,35.74314708951076
+frozen_development_folds,extend_material,Reference,33,1,1,95.16547798777276,-95.16547798777276,95.16547798777276
+frozen_development_folds,extend_material,Reference,34,9,1,251.12945724519113,-135.69357473661216,146.51955597314378
+frozen_development_folds,extend_material,Reference,35,2,1,62.20110973541455,-62.20110973541455,62.20110973541455
+frozen_development_folds,extend_material,Reference,36,2,1,156.72884817260217,156.72884817260217,156.72884817260217
+frozen_development_folds,extend_material,Reference,37,6,1,78.82648026174606,-19.600786362093846,63.39407430270029
+frozen_development_folds,extend_material,Reference,38,17,1,261.9143625796182,236.57340958374502,256.36988132553074
+frozen_development_folds,extend_material,Reference,40,4,1,330.37351478478536,330.37351478478536,338.87351478478536
+frozen_development_folds,extend_material,Reference,41,6,1,392.4188537879497,-392.4188537879497,366.0885898173941
+frozen_development_folds,extend_material,Reference,42,4,1,91.07301663906597,-65.80319256675861,59.945017255414854
+frozen_development_folds,extend_material,Reference,44,41,1,123.0482003999674,49.10889249857806,105.77697357287968
+frozen_development_folds,extend_material,Reference,45,4,1,215.73807342333163,-215.73807342333163,181.18316818277367
+frozen_development_folds,extend_material,Reference,46,8,1,247.22002101305736,247.22002101305736,256.59502101305736
+frozen_development_folds,extend_material,Reference,47,7,1,107.73846832894165,107.73846832894165,53.23733631215646
+frozen_development_folds,extend_material,Reference,49,55,1,153.817042547211,-79.18906426362129,108.32960917759488
+frozen_development_folds,extend_material,Reference,54,27,1,234.52738165415062,168.15439616109603,209.14132535913632
+frozen_development_folds,extend_material,Reference,57,15,1,332.29957696044295,-216.98933398776393,257.9089007589939
+frozen_development_folds,extend_material,Reference,58,4,1,355.1827596326773,-6.052547649512718,283.18205455562986
+frozen_development_folds,extend_material,Reference,59,2,1,430.79694475024877,-430.79694475024877,430.79694475024877
+frozen_development_folds,extend_material,Reference,61,1,1,349.69526862950363,-349.69526862950363,349.69526862950363
+frozen_development_folds,extend_material,Reference,63,2,1,287.4392475522554,-6.42318731407596,287.4392475522554
+frozen_development_folds,extend_material,Reference,65,9,1,31.513527133743064,19.35732874722664,19.05292524020544
+frozen_development_folds,extend_material,Reference,66,6,1,287.7772985750462,143.72882249815163,389.64387369945655
+frozen_development_folds,extend_material,Reference,67,8,1,44.0909417821873,7.921914104017542,38.767661416766316
+frozen_development_folds,extend_material,Reference,68,2,1,157.60747568812712,157.60747568812712,157.60747568812712
+frozen_development_folds,extend_material,Reference,70,3,1,130.3156365773727,-130.3156365773727,81.37285351138809
+frozen_development_folds,extend_material,Reference,71,30,1,239.84573310595673,126.23691624933389,217.61161774943452
+frozen_development_folds,extend_material,Reference,73,12,1,156.87753070901735,156.87753070901735,131.81400356629126
+frozen_development_folds,extend_material,Reference,74,7,1,445.10900246938985,445.10900246938985,381.8055499703261
+frozen_development_folds,extend_material,Reference,76,8,1,113.40892877828279,-60.2433347084195,75.78977029715466
+frozen_development_folds,extend_material,Reference,77,4,1,393.2587567931934,220.10706807554436,229.64799063476283
+frozen_development_folds,extend_material,Reference,78,3,1,376.39506627830525,-376.39506627830525,356.7743058359955
+frozen_development_folds,extend_material,Reference,84,11,1,245.59532951796606,-99.1630453281981,210.9769316181031
+frozen_development_folds,extend_material,Reference,85,5,1,288.5535025823001,-244.03865284348458,394.7245607995365
+frozen_development_folds,extend_solution,Reference,1,17,1,242.70938306870121,136.52612886183616,158.33738652835308
+frozen_development_folds,extend_solution,Reference,2,11,1,396.8181870554043,-391.37838210780444,531.2116680900742
+frozen_development_folds,extend_solution,Reference,3,42,1,58.16924099573047,23.627292561253117,44.26151464195014
+frozen_development_folds,extend_solution,Reference,6,3,1,136.24420137081455,-136.24420137081455,56.24420137081455
+frozen_development_folds,extend_solution,Reference,8,8,1,331.54452795786335,197.3223541089738,436.48675844313397
+frozen_development_folds,extend_solution,Reference,11,12,1,153.7960743501154,-69.67081939854364,112.4387273807371
+frozen_development_folds,extend_solution,Reference,12,21,1,175.6016590361382,-165.6757347852891,137.00524067617928
+frozen_development_folds,extend_solution,Reference,16,12,1,295.70984855006975,-230.73374781618202,318.00744355375934
+frozen_development_folds,extend_solution,Reference,31,1,1,33.75799852595787,-33.75799852595787,33.75799852595787
+frozen_development_folds,extend_solution,Reference,33,1,1,100.57835988200156,-100.57835988200156,100.57835988200156
+frozen_development_folds,extend_solution,Reference,34,9,1,251.09618764521207,-129.35039280830838,153.7029733241274
+frozen_development_folds,extend_solution,Reference,35,2,1,58.634405754853105,-58.634405754853105,58.634405754853105
+frozen_development_folds,extend_solution,Reference,36,2,1,152.82035454303409,152.82035454303409,152.82035454303409
+frozen_development_folds,extend_solution,Reference,37,6,1,80.79135873754643,-13.995770434570792,63.36169792592574
+frozen_development_folds,extend_solution,Reference,38,17,1,261.1648915622567,235.87850931307176,257.3023080069943
+frozen_development_folds,extend_solution,Reference,40,4,1,319.8604281473706,319.8604281473706,328.3604281473706
+frozen_development_folds,extend_solution,Reference,41,6,1,359.95206180336066,-359.95206180336066,342.4033433414336
+frozen_development_folds,extend_solution,Reference,42,4,1,91.25411048533576,-59.866583272840074,59.86268643351488
+frozen_development_folds,extend_solution,Reference,44,41,1,129.24675350838993,66.28355492240449,106.73451402541536
+frozen_development_folds,extend_solution,Reference,45,4,1,208.48371086232362,-208.48371086232362,174.0774583227726
+frozen_development_folds,extend_solution,Reference,46,8,1,232.25614232271985,232.25614232271985,241.63114232271982
+frozen_development_folds,extend_solution,Reference,47,7,1,117.92931129063516,117.92931129063516,61.96639913652973
+frozen_development_folds,extend_solution,Reference,49,55,1,154.2084599072564,-70.43981544613243,111.66114437606666
+frozen_development_folds,extend_solution,Reference,54,27,1,235.63115611506703,167.34687351294818,204.2292683397667
+frozen_development_folds,extend_solution,Reference,57,15,1,336.9836711413988,-204.04961584375826,244.18464472305448
+frozen_development_folds,extend_solution,Reference,58,4,1,352.8995555294421,-10.772081412679483,277.50258589759164
+frozen_development_folds,extend_solution,Reference,59,2,1,434.9305156936537,-434.9305156936537,434.9305156936537
+frozen_development_folds,extend_solution,Reference,61,1,1,344.3579985259579,-344.3579985259579,344.3579985259579
+frozen_development_folds,extend_solution,Reference,63,2,1,287.43971743956297,-10.863937425292647,287.43971743956297
+frozen_development_folds,extend_solution,Reference,65,9,1,33.53649934915579,18.72818207032547,18.68648412195529
+frozen_development_folds,extend_solution,Reference,66,6,1,321.41096278049304,194.3694798444025,405.88127736198237
+frozen_development_folds,extend_solution,Reference,67,8,1,58.87496973686801,45.887983754818706,50.62429406228125
+frozen_development_folds,extend_solution,Reference,68,2,1,148.6991930454899,148.6991930454899,148.6991930454899
+frozen_development_folds,extend_solution,Reference,70,3,1,90.14267852882189,-83.8349383323494,35.38683526369482
+frozen_development_folds,extend_solution,Reference,71,30,1,198.89452358876937,63.388373597449224,179.51080277191605
+frozen_development_folds,extend_solution,Reference,73,12,1,165.44950285508307,165.44950285508307,150.1773673953807
+frozen_development_folds,extend_solution,Reference,74,7,1,437.41768321159134,437.41768321159134,363.5635821793783
+frozen_development_folds,extend_solution,Reference,76,8,1,104.6922791480664,-12.050784266383502,72.19735709674171
+frozen_development_folds,extend_solution,Reference,77,4,1,392.80571286961634,248.85736860633375,230.44167653930953
+frozen_development_folds,extend_solution,Reference,78,3,1,378.4766418255851,-378.4766418255851,351.7180190529584
+frozen_development_folds,extend_solution,Reference,84,11,1,252.37592095221225,-104.88444121979389,218.51214441324169
+frozen_development_folds,extend_solution,Reference,85,5,1,295.6426104981482,-256.73551161257944,408.6406313945212
+frozen_development_folds,extend_surface,Reference,1,17,1,239.91981855627705,143.23045216725745,173.8840017286136
+frozen_development_folds,extend_surface,Reference,2,11,1,382.8344643341694,-376.5845223233049,539.0134049664107
+frozen_development_folds,extend_surface,Reference,3,42,1,58.696905686801635,28.251988300207124,42.9202129809303
+frozen_development_folds,extend_surface,Reference,6,3,1,81.85914755762617,-74.42255732712147,5.577442672878533
+frozen_development_folds,extend_surface,Reference,8,8,1,335.2780641198691,205.14855731315592,439.62597335481513
+frozen_development_folds,extend_surface,Reference,11,12,1,183.94216142558773,-7.03540389335249,147.0475249253496
+frozen_development_folds,extend_surface,Reference,12,21,1,169.58734932540673,-161.10133665185663,124.8398059448534
+frozen_development_folds,extend_surface,Reference,16,12,1,303.75473960152243,-236.59472413734252,333.35395072043957
+frozen_development_folds,extend_surface,Reference,31,1,1,25.833738865498987,-25.833738865498987,25.833738865498987
+frozen_development_folds,extend_surface,Reference,33,1,1,95.05968463109048,-95.05968463109048,95.05968463109048
+frozen_development_folds,extend_surface,Reference,34,9,1,249.71775715431522,-127.35028800549647,152.97442237642298
+frozen_development_folds,extend_surface,Reference,35,2,1,56.296483578051266,-56.296483578051266,56.296483578051266
+frozen_development_folds,extend_surface,Reference,36,2,1,142.5,-9.40743937057698,142.5
+frozen_development_folds,extend_surface,Reference,37,6,1,81.52579229693158,-12.039646291504397,63.374328269274145
+frozen_development_folds,extend_surface,Reference,38,17,1,315.3005524506091,296.99385581483426,316.74263129232247
+frozen_development_folds,extend_surface,Reference,40,4,1,323.5511583673451,323.5511583673451,332.0511583673451
+frozen_development_folds,extend_surface,Reference,41,6,1,224.36171901818685,-224.36171901818685,234.6779577035947
+frozen_development_folds,extend_surface,Reference,42,4,1,91.35290737512261,-0.48345962006058585,90.86944775506203
+frozen_development_folds,extend_surface,Reference,44,41,1,129.83647275706784,70.59906747333984,116.23596398158224
+frozen_development_folds,extend_surface,Reference,45,4,1,199.8579484399665,-199.8579484399665,165.57532270057348
+frozen_development_folds,extend_surface,Reference,46,8,1,241.3388550083462,241.3388550083462,250.71385500834617
+frozen_development_folds,extend_surface,Reference,47,7,1,125.30906198396947,125.30906198396947,69.35959601619925
+frozen_development_folds,extend_surface,Reference,49,55,1,156.10734968139226,-70.14562043479717,103.92632173088646
+frozen_development_folds,extend_surface,Reference,54,27,1,213.8429728529252,94.9830980664616,172.30849119121348
+frozen_development_folds,extend_surface,Reference,57,15,1,335.80366549074455,-210.1583804021944,251.47461282342988
+frozen_development_folds,extend_surface,Reference,58,4,1,353.66007264835935,-6.3169608488585425,281.0710076787512
+frozen_development_folds,extend_surface,Reference,59,2,1,427.20450317473615,-427.20450317473615,427.20450317473615
+frozen_development_folds,extend_surface,Reference,61,1,1,377.85030225927966,-377.85030225927966,377.85030225927966
+frozen_development_folds,extend_surface,Reference,63,2,1,287.4439141132594,-55.78473552481289,287.4439141132594
+frozen_development_folds,extend_surface,Reference,65,9,1,87.04146355376757,87.04146355376757,66.00119982530506
+frozen_development_folds,extend_surface,Reference,66,6,1,285.64951303562236,164.98220649729066,380.4191259889605
+frozen_development_folds,extend_surface,Reference,67,8,1,162.3204521165037,162.3204521165037,168.36233084815035
+frozen_development_folds,extend_surface,Reference,68,2,1,284.318486434264,284.318486434264,284.318486434264
+frozen_development_folds,extend_surface,Reference,70,3,1,122.04485488920615,-122.04485488920615,73.60331896030041
+frozen_development_folds,extend_surface,Reference,71,30,1,183.21987988162917,4.762390826738206,107.64820710662926
+frozen_development_folds,extend_surface,Reference,73,12,1,224.69890144297437,224.69890144297437,202.0796663289151
+frozen_development_folds,extend_surface,Reference,74,7,1,453.93118418653904,453.93118418653904,385.2415548665575
+frozen_development_folds,extend_surface,Reference,76,8,1,113.54852047862042,-61.69497996721228,77.04782870814194
+frozen_development_folds,extend_surface,Reference,77,4,1,389.5367166792324,196.80675806119598,227.06846383751085
+frozen_development_folds,extend_surface,Reference,78,3,1,362.3445873562918,-362.3445873562918,352.09959814379454
+frozen_development_folds,extend_surface,Reference,84,11,1,249.6418563920259,-101.58374921320464,212.5225411021595
+frozen_development_folds,extend_surface,Reference,85,5,1,287.9383359353741,-240.2079671259935,395.32142113013646
+source_publication_folds,existing_method_aware_pren_n,Material class,Fe Alloy,411,41,233.2889871712409,9.277353739514021,182.17563313240643
+source_publication_folds,existing_method_aware_pren_n,Material class,NiCrMo Alloy,41,1,226.56562456740406,219.77514487735218,231.57512369148708
+source_publication_folds,existing_mns_inclusion_penalty,Material class,Fe Alloy,411,41,238.6205761916461,-9.261528181824978,197.90656202038423
+source_publication_folds,existing_mns_inclusion_penalty,Material class,NiCrMo Alloy,41,1,165.55620321253392,159.38965114074153,150.04809069608103
+source_publication_folds,extend_heat_categories,Material class,Fe Alloy,411,41,255.21740599426744,35.216625672781795,184.76778104768402
+source_publication_folds,extend_heat_categories,Material class,NiCrMo Alloy,41,1,218.1233290461453,211.17591675588824,224.77019011367258
+source_publication_folds,extend_heat_without_method,Material class,Fe Alloy,411,41,259.59585257579016,23.088174808885505,237.82328275480512
+source_publication_folds,extend_heat_without_method,Material class,NiCrMo Alloy,41,1,169.54472874416297,160.8689530044628,155.75706844324657
+source_publication_folds,extend_material,Material class,Fe Alloy,411,41,233.57802168401082,11.087212736122321,179.6862306389612
+source_publication_folds,extend_material,Material class,NiCrMo Alloy,41,1,203.96820817907656,193.5969773887086,204.75806564168175
+source_publication_folds,extend_solution,Material class,Fe Alloy,411,41,234.01086677284698,13.210788795991252,182.00697574347456
+source_publication_folds,extend_solution,Material class,NiCrMo Alloy,41,1,224.47712532410145,217.38869426118643,229.01733281552129
+source_publication_folds,extend_surface,Material class,Fe Alloy,411,41,230.00587444944009,14.551158644401061,177.83203764237072
+source_publication_folds,extend_surface,Material class,NiCrMo Alloy,41,1,251.48402179726372,249.8815386208,266.6635613304294
+source_publication_folds,existing_method_aware_pren_n,heat_treatment_type,annealing,74,13,179.99536747701364,-57.20051858972782,108.35554851006077
+source_publication_folds,existing_method_aware_pren_n,heat_treatment_type,denitriding,1,1,27.848949843931337,27.848949843931337,27.848949843931337
+source_publication_folds,existing_method_aware_pren_n,heat_treatment_type,heat_treatment,71,4,173.61964062383217,118.73970275898611,131.87396732736886
+source_publication_folds,existing_method_aware_pren_n,heat_treatment_type,homogenization,26,3,359.3481107926064,326.2163506557663,311.3377553133525
+source_publication_folds,existing_method_aware_pren_n,heat_treatment_type,sensitization,2,1,269.6821126484343,-269.6821126484343,269.6821126484343
+source_publication_folds,existing_method_aware_pren_n,heat_treatment_type,soaking,27,1,263.78977694805116,235.37431187982693,188.19585861706628
+source_publication_folds,existing_method_aware_pren_n,heat_treatment_type,solution_annealing,27,5,282.42288934085366,-68.1675608718571,269.20669008486266
+source_publication_folds,existing_method_aware_pren_n,heat_treatment_type,solution_treatment,41,5,298.1372593093655,33.46348138214511,287.9517454421632
+source_publication_folds,existing_method_aware_pren_n,heat_treatment_type,tempering,18,1,188.78949408033213,-188.78949408033213,135.7107111810024
+source_publication_folds,existing_method_aware_pren_n,heat_treatment_type,nan,165,14,237.84526112953654,-11.105400941640001,195.37314846075827
+source_publication_folds,existing_mns_inclusion_penalty,heat_treatment_type,annealing,74,13,181.17681833979466,-63.75415158192906,112.91897835714107
+source_publication_folds,existing_mns_inclusion_penalty,heat_treatment_type,denitriding,1,1,110.45306553540917,-110.45306553540917,110.45306553540917
+source_publication_folds,existing_mns_inclusion_penalty,heat_treatment_type,heat_treatment,71,4,195.8519545729581,140.320489339622,186.59039100200943
+source_publication_folds,existing_mns_inclusion_penalty,heat_treatment_type,homogenization,26,3,368.45194459436857,321.64286646284836,271.26400506672496
+source_publication_folds,existing_mns_inclusion_penalty,heat_treatment_type,sensitization,2,1,95.65379311433298,95.65379311433298,95.65379311433298
+source_publication_folds,existing_mns_inclusion_penalty,heat_treatment_type,soaking,27,1,313.10828901020653,309.61227450548245,282.187011415172
+source_publication_folds,existing_mns_inclusion_penalty,heat_treatment_type,solution_annealing,27,5,286.536785032257,-62.38475418639873,306.5088811576169
+source_publication_folds,existing_mns_inclusion_penalty,heat_treatment_type,solution_treatment,41,5,203.35353824006762,2.4301790847502738,188.95409973809407
+source_publication_folds,existing_mns_inclusion_penalty,heat_treatment_type,tempering,18,1,154.64450255016692,-153.28090368205687,89.72761018700976
+source_publication_folds,existing_mns_inclusion_penalty,heat_treatment_type,nan,165,14,244.57735448815546,-90.76213991242658,197.90656202038423
+source_publication_folds,extend_heat_categories,heat_treatment_type,annealing,74,13,183.79977565604958,-22.179869384408228,142.1219658034762
+source_publication_folds,extend_heat_categories,heat_treatment_type,denitriding,1,1,26.10067792385007,26.10067792385007,26.10067792385007
+source_publication_folds,extend_heat_categories,heat_treatment_type,heat_treatment,71,4,154.28185453882656,80.41624544543703,118.5259979340322
+source_publication_folds,extend_heat_categories,heat_treatment_type,homogenization,26,3,368.20965035838583,309.15718218375287,308.8415537765893
+source_publication_folds,extend_heat_categories,heat_treatment_type,sensitization,2,1,275.861235314316,-275.861235314316,275.861235314316
+source_publication_folds,extend_heat_categories,heat_treatment_type,soaking,27,1,263.8752382603482,234.515087072679,184.76778104768402
+source_publication_folds,extend_heat_categories,heat_treatment_type,solution_annealing,27,5,329.5743996794447,1.0619693424973544,320.3920785458632
+source_publication_folds,extend_heat_categories,heat_treatment_type,solution_treatment,41,5,524.1883883711042,240.28092355018302,565.1442272095469
+source_publication_folds,extend_heat_categories,heat_treatment_type,tempering,18,1,174.77955151713766,-174.77955151713766,122.45625134559401
+source_publication_folds,extend_heat_categories,heat_treatment_type,nan,165,14,233.15178879371422,-9.178962177010082,186.38829746142875
+source_publication_folds,extend_heat_without_method,heat_treatment_type,annealing,74,13,201.49962086020415,-11.897794899850666,153.50961153493134
+source_publication_folds,extend_heat_without_method,heat_treatment_type,denitriding,1,1,277.7434677979737,-277.7434677979737,277.7434677979737
+source_publication_folds,extend_heat_without_method,heat_treatment_type,heat_treatment,71,4,189.47396584166586,135.16166135208923,132.7496204317433
+source_publication_folds,extend_heat_without_method,heat_treatment_type,homogenization,26,3,370.44968317331524,298.26319887787855,283.78545546039726
+source_publication_folds,extend_heat_without_method,heat_treatment_type,sensitization,2,1,92.85554174584797,92.85554174584797,92.85554174584797
+source_publication_folds,extend_heat_without_method,heat_treatment_type,soaking,27,1,319.8664831762365,317.639814747283,283.82207181373707
+source_publication_folds,extend_heat_without_method,heat_treatment_type,solution_annealing,27,5,330.96827092360303,8.254812548807447,309.82039155271957
+source_publication_folds,extend_heat_without_method,heat_treatment_type,solution_treatment,41,5,377.6014763849353,182.12492496948232,399.3717612154359
+source_publication_folds,extend_heat_without_method,heat_treatment_type,tempering,18,1,119.61674522421066,-112.66866663960586,53.5
+source_publication_folds,extend_heat_without_method,heat_treatment_type,nan,165,14,242.29793423295382,-88.07409613044449,196.06001571019615
+source_publication_folds,extend_material,heat_treatment_type,annealing,74,13,183.4092245037512,-50.18109862867143,123.311119169508
+source_publication_folds,extend_material,heat_treatment_type,denitriding,1,1,25.004556273224523,25.004556273224523,25.004556273224523
+source_publication_folds,extend_material,heat_treatment_type,heat_treatment,71,4,175.17559796797508,120.49990054558079,160.53722221087253
+source_publication_folds,extend_material,heat_treatment_type,homogenization,26,3,363.83078140833334,331.0766397071469,314.9153066160203
+source_publication_folds,extend_material,heat_treatment_type,sensitization,2,1,265.47553223015524,-265.47553223015524,265.47553223015524
+source_publication_folds,extend_material,heat_treatment_type,soaking,27,1,263.01426757113876,235.36922672680734,190.8453693908478
+source_publication_folds,extend_material,heat_treatment_type,solution_annealing,27,5,286.5335445340182,-67.81737930239802,281.41126902770065
+source_publication_folds,extend_material,heat_treatment_type,solution_treatment,41,5,298.7507638230403,33.07340579568065,288.6241261013864
+source_publication_folds,extend_material,heat_treatment_type,tempering,18,1,183.2216152715705,-183.2216152715705,137.7797698364654
+source_publication_folds,extend_material,heat_treatment_type,nan,165,14,230.02058256148126,-18.3741678795372,171.97557575661745
+source_publication_folds,extend_solution,heat_treatment_type,annealing,74,13,184.00784646229934,-50.3469330340222,121.88276005420599
+source_publication_folds,extend_solution,heat_treatment_type,denitriding,1,1,27.80732637413496,27.80732637413496,27.80732637413496
+source_publication_folds,extend_solution,heat_treatment_type,heat_treatment,71,4,177.93929787256425,125.73837351172915,151.67405438839842
+source_publication_folds,extend_solution,heat_treatment_type,homogenization,26,3,356.3391402911824,324.5287094484154,313.92246223686755
+source_publication_folds,extend_solution,heat_treatment_type,sensitization,2,1,269.0920576395416,-269.0920576395416,269.0920576395416
+source_publication_folds,extend_solution,heat_treatment_type,soaking,27,1,263.1967433319918,231.26910092093453,177.76062016337033
+source_publication_folds,extend_solution,heat_treatment_type,solution_annealing,27,5,282.61760998472715,-68.6858513974674,261.43688826067194
+source_publication_folds,extend_solution,heat_treatment_type,solution_treatment,41,5,299.52442735640426,34.22725289484537,288.2311758926794
+source_publication_folds,extend_solution,heat_treatment_type,tempering,18,1,199.36794470899147,-199.36794470899147,148.00697574347456
+source_publication_folds,extend_solution,heat_treatment_type,nan,165,14,234.5141602400986,-6.006015592535434,194.64959136770403
+source_publication_folds,extend_surface,heat_treatment_type,annealing,74,13,183.2845391009276,-41.818843569863354,132.18731132800164
+source_publication_folds,extend_surface,heat_treatment_type,denitriding,1,1,32.25165938255117,32.25165938255117,32.25165938255117
+source_publication_folds,extend_surface,heat_treatment_type,heat_treatment,71,4,172.80620653614338,118.16212425510581,138.7604585069131
+source_publication_folds,extend_surface,heat_treatment_type,homogenization,26,3,327.107885290154,288.7664958982572,306.5185157759922
+source_publication_folds,extend_surface,heat_treatment_type,sensitization,2,1,231.58889907049524,-231.58889907049524,231.58889907049524
+source_publication_folds,extend_surface,heat_treatment_type,soaking,27,1,268.2268704815801,241.37615966395222,191.37766893810965
+source_publication_folds,extend_surface,heat_treatment_type,solution_annealing,27,5,270.5596681738917,-57.92467796400178,236.0002863203083
+source_publication_folds,extend_surface,heat_treatment_type,solution_treatment,41,5,292.1035191916272,45.000211535037614,292.54141780173177
+source_publication_folds,extend_surface,heat_treatment_type,tempering,18,1,190.37299339666944,-190.37299339666944,138.1235649961219
+source_publication_folds,extend_surface,heat_treatment_type,nan,165,14,242.79111241279293,2.9228202185915824,200.3946323586572
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,abrasion,8,1,311.99761156416474,311.99761156416474,321.37261156416474
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,343.3861027493407,301.14406440517877,247.8090262666576
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,air_passivation + grinding,6,1,76.0333361489928,-21.364104896683397,56.95236935893118
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,cathodic_reduction,3,2,51.968663088448466,-51.968663088448466,53.436621152396356
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.5,-16.637258885574965,287.5
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,394.8504334117998,-394.8504334117998,394.8504334117998
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,413.75637633187864,230.8994887122537,249.40914963458607
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,cathodic_reduction + polishing,2,1,439.93750319731674,-439.93750319731674,439.93750319731674
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,degreasing + polishing + rinsing,12,1,188.4429180606752,188.4429180606752,172.57746679931722
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,diamond_polishing,14,2,247.65977587220314,-160.78301907415175,135.18137084283293
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,84.1445312014509,71.47544922633497,63.86887027463149
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,grinding,36,5,226.55357953774427,103.00461066666121,240.44983130828138
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,grinding + pickling + rinsing,27,1,263.78977694805116,235.37431187982693,188.19585861706628
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,grinding + potentiostatic_treatment,30,1,292.6444209152317,197.66194787938454,295.71113562364417
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,polishing,26,4,117.3641532915568,-31.0188252062265,57.40725721670226
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,potentiostatic_treatment,9,2,164.17736063677788,164.17736063677788,113.39973306961411
+source_publication_folds,existing_method_aware_pren_n,surface_preparation_method,nan,239,18,238.7407893983743,-49.96385610013707,169.7107111810024
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,abrasion,8,1,333.37922150336215,333.37922150336215,328.9995618491074
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,345.44159639702343,304.0843471447043,241.53184065726032
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,air_passivation + grinding,6,1,144.10283505812978,-144.10283505812978,98.68226707275613
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,cathodic_reduction,3,2,96.94085737141859,-96.94085737141859,107.79878473183521
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.5,44.343447493426424,287.5
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,369.9508410735451,-369.9508410735451,369.9508410735451
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,349.22496499011794,190.7758829872492,179.7864748765681
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,cathodic_reduction + polishing,2,1,265.03391388357346,-265.03391388357346,265.03391388357346
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,degreasing + polishing + rinsing,12,1,95.8403191139624,86.49875779151392,60.8257818766927
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,diamond_polishing,14,2,216.34041691053645,-158.71500931048158,112.70976098501015
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,69.02916666843554,58.328430412620065,52.171720844907355
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,grinding,36,5,200.96300624709494,11.315373774581383,189.5220123374598
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,grinding + pickling + rinsing,27,1,313.10828901020653,309.61227450548245,282.187011415172
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,grinding + potentiostatic_treatment,30,1,325.09192318124076,231.78724874659326,312.78360155362316
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,polishing,26,4,167.11910537899215,5.536983811420468,138.28412956927218
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,potentiostatic_treatment,9,2,96.03141218891207,-39.76292552763974,91.50998527073668
+source_publication_folds,existing_mns_inclusion_penalty,surface_preparation_method,nan,239,18,235.8155507048857,-80.16794838540139,174.10871881435992
+source_publication_folds,extend_heat_categories,surface_preparation_method,abrasion,8,1,489.8868801203204,489.8868801203204,499.2618801203205
+source_publication_folds,extend_heat_categories,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,339.47791469918326,297.6287177000089,248.09318771898228
+source_publication_folds,extend_heat_categories,surface_preparation_method,air_passivation + grinding,6,1,87.03463979040323,7.418203209491376,60.08375777530094
+source_publication_folds,extend_heat_categories,surface_preparation_method,cathodic_reduction,3,2,158.39012283378474,-158.39012283378474,189.53610467379144
+source_publication_folds,extend_heat_categories,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.5,27.895703389981634,287.5
+source_publication_folds,extend_heat_categories,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,404.0957426448954,-404.0957426448954,404.0957426448954
+source_publication_folds,extend_heat_categories,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,402.8045451570296,228.65196575668796,238.1865881377208
+source_publication_folds,extend_heat_categories,surface_preparation_method,cathodic_reduction + polishing,2,1,426.9571118021098,-426.9571118021098,426.9571118021098
+source_publication_folds,extend_heat_categories,surface_preparation_method,degreasing + polishing + rinsing,12,1,505.17359615060906,505.17359615060906,488.93307400787023
+source_publication_folds,extend_heat_categories,surface_preparation_method,diamond_polishing,14,2,278.70132417772527,-141.55881633760941,185.53690428700637
+source_publication_folds,extend_heat_categories,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,93.21807495747889,86.26144065995231,74.5278257758078
+source_publication_folds,extend_heat_categories,surface_preparation_method,grinding,36,5,360.9734344642573,250.46248767598178,405.8168028919016
+source_publication_folds,extend_heat_categories,surface_preparation_method,grinding + pickling + rinsing,27,1,263.8752382603482,234.515087072679,184.76778104768402
+source_publication_folds,extend_heat_categories,surface_preparation_method,grinding + potentiostatic_treatment,30,1,245.89302111701892,128.6787122609501,230.59770666265754
+source_publication_folds,extend_heat_categories,surface_preparation_method,polishing,26,4,120.76906882209869,-18.74485710424983,92.47229755215074
+source_publication_folds,extend_heat_categories,surface_preparation_method,potentiostatic_treatment,9,2,165.89919720995016,165.89919720995016,114.45946861808011
+source_publication_folds,extend_heat_categories,surface_preparation_method,nan,239,18,234.81439015244231,-45.202314638562456,159.456251345594
+source_publication_folds,extend_heat_without_method,surface_preparation_method,abrasion,8,1,491.58917269606525,491.58917269606525,488.152171371491
+source_publication_folds,extend_heat_without_method,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,357.273288346337,322.01617250158756,260.24642887527705
+source_publication_folds,extend_heat_without_method,surface_preparation_method,air_passivation + grinding,6,1,88.59321172430685,-2.4293569106432074,70.43604172647048
+source_publication_folds,extend_heat_without_method,surface_preparation_method,cathodic_reduction,3,2,220.55045151894558,-220.55045151894558,296.94295958198995
+source_publication_folds,extend_heat_without_method,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.5,125.3327231261647,287.5
+source_publication_folds,extend_heat_without_method,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,384.90341101822156,-384.90341101822156,384.90341101822156
+source_publication_folds,extend_heat_without_method,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,335.21750166173126,212.64460257798015,165.5929245179837
+source_publication_folds,extend_heat_without_method,surface_preparation_method,cathodic_reduction + polishing,2,1,263.1600296288948,-263.1600296288948,263.1600296288948
+source_publication_folds,extend_heat_without_method,surface_preparation_method,degreasing + polishing + rinsing,12,1,345.99447914995653,345.99447914995653,321.0010921717072
+source_publication_folds,extend_heat_without_method,surface_preparation_method,diamond_polishing,14,2,246.33352568354184,-136.67818862441388,166.29747450294897
+source_publication_folds,extend_heat_without_method,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,67.00715526079726,50.84549057219624,55.13647410089423
+source_publication_folds,extend_heat_without_method,surface_preparation_method,grinding,36,5,306.5047130332426,142.70873615363325,363.4340092371756
+source_publication_folds,extend_heat_without_method,surface_preparation_method,grinding + pickling + rinsing,27,1,319.8664831762365,317.639814747283,283.82207181373707
+source_publication_folds,extend_heat_without_method,surface_preparation_method,grinding + potentiostatic_treatment,30,1,324.9684777595275,237.41704554488985,317.13135424817784
+source_publication_folds,extend_heat_without_method,surface_preparation_method,polishing,26,4,160.24987416923813,71.00912488259655,142.63619456294288
+source_publication_folds,extend_heat_without_method,surface_preparation_method,potentiostatic_treatment,9,2,90.98837793873483,-1.201114437447024,91.4110888275375
+source_publication_folds,extend_heat_without_method,surface_preparation_method,nan,239,18,236.57254029601262,-77.65526914646684,180.52974545291204
+source_publication_folds,extend_material,surface_preparation_method,abrasion,8,1,321.1955364985473,321.1955364985473,329.7298039693939
+source_publication_folds,extend_material,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,347.812260353024,305.9962347276959,250.41119922321798
+source_publication_folds,extend_material,surface_preparation_method,air_passivation + grinding,6,1,75.92488271122086,-21.68789820163053,56.57255425659031
+source_publication_folds,extend_material,surface_preparation_method,cathodic_reduction,3,2,54.7901754980468,-54.7901754980468,53.051215108007796
+source_publication_folds,extend_material,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.5,-15.914145776532791,287.5
+source_publication_folds,extend_material,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,408.8447207593639,-408.8447207593639,408.8447207593639
+source_publication_folds,extend_material,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,416.44975830820664,244.76701617561326,256.077931694605
+source_publication_folds,extend_material,surface_preparation_method,cathodic_reduction + polishing,2,1,443.2096890486061,-443.2096890486061,443.2096890486061
+source_publication_folds,extend_material,surface_preparation_method,degreasing + polishing + rinsing,12,1,187.9271034115628,187.9271034115628,172.1570789995962
+source_publication_folds,extend_material,surface_preparation_method,diamond_polishing,14,2,249.1686820249299,-154.21206891227192,142.99540987581457
+source_publication_folds,extend_material,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,96.19948522524943,88.29592268521512,70.94274495805752
+source_publication_folds,extend_material,surface_preparation_method,grinding,36,5,228.40710882397602,97.74984345353796,241.4640501067944
+source_publication_folds,extend_material,surface_preparation_method,grinding + pickling + rinsing,27,1,263.01426757113876,235.36922672680734,190.8453693908478
+source_publication_folds,extend_material,surface_preparation_method,grinding + potentiostatic_treatment,30,1,287.3893325096755,191.38738871429035,290.5556977805686
+source_publication_folds,extend_material,surface_preparation_method,polishing,26,4,115.26113663103737,-28.715928413277307,59.45224617604897
+source_publication_folds,extend_material,surface_preparation_method,potentiostatic_treatment,9,2,149.34948850188354,149.34948850188354,95.10417000377771
+source_publication_folds,extend_material,surface_preparation_method,nan,239,18,234.96055713573264,-51.70152710354298,163.7422355957346
+source_publication_folds,extend_solution,surface_preparation_method,abrasion,8,1,305.1220892828996,305.1220892828996,314.4970892828996
+source_publication_folds,extend_solution,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,342.4385235280919,299.40424135187527,244.57428556185192
+source_publication_folds,extend_solution,surface_preparation_method,air_passivation + grinding,6,1,75.47905026120459,-20.922794995547292,56.715647788329505
+source_publication_folds,extend_solution,surface_preparation_method,cathodic_reduction,3,2,46.75134176050738,-46.75134176050738,42.0606129295187
+source_publication_folds,extend_solution,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.5,-30.19954365775044,287.5
+source_publication_folds,extend_solution,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,403.1098228233918,-403.1098228233918,403.1098228233918
+source_publication_folds,extend_solution,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,414.80218545247556,234.78320987641874,250.48081125742368
+source_publication_folds,extend_solution,surface_preparation_method,cathodic_reduction + polishing,2,1,446.4073014529694,-446.4073014529694,446.4073014529694
+source_publication_folds,extend_solution,surface_preparation_method,degreasing + polishing + rinsing,12,1,190.3571252269114,190.3571252269114,176.74603739257554
+source_publication_folds,extend_solution,surface_preparation_method,diamond_polishing,14,2,257.3063806400588,-146.86748659510766,158.699982640321
+source_publication_folds,extend_solution,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,93.05307882917093,86.28987570545927,74.4908361112141
+source_publication_folds,extend_solution,surface_preparation_method,grinding,36,5,231.47035354785146,111.39848565389019,241.6894508882641
+source_publication_folds,extend_solution,surface_preparation_method,grinding + pickling + rinsing,27,1,263.1967433319918,231.26910092093453,177.76062016337033
+source_publication_folds,extend_solution,surface_preparation_method,grinding + potentiostatic_treatment,30,1,288.6440484421126,194.81433737922578,291.2019008061608
+source_publication_folds,extend_solution,surface_preparation_method,polishing,26,4,113.42566082363062,-28.998150539107392,62.539496497437256
+source_publication_folds,extend_solution,surface_preparation_method,potentiostatic_treatment,9,2,165.8651063031329,165.8651063031329,114.16100117604418
+source_publication_folds,extend_solution,surface_preparation_method,nan,239,18,238.83050958684788,-45.82406176887988,173.65799564042277
+source_publication_folds,extend_surface,surface_preparation_method,abrasion,8,1,308.5253982178912,308.5253982178912,317.9003982178912
+source_publication_folds,extend_surface,surface_preparation_method,abrasion + pickling + potentiostatic_treatment,17,1,295.0558301219438,243.2079401566282,202.41201970142623
+source_publication_folds,extend_surface,surface_preparation_method,air_passivation + grinding,6,1,75.8877809255135,-20.575427785992645,56.86387234860052
+source_publication_folds,extend_surface,surface_preparation_method,cathodic_reduction,3,2,49.07540103031901,-49.07540103031901,46.81190656733406
+source_publication_folds,extend_surface,surface_preparation_method,cathodic_reduction + diamond_polishing,2,1,287.5,-22.536912659978555,287.5
+source_publication_folds,extend_surface,surface_preparation_method,cathodic_reduction + diamond_polishing + grinding + ultrasonic_cleaning,1,1,405.4473752668719,-405.4473752668719,405.4473752668719
+source_publication_folds,extend_surface,surface_preparation_method,cathodic_reduction + grinding + polishing,4,1,377.61319825278986,213.4013227124086,212.37250871044225
+source_publication_folds,extend_surface,surface_preparation_method,cathodic_reduction + polishing,2,1,443.7051311760342,-443.7051311760342,443.7051311760342
+source_publication_folds,extend_surface,surface_preparation_method,degreasing + polishing + rinsing,12,1,187.68144016743233,187.68144016743233,171.92485523403536
+source_publication_folds,extend_surface,surface_preparation_method,diamond_polishing,14,2,278.18592702956136,-125.02529570618925,200.5229492551658
+source_publication_folds,extend_surface,surface_preparation_method,electropolishing + grinding + sand_blasting,16,1,84.71932560451172,71.26643960922438,64.69983644997335
+source_publication_folds,extend_surface,surface_preparation_method,grinding,36,5,229.02909136868917,100.93361994430634,245.59866104588372
+source_publication_folds,extend_surface,surface_preparation_method,grinding + pickling + rinsing,27,1,268.2268704815801,241.37615966395222,191.37766893810965
+source_publication_folds,extend_surface,surface_preparation_method,grinding + potentiostatic_treatment,30,1,290.3148405080148,196.00366788842592,292.9495848898731
+source_publication_folds,extend_surface,surface_preparation_method,polishing,26,4,116.06685635259954,-8.736809201953832,76.45700055895662
+source_publication_folds,extend_surface,surface_preparation_method,potentiostatic_treatment,9,2,105.3934478263854,22.634844343263985,84.60536764134281
+source_publication_folds,extend_surface,surface_preparation_method,nan,239,18,241.4772255318041,-30.42503490163689,180.361321869034
+source_publication_folds,existing_method_aware_pren_n,pH_group,3–6,16,3,131.4711434754019,125.51992683994852,100.42453372159139
+source_publication_folds,existing_method_aware_pren_n,pH_group,6–9,301,22,210.023130080085,80.47732382669346,174.56132202884484
+source_publication_folds,existing_method_aware_pren_n,pH_group,<=3,97,19,294.7764151018672,-112.89816148434771,263.1122798981107
+source_publication_folds,existing_method_aware_pren_n,pH_group,missing,38,5,296.24083210659063,-64.6604818521181,308.934633576564
+source_publication_folds,existing_mns_inclusion_penalty,pH_group,3–6,16,3,87.1298223862629,20.219267899909767,76.20571850376584
+source_publication_folds,existing_mns_inclusion_penalty,pH_group,6–9,301,22,212.79814469898474,40.0994197638527,175.80697648987152
+source_publication_folds,existing_mns_inclusion_penalty,pH_group,<=3,97,19,276.68899877310935,-103.50350670292586,217.3295726737262
+source_publication_folds,existing_mns_inclusion_penalty,pH_group,missing,38,5,330.93972507668974,9.8656349712086,280.98012567562705
+source_publication_folds,extend_heat_categories,pH_group,3–6,16,3,153.76078686044565,153.76078686044565,131.78847938588706
+source_publication_folds,extend_heat_categories,pH_group,6–9,301,22,227.4993541871615,105.90849321144582,170.64672324484218
+source_publication_folds,extend_heat_categories,pH_group,<=3,97,19,321.82989695421753,-79.96365395832598,301.59854495412594
+source_publication_folds,extend_heat_categories,pH_group,missing,38,5,307.43242499668486,-90.78707563026217,305.66581965339435
+source_publication_folds,extend_heat_without_method,pH_group,3–6,16,3,108.25086323618834,70.0201818142558,87.34767899474845
+source_publication_folds,extend_heat_without_method,pH_group,6–9,301,22,233.58085724553135,76.07024524520727,206.12066249611496
+source_publication_folds,extend_heat_without_method,pH_group,<=3,97,19,308.9014022883747,-76.14165272761386,301.313257971462
+source_publication_folds,extend_heat_without_method,pH_group,missing,38,5,306.3668795395828,-14.391039305842645,271.80817972001853
+source_publication_folds,extend_material,pH_group,3–6,16,3,125.45496460591119,120.49389080416802,101.52968178092291
+source_publication_folds,extend_material,pH_group,6–9,301,22,207.68826998568446,79.56763574065616,170.10227047800765
+source_publication_folds,extend_material,pH_group,<=3,97,19,294.32439645778913,-112.38634793652096,268.6474903265032
+source_publication_folds,extend_material,pH_group,missing,38,5,297.1670603073536,-65.31485140732453,313.8895421122319
+source_publication_folds,extend_solution,pH_group,3–6,16,3,139.81340640692048,136.80420841641595,118.69795607868923
+source_publication_folds,extend_solution,pH_group,6–9,301,22,210.48544383618744,82.37436718041005,173.65799564042277
+source_publication_folds,extend_solution,pH_group,<=3,97,19,296.47597074153225,-105.77535522359153,268.1024149847992
+source_publication_folds,extend_solution,pH_group,missing,38,5,290.2822663893814,-62.65188787938541,297.9834511202993
+source_publication_folds,extend_surface,pH_group,3–6,16,3,125.03928356506839,103.53689815064475,121.59210252128042
+source_publication_folds,extend_surface,pH_group,6–9,301,22,212.3398491989835,87.8324746205338,177.83203764237072
+source_publication_folds,extend_surface,pH_group,<=3,97,19,289.10739250675124,-110.14381881067833,226.58889907049524
+source_publication_folds,extend_surface,pH_group,missing,38,5,286.44523877151863,-31.172250532988443,309.19378961533914
+source_publication_folds,existing_method_aware_pren_n,temperature_group,30–60 C,115,8,220.85098359322512,44.390557777965675,196.81719251366815
+source_publication_folds,existing_method_aware_pren_n,temperature_group,<=30 C,190,23,263.86231894485974,-35.40372944382263,202.69641191471837
+source_publication_folds,existing_method_aware_pren_n,temperature_group,>60 C,110,11,198.19371286301003,90.28928011325593,130.61207013488223
+source_publication_folds,existing_method_aware_pren_n,temperature_group,missing,37,6,211.83654613427683,121.99316119767005,242.5699312522563
+source_publication_folds,existing_mns_inclusion_penalty,temperature_group,30–60 C,115,8,224.35625041296774,-54.376963695108536,194.17833918562474
+source_publication_folds,existing_mns_inclusion_penalty,temperature_group,<=30 C,190,23,276.638721122001,10.44394208957652,242.85478094640348
+source_publication_folds,existing_mns_inclusion_penalty,temperature_group,>60 C,110,11,180.03315935827592,50.92709303382172,109.13122087403727
+source_publication_folds,existing_mns_inclusion_penalty,temperature_group,missing,37,6,180.9429136864483,37.71646508751064,175.80697648987152
+source_publication_folds,extend_heat_categories,temperature_group,30–60 C,115,8,287.4901808502461,119.54307220319174,213.8682250831023
+source_publication_folds,extend_heat_categories,temperature_group,<=30 C,190,23,267.77584826406996,-30.11497180387479,188.53632582712038
+source_publication_folds,extend_heat_categories,temperature_group,>60 C,110,11,199.74870953357936,95.5544942435177,131.55341393494172
+source_publication_folds,extend_heat_categories,temperature_group,missing,37,6,214.22352264569068,124.20655975910675,204.80685260329318
+source_publication_folds,extend_heat_without_method,temperature_group,30–60 C,115,8,276.881282759568,19.284193483665252,239.6328476481092
+source_publication_folds,extend_heat_without_method,temperature_group,<=30 C,190,23,290.71792666936256,22.180664748859254,271.9592045198786
+source_publication_folds,extend_heat_without_method,temperature_group,>60 C,110,11,175.12559501529194,62.71379578971633,99.54076189208402
+source_publication_folds,extend_heat_without_method,temperature_group,missing,37,6,197.3962229986246,74.44164405030706,214.00462479846323
+source_publication_folds,extend_material,temperature_group,30–60 C,115,8,214.64941773961496,40.01542884343345,173.56024123141657
+source_publication_folds,extend_material,temperature_group,<=30 C,190,23,263.070336794207,-34.60915359027929,199.94369338920262
+source_publication_folds,extend_material,temperature_group,>60 C,110,11,199.92026836211227,92.19028128179613,130.56563339035864
+source_publication_folds,extend_material,temperature_group,missing,37,6,208.21586207251852,116.95552517956708,236.6566012784296
+source_publication_folds,extend_solution,temperature_group,30–60 C,115,8,217.67166276566445,49.11761215732328,198.05230078382976
+source_publication_folds,extend_solution,temperature_group,<=30 C,190,23,264.4157526115625,-35.091295430019834,198.61635016910645
+source_publication_folds,extend_solution,temperature_group,>60 C,110,11,201.64882102352206,97.10493364967542,146.7837886247028
+source_publication_folds,extend_solution,temperature_group,missing,37,6,214.30875284033945,126.48239708130674,235.00248231629473
+source_publication_folds,extend_surface,temperature_group,30–60 C,115,8,229.4099798161444,67.91757827943026,213.71230234524455
+source_publication_folds,extend_surface,temperature_group,<=30 C,190,23,256.83162781716914,-36.19600850068631,190.54761386787595
+source_publication_folds,extend_surface,temperature_group,>60 C,110,11,199.46648607650317,101.2184214252958,134.6877233024223
+source_publication_folds,extend_surface,temperature_group,missing,37,6,208.6969962128005,112.38819033824367,194.0175835225192
+source_publication_folds,existing_method_aware_pren_n,Reference,1,17,1,343.3861027493407,301.14406440517877,247.8090262666576
+source_publication_folds,existing_method_aware_pren_n,Reference,2,11,1,440.0452902509112,-440.0452902509112,596.9716938083691
+source_publication_folds,existing_method_aware_pren_n,Reference,3,42,1,68.99150609561536,60.586670270772196,55.62108550748458
+source_publication_folds,existing_method_aware_pren_n,Reference,6,3,1,120.86100718047442,-120.86100718047442,40.86100718047442
+source_publication_folds,existing_method_aware_pren_n,Reference,8,8,1,378.3407985272564,201.96494000179536,475.8163204991166
+source_publication_folds,existing_method_aware_pren_n,Reference,11,12,1,161.8472337948204,-95.58145513662055,108.35554851006077
+source_publication_folds,existing_method_aware_pren_n,Reference,12,21,1,181.34530064591505,-174.6196818119881,140.7107111810024
+source_publication_folds,existing_method_aware_pren_n,Reference,16,12,1,336.1091484343824,-298.97233333193236,392.8610148783904
+source_publication_folds,existing_method_aware_pren_n,Reference,31,1,1,84.2504334117998,-84.2504334117998,84.2504334117998
+source_publication_folds,existing_method_aware_pren_n,Reference,33,1,1,35.09621132253437,35.09621132253437,35.09621132253437
+source_publication_folds,existing_method_aware_pren_n,Reference,34,9,1,247.98847400400766,-159.88490915553302,143.32101370094108
+source_publication_folds,existing_method_aware_pren_n,Reference,35,2,1,35.8277779267728,-35.8277779267728,35.8277779267728
+source_publication_folds,existing_method_aware_pren_n,Reference,36,2,1,150.33386095449134,150.33386095449134,150.33386095449134
+source_publication_folds,existing_method_aware_pren_n,Reference,37,6,1,76.0333361489928,-21.364104896683397,56.95236935893118
+source_publication_folds,existing_method_aware_pren_n,Reference,38,17,1,278.6597584297868,255.04614362290317,274.8074531633789
+source_publication_folds,existing_method_aware_pren_n,Reference,40,4,1,332.1142168897097,332.1142168897097,340.6142168897097
+source_publication_folds,existing_method_aware_pren_n,Reference,41,6,1,468.5816385901428,-468.5816385901428,458.23356053779673
+source_publication_folds,existing_method_aware_pren_n,Reference,42,4,1,93.8864718363766,-61.1496897321377,61.354934872490816
+source_publication_folds,existing_method_aware_pren_n,Reference,44,41,1,226.56562456740406,219.77514487735218,231.57512369148708
+source_publication_folds,existing_method_aware_pren_n,Reference,45,4,1,243.42408492209816,-243.42408492209816,213.9892195752566
+source_publication_folds,existing_method_aware_pren_n,Reference,46,8,1,311.99761156416474,311.99761156416474,321.37261156416474
+source_publication_folds,existing_method_aware_pren_n,Reference,47,7,1,168.13264626028834,168.13264626028834,113.39973306961411
+source_publication_folds,existing_method_aware_pren_n,Reference,49,55,1,166.23765615064033,-74.50459024003474,129.88893998083574
+source_publication_folds,existing_method_aware_pren_n,Reference,54,27,1,263.78977694805116,235.37431187982693,188.19585861706628
+source_publication_folds,existing_method_aware_pren_n,Reference,57,15,1,352.3242556571623,-301.3955039820469,321.2869945205464
+source_publication_folds,existing_method_aware_pren_n,Reference,58,4,1,367.1619462467772,22.793618541914867,341.9138555422392
+source_publication_folds,existing_method_aware_pren_n,Reference,59,2,1,439.93750319731674,-439.93750319731674,439.93750319731674
+source_publication_folds,existing_method_aware_pren_n,Reference,61,1,1,394.8504334117998,-394.8504334117998,394.8504334117998
+source_publication_folds,existing_method_aware_pren_n,Reference,63,2,1,287.5,-16.637258885574965,287.5
+source_publication_folds,existing_method_aware_pren_n,Reference,65,9,1,36.174608575605745,31.324927388691492,20.517279054644803
+source_publication_folds,existing_method_aware_pren_n,Reference,66,6,1,278.4599371436753,136.28385820953017,391.2132585203669
+source_publication_folds,existing_method_aware_pren_n,Reference,67,8,1,81.9683788337484,70.06594556284162,76.02066206520095
+source_publication_folds,existing_method_aware_pren_n,Reference,68,2,1,210.57334066037868,210.57334066037868,210.57334066037868
+source_publication_folds,existing_method_aware_pren_n,Reference,70,3,1,190.25545544397548,-190.25545544397548,142.1010710622215
+source_publication_folds,existing_method_aware_pren_n,Reference,71,30,1,292.6444209152317,197.66194787938454,295.71113562364417
+source_publication_folds,existing_method_aware_pren_n,Reference,73,12,1,188.4429180606752,188.4429180606752,172.57746679931722
+source_publication_folds,existing_method_aware_pren_n,Reference,74,7,1,490.5473682879186,490.5473682879186,421.139589916143
+source_publication_folds,existing_method_aware_pren_n,Reference,76,8,1,153.63580576798998,-132.175229277155,114.6567275534287
+source_publication_folds,existing_method_aware_pren_n,Reference,77,4,1,413.75637633187864,230.8994887122537,249.40914963458607
+source_publication_folds,existing_method_aware_pren_n,Reference,78,3,1,451.02604921111447,-451.02604921111447,453.4387619606937
+source_publication_folds,existing_method_aware_pren_n,Reference,84,11,1,277.83982982669255,-197.9077799420544,239.81313718275487
+source_publication_folds,existing_method_aware_pren_n,Reference,85,5,1,354.68400545828086,-354.68400545828086,529.2223199524442
+source_publication_folds,existing_mns_inclusion_penalty,Reference,1,17,1,345.44159639702343,304.0843471447043,241.53184065726032
+source_publication_folds,existing_mns_inclusion_penalty,Reference,2,11,1,430.0802558439991,-430.0802558439991,562.9013430775458
+source_publication_folds,existing_mns_inclusion_penalty,Reference,3,42,1,57.56027027956249,49.136953249292574,48.171720844907355
+source_publication_folds,existing_mns_inclusion_penalty,Reference,6,3,1,164.17555460475756,-164.17555460475756,84.17555460475756
+source_publication_folds,existing_mns_inclusion_penalty,Reference,8,8,1,326.823417887354,101.08936853860055,403.8950487826641
+source_publication_folds,existing_mns_inclusion_penalty,Reference,11,12,1,166.6683245709344,-101.33849485642544,97.86786370099102
+source_publication_folds,existing_mns_inclusion_penalty,Reference,12,21,1,145.7694418885734,-141.73378444133456,94.72761018700976
+source_publication_folds,existing_mns_inclusion_penalty,Reference,16,12,1,399.8578636723467,-377.0017826413505,500.66895371380303
+source_publication_folds,existing_mns_inclusion_penalty,Reference,31,1,1,33.84117504920599,-33.84117504920599,33.84117504920599
+source_publication_folds,existing_mns_inclusion_penalty,Reference,33,1,1,34.89704805572285,-34.89704805572285,34.89704805572285
+source_publication_folds,existing_mns_inclusion_penalty,Reference,34,9,1,248.2629163215585,-168.48099534551653,140.53603282526052
+source_publication_folds,existing_mns_inclusion_penalty,Reference,35,2,1,128.4906985325249,-128.4906985325249,128.4906985325249
+source_publication_folds,existing_mns_inclusion_penalty,Reference,36,2,1,142.5,-12.863231619845806,142.5
+source_publication_folds,existing_mns_inclusion_penalty,Reference,37,6,1,144.10283505812978,-144.10283505812978,98.68226707275613
+source_publication_folds,existing_mns_inclusion_penalty,Reference,38,17,1,178.73888831187153,135.45192047929922,165.89294208924642
+source_publication_folds,existing_mns_inclusion_penalty,Reference,40,4,1,267.5985621294242,267.5985621294242,276.0985621294242
+source_publication_folds,existing_mns_inclusion_penalty,Reference,41,6,1,424.3024726268231,-424.3024726268231,430.2796359832713
+source_publication_folds,existing_mns_inclusion_penalty,Reference,42,4,1,196.79989046636877,-196.79989046636877,165.2108044737683
+source_publication_folds,existing_mns_inclusion_penalty,Reference,44,41,1,165.55620321253392,159.38965114074153,150.04809069608103
+source_publication_folds,existing_mns_inclusion_penalty,Reference,45,4,1,316.35282977428017,-316.35282977428017,282.93236345933224
+source_publication_folds,existing_mns_inclusion_penalty,Reference,46,8,1,333.37922150336215,333.37922150336215,328.9995618491074
+source_publication_folds,existing_mns_inclusion_penalty,Reference,47,7,1,82.75467281431554,-47.44855235843801,83.91090877345334
+source_publication_folds,existing_mns_inclusion_penalty,Reference,49,55,1,233.7615396169398,-219.05845747310187,198.9156251286763
+source_publication_folds,existing_mns_inclusion_penalty,Reference,54,27,1,313.10828901020653,309.61227450548245,282.187011415172
+source_publication_folds,existing_mns_inclusion_penalty,Reference,57,15,1,363.8446780918886,-303.9519957468481,389.9200036466232
+source_publication_folds,existing_mns_inclusion_penalty,Reference,58,4,1,331.44970070750946,-34.69974578257424,296.7499549249352
+source_publication_folds,existing_mns_inclusion_penalty,Reference,59,2,1,265.03391388357346,-265.03391388357346,265.03391388357346
+source_publication_folds,existing_mns_inclusion_penalty,Reference,61,1,1,369.9508410735451,-369.9508410735451,369.9508410735451
+source_publication_folds,existing_mns_inclusion_penalty,Reference,63,2,1,287.5,44.343447493426424,287.5
+source_publication_folds,existing_mns_inclusion_penalty,Reference,65,9,1,135.31351032392936,135.31351032392936,148.66058045701388
+source_publication_folds,existing_mns_inclusion_penalty,Reference,66,6,1,270.3074668801302,110.13642298860515,370.075490271065
+source_publication_folds,existing_mns_inclusion_penalty,Reference,67,8,1,60.368875123321416,40.475588176774494,66.48636491200597
+source_publication_folds,existing_mns_inclusion_penalty,Reference,68,2,1,317.36429413647284,317.36429413647284,317.36429413647284
+source_publication_folds,existing_mns_inclusion_penalty,Reference,70,3,1,181.01088693563372,-181.01088693563372,129.29137583519832
+source_publication_folds,existing_mns_inclusion_penalty,Reference,71,30,1,325.09192318124076,231.78724874659326,312.78360155362316
+source_publication_folds,existing_mns_inclusion_penalty,Reference,73,12,1,95.8403191139624,86.49875779151392,60.8257818766927
+source_publication_folds,existing_mns_inclusion_penalty,Reference,74,7,1,492.8945748055907,492.8945748055907,437.3268106154619
+source_publication_folds,existing_mns_inclusion_penalty,Reference,76,8,1,204.71506528427153,-202.45074126951732,193.5278904150377
+source_publication_folds,existing_mns_inclusion_penalty,Reference,77,4,1,349.22496499011794,190.7758829872492,179.7864748765681
+source_publication_folds,existing_mns_inclusion_penalty,Reference,78,3,1,342.2163990153308,-342.2163990153308,338.37748699167986
+source_publication_folds,existing_mns_inclusion_penalty,Reference,84,11,1,245.01724926096475,126.79019409352968,174.10871881435992
+source_publication_folds,existing_mns_inclusion_penalty,Reference,85,5,1,248.58217994040464,-67.01823234002146,248.73707080828967
+source_publication_folds,extend_heat_categories,Reference,1,17,1,339.47791469918326,297.6287177000089,248.09318771898228
+source_publication_folds,extend_heat_categories,Reference,2,11,1,415.45840972003674,-415.45840972003674,574.0504370904937
+source_publication_folds,extend_heat_categories,Reference,3,42,1,71.90774314695838,64.76918782820368,51.624486821628366
+source_publication_folds,extend_heat_categories,Reference,6,3,1,91.28042803842392,-46.158715884728224,33.841284115271776
+source_publication_folds,extend_heat_categories,Reference,8,8,1,388.6143298158311,211.94329734866682,484.7934358077199
+source_publication_folds,extend_heat_categories,Reference,11,12,1,163.65139723019195,-47.62427123401102,152.58986656584986
+source_publication_folds,extend_heat_categories,Reference,12,21,1,168.44779539726588,-158.2451435470608,127.45625134559401
+source_publication_folds,extend_heat_categories,Reference,16,12,1,331.1138153901707,-293.43395553549783,384.1071429543399
+source_publication_folds,extend_heat_categories,Reference,31,1,1,63.20645672410703,-63.20645672410703,63.20645672410703
+source_publication_folds,extend_heat_categories,Reference,33,1,1,20.32531212254662,20.32531212254662,20.32531212254662
+source_publication_folds,extend_heat_categories,Reference,34,9,1,251.6179982280107,-130.61890026497653,143.9380492042268
+source_publication_folds,extend_heat_categories,Reference,35,2,1,205.9819558886236,-205.9819558886236,205.9819558886236
+source_publication_folds,extend_heat_categories,Reference,36,2,1,154.15672169660695,154.15672169660695,154.15672169660695
+source_publication_folds,extend_heat_categories,Reference,37,6,1,87.03463979040323,7.418203209491376,60.08375777530094
+source_publication_folds,extend_heat_categories,Reference,38,17,1,565.2669259164163,565.2669259164163,585.0483900948773
+source_publication_folds,extend_heat_categories,Reference,40,4,1,384.66512087109163,384.66512087109163,393.16512087109163
+source_publication_folds,extend_heat_categories,Reference,41,6,1,490.3034972678904,-490.3034972678904,479.47086723812356
+source_publication_folds,extend_heat_categories,Reference,42,4,1,87.34282201694806,-41.02183285441974,62.10125791576675
+source_publication_folds,extend_heat_categories,Reference,44,41,1,218.1233290461453,211.17591675588824,224.77019011367258
+source_publication_folds,extend_heat_categories,Reference,45,4,1,213.2628646592139,-213.2628646592139,183.3639216549483
+source_publication_folds,extend_heat_categories,Reference,46,8,1,489.8868801203204,489.8868801203204,499.2618801203205
+source_publication_folds,extend_heat_categories,Reference,47,7,1,169.2541902137625,169.2541902137625,114.45946861808011
+source_publication_folds,extend_heat_categories,Reference,49,55,1,159.4075756779398,-66.93810555664538,118.29140479863077
+source_publication_folds,extend_heat_categories,Reference,54,27,1,263.8752382603482,234.515087072679,184.76778104768402
+source_publication_folds,extend_heat_categories,Reference,57,15,1,344.25562326533367,-296.3370696067726,315.9910356589155
+source_publication_folds,extend_heat_categories,Reference,58,4,1,383.3984142533425,39.36334173136515,364.729539870538
+source_publication_folds,extend_heat_categories,Reference,59,2,1,426.9571118021098,-426.9571118021098,426.9571118021098
+source_publication_folds,extend_heat_categories,Reference,61,1,1,404.0957426448954,-404.0957426448954,404.0957426448954
+source_publication_folds,extend_heat_categories,Reference,63,2,1,287.5,27.895703389981634,287.5
+source_publication_folds,extend_heat_categories,Reference,65,9,1,43.68489679739361,-31.841394396514133,46.780526284207355
+source_publication_folds,extend_heat_categories,Reference,66,6,1,275.9034924528311,132.60696169013917,387.2396971103111
+source_publication_folds,extend_heat_categories,Reference,67,8,1,119.99969436010142,119.99969436010142,125.61189387074046
+source_publication_folds,extend_heat_categories,Reference,68,2,1,254.58683366022427,254.58683366022427,254.58683366022427
+source_publication_folds,extend_heat_categories,Reference,70,3,1,174.9261439109579,-174.9261439109579,126.72427993947431
+source_publication_folds,extend_heat_categories,Reference,71,30,1,245.89302111701892,128.6787122609501,230.59770666265754
+source_publication_folds,extend_heat_categories,Reference,73,12,1,505.17359615060906,505.17359615060906,488.93307400787023
+source_publication_folds,extend_heat_categories,Reference,74,7,1,484.33749252209583,484.33749252209583,413.42250553337743
+source_publication_folds,extend_heat_categories,Reference,76,8,1,158.21957137444326,-138.68569207662895,121.15828522636237
+source_publication_folds,extend_heat_categories,Reference,77,4,1,402.8045451570296,228.65196575668796,238.1865881377208
+source_publication_folds,extend_heat_categories,Reference,78,3,1,445.67395865353893,-445.67395865353893,448.7718386791004
+source_publication_folds,extend_heat_categories,Reference,84,11,1,276.1798460977771,-194.9936151204377,243.26213518768338
+source_publication_folds,extend_heat_categories,Reference,85,5,1,428.51844531434125,-428.51844531434125,602.2717817268723
+source_publication_folds,extend_heat_without_method,Reference,1,17,1,357.273288346337,322.01617250158756,260.24642887527705
+source_publication_folds,extend_heat_without_method,Reference,2,11,1,409.02671394996355,-409.02671394996355,543.1645688069567
+source_publication_folds,extend_heat_without_method,Reference,3,42,1,56.837789295367216,44.89536131774813,50.781982587746214
+source_publication_folds,extend_heat_without_method,Reference,6,3,1,135.35613774864825,72.52276869414239,152.52276869414243
+source_publication_folds,extend_heat_without_method,Reference,8,8,1,312.522264924687,106.14409075921861,390.8442290139139
+source_publication_folds,extend_heat_without_method,Reference,11,12,1,182.38568181885447,4.739067294757565,169.76228664119876
+source_publication_folds,extend_heat_without_method,Reference,12,21,1,166.3473964572699,-160.39190052760864,64.03870166685334
+source_publication_folds,extend_heat_without_method,Reference,16,12,1,392.05911329657556,-361.35659329216605,491.4376575868377
+source_publication_folds,extend_heat_without_method,Reference,31,1,1,22.912543396529117,-22.912543396529117,22.912543396529117
+source_publication_folds,extend_heat_without_method,Reference,33,1,1,31.05818059920648,-31.05818059920648,31.05818059920648
+source_publication_folds,extend_heat_without_method,Reference,34,9,1,250.40403996855173,-106.67109656654725,167.256460419779
+source_publication_folds,extend_heat_without_method,Reference,35,2,1,319.3694055801538,-319.3694055801538,319.3694055801538
+source_publication_folds,extend_heat_without_method,Reference,36,2,1,142.5,15.794407892302388,142.5
+source_publication_folds,extend_heat_without_method,Reference,37,6,1,88.59321172430685,-2.4293569106432074,70.43604172647048
+source_publication_folds,extend_heat_without_method,Reference,38,17,1,409.52875183507086,404.3427097730893,423.8042847709072
+source_publication_folds,extend_heat_without_method,Reference,40,4,1,360.9659341503325,360.9659341503325,372.1557550661665
+source_publication_folds,extend_heat_without_method,Reference,41,6,1,443.8972787275584,-443.8972787275584,450.11325015602745
+source_publication_folds,extend_heat_without_method,Reference,42,4,1,152.51892791662965,-131.8266589347823,145.4738529524251
+source_publication_folds,extend_heat_without_method,Reference,44,41,1,169.54472874416297,160.8689530044628,155.75706844324657
+source_publication_folds,extend_heat_without_method,Reference,45,4,1,289.30664080963925,-289.30664080963925,254.76693502809104
+source_publication_folds,extend_heat_without_method,Reference,46,8,1,491.58917269606525,491.58917269606525,488.152171371491
+source_publication_folds,extend_heat_without_method,Reference,47,7,1,76.27077163551621,-6.056977960232574,83.2842691619594
+source_publication_folds,extend_heat_without_method,Reference,49,55,1,230.47510091778878,-202.92776055147132,204.36068329255056
+source_publication_folds,extend_heat_without_method,Reference,54,27,1,319.8664831762365,317.639814747283,283.82207181373707
+source_publication_folds,extend_heat_without_method,Reference,57,15,1,348.0721590580788,-294.9738707898872,355.7204666435161
+source_publication_folds,extend_heat_without_method,Reference,58,4,1,340.2070327857105,-340.2070327857105,209.7732908971573
+source_publication_folds,extend_heat_without_method,Reference,59,2,1,263.1600296288948,-263.1600296288948,263.1600296288948
+source_publication_folds,extend_heat_without_method,Reference,61,1,1,384.90341101822156,-384.90341101822156,384.90341101822156
+source_publication_folds,extend_heat_without_method,Reference,63,2,1,287.5,125.3327231261647,287.5
+source_publication_folds,extend_heat_without_method,Reference,65,9,1,85.4063106522072,85.4063106522072,80.27507661325888
+source_publication_folds,extend_heat_without_method,Reference,66,6,1,269.9779633116535,105.53874459858248,365.1517526118755
+source_publication_folds,extend_heat_without_method,Reference,67,8,1,98.16071090052941,93.73612895294451,97.73082618453887
+source_publication_folds,extend_heat_without_method,Reference,68,2,1,401.57166872906384,401.57166872906384,401.57166872906384
+source_publication_folds,extend_heat_without_method,Reference,70,3,1,168.03430629421473,-168.03430629421473,115.9783176720075
+source_publication_folds,extend_heat_without_method,Reference,71,30,1,324.9684777595275,237.41704554488985,317.13135424817784
+source_publication_folds,extend_heat_without_method,Reference,73,12,1,345.99447914995653,345.99447914995653,321.0010921717072
+source_publication_folds,extend_heat_without_method,Reference,74,7,1,417.0438642083087,417.0438642083087,359.3551467160612
+source_publication_folds,extend_heat_without_method,Reference,76,8,1,219.14975144667073,-219.14975144667073,210.81509110709922
+source_publication_folds,extend_heat_without_method,Reference,77,4,1,335.21750166173126,212.64460257798015,165.5929245179837
+source_publication_folds,extend_heat_without_method,Reference,78,3,1,362.8213638435315,-362.8213638435315,357.60687059498355
+source_publication_folds,extend_heat_without_method,Reference,84,11,1,294.2074529581996,166.1265602306173,301.313257971462
+source_publication_folds,extend_heat_without_method,Reference,85,5,1,254.8022725651305,-92.98225084644152,264.46838972489945
+source_publication_folds,extend_material,Reference,1,17,1,347.812260353024,305.9962347276959,250.41119922321798
+source_publication_folds,extend_material,Reference,2,11,1,440.11098156936424,-440.11098156936424,603.248238826206
+source_publication_folds,extend_material,Reference,3,42,1,81.51232556068527,76.31268340364825,69.64194072979762
+source_publication_folds,extend_material,Reference,6,3,1,115.45744199231046,-115.45744199231046,35.457441992310464
+source_publication_folds,extend_material,Reference,8,8,1,386.0114028583667,212.11145761074246,481.2853285112177
+source_publication_folds,extend_material,Reference,11,12,1,161.33763979121693,-89.23183532899095,116.54877182582652
+source_publication_folds,extend_material,Reference,12,21,1,176.64428693218755,-169.07996821581423,142.7422355957346
+source_publication_folds,extend_material,Reference,16,12,1,333.8123425317504,-296.64667835650283,389.37017894349844
+source_publication_folds,extend_material,Reference,31,1,1,94.00290219400603,-94.00290219400603,94.00290219400603
+source_publication_folds,extend_material,Reference,33,1,1,47.089347719610714,47.089347719610714,47.089347719610714
+source_publication_folds,extend_material,Reference,34,9,1,247.6779331373374,-162.5437245510053,146.32884687794837
+source_publication_folds,extend_material,Reference,35,2,1,35.18381215006718,-35.18381215006718,35.18381215006718
+source_publication_folds,extend_material,Reference,36,2,1,156.41834962419546,156.41834962419546,156.41834962419546
+source_publication_folds,extend_material,Reference,37,6,1,75.92488271122086,-21.68789820163053,56.57255425659031
+source_publication_folds,extend_material,Reference,38,17,1,279.2097053620812,255.76326360792186,275.05451317595134
+source_publication_folds,extend_material,Reference,40,4,1,348.5474307305076,348.5474307305076,357.0474307305076
+source_publication_folds,extend_material,Reference,41,6,1,463.99611102441116,-463.99611102441116,454.374125392551
+source_publication_folds,extend_material,Reference,42,4,1,93.44886387765528,-61.973755171034796,61.77005850969255
+source_publication_folds,extend_material,Reference,44,41,1,203.96820817907656,193.5969773887086,204.75806564168175
+source_publication_folds,extend_material,Reference,45,4,1,250.25127928505532,-250.25127928505532,220.4600688952938
+source_publication_folds,extend_material,Reference,46,8,1,321.1955364985473,321.1955364985473,329.7298039693939
+source_publication_folds,extend_material,Reference,47,7,1,147.32981389550872,147.32981389550872,95.10417000377771
+source_publication_folds,extend_material,Reference,49,55,1,160.54711136076068,-75.91144245282055,118.79241384058685
+source_publication_folds,extend_material,Reference,54,27,1,263.01426757113876,235.36922672680734,190.8453693908478
+source_publication_folds,extend_material,Reference,57,15,1,344.0736082907128,-297.56144505746096,322.1831429728776
+source_publication_folds,extend_material,Reference,58,4,1,376.0293706588356,31.648687643390133,354.5740680931808
+source_publication_folds,extend_material,Reference,59,2,1,443.2096890486061,-443.2096890486061,443.2096890486061
+source_publication_folds,extend_material,Reference,61,1,1,408.8447207593639,-408.8447207593639,408.8447207593639
+source_publication_folds,extend_material,Reference,63,2,1,287.5,-15.914145776532791,287.5
+source_publication_folds,extend_material,Reference,65,9,1,33.78631241548563,28.916830442616263,20.120481290290513
+source_publication_folds,extend_material,Reference,66,6,1,271.23079312529995,126.87031055569874,381.3593764591411
+source_publication_folds,extend_material,Reference,67,8,1,88.04811027531888,78.12596267183255,84.28042961850116
+source_publication_folds,extend_material,Reference,68,2,1,205.1443685980334,205.1443685980334,205.1443685980334
+source_publication_folds,extend_material,Reference,70,3,1,190.29425417897053,-190.29425417897053,142.07869847310135
+source_publication_folds,extend_material,Reference,71,30,1,287.3893325096755,191.38738871429035,290.5556977805686
+source_publication_folds,extend_material,Reference,73,12,1,187.9271034115628,187.9271034115628,172.1570789995962
+source_publication_folds,extend_material,Reference,74,7,1,496.6320380450176,496.6320380450176,425.29890349983015
+source_publication_folds,extend_material,Reference,76,8,1,166.07273317092324,-149.49738909742626,133.57142738979167
+source_publication_folds,extend_material,Reference,77,4,1,416.44975830820664,244.76701617561326,256.077931694605
+source_publication_folds,extend_material,Reference,78,3,1,455.2840441723147,-455.2840441723147,458.12579268595834
+source_publication_folds,extend_material,Reference,84,11,1,274.1375196162897,-197.11759691220166,231.80478743624212
+source_publication_folds,extend_material,Reference,85,5,1,362.9838411880588,-362.9838411880588,536.2409604109349
+source_publication_folds,extend_solution,Reference,1,17,1,342.4385235280919,299.40424135187527,244.57428556185192
+source_publication_folds,extend_solution,Reference,2,11,1,440.4890289707631,-440.4890289707631,598.9937137796072
+source_publication_folds,extend_solution,Reference,3,42,1,79.82624233308435,75.31087933788729,68.81224668630757
+source_publication_folds,extend_solution,Reference,6,3,1,124.45635878610699,-124.45635878610699,44.45635878610699
+source_publication_folds,extend_solution,Reference,8,8,1,384.7064393644416,211.16179752892634,480.2362533078466
+source_publication_folds,extend_solution,Reference,11,12,1,159.29093318008938,-83.29237391761221,119.98485533765978
+source_publication_folds,extend_solution,Reference,12,21,1,191.9639135224385,-184.47770135839914,153.00697574347456
+source_publication_folds,extend_solution,Reference,16,12,1,323.51429424513645,-281.4841676462424,373.06297751829015
+source_publication_folds,extend_solution,Reference,31,1,1,92.50982282339183,-92.50982282339183,92.50982282339183
+source_publication_folds,extend_solution,Reference,33,1,1,36.50670979134213,36.50670979134213,36.50670979134213
+source_publication_folds,extend_solution,Reference,34,9,1,255.37114993089043,-156.01514400537707,148.3579073116211
+source_publication_folds,extend_solution,Reference,35,2,1,23.87210122906515,-23.87210122906515,23.87210122906515
+source_publication_folds,extend_solution,Reference,36,2,1,155.1088763992063,155.1088763992063,155.1088763992063
+source_publication_folds,extend_solution,Reference,37,6,1,75.47905026120459,-20.922794995547292,56.715647788329505
+source_publication_folds,extend_solution,Reference,38,17,1,279.798578193617,256.39247385669853,275.8214981535194
+source_publication_folds,extend_solution,Reference,40,4,1,336.78309939137364,336.78309939137364,345.28309939137364
+source_publication_folds,extend_solution,Reference,41,6,1,467.5239144536881,-467.5239144536881,456.74295704914584
+source_publication_folds,extend_solution,Reference,42,4,1,93.22295215171975,-60.31981573340808,60.98294612604039
+source_publication_folds,extend_solution,Reference,44,41,1,224.47712532410145,217.38869426118643,229.01733281552129
+source_publication_folds,extend_solution,Reference,45,4,1,242.72981363807202,-242.72981363807202,212.9631161498481
+source_publication_folds,extend_solution,Reference,46,8,1,305.1220892828996,305.1220892828996,314.4970892828996
+source_publication_folds,extend_solution,Reference,47,7,1,168.93831484711194,168.93831484711194,114.16100117604418
+source_publication_folds,extend_solution,Reference,49,55,1,160.29835930804666,-65.82301479861322,118.80454250155401
+source_publication_folds,extend_solution,Reference,54,27,1,263.1967433319918,231.26910092093453,177.76062016337033
+source_publication_folds,extend_solution,Reference,57,15,1,345.11606226277166,-293.83631269864134,311.9955141759276
+source_publication_folds,extend_solution,Reference,58,4,1,378.82552144000545,34.69658982070442,358.3036547054852
+source_publication_folds,extend_solution,Reference,59,2,1,446.4073014529694,-446.4073014529694,446.4073014529694
+source_publication_folds,extend_solution,Reference,61,1,1,403.1098228233918,-403.1098228233918,403.1098228233918
+source_publication_folds,extend_solution,Reference,63,2,1,287.5,-30.19954365775044,287.5
+source_publication_folds,extend_solution,Reference,65,9,1,29.69623934499212,24.664988506977902,19.40232799831034
+source_publication_folds,extend_solution,Reference,66,6,1,307.2082708101578,179.76509674821304,406.70559583320266
+source_publication_folds,extend_solution,Reference,67,8,1,99.64323027983681,93.62483429882772,99.6122583354963
+source_publication_folds,extend_solution,Reference,68,2,1,198.47037639503696,198.47037639503696,198.47037639503696
+source_publication_folds,extend_solution,Reference,70,3,1,189.1264202601897,-189.1264202601897,140.92961951238536
+source_publication_folds,extend_solution,Reference,71,30,1,288.6440484421126,194.81433737922578,291.2019008061608
+source_publication_folds,extend_solution,Reference,73,12,1,190.3571252269114,190.3571252269114,176.74603739257554
+source_publication_folds,extend_solution,Reference,74,7,1,485.08836359072137,485.08836359072137,412.253499637606
+source_publication_folds,extend_solution,Reference,76,8,1,151.48219470646453,-129.6599977834816,112.13354057595251
+source_publication_folds,extend_solution,Reference,77,4,1,414.80218545247556,234.78320987641874,250.48081125742368
+source_publication_folds,extend_solution,Reference,78,3,1,451.0199635378553,-451.0199635378553,453.9248707745684
+source_publication_folds,extend_solution,Reference,84,11,1,277.89163835456225,-199.24575442226333,236.2761808138223
+source_publication_folds,extend_solution,Reference,85,5,1,358.154576737969,-358.154576737969,532.7678501339026
+source_publication_folds,extend_surface,Reference,1,17,1,295.0558301219438,243.2079401566282,202.41201970142623
+source_publication_folds,extend_surface,Reference,2,11,1,440.89064854236125,-440.89064854236125,598.4903187465404
+source_publication_folds,extend_surface,Reference,3,42,1,69.28583098777447,60.33684055566391,54.67760737527425
+source_publication_folds,extend_surface,Reference,6,3,1,82.42311849327722,-72.73064452016837,7.269355479831631
+source_publication_folds,extend_surface,Reference,8,8,1,363.6454293106668,218.88649912934693,429.2172444687013
+source_publication_folds,extend_surface,Reference,11,12,1,159.9461437892372,-70.79785230504477,132.82061459622662
+source_publication_folds,extend_surface,Reference,12,21,1,183.2837843705031,-175.8553595468582,143.1235649961219
+source_publication_folds,extend_surface,Reference,16,12,1,321.2103785996988,-259.00339901404357,369.5833059906273
+source_publication_folds,extend_surface,Reference,31,1,1,89.49520570148013,-89.49520570148013,89.49520570148013
+source_publication_folds,extend_surface,Reference,33,1,1,44.834887259217794,44.834887259217794,44.834887259217794
+source_publication_folds,extend_surface,Reference,34,9,1,247.3718250061292,-157.9564512082663,133.41449592921424
+source_publication_folds,extend_surface,Reference,35,2,1,28.86549869473845,-28.86549869473845,28.86549869473845
+source_publication_folds,extend_surface,Reference,36,2,1,142.5,-57.89463235865719,142.5
+source_publication_folds,extend_surface,Reference,37,6,1,75.8877809255135,-20.575427785992645,56.86387234860052
+source_publication_folds,extend_surface,Reference,38,17,1,283.04141754525136,260.0694620478243,279.82492159690446
+source_publication_folds,extend_surface,Reference,40,4,1,337.89207614495956,337.89207614495956,346.39207614495956
+source_publication_folds,extend_surface,Reference,41,6,1,470.41309319170904,-470.41309319170904,459.8691529750169
+source_publication_folds,extend_surface,Reference,42,4,1,93.50007720248541,-56.23947159494125,61.13831062030951
+source_publication_folds,extend_surface,Reference,44,41,1,251.48402179726372,249.8815386208,266.6635613304294
+source_publication_folds,extend_surface,Reference,45,4,1,243.82601946161475,-243.82601946161475,214.20356793487247
+source_publication_folds,extend_surface,Reference,46,8,1,308.5253982178912,308.5253982178912,317.9003982178912
+source_publication_folds,extend_surface,Reference,47,7,1,94.79157577678123,45.643266258098606,78.46931416816233
+source_publication_folds,extend_surface,Reference,49,55,1,182.14173713482208,-45.06330358781003,148.3532140453392
+source_publication_folds,extend_surface,Reference,54,27,1,268.2268704815801,241.37615966395222,191.37766893810965
+source_publication_folds,extend_surface,Reference,57,15,1,348.576267760092,-297.89119192892576,317.6866720038406
+source_publication_folds,extend_surface,Reference,58,4,1,317.23946206119484,5.500226932646939,292.1984655530142
+source_publication_folds,extend_surface,Reference,59,2,1,443.7051311760342,-443.7051311760342,443.7051311760342
+source_publication_folds,extend_surface,Reference,61,1,1,405.4473752668719,-405.4473752668719,405.4473752668719
+source_publication_folds,extend_surface,Reference,63,2,1,287.5,-22.536912659978555,287.5
+source_publication_folds,extend_surface,Reference,65,9,1,43.228879358341686,42.061539108711976,24.37603660062244
+source_publication_folds,extend_surface,Reference,66,6,1,269.37330713105354,122.82711064850533,377.4308379126205
+source_publication_folds,extend_surface,Reference,67,8,1,134.0155524079505,134.0155524079505,138.83989605948554
+source_publication_folds,extend_surface,Reference,68,2,1,231.02763499591745,231.02763499591745,231.02763499591745
+source_publication_folds,extend_surface,Reference,70,3,1,192.05464438999306,-192.05464438999306,143.8810681451572
+source_publication_folds,extend_surface,Reference,71,30,1,290.3148405080148,196.00366788842592,292.9495848898731
+source_publication_folds,extend_surface,Reference,73,12,1,187.68144016743233,187.68144016743233,171.92485523403536
+source_publication_folds,extend_surface,Reference,74,7,1,490.16070115449753,490.16070115449753,419.0983379707993
+source_publication_folds,extend_surface,Reference,76,8,1,163.71106793475758,-145.77010230000462,128.24800100917466
+source_publication_folds,extend_surface,Reference,77,4,1,377.61319825278986,213.4013227124086,212.37250871044225
+source_publication_folds,extend_surface,Reference,78,3,1,353.031139626781,-353.031139626781,351.8872352572226
+source_publication_folds,extend_surface,Reference,84,11,1,256.298863057843,-143.57042915082113,236.58889907049524
+source_publication_folds,extend_surface,Reference,85,5,1,303.91307470597076,-287.110386167452,459.05811995053085

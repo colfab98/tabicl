@@ -1,4 +1,4 @@
-"""Compare fine-tuning stages from step zero on the frozen EPIT outer queries."""
+"""Compare fine-tuning stages on frozen EPIT queries or explicit exploratory CV."""
 from __future__ import annotations
 
 import argparse
@@ -20,7 +20,10 @@ def parse_args(argv=None):
     parser.add_argument("--checkpoint", default="all")
     parser.add_argument("--max-checkpoint-step", type=int)
     parser.add_argument("--checkpoint-step-interval", type=int, default=100)
+    parser.add_argument("--exploratory-cv-folds", type=int, choices=[5],
+                        help="Reuse the EPIT/Soccol exploratory CV protocol; not a final-test estimate.")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--no-compare-catboost", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -34,7 +37,10 @@ def comparison_args(args):
         argv.extend(["--max-checkpoint-step", str(args.max_checkpoint_step)])
     if args.dry_run:
         argv.append("--dry-run")
+    if args.exploratory_cv_folds is not None:
+        argv.extend(["--exploratory-cv-folds", str(args.exploratory_cv_folds)])
     options = comparison.parse_args(argv)
+    options.compare_catboost = not args.no_compare_catboost
     # The unchanged generic parent is the actual step-zero checkpoint. Never
     # place a generic pretraining trajectory on the fine-tuning step axis.
     options._selected_model_runs = [("epit_finetuned", args.finetune_run.resolve())]
@@ -92,7 +98,9 @@ def run(args):
         payload["checkpoint_step_semantics"] = "additional steps; step 0 is generic pretraining step 10000"
         payload["primary_comparison_step"] = 2000
         payload["primary_comparison_complete"] = all(
-            any(row.get("model") == label and row.get("checkpoint_step") == 2000 for row in payload["rows"])
+            {row.get("cv_fold") for row in payload["rows"]
+             if row.get("model") == label and row.get("checkpoint_step") == 2000}
+            == (set(range(1, 6)) if args.exploratory_cv_folds else {None})
             for label in stages
         )
         if args.checkpoint == "all":

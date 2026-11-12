@@ -1,0 +1,11 @@
+Material class,outer_split,n,formula_fit_rows,publications
+Al Alloy,development,94,0,11
+Al Alloy,final_test,24,0,6
+Fe Alloy,development,411,411,41
+Fe Alloy,final_test,103,0,22
+HEA,development,22,0,9
+HEA,final_test,5,0,4
+NiCrMo Alloy,development,41,41,1
+NiCrMo Alloy,final_test,10,0,1
+Other,development,40,0,6
+Other,final_test,10,0,1

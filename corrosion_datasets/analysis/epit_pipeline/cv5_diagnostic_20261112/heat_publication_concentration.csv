@@ -1,0 +1,11 @@
+heat_type,n,publications,dominant_publication_share,dominant_publication
+annealing,74,13,0.21621621621621623,3
+denitriding,1,1,1.0,42
+heat_treatment,71,4,0.4225352112676056,71
+homogenization,26,3,0.6538461538461539,1
+sensitization,2,1,1.0,84
+soaking,27,1,1.0,54
+solution_annealing,27,5,0.3333333333333333,34
+solution_treatment,41,5,0.4146341463414634,38
+tempering,18,1,1.0,12
+nan,165,14,0.3333333333333333,49

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="510" height="530" viewBox="0 0 510 530" role="img" aria-labelledby="title desc">
+<title id="title">A vector-valued node across dataset rows</title>
+<desc id="desc">For one row a node holds a vector of three values. Collecting that vector across rows yields three columns. Three is an illustrative vector size.</desc>
+<rect x="8" y="5" width="494" height="518" rx="18" fill="#eaf2f4"/>
+<g font-family="DejaVu Sans, Arial, sans-serif" fill="#233641" text-anchor="middle">
+<text x="255" y="39" font-size="23" font-weight="bold" fill="#155568">Inside one node</text>
+<text x="255" y="72" font-size="19">One row → a vector of values</text>
+<ellipse cx="255" cy="146" rx="164" ry="58" fill="#d2e8e1" stroke="#2b8c79" stroke-width="2"/>
+
+<rect x="140" y="126" width="70" height="40" rx="6" fill="#fff"/><text x="175" y="152" font-size="22">0.2</text>
+<rect x="220" y="126" width="70" height="40" rx="6" fill="#fff"/><text x="255" y="152" font-size="22">0.7</text>
+<rect x="300" y="126" width="70" height="40" rx="6" fill="#fff"/><text x="335" y="152" font-size="22">−0.1</text>
+<path d="M255 217 V248 M247 240 L255 248 L263 240" fill="none" stroke="#155568" stroke-width="3"/>
+<text x="255" y="278" font-size="19">Collect values across rows</text>
+
+<rect x="138" y="299" width="102" height="161" rx="6" fill="#d2e8e1"/><text x="189" y="323" font-size="17" font-weight="bold">Column 1</text>
+<rect x="246" y="299" width="102" height="161" rx="6" fill="#dbe9ee"/><text x="297" y="323" font-size="17" font-weight="bold">Column 2</text>
+<rect x="354" y="299" width="102" height="161" rx="6" fill="#f1e3cd"/><text x="405" y="323" font-size="17" font-weight="bold">Column 3</text>
+<text x="90" y="352" font-size="17" fill="#60737c">Row 1</text>
+<text x="189" y="352" font-size="20">0.2</text>
+<text x="297" y="352" font-size="20">0.7</text>
+<text x="405" y="352" font-size="20">−0.1</text>
+<text x="90" y="383" font-size="17" fill="#60737c">Row 2</text>
+<text x="189" y="383" font-size="20">0.5</text>
+<text x="297" y="383" font-size="20">−0.3</text>
+<text x="405" y="383" font-size="20">0.8</text>
+<text x="90" y="414" font-size="17" fill="#60737c">Row 3</text>
+<text x="189" y="414" font-size="20">−0.4</text>
+<text x="297" y="414" font-size="20">0.6</text>
+<text x="405" y="414" font-size="20">0.2</text>
+<text x="90" y="445" font-size="17" fill="#60737c">…</text>
+<text x="189" y="445" font-size="20">…</text>
+<text x="297" y="445" font-size="20">…</text>
+<text x="405" y="445" font-size="20">…</text>
+<text x="255" y="491" font-size="18" fill="#155568">Example: 3 values per node → 3 columns</text>
+</g></svg>

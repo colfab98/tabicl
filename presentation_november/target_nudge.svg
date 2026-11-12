@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1144" height="260" viewBox="0 0 1144 260" role="img" aria-labelledby="title desc">
+<title id="title">Nudge the SCM target toward the formula target</title>
+<desc id="desc">The mixed target moves from the SCM target toward a higher formula target.</desc>
+<rect width="1144" height="260" rx="18" fill="#eaf2f4"/>
+<g font-family="DejaVu Sans, Arial, sans-serif" font-size="22" fill="#233641">
+  <text x="32" y="105">Formula suggests</text>
+  <text x="32" y="135" font-weight="bold" fill="#155568">higher Epit</text>
+  
+  
+</g>
+<g stroke="#b6ced6" stroke-width="2">
+  <path d="M310 182 H1110"/>
+</g>
+<g font-family="DejaVu Sans, Arial, sans-serif" font-size="21" text-anchor="middle" fill="#233641">
+  <text x="440" y="82">SCM target</text>
+  <text x="1020" y="82">Formula target</text>
+
+
+  <text x="660" y="150" fill="#155568" font-weight="bold">Mixed target</text>
+
+</g>
+<g fill="#8a969c"><circle cx="440" cy="111" r="10"/></g>
+<g fill="#c48630"><circle cx="1020" cy="111" r="10"/></g>
+<g fill="#155568"><circle cx="660" cy="111" r="13"/></g>
+<g stroke="#155568" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M470 111 H628 M616 101 L628 111 L616 121"/>
+
+</g>
+<g font-family="DejaVu Sans, Arial, sans-serif" font-size="21" fill="#60737c">
+  <text x="310" y="225">Lower target</text>
+  <text x="1110" y="225" text-anchor="end">Higher target</text>
+</g>
+</svg>

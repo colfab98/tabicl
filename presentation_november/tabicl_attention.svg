@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1144" height="440" viewBox="0 0 1144 440" role="img" aria-labelledby="title desc">
+<title id="title">How TabICL uses attention</title><desc id="desc">Four stages: embed cell values, use attention within columns, combine features within rows, and predict query targets using labeled context.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#155568"/></marker></defs>
+<rect x="0" y="6" width="268" height="418" rx="16" fill="#eaf2f4"/><circle cx="32" cy="39" r="17" fill="#155568"/><text x="32" y="45" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" fill="#fff">1</text><text x="134" y="83" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" font-weight="bold" fill="#155568">Cell embeddings</text>
+<text x="134" y="367" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">Turn each value</text>
+<text x="134" y="394" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">into a vector.</text>
+<path d="M272 219 H287" stroke="#155568" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="292" y="6" width="268" height="418" rx="16" fill="#eaf2f4"/><circle cx="324" cy="39" r="17" fill="#155568"/><text x="324" y="45" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" fill="#fff">2</text><text x="426" y="83" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" font-weight="bold" fill="#155568">Column attention</text>
+<text x="426" y="367" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">Relate values within</text>
+<text x="426" y="394" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">the same feature.</text>
+<path d="M564 219 H579" stroke="#155568" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="584" y="6" width="268" height="418" rx="16" fill="#eaf2f4"/><circle cx="616" cy="39" r="17" fill="#155568"/><text x="616" y="45" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" fill="#fff">3</text><text x="718" y="83" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" font-weight="bold" fill="#155568">Row attention</text>
+<text x="718" y="367" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">Combine features into</text>
+<text x="718" y="394" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">one sample representation.</text>
+<path d="M856 219 H871" stroke="#155568" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="876" y="6" width="268" height="418" rx="16" fill="#eaf2f4"/><circle cx="908" cy="39" r="17" fill="#155568"/><text x="908" y="45" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" fill="#fff">4</text><text x="1010" y="83" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" font-weight="bold" fill="#155568">Labeled context</text>
+<text x="1010" y="367" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">Use labeled rows to predict</text>
+<text x="1010" y="394" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">targets for query rows.</text>
+<rect x="93" y="130" width="82" height="52" rx="8" fill="#fff" stroke="#155568" stroke-width="2"/>
+<text x="134" y="163" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="23" fill="#233641">0.50</text>
+<path d="M134 194 V229" stroke="#155568" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="26" y="247" width="51" height="48" rx="6" fill="#b6ced6"/>
+<text x="51.5" y="277" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">0.2</text>
+<rect x="81" y="247" width="51" height="48" rx="6" fill="#b6ced6"/>
+<text x="106.5" y="277" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">−0.1</text>
+<rect x="136" y="247" width="51" height="48" rx="6" fill="#b6ced6"/>
+<text x="161.5" y="277" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">0.7</text>
+<rect x="191" y="247" width="51" height="48" rx="6" fill="#b6ced6"/>
+<text x="216.5" y="277" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">…</text>
+<text x="134" y="322" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="18" fill="#60737c">Embedding</text>
+<rect x="320" y="128" width="55" height="36" rx="5" fill="#fff" fill-opacity="1"/>
+<rect x="383" y="128" width="55" height="36" rx="5" fill="#55b9a4" fill-opacity="0.65"/>
+<rect x="446" y="128" width="55" height="36" rx="5" fill="#fff" fill-opacity="1"/>
+<rect x="320" y="173" width="55" height="36" rx="5" fill="#fff" fill-opacity="1"/>
+<rect x="383" y="173" width="55" height="36" rx="5" fill="#55b9a4" fill-opacity="0.65"/>
+<rect x="446" y="173" width="55" height="36" rx="5" fill="#fff" fill-opacity="1"/>
+<rect x="320" y="218" width="55" height="36" rx="5" fill="#fff" fill-opacity="1"/>
+<rect x="383" y="218" width="55" height="36" rx="5" fill="#55b9a4" fill-opacity="0.65"/>
+<rect x="446" y="218" width="55" height="36" rx="5" fill="#fff" fill-opacity="1"/>
+<rect x="320" y="263" width="55" height="36" rx="5" fill="#fff" fill-opacity="1"/>
+<rect x="383" y="263" width="55" height="36" rx="5" fill="#55b9a4" fill-opacity="0.65"/>
+<rect x="446" y="263" width="55" height="36" rx="5" fill="#fff" fill-opacity="1"/>
+<path d="M410 141 V287" stroke="#155568" stroke-width="2.5" marker-end="url(#arrow)"/><path d="M421 286 V140" stroke="#155568" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="426" y="322" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#60737c">One column, many rows</text>
+<rect x="602" y="132" width="34" height="35" rx="5" fill="#b6ced6"/>
+<rect x="643" y="132" width="34" height="35" rx="5" fill="#b6ced6"/>
+<rect x="684" y="132" width="34" height="35" rx="5" fill="#b6ced6"/>
+<path d="M724 149 H751" stroke="#155568" stroke-width="2" marker-end="url(#arrow)"/><rect x="761" y="132" width="70" height="35" rx="6" fill="#155568"/>
+<text x="796" y="155" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" fill="#fff">vector</text>
+<rect x="602" y="190" width="34" height="35" rx="5" fill="#d2e8e1"/>
+<rect x="643" y="190" width="34" height="35" rx="5" fill="#d2e8e1"/>
+<rect x="684" y="190" width="34" height="35" rx="5" fill="#d2e8e1"/>
+<path d="M724 207 H751" stroke="#155568" stroke-width="2" marker-end="url(#arrow)"/><rect x="761" y="190" width="70" height="35" rx="6" fill="#155568"/>
+<text x="796" y="213" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" fill="#fff">vector</text>
+<rect x="602" y="248" width="34" height="35" rx="5" fill="#f1e3cd"/>
+<rect x="643" y="248" width="34" height="35" rx="5" fill="#f1e3cd"/>
+<rect x="684" y="248" width="34" height="35" rx="5" fill="#f1e3cd"/>
+<path d="M724 265 H751" stroke="#155568" stroke-width="2" marker-end="url(#arrow)"/><rect x="761" y="248" width="70" height="35" rx="6" fill="#155568"/>
+<text x="796" y="271" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" fill="#fff">vector</text>
+<text x="718" y="322" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#60737c">One vector per row</text>
+<rect x="903" y="127" width="101" height="33" rx="5" fill="#b6ced6"/><rect x="1016" y="127" width="46" height="33" rx="5" fill="#d2e8e1"/>
+<text x="953" y="149" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" fill="#233641">row vector</text>
+<text x="1039" y="150" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">0.4</text>
+<rect x="903" y="176" width="101" height="33" rx="5" fill="#b6ced6"/><rect x="1016" y="176" width="46" height="33" rx="5" fill="#d2e8e1"/>
+<text x="953" y="198" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" fill="#233641">row vector</text>
+<text x="1039" y="199" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" fill="#233641">0.9</text>
+<text x="953" y="113" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" fill="#60737c">Context</text>
+<text x="1039" y="113" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" fill="#60737c">Target</text>
+<path d="M954 217 V248" stroke="#155568" stroke-width="2" marker-end="url(#arrow)"/><rect x="903" y="260" width="101" height="36" rx="5" fill="#155568"/><path d="M1010 278 H1030" stroke="#155568" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="953" y="284" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" fill="#fff">query row</text>
+<text x="1055" y="285" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="25" fill="#155568" font-weight="bold">ŷ</text>
+<text x="1010" y="322" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-size="16" fill="#60737c">Predict the missing target</text>
+</svg>

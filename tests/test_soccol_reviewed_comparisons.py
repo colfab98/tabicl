@@ -202,6 +202,13 @@ def test_exploratory_cv_preserves_original_queries_and_accepted_rows(tmp_path, m
         assert {'context_task_row_indices': context, 'query_task_row_indices': query} in memberships
     assert payload['original_final_test_fold'] == 1
     assert payload['exploratory_cv'] is True
+    for fold in range(1, 6):
+        directory = output / f'cv_fold_{fold}'
+        saved = json.loads((directory / 'results.json').read_text())
+        for filename in comparison.REQUIRED_PLOTS:
+            plot = directory / 'plots' / filename
+            assert plot.is_file() and plot.stat().st_size > 0
+            assert str(plot) in saved['output_files']['plots']
     for summary in payload['summary']:
         factor = 2 if summary['model'] == 'soccol_reviewed' else 1
         assert summary['n_cv_folds'] == 5

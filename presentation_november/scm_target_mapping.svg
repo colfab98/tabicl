@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1144" height="470" viewBox="0 0 1144 470" role="img" aria-labelledby="title desc">
+<title id="title">MLP example with weights and biases</title>
+<desc id="desc">Feature values pass through weighted connections to two internal nodes, then to a target. Numbers on arrows are weights. The internal nodes use tanh. Values are illustrative.</desc>
+<rect width="1144" height="470" rx="18" fill="#eaf2f4"/>
+<rect x="18" y="12" width="225" height="447" rx="16" fill="#55b9a4" fill-opacity="0.15" stroke="#2b8c79" stroke-width="2"/>
+<rect x="460" y="75" width="300" height="345" rx="18" fill="#fff"/>
+<g font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#155568" font-size="22" font-weight="bold">
+<text x="130" y="35" font-size="21">Informed inputs</text><text x="610" y="35">MLP example</text><text x="990" y="35">SCM target</text>
+</g>
+<g font-family="DejaVu Sans, Arial, sans-serif" text-anchor="middle" fill="#60737c" font-size="17">
+<text x="130" y="60" fill="#267c6c">Feature values · fixed</text><text x="610" y="60">Numbers on arrows = weights</text>
+</g>
+<g stroke="#779da9" stroke-width="2.5" fill="none"><path d="M187.85714235143595 113.291925421864 L559.1917300020202 145.58188956539306"/><path d="M549.8790462427997 148.78718537089222 L559.1917300020202 145.58188956539306 L550.5720831737184 140.81726066532676"/></g>
+<g stroke="#779da9" stroke-width="2.5" fill="none"><path d="M184.28110042215457 126.39530889755218 L563.991154696582 307.99576963749575"/><path d="M554.1461247126452 307.7212070483023 L563.991154696582 307.99576963749575 L557.5977686910772 300.5041332752171"/></g>
+<g stroke="#779da9" stroke-width="2.5" fill="none"><path d="M187.43804668314763 223.48903535945257 L559.7542005041967 158.73839991231364"/><path d="M551.5726594098245 164.22131750435355 L559.7542005041967 158.73839991231364 L550.2019300118146 156.33962346579617"/></g>
+<g stroke="#779da9" stroke-width="2.5" fill="none"><path d="M187.13270182906643 238.07232648457966 L560.1640054399371 319.16608813911677"/><path d="M550.5196995873077 321.1629267958285 L560.1640054399371 319.16608813911677 L552.2191367419562 313.3455158844462"/></g>
+<g stroke="#779da9" stroke-width="2.5" fill="none"><path d="M184.84866213762294 334.8484077662509 L563.229427131085 170.33503168213696"/><path d="M556.5707010704637 177.59184690987996 L563.229427131085 170.33503168213696 L553.3808921791481 170.25528645985406"/></g>
+<g stroke="#779da9" stroke-width="2.5" fill="none"><path d="M187.96413401749226 348.34938547750033 L559.048135923892 332.2152984380917"/><path d="M550.2303793958017 336.60245808999866 L559.048135923892 332.2152984380917 L549.8828816015912 328.6100088231582"/></g>
+<g stroke="#779da9" stroke-width="2.5" fill="none"><path d="M654.7616932245404 160.60145365844377 L934.5344236130695 226.86341611888489"/><path d="M924.8548354901426 228.681539813932 L934.5344236130695 226.86341611888489 L926.6985665611763 220.89689751401195"/></g>
+<g stroke="#779da9" stroke-width="2.5" fill="none"><path d="M654.7616932245404 319.3985463415562 L934.5344236130695 253.13658388111511"/><path d="M926.6985665611763 259.1031024859881 L934.5344236130695 253.13658388111511 L924.8548354901426 251.318460186068"/></g>
+<rect x="236.0" y="105.0" width="58" height="30" rx="8" fill="#fbfcfd"/><text x="265.0" y="127.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" text-anchor="middle" fill="#155568">0.8</text>
+<rect x="236.0" y="150.0" width="58" height="30" rx="8" fill="#fbfcfd"/><text x="265.0" y="172.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" text-anchor="middle" fill="#155568">−0.4</text>
+<rect x="236.0" y="195.0" width="58" height="30" rx="8" fill="#fbfcfd"/><text x="265.0" y="217.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" text-anchor="middle" fill="#155568">0.5</text>
+<rect x="236.0" y="240.0" width="58" height="30" rx="8" fill="#fbfcfd"/><text x="265.0" y="262.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" text-anchor="middle" fill="#155568">0.5</text>
+<rect x="236.0" y="285.0" width="58" height="30" rx="8" fill="#fbfcfd"/><text x="265.0" y="307.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" text-anchor="middle" fill="#155568">0.1</text>
+<rect x="236.0" y="330.0" width="58" height="30" rx="8" fill="#fbfcfd"/><text x="265.0" y="352.0" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" text-anchor="middle" fill="#155568">0.2</text>
+<rect x="797.6" y="186.3" width="58" height="30" rx="8" fill="#fbfcfd"/><text x="826.6" y="208.3" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" text-anchor="middle" fill="#155568">1.2</text>
+<rect x="797.6" y="263.7" width="58" height="30" rx="8" fill="#fbfcfd"/><text x="826.6" y="285.7" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" text-anchor="middle" fill="#155568">−0.7</text>
+<circle cx="150" cy="110" r="34" fill="#fff" stroke="#155568" stroke-width="2"/><text x="150" y="116" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" text-anchor="middle" fill="#155568">0.50</text><text x="85" y="117" font-family="DejaVu Sans, Arial, sans-serif" font-style="italic" font-size="24" text-anchor="end" fill="#155568">Cr</text>
+<circle cx="150" cy="230" r="34" fill="#fff" stroke="#155568" stroke-width="2"/><text x="150" y="236" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" text-anchor="middle" fill="#155568">−0.20</text><text x="85" y="237" font-family="DejaVu Sans, Arial, sans-serif" font-style="italic" font-size="24" text-anchor="end" fill="#155568">Mo</text>
+<circle cx="150" cy="350" r="34" fill="#fff" stroke="#155568" stroke-width="2"/><text x="150" y="356" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" text-anchor="middle" fill="#155568">1.00</text><text x="85" y="357" font-family="DejaVu Sans, Arial, sans-serif" font-style="italic" font-size="24" text-anchor="end" fill="#155568">pH</text>
+<circle cx="610" cy="150" r="42" fill="#dbe9ee" stroke="#155568" stroke-width="2"/><text x="610" y="157" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" text-anchor="middle" fill="#155568">0.462</text><text x="610" y="96" font-family="DejaVu Sans, Arial, sans-serif" font-style="italic" font-size="23" text-anchor="middle" fill="#155568">h₁</text><text x="610" y="218" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" text-anchor="middle" fill="#60737c">tanh · bias +0.10</text>
+<circle cx="610" cy="330" r="42" fill="#dbe9ee" stroke="#155568" stroke-width="2"/><text x="610" y="337" font-family="DejaVu Sans, Arial, sans-serif" font-size="21" text-anchor="middle" fill="#155568">−0.336</text><text x="610" y="276" font-family="DejaVu Sans, Arial, sans-serif" font-style="italic" font-size="23" text-anchor="middle" fill="#155568">h₂</text><text x="610" y="398" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" text-anchor="middle" fill="#60737c">tanh · bias −0.25</text>
+<circle cx="990" cy="240" r="48" fill="#155568"/><text x="990" y="248" font-family="DejaVu Sans, Arial, sans-serif" font-size="24" text-anchor="middle" fill="#fff">0.890</text>
+<text x="990" y="178" font-family="DejaVu Sans, Arial, sans-serif" font-size="26" font-style="italic" text-anchor="middle" fill="#155568">y</text>
+<text x="990" y="314" font-family="DejaVu Sans, Arial, sans-serif" font-size="19" text-anchor="middle" fill="#60737c">bias +0.10</text>
+<text x="150" y="421" font-family="DejaVu Sans, Arial, sans-serif" font-size="30" text-anchor="middle" fill="#155568">…</text>
+<text x="150" y="449" font-family="DejaVu Sans, Arial, sans-serif" font-size="17" text-anchor="middle" fill="#60737c">Other features</text>
+</svg>

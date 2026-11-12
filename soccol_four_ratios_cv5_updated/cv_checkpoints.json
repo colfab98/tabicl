@@ -1,0 +1,503 @@
+{
+  "version": 1,
+  "checkpoints": [
+    {
+      "name": "step-500",
+      "step": 500,
+      "models": [
+        {
+          "label": "soccol_25pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p25_override_0a56b394b5/step-500.ckpt",
+          "size": 344623835,
+          "mtime_ns": 1794384750054653373
+        },
+        {
+          "label": "soccol_50pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p50_override_83b90948af/step-500.ckpt",
+          "size": 344623835,
+          "mtime_ns": 1794384731444961812
+        },
+        {
+          "label": "soccol_75pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p75_override_491a70e427/step-500.ckpt",
+          "size": 344623835,
+          "mtime_ns": 1794325581677491999
+        },
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-500.ckpt",
+          "size": 344623835,
+          "mtime_ns": 1794384761272467448
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-500.ckpt",
+          "size": 344476381,
+          "mtime_ns": 1784186810955037306
+        }
+      ]
+    },
+    {
+      "name": "step-1000",
+      "step": 1000,
+      "models": [
+        {
+          "label": "soccol_25pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p25_override_0a56b394b5/step-1000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384750645643578
+        },
+        {
+          "label": "soccol_50pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p50_override_83b90948af/step-1000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384732966936586
+        },
+        {
+          "label": "soccol_75pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p75_override_491a70e427/step-1000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794336885545128141
+        },
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-1000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384762045454636
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-1000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186806755102980
+        }
+      ]
+    },
+    {
+      "name": "step-1500",
+      "step": 1500,
+      "models": [
+        {
+          "label": "soccol_25pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p25_override_0a56b394b5/step-1500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384751244633650
+        },
+        {
+          "label": "soccol_50pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p50_override_83b90948af/step-1500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384733702924388
+        },
+        {
+          "label": "soccol_75pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p75_override_491a70e427/step-1500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794348164140635604
+        },
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-1500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384763329433355
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-1500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186807918084795
+        }
+      ]
+    },
+    {
+      "name": "step-2000",
+      "step": 2000,
+      "models": [
+        {
+          "label": "soccol_25pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p25_override_0a56b394b5/step-2000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384752023620739
+        },
+        {
+          "label": "soccol_50pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p50_override_83b90948af/step-2000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384734979903223
+        },
+        {
+          "label": "soccol_75pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p75_override_491a70e427/step-2000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794359453705601752
+        },
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-2000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384764606412191
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-2000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186808477076054
+        }
+      ]
+    },
+    {
+      "name": "step-2500",
+      "step": 2500,
+      "models": [
+        {
+          "label": "soccol_25pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p25_override_0a56b394b5/step-2500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384752624610778
+        },
+        {
+          "label": "soccol_50pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p50_override_83b90948af/step-2500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384736132884113
+        },
+        {
+          "label": "soccol_75pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p75_override_491a70e427/step-2500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794370742140286817
+        },
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-2500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384765869391258
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-2500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186808891069580
+        }
+      ]
+    },
+    {
+      "name": "step-3000",
+      "step": 3000,
+      "models": [
+        {
+          "label": "soccol_25pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p25_override_0a56b394b5/step-3000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384753212601033
+        },
+        {
+          "label": "soccol_50pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p50_override_83b90948af/step-3000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384737367863645
+        },
+        {
+          "label": "soccol_75pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p75_override_491a70e427/step-3000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794382018066257321
+        },
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-3000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384767052371651
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-3000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186809304063122
+        }
+      ]
+    },
+    {
+      "name": "step-3500",
+      "step": 3500,
+      "models": [
+        {
+          "label": "soccol_25pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p25_override_0a56b394b5/step-3500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384753924589232
+        },
+        {
+          "label": "soccol_50pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p50_override_83b90948af/step-3500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384738643842497
+        },
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-3500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384768288351166
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-3500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186809719056633
+        }
+      ]
+    },
+    {
+      "name": "step-4000",
+      "step": 4000,
+      "models": [
+        {
+          "label": "soccol_25pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p25_override_0a56b394b5/step-4000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384757062537224
+        },
+        {
+          "label": "soccol_50pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p50_override_83b90948af/step-4000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384739217832983
+        },
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-4000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384769547330299
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-4000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186810130050206
+        }
+      ]
+    },
+    {
+      "name": "step-4500",
+      "step": 4500,
+      "models": [
+        {
+          "label": "soccol_50pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p50_override_83b90948af/step-4500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384739905821580
+        },
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-4500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384770732310659
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-4500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186810546043701
+        }
+      ]
+    },
+    {
+      "name": "step-5000",
+      "step": 5000,
+      "models": [
+        {
+          "label": "soccol_50pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p50_override_83b90948af/step-5000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384740638809432
+        },
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-5000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384772017289362
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-5000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186811368030847
+        }
+      ]
+    },
+    {
+      "name": "step-5500",
+      "step": 5500,
+      "models": [
+        {
+          "label": "soccol_50pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p50_override_83b90948af/step-5500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384741318798162
+        },
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-5500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384772603279650
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-5500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186811778024436
+        }
+      ]
+    },
+    {
+      "name": "step-6000",
+      "step": 6000,
+      "models": [
+        {
+          "label": "soccol_50pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p50_override_83b90948af/step-6000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384735553893710
+        },
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-6000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384765190402511
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-6000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186812187018041
+        }
+      ]
+    },
+    {
+      "name": "step-6500",
+      "step": 6500,
+      "models": [
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-6500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384762732443250
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-6500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186812594011677
+        }
+      ]
+    },
+    {
+      "name": "step-7000",
+      "step": 7000,
+      "models": [
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-7000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384759914489955
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-7000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186813148003014
+        }
+      ]
+    },
+    {
+      "name": "step-7500",
+      "step": 7500,
+      "models": [
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-7500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384766472381264
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-7500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186813716994117
+        }
+      ]
+    },
+    {
+      "name": "step-8000",
+      "step": 8000,
+      "models": [
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-8000.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384768874341453
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-8000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186814282985266
+        }
+      ]
+    },
+    {
+      "name": "step-8500",
+      "step": 8500,
+      "models": [
+        {
+          "label": "soccol_100pct",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_1p00_override_7ffc9ca1ed/step-8500.ckpt",
+          "size": 344625409,
+          "mtime_ns": 1794384770140320471
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-8500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186814846976447
+        }
+      ]
+    },
+    {
+      "name": "step-9000",
+      "step": 9000,
+      "models": [
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-9000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186815415967550
+        }
+      ]
+    },
+    {
+      "name": "step-9500",
+      "step": 9500,
+      "models": [
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-9500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186816578949364
+        }
+      ]
+    },
+    {
+      "name": "step-10000",
+      "step": 10000,
+      "models": [
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-10000.ckpt",
+          "size": 344479515,
+          "mtime_ns": 1784186807346093739
+        }
+      ]
+    }
+  ]
+}

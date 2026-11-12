@@ -188,6 +188,8 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
     )
     if not args.include_latest_checkpoint:
         command[command.index("--include-latest-common-checkpoint")] = "--no-include-latest-checkpoint"
+    if not getattr(args, "compare_catboost", True):
+        command.remove("--compare-catboost")
     if args.legacy_data and args.candidate_label in labels:
         command.extend(["--fixed-schema-model", args.candidate_label])
     return command
@@ -224,7 +226,9 @@ def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: i
     if set(payload.get("missing_aware_models", [])) != expected_missing:
         raise RuntimeError("Comparison changed EPIT missing-value handling.")
     rows = payload.get("rows", [])
-    expected_models = {label for label, _ in model_runs(args)} | {"pretrained_tabicl_v2", "catboost"}
+    expected_models = {label for label, _ in model_runs(args)} | {"pretrained_tabicl_v2"}
+    if getattr(args, "compare_catboost", True):
+        expected_models.add("catboost")
     if {row.get("model") for row in rows} != expected_models:
         raise RuntimeError("Comparison did not produce all available models and requested baselines.")
     strategy = "epit_pipeline_final_test" + (f"_context_fold_{context_fold}" if context_fold is not None else "")

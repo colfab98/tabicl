@@ -1,0 +1,203 @@
+{
+  "version": 1,
+  "checkpoints": [
+    {
+      "name": "step-0",
+      "step": 0,
+      "models": [
+        {
+          "label": "epit_finetuned",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_epit100_s2/step-0.ckpt",
+          "size": 114873513,
+          "mtime_ns": 1794503320411167720
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_generic_s2/step-0.ckpt",
+          "size": 114859433,
+          "mtime_ns": 1794503345760172516
+        }
+      ]
+    },
+    {
+      "name": "step-100",
+      "step": 100,
+      "models": [
+        {
+          "label": "epit_finetuned",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_epit100_s2/step-100.ckpt",
+          "size": 344602523,
+          "mtime_ns": 1794503321114167854
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_generic_s2/step-100.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794503346459172648
+        }
+      ]
+    },
+    {
+      "name": "step-200",
+      "step": 200,
+      "models": [
+        {
+          "label": "epit_finetuned",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_epit100_s2/step-200.ckpt",
+          "size": 344602523,
+          "mtime_ns": 1794503321773167979
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_generic_s2/step-200.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794503347092172767
+        }
+      ]
+    },
+    {
+      "name": "step-300",
+      "step": 300,
+      "models": [
+        {
+          "label": "epit_finetuned",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_epit100_s2/step-300.ckpt",
+          "size": 344602523,
+          "mtime_ns": 1794503322571168131
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_generic_s2/step-300.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794503347841172908
+        }
+      ]
+    },
+    {
+      "name": "step-400",
+      "step": 400,
+      "models": [
+        {
+          "label": "epit_finetuned",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_epit100_s2/step-400.ckpt",
+          "size": 344602523,
+          "mtime_ns": 1794503323222168254
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_generic_s2/step-400.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794503348536173039
+        }
+      ]
+    },
+    {
+      "name": "step-500",
+      "step": 500,
+      "models": [
+        {
+          "label": "epit_finetuned",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_epit100_s2/step-500.ckpt",
+          "size": 344602523,
+          "mtime_ns": 1794503323847168373
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_generic_s2/step-500.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794503349198173164
+        }
+      ]
+    },
+    {
+      "name": "step-600",
+      "step": 600,
+      "models": [
+        {
+          "label": "epit_finetuned",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_epit100_s2/step-600.ckpt",
+          "size": 344602523,
+          "mtime_ns": 1794503324643168524
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_generic_s2/step-600.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794503349995173314
+        }
+      ]
+    },
+    {
+      "name": "step-700",
+      "step": 700,
+      "models": [
+        {
+          "label": "epit_finetuned",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_epit100_s2/step-700.ckpt",
+          "size": 344602523,
+          "mtime_ns": 1794503325286168646
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_generic_s2/step-700.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794503350626173432
+        }
+      ]
+    },
+    {
+      "name": "step-800",
+      "step": 800,
+      "models": [
+        {
+          "label": "epit_finetuned",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_epit100_s2/step-800.ckpt",
+          "size": 344602523,
+          "mtime_ns": 1794503325936168770
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_generic_s2/step-800.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794503351281173555
+        }
+      ]
+    },
+    {
+      "name": "step-900",
+      "step": 900,
+      "models": [
+        {
+          "label": "epit_finetuned",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_epit100_s2/step-900.ckpt",
+          "size": 344602523,
+          "mtime_ns": 1794503326591168894
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_generic_s2/step-900.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794503351902173672
+        }
+      ]
+    },
+    {
+      "name": "step-1000",
+      "step": 1000,
+      "models": [
+        {
+          "label": "epit_finetuned",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_epit100_s2/step-1000.ckpt",
+          "size": 344604097,
+          "mtime_ns": 1794503327367169041
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/generic10k_generic_s2/step-1000.ckpt",
+          "size": 344590017,
+          "mtime_ns": 1794503352653173813
+        }
+      ]
+    }
+  ]
+}

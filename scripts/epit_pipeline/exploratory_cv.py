@@ -145,7 +145,10 @@ def run_cv(args, ev, *, recover=False, membership_fn=fold_membership,
         paths = {"json": directory / "results.json", "rows_csv": directory / "rows.csv",
                  "wide_csv": directory / "wide.csv", "summary_csv": directory / "summary.csv"}
         command = [sys.executable, str(Path(ev.__file__).resolve()), *base,
-                   "--epit-exploratory-cv-fold", str(fold), "--no-checkpoint-plots"]
+                   "--epit-exploratory-cv-fold", str(fold),
+                   "--output-plot-dir", str(directory / "plots")]
+        if not args.checkpoint_plots:
+            command.append("--no-checkpoint-plots")
         for flag, key in (("--output-json", "json"), ("--output-csv", "rows_csv"),
                           ("--output-wide-csv", "wide_csv"), ("--output-summary-csv", "summary_csv")):
             command.extend([flag, str(paths[key])])

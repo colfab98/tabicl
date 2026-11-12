@@ -213,7 +213,9 @@ def test_pipeline_freezes_terminal_without_any_score_selection(tmp_path, legacy_
     assert command.count("--checkpoint_path") == 1
 
 
-def test_evaluation_includes_zero_and_keeps_frozen_queries(tmp_path, legacy_parent, capsys, mock_models):
+@pytest.mark.parametrize("cv_folds", [None, 5])
+@pytest.mark.parametrize("no_catboost", [False, True])
+def test_evaluation_includes_zero_and_keeps_frozen_queries(tmp_path, legacy_parent, capsys, mock_models, cv_folds, no_catboost):
     directories = []
     for ratio in (1, 0):
         plan = dry_plan(stage_args(tmp_path, legacy_parent, ratio), capsys)
@@ -227,15 +229,33 @@ def test_evaluation_includes_zero_and_keeps_frozen_queries(tmp_path, legacy_pare
         "--finetune-run", str(directories[0]), "--control-run", str(directories[1]),
         "--output-dir", str(tmp_path / "evaluation"), "--device", "cpu",
     ])
+    args.exploratory_cv_folds = cv_folds
+    args.no_compare_catboost = no_catboost
     output = evaluate_finetuning.run(args)
     payload = json.loads((output / "results.json").read_text())
+    expected_models = {"epit_finetuned", "generic_continuation", "pretrained_tabicl_v2"}
+    if not no_catboost:
+        expected_models.add("catboost")
+    assert {row["model"] for row in payload["rows"]} == expected_models
     assert payload["primary_comparison_step"] == 2000 and payload["primary_comparison_complete"]
     for label in ("epit_finetuned", "generic_continuation"):
         assert {r["checkpoint_step"] for r in payload["rows"] if r["model"] == label} == {0, 100, 2000}
-    frozen = frozen_membership(args.split_manifest)
+    from scripts.epit_pipeline.exploratory_cv import fold_membership
+    memberships = ([fold_membership(args.split_manifest, fold) for fold in range(1, 6)]
+                   if cv_folds else [frozen_membership(args.split_manifest)])
     for _, context, queries in mock_models:
-        assert context == frozen["context_task_row_indices"]
-        assert queries == frozen["query_task_row_indices"]
+        assert {"context_task_row_indices": context, "query_task_row_indices": queries} in memberships
+    if cv_folds:
+        assert payload["exploratory_cv"]
+        assert all(row["n_cv_folds"] == 5 for row in payload["summary"])
+        for fold in range(1, 6):
+            for filename in evaluate_finetuning.comparison.REQUIRED_PLOTS:
+                plot = output / f"cv_fold_{fold}" / "plots" / filename
+                assert plot.is_file() and plot.stat().st_size > 0
+        for label in ("epit_finetuned", "generic_continuation"):
+            for step in (0, 100, 2000):
+                assert {row["cv_fold"] for row in payload["rows"]
+                        if row["model"] == label and row["checkpoint_step"] == step} == set(range(1, 6))
     bad = json.loads((directories[1] / "finetuning.json").read_text())
     bad["train_command"][bad["train_command"].index("--np_seed") + 1] = "44"
     (directories[1] / "finetuning.json").write_text(json.dumps(bad))

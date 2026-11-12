@@ -279,6 +279,13 @@ def test_exploratory_cv_covers_each_row_once(tmp_path, mock_models, monkeypatch)
     payload = json.loads((output / 'results.json').read_text())
     assert payload['exploratory_cv'] is True
     assert payload['original_final_test_fold'] == 1
+    for fold in range(1, 6):
+        directory = output / f'cv_fold_{fold}'
+        saved = json.loads((directory / 'results.json').read_text())
+        for filename in comparison.REQUIRED_PLOTS:
+            plot = directory / 'plots' / filename
+            assert plot.is_file() and plot.stat().st_size > 0
+            assert str(plot) in saved['output_files']['plots']
     memberships = [fold_membership(args.split_manifest, f) for f in range(1, 6)]
     assert memberships[0] == frozen_membership(args.split_manifest)
     assert memberships == [fold_membership(args.split_manifest, f) for f in range(1, 6)]
