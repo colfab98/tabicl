@@ -1,0 +1,10 @@
+{
+  "positive_penalty_means": "informed absolute error exceeds generic absolute error",
+  "practical_tie_mV": 1.0,
+  "scope": "Fold 1 kept separate; folds 2\u20135 are exploratory and influenced prior fitting.",
+  "checkpoint_aggregation": "Equal weight per selected checkpoint within each sample, then equal weight per sample.",
+  "uncertainty": "2000 publication-cluster bootstrap draws, descriptive pointwise 95% intervals; omitted below 5 sources. No multiple-testing correction; not confirmatory.",
+  "rank_metric": "Difference in per-sample absolute percentile-rank errors within each query fold. Not a per-sample decomposition of Spearman.",
+  "persistent": "Worse or not better in at least 75% of selected checkpoints; stability is conditional on the chosen checkpoint set.",
+  "causation": "Category losses are diagnostic associations. Formula changes require controlled development-only ablations."
+}

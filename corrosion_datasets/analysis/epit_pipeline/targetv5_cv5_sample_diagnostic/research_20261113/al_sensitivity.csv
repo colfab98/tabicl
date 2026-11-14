@@ -1,0 +1,5 @@
+subset,n,sources,penalty_mV
+all_Al,24,6,40.120015939076744
+exclude_reference32,18,5,28.20026746422353
+exclude_Al69p5_Fe7p99,13,4,30.0741419492068
+equal_weight_unique_inputs,18,6,26.397708268048618

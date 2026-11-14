@@ -114,7 +114,7 @@ class Trainer:
             paired_batch_size(
                 self.config.batch_size, int(os.environ["WORLD_SIZE"]) if self.ddp else 1,
                 self.config.batch_size_per_gp, self.config.micro_batch_size,
-                {"mix_scm": 0.0, "informed_scm": 1.0}.get(
+                1.0 if getattr(self.config, "epit_selected_pair_dir", None) else {"mix_scm": 0.0, "informed_scm": 1.0}.get(
                     self.config.prior_type, self.config.informed_prior_ratio),
             )
 
@@ -280,10 +280,16 @@ class Trainer:
         paired = getattr(self.config, "paired_prior_streams", False)
         original_mix = getattr(self.config, "original_prior_mix", False)
         epit_v5 = getattr(self.config, "epit_target_version", "v4") == "v5"
+        selected_pairs = getattr(self.config, "epit_selected_pair_dir", None)
         from tabicl.prior.target_mixing import resolve_mix_policy
         variable_target_mix = resolve_mix_policy(
             getattr(self.config, "informed_target_mix_policy", None), epit_v5=epit_v5,
         ) == "uniform_per_table"
+        if selected_pairs and (not paired or not original_mix or epit_v5 or variable_target_mix
+                               or combined_config is not None or self.config.prior_dir is not None):
+            raise ValueError("Selected pairs require original paired streams, v4 dispatch and fixed target policy.")
+        if selected_pairs and getattr(self.config, "pitting_coefficient_variation", 0.):
+            raise ValueError("Selected pairs require zero coefficient variation.")
         if variable_target_mix and (not paired or not original_mix or combined_config is not None or self.config.prior_dir is not None):
             raise ValueError("Variable target mixing requires on-the-fly original paired streams.")
         if original_mix and (not paired or self.config.col_missing_value_embedding):
@@ -509,6 +515,10 @@ class Trainer:
                     dataset_class = VariableTargetMixture
                 stream_args = dict(seed=self.config.prior_stream_seed, rank=self.ddp_rank,
                                    world_size=self.ddp_world_size) if paired else {}
+                if selected_pairs:
+                    from tabicl.prior.epit_selected_pairs import SelectedPairPriorMixture
+                    dataset_class = SelectedPairPriorMixture
+                    stream_args['selected_pair_dir'] = selected_pairs
                 dataset = dataset_class(
                     batch_size=self.config.batch_size,
                     batch_size_per_gp=self.config.batch_size_per_gp,

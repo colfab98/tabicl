@@ -1,0 +1,16 @@
+scope,Material class,same_composition_in_context,n,penalty_mV
+exploratory_development_folds,Al Alloy,False,27,-12.664958035504377
+exploratory_development_folds,Al Alloy,True,67,-30.244050793807403
+exploratory_development_folds,Fe Alloy,False,100,-9.981623821577548
+exploratory_development_folds,Fe Alloy,True,311,-3.493185701523113
+exploratory_development_folds,HEA,False,12,8.033535451600047
+exploratory_development_folds,HEA,True,10,-23.13388597315008
+exploratory_development_folds,NiCrMo Alloy,False,7,-34.090669309938114
+exploratory_development_folds,NiCrMo Alloy,True,34,4.3893735671425915
+exploratory_development_folds,Other,False,8,6.196841868487271
+exploratory_development_folds,Other,True,32,7.918080273975026
+outer_fold_1,Al Alloy,False,24,40.120015939076744
+outer_fold_1,Fe Alloy,False,103,-9.782010424001875
+outer_fold_1,HEA,False,5,67.09440300681374
+outer_fold_1,NiCrMo Alloy,False,10,20.016606473055752
+outer_fold_1,Other,False,10,-87.73600638996471

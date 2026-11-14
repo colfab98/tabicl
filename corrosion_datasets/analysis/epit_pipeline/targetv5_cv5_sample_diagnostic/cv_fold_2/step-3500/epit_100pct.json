@@ -1,0 +1,12 @@
+{
+  "checkpoint_sha256": "0eb3b23007902879a1b9e1e08818b6ad3ebeba8a9b6475cf5e76097f421d2dba",
+  "checkpoint_path": "/home/fcolanto/projects/tabicl/checkpoints/epit_pipeline_final_v2/epit_targetv5_trial0027_ratio_1p00_override_bf9057f470/step-3500.ckpt",
+  "metrics": {
+    "test_mae": 163.72799141592805,
+    "test_rmse": 248.01755398125712,
+    "test_spearman": 0.8213052755034842,
+    "test_pearson": 0.8551568871795172,
+    "test_r2": 0.6938447843347839
+  },
+  "predictions_sha256": "1679ff8bc906938ee412e42fb39df14c9c7d9f3edab4d1f6d8cee728f8df396a"
+}

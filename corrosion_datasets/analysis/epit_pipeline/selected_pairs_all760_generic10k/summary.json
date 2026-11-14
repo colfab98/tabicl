@@ -1,0 +1,9 @@
+{
+  "samples": 760,
+  "formulas": 10,
+  "tested_pairs": 7600,
+  "retained_pairs": 2300,
+  "informed_proportion": 0.3026315789473684,
+  "selection": "strictly lower absolute error than generic step 10000; ties discarded",
+  "scope": "all-data recipe construction, not independent formula evaluation"
+}

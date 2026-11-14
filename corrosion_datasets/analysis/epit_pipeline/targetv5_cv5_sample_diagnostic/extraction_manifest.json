@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "source_results": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/targetv5_four_ratios_through_8000_cv5_cpu",
+  "steps": [
+    500,
+    1000,
+    1500,
+    2000,
+    2500,
+    3000,
+    3500,
+    4000,
+    4500,
+    5000,
+    5500
+  ],
+  "models": [
+    "generic_baseline",
+    "epit_100pct"
+  ],
+  "settings": {
+    "n_estimators": 8,
+    "random_state": 42,
+    "regression_output": "median",
+    "regression_uncertainty": false,
+    "target_mode": "primary",
+    "target_binning": "continuous",
+    "pretrained_checkpoint_version": "tabicl-regressor-v2-20260212.ckpt",
+    "fixed_schema_models": [],
+    "missing_aware_models": [],
+    "pitting_magpie_models": []
+  },
+  "device": "cpu",
+  "metric_atol": 1e-05,
+  "metric_rtol": 1e-05,
+  "split_sha256": "b151505356908814729ae6027660b89739c11dc463ed3b1f10630b001d1b837c",
+  "source_sha256": {
+    "1": "c81f5cd56ce566b61293d4da52956e81586909ca6a6a985fad16277bc1c8a470",
+    "2": "7004e68cc6a252feb1141bb67c1acab92cd3bc07c192f6db87d7cf4240f9a0dd",
+    "3": "a31ecddfdf6fdff0796904b23859daa9bdeda9ddb8fb06afa9eff60e791eff74",
+    "4": "6ec675c1406900854dba217de32d8164527b87c89eae02d214123106cc4337f6",
+    "5": "3b9b7715ee0401e4e4f0c3c3ece25d51f1c32ad912d5191d9dac3b358be9a637"
+  },
+  "implementation_sha256": {
+    "scripts/epit_pipeline/diagnose_cv_samples.py": "5575eadd0eb71f173d0703cc71d905157fd925abc6eb513a89921ba4ca835bd5",
+    "scripts/eval_corrosion_datasets.py": "17fd1a757d162d948f7d8e1225c564d12e27de9ca73d4ce2e9ef2dce8fc588bb",
+    "scripts/epit_pipeline/exploratory_cv.py": "fa53bf9278522923fa441f56aa3851e270d0f6e0649cf7277fd91293ba5a8d4f",
+    "src/tabicl/sklearn/regressor.py": "717d0c1719bd07de1bca1a934b17542cfe273f06a4a519b2c8f641f81915be28"
+  }
+}

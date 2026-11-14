@@ -1,0 +1,12 @@
+{
+  "checkpoint_sha256": "8a46525f3109bab5979a6f4b8b8c1bce6a9f331df0a4f2ad83172b24ec1237c1",
+  "checkpoint_path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-1000.ckpt",
+  "metrics": {
+    "test_mae": 182.25425330001698,
+    "test_rmse": 253.9154285794924,
+    "test_spearman": 0.7690006924550694,
+    "test_pearson": 0.7949003934576742,
+    "test_r2": 0.6243096337542671
+  },
+  "predictions_sha256": "f067084472616a79e0752bf282c1d0c9d3d6cfce60aef6e60baff6d8eaa9505b"
+}

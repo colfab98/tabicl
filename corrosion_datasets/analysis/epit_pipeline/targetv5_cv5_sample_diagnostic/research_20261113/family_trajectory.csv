@@ -1,0 +1,111 @@
+scope,Material class,checkpoint_step,error_penalty_mV
+exploratory_development_folds,Al Alloy,500,-1.5508187679534262
+exploratory_development_folds,Al Alloy,1000,-27.043035628947806
+exploratory_development_folds,Al Alloy,1500,14.717374984254228
+exploratory_development_folds,Al Alloy,2000,-5.428204211782903
+exploratory_development_folds,Al Alloy,2500,-13.095395331750018
+exploratory_development_folds,Al Alloy,3000,-39.521994266104194
+exploratory_development_folds,Al Alloy,3500,-54.881648040025915
+exploratory_development_folds,Al Alloy,4000,-27.006589445758078
+exploratory_development_folds,Al Alloy,4500,-2.3092519476058624
+exploratory_development_folds,Al Alloy,5000,-95.33497927945223
+exploratory_development_folds,Al Alloy,5500,-25.687564145521183
+exploratory_development_folds,Fe Alloy,500,5.716148333477963
+exploratory_development_folds,Fe Alloy,1000,-28.12921876826943
+exploratory_development_folds,Fe Alloy,1500,-0.16874473926420314
+exploratory_development_folds,Fe Alloy,2000,-23.361246353612035
+exploratory_development_folds,Fe Alloy,2500,0.023690057259721647
+exploratory_development_folds,Fe Alloy,3000,-0.467070889078769
+exploratory_development_folds,Fe Alloy,3500,-8.002988045100208
+exploratory_development_folds,Fe Alloy,4000,5.277271816344312
+exploratory_development_folds,Fe Alloy,4500,1.6565396417251088
+exploratory_development_folds,Fe Alloy,5000,-13.243580101553256
+exploratory_development_folds,Fe Alloy,5500,4.908506861584491
+exploratory_development_folds,HEA,500,-5.1541071805087
+exploratory_development_folds,HEA,1000,-42.74692500721324
+exploratory_development_folds,HEA,1500,-4.7431214072487595
+exploratory_development_folds,HEA,2000,35.834792223843664
+exploratory_development_folds,HEA,2500,5.69360602985729
+exploratory_development_folds,HEA,3000,19.524552431973543
+exploratory_development_folds,HEA,3500,-20.383281100880012
+exploratory_development_folds,HEA,4000,13.874805970625443
+exploratory_development_folds,HEA,4500,-21.64775588295676
+exploratory_development_folds,HEA,5000,-34.378047769719906
+exploratory_development_folds,HEA,5500,-13.342735463922674
+exploratory_development_folds,NiCrMo Alloy,500,-13.803287189762766
+exploratory_development_folds,NiCrMo Alloy,1000,-54.144412529177785
+exploratory_development_folds,NiCrMo Alloy,1500,-31.76912439858041
+exploratory_development_folds,NiCrMo Alloy,2000,-34.96847132240853
+exploratory_development_folds,NiCrMo Alloy,2500,17.089141994569356
+exploratory_development_folds,NiCrMo Alloy,3000,12.822947283488949
+exploratory_development_folds,NiCrMo Alloy,3500,22.533520954411205
+exploratory_development_folds,NiCrMo Alloy,4000,17.41394191834985
+exploratory_development_folds,NiCrMo Alloy,4500,17.738973031392913
+exploratory_development_folds,NiCrMo Alloy,5000,20.13292921112805
+exploratory_development_folds,NiCrMo Alloy,5500,2.9695526867378064
+exploratory_development_folds,Other,500,5.320251565933227
+exploratory_development_folds,Other,1000,-56.05893720054627
+exploratory_development_folds,Other,1500,-9.817445077896119
+exploratory_development_folds,Other,2000,-27.42158768081665
+exploratory_development_folds,Other,2500,23.680750377655027
+exploratory_development_folds,Other,3000,33.20485522651672
+exploratory_development_folds,Other,3500,35.16995490646363
+exploratory_development_folds,Other,4000,44.96138228797913
+exploratory_development_folds,Other,4500,20.081540803909302
+exploratory_development_folds,Other,5000,1.2462963695526157
+exploratory_development_folds,Other,5500,12.94509694290161
+outer_fold_1,Al Alloy,500,2.8617032368977866
+outer_fold_1,Al Alloy,1000,1.0941485563913993
+outer_fold_1,Al Alloy,1500,16.027406056722004
+outer_fold_1,Al Alloy,2000,-36.89849726359049
+outer_fold_1,Al Alloy,2500,25.118128617604572
+outer_fold_1,Al Alloy,3000,55.236268281936646
+outer_fold_1,Al Alloy,3500,80.03149064381917
+outer_fold_1,Al Alloy,4000,55.76407512029012
+outer_fold_1,Al Alloy,4500,63.84643602371216
+outer_fold_1,Al Alloy,5000,122.28165260950725
+outer_fold_1,Al Alloy,5500,55.95736344655355
+outer_fold_1,Fe Alloy,500,-3.8336077582373242
+outer_fold_1,Fe Alloy,1000,-28.257296615156157
+outer_fold_1,Fe Alloy,1500,-21.051846174221595
+outer_fold_1,Fe Alloy,2000,-28.105526544978858
+outer_fold_1,Fe Alloy,2500,-3.9400189397268996
+outer_fold_1,Fe Alloy,3000,7.857807967016874
+outer_fold_1,Fe Alloy,3500,-3.8498258468385576
+outer_fold_1,Fe Alloy,4000,-7.217912891664006
+outer_fold_1,Fe Alloy,4500,-10.602532966050076
+outer_fold_1,Fe Alloy,5000,-15.683928808410622
+outer_fold_1,Fe Alloy,5500,7.082573914246581
+outer_fold_1,HEA,500,75.81310653686523
+outer_fold_1,HEA,1000,-0.1333831787109375
+outer_fold_1,HEA,1500,44.90054016113281
+outer_fold_1,HEA,2000,-46.244955444335936
+outer_fold_1,HEA,2500,107.02585144042969
+outer_fold_1,HEA,3000,114.80877685546875
+outer_fold_1,HEA,3500,141.6984893798828
+outer_fold_1,HEA,4000,93.43460693359376
+outer_fold_1,HEA,4500,57.1010986328125
+outer_fold_1,HEA,5000,91.2276123046875
+outer_fold_1,HEA,5500,58.406689453125
+outer_fold_1,NiCrMo Alloy,500,10.083149719238282
+outer_fold_1,NiCrMo Alloy,1000,7.653880004882806
+outer_fold_1,NiCrMo Alloy,1500,32.50190368652344
+outer_fold_1,NiCrMo Alloy,2000,41.52836975097656
+outer_fold_1,NiCrMo Alloy,2500,14.881950683593754
+outer_fold_1,NiCrMo Alloy,3000,14.519035034179677
+outer_fold_1,NiCrMo Alloy,3500,-3.569895629882808
+outer_fold_1,NiCrMo Alloy,4000,19.069176025390625
+outer_fold_1,NiCrMo Alloy,4500,26.74771911621094
+outer_fold_1,NiCrMo Alloy,5000,13.39169799804688
+outer_fold_1,NiCrMo Alloy,5500,43.37568481445312
+outer_fold_1,Other,500,9.917238807678222
+outer_fold_1,Other,1000,-156.15940475463867
+outer_fold_1,Other,1500,-44.29197750091553
+outer_fold_1,Other,2000,2.6714805603027343
+outer_fold_1,Other,2500,-83.37927932739258
+outer_fold_1,Other,3000,-162.21819648742675
+outer_fold_1,Other,3500,-237.1573745727539
+outer_fold_1,Other,4000,-98.03504886627198
+outer_fold_1,Other,4500,-48.22303104400635
+outer_fold_1,Other,5000,-122.71368007659912
+outer_fold_1,Other,5500,-25.50679702758789

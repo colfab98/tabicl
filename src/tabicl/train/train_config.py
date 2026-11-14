@@ -86,6 +86,8 @@ def build_parser():
                         help="Use indexed generic/informed streams with exact per-batch proportions")
     parser.add_argument("--original_prior_mix", type=str2bool, default=False,
                         help="Use original generic batching with context-imputed, shuffled informed tables")
+    parser.add_argument("--epit_selected_pair_dir", type=str, default=None,
+                        help="Opt-in all-data sample/formula recipe; derives informed ratio from retained pairs")
     parser.add_argument("--prior_stream_seed", type=int, default=42,
                         help="Shared data-stream seed, independent of Optuna's search seed")
     parser.add_argument("--max_steps", type=int, default=60000, help="Training steps")

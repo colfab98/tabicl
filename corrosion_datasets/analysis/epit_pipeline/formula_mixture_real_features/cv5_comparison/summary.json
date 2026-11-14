@@ -1,0 +1,24 @@
+{
+  "pretrained_folds_available": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "missing_pretrained_folds": [],
+  "five_fold_mean": {
+    "n": 152.0,
+    "formula_mae": 287.0508135252871,
+    "generic_mae": 179.7087722180333,
+    "informed_mae": 173.44480354010113,
+    "pretrained_mae": 120.94374713615045,
+    "beats_generic": 47.4,
+    "beats_informed": 46.4,
+    "beats_pretrained": 29.6,
+    "beats_both": 24.0
+  },
+  "formula_run": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/formula_mixture_real_features/run_20261113T122634_467179Z",
+  "model_predictions": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/epit_pipeline/targetv5_cv5_sample_diagnostic",
+  "definition": "Formula MAE averaged over random assignments; generic/informed MAE averaged over saved checkpoints. Wins require >1 mV. Development folds are exploratory/in-sample for formulas, not held-out formula CV."
+}

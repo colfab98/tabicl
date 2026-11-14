@@ -2942,6 +2942,7 @@ def evaluate_estimator(
     preserve_feature_schema: bool = False,
     expected_preserve_missing_values: bool | None = None,
     native_tabicl_baseline: bool = False,
+    prediction_sink: Any = None,
 ) -> dict[str, Any]:
     if pitting_magpie_features and task.task_id != "electrochemical_metrics_alloys__pitting_potential__epit_mv_sce_avg":
         raise ValueError("pitting_magpie_features is only valid for the fixed EPIT pitting task.")
@@ -3037,6 +3038,12 @@ def evaluate_estimator(
         if preserve_feature_schema and n_model_features != X_train.shape[1]:
             raise RuntimeError("Fixed-schema model input columns were removed during prediction.")
         y_true = y_test.to_numpy(dtype=float)
+        if prediction_sink is not None:
+            prediction_sink(pd.DataFrame({
+                "task_row_index": np.asarray(test_index).copy(),
+                "observed_mV": y_true.copy(),
+                "prediction_mV": y_pred.copy(),
+            }))
 
         mae = float(mean_absolute_error(y_true, y_pred))
         rmse = float(math.sqrt(mean_squared_error(y_true, y_pred)))
