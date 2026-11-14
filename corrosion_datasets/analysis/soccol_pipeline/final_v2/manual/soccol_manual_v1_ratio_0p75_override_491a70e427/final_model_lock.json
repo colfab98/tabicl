@@ -1,0 +1,14 @@
+{
+  "frozen_utc": "2026-11-13T03:34:24.547730+00:00",
+  "immutable_artifacts": {
+    "selected_checkpoint": {
+      "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_pipeline_final_v2/soccol_manual_v1_ratio_0p75_override_491a70e427/step-4000.ckpt",
+      "sha256": "a3ee02e9740cdeee1441a8ce9c1f2f933a2d1d269bfcae548bf7a2f8b0ad3c01"
+    }
+  },
+  "manifest": {
+    "file": "final_model_manifest.json",
+    "sha256": "004bd91fde7080b05cf60f9a182f72b73d0f4c12e84b742dc292116f50c9e751"
+  },
+  "schema_version": "epit_final_model_lock_v1"
+}

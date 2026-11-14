@@ -346,7 +346,7 @@ table has its own context and query rows. The implementation preserves that
 structure; it does not put unrelated generic rows and informed rows into the
 same table merely to reach a percentage.
 
-With $G$ table groups per process and indexed batch $t$, the number of informed
+With $G$ table groups in the global batch and indexed batch $t$, the number of informed
 groups is
 \begin{equation}
  n_t=\lfloor(t+1)G p_{\mathrm{informed}}\rfloor
@@ -355,6 +355,8 @@ groups is
 This carries rounding across batches. It avoids permanently rounding 30.26\%
 to a nearby representable share. The requested ratio is approached in table-group
 counts over time; it is not an exact fraction of rows in every individual batch.
+The global batch is then partitioned across GPUs, preserving its tables and
+their order when the GPU count changes.
 
 \section{Implementation and saved artifacts}
 \subsection{Preparation}
@@ -428,6 +430,7 @@ Table group size / micro-batch size & 4 / 4 \\
 Maximum table length & 1,024 rows \\
 Learning rate & $10^{-4}$ \\
 Schedule & Cosine with 2\% warmup \\
+Schedule horizon & 10,000 steps, independent of training duration \\
 Data-loader workers & 4 \\
 Composition perturbation & $\sigma=0.30$ \\
 Coefficient variation & 0 \\

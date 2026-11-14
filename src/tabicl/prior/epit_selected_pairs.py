@@ -146,15 +146,11 @@ class SelectedPairPriorMixture(OriginalPriorMixture):
         self.priors[1]=prior
         self.selected_ratio=sampler.ratio
         self._config.update(selected_pair_recipe=sampler.identity,
-            selected_pair_allocation='cumulative rounded groups; ratio of retained pairs',
+            selected_pair_allocation='cumulative rounded global groups; ratio of retained pairs',
             selected_pair_target='calibrated mV then one shared table standardization; no SCM')
         self._config['group_counts']='varies by indexed batch; see selected_pair_allocation'
 
-    def get_batch(self,batch_size=None):
-        from torch.utils.data import get_worker_info
-        worker=get_worker_info()
-        step=self._next_batch if self._next_batch is not None else (worker.id if worker else 0)
-        groups=self.batch_size//self.group_size
+    def _global_group_counts(self,step):
+        groups=self.batch_size*self.world_size//self.group_size
         count=informed_groups(step,groups,self.selected_ratio)
-        self.group_counts=(groups-count,count)
-        return super().get_batch(batch_size)
+        return groups-count,count

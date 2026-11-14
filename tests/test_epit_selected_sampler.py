@@ -78,3 +78,29 @@ def test_generic_stream_unchanged_and_no_scm_target(sampler,monkeypatch):
     for i in torch.where(a[5]==0)[0].tolist():
         for left,right in zip(a[:5],b[:5]):
             torch.testing.assert_close(left[i],right[i],rtol=0,atol=0)
+
+
+def test_gpu_partition_preserves_global_tables_and_resume(sampler):
+    torch.set_num_threads(1)
+    kwargs=dict(dataset_cls=SelectedPairPriorMixture,selected_pair_dir=RECIPE,
+                hp={'pitting_coefficient_variation':0.,'pitting_composition_perturb_strength':.3})
+    single=make_prior(**kwargs)
+    single.batch_size=16
+    ranks=[make_prior(**kwargs,rank=rank,world_size=2) for rank in range(2)]
+    informed_total=0
+    for _ in range(4):
+        whole=single.get_batch()
+        parts=[prior.get_batch() for prior in ranks]
+        assert single.last_batch_ids==[key for prior in ranks for key in prior.last_batch_ids]
+        for rank,part in enumerate(parts):
+            for row in range(8):
+                assert_batch_equal(tuple(t[rank*8+row] for t in whole),tuple(t[row] for t in part))
+        informed_total+=int(whole[5].sum())
+    assert informed_total==18
+
+    states=[prior.sampling_state_dict() for prior in ranks]
+    expected=[prior.get_batch() for prior in ranks]
+    for rank in range(2):
+        resumed=make_prior(**kwargs,rank=rank,world_size=2)
+        resumed.load_sampling_state_dict(states[rank])
+        assert_batch_equal(expected[rank],resumed.get_batch())

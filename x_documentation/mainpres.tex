@@ -1,0 +1,779 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{textcomp}
+\usepackage{xurl}
+\usepackage[hidelinks]{hyperref}
+
+\newcommand{\pr}{\operatorname{pr}}
+
+\setlength{\emergencystretch}{2em}
+\newenvironment{notes}
+  {\begin{itemize}\setlength{\itemsep}{0.45em}\setlength{\parsep}{0pt}}
+  {\end{itemize}}
+
+\newenvironment{steps}
+  {\begin{enumerate}\setlength{\itemsep}{0.45em}\setlength{\parsep}{0pt}}
+  {\end{enumerate}}
+
+\begin{document}
+
+% The source wording, numbering, equations, and placeholders are preserved.
+% Starred headings prevent LaTeX from renumbering the original headings.
+
+\section*{1. What EPIT means for corrosion}
+
+\begin{notes}
+
+    \item Pitting corrosion: the protective passive film can break down locally, allowing
+    corrosion to develop at these sites and form pits.
+
+    \item Pitting potential, EPIT: the reported electrochemical potential at which
+    passive-film breakdown or sustained pitting is identified during a test. It describes a
+    breakdown threshold.
+
+    \item Under comparable conditions, a more positive EPIT indicates greater resistance to
+    pit initiation: a higher applied potential is needed to initiate sustained pitting.
+
+    \item EPIT depends on alloy composition and material state, together with temperature,
+    chloride concentration, pH, and the experimental procedure.
+
+\end{notes}
+
+\section*{2. The dataset and prediction task}
+
+\begin{notes}
+
+    \item The data come from Electrochemical Metrics for Corrosion Resistant Alloys,
+    released on Figshare and described by Nyby et al. in Scientific Data (2021).
+
+    \item Each row links an alloy composition and reported test conditions to a measured
+    EPIT value.
+
+    \item We predict the reported average pitting potential, “Epit, mV (SCE) Avg.”,
+    expressed in millivolts relative to the saturated calomel electrode.
+
+    \item 760 rows contain a usable numeric EPIT value and form the dataset used here.
+
+\end{notes}
+
+\section*{3. What information does the model receive?}
+
+\begin{notes}
+
+    \item Each row has 21 input columns: 17 composition variables, three environmental
+    variables, and one test-method variable.
+
+    \item The composition columns contain the weight percentages of Fe, Cr, Ni, Mo, W, Nb,
+    Al, V, Ta, Re, Ce, Ti, Co, B, Mg, Y, and Gd, kept in that order.
+
+    \item The environmental inputs are temperature in °C, chloride concentration in mol/L,
+    and pH.
+
+    \item The test-method input identifies the reported experimental method or protocol.
+
+    \item The dataset includes Fe alloys, Ni–Cr–Mo alloys, Al alloys, high-entropy alloys,
+    and other alloys.
+
+\end{notes}
+
+\section*{4. Keeping similar compositions together}
+
+\begin{notes}
+
+    \item Several rows can describe the same or very similar alloy compositions, measured
+    under different conditions. We keep these rows together so that closely related
+    compositions do not appear on opposite sides of an evaluation split.
+
+    \item We compare two compositions by adding the absolute differences across their 17
+    element amounts:
+    \[
+    d(i,j)=\sum_{e=1}^{17}|x_{i,e}-x_{j,e}|.
+    \]
+    For this calculation, missing amounts are treated as zero and values are rounded to 0.01
+    wt.\%.
+
+    \item Two rows are linked when their total composition difference is at most 1.0 wt.\%.
+    All rows connected through these links belong to the same group.
+
+    \item Group membership depends only on composition. Different temperatures, chloride
+    concentrations, pH values, or test methods do not separate rows belonging to the same
+    composition group.
+
+    \item When assigning whole groups to partitions, we also aim to balance properties such
+    as environmental conditions, alloy classes, test methods, and EPIT ranges.
+
+\end{notes}
+
+\section*{5. Development data, final-test data, and folds}
+
+\begin{notes}
+
+    \item We divide the dataset into 608 development rows (80\%) and 152 final-test rows
+    (20\%), keeping every composition group together.
+
+    \item The development data support method development and model selection. The
+    final-test data assess the selected model.
+
+    \item We divide the development data into five fixed folds, each containing 121–122
+    rows. Composition groups also remain intact across these folds.
+
+    \item For one development evaluation, one fold supplies the validation rows to predict,
+    while the other four provide 486–487 labeled context rows.
+
+    \item We repeat this five times, so every development row takes a turn as a validation
+    query.
+
+    \item For final evaluation, all 608 development rows provide labeled context, and the
+    model predicts EPIT for the 152 final-test rows.
+
+\end{notes}
+
+\section*{2. How TabICL learns and makes predictions}
+
+\subsection*{2.1. The prediction task and notation}
+
+\begin{notes}
+
+    \item Labeled context, \((x,y)\): the examples available to the model. Each \(x_i\)
+    contains the inputs for one observed row, and \(y_i\) is its known response. Here, the
+    inputs describe the alloy and test conditions, and the response is EPIT.
+
+    \item Query, \(x^\ast\): a new row whose inputs are known but whose response,
+    \(y^\ast\), we want to predict.
+
+    \item Task mechanism, \(\theta\): one possible mechanism for generating a synthetic
+    task, including the relationship between inputs and responses and any noise.
+
+    \item Transformer weights, \(\phi\): the parameters TabICL learns during pretraining.
+    One set of weights learns across many tasks generated from different mechanisms
+    \(\theta\).
+
+\end{notes}
+
+\subsection*{2.2. How this differs from the usual machine-learning workflow}
+
+\begin{notes}
+
+    \item The usual workflow is fit, then predict. For a supervised neural network or a
+    model such as CatBoost, labeled examples are used to fit the model’s parameters. The
+    fitted model then predicts responses for new rows:
+    \[
+    (x,y)\xrightarrow{\text{fitting}}\text{fitted model}, \qquad (\text{fitted
+    model},x^\ast)\longrightarrow\widehat y^\ast.
+    \]
+
+    \item A new prediction task normally requires fitting or adapting a model to its labeled
+    examples.
+
+    \item TabICL learns how to use examples during pretraining. When applied to a new task,
+    it receives the labeled context and query together:
+    \[
+    (x,y,x^\ast) \xrightarrow{\text{pretrained TabICL}} q_\phi(y^\ast\mid x^\ast,x,y).
+    \]
+    Here, \(q_\phi\) represents the model’s predicted distribution of possible responses.
+
+    \item The context guides the prediction while the transformer weights stay fixed.
+    Changing the supplied examples can change the prediction without another round of
+    parameter fitting. This is called in-context learning.
+
+\end{notes}
+
+\subsection*{2.3. TabICL and Bayesian prediction}
+
+TabICL uses context to make predictions that approximate Bayesian prediction. It learns
+this ability through synthetic training, rather than performing explicit Bayesian
+calculations for each new task.
+
+\begin{notes}
+
+    \item A typical supervised model, such as CatBoost, is fitted to a particular labeled
+    dataset. Those examples shape its fitted parameters. For a new prediction task, you
+    generally fit or adapt a model again.
+
+    \item TabICL trains one transformer across many synthetic tasks with different
+    relationships. This teaches it to use the labeled context supplied for the current
+    task. A new context can change its predictions while its trained weights stay fixed.
+
+\end{notes}
+
+To succeed, it must learn to look at the examples in the current context, work out what
+relationship they suggest, and make predictions accordingly. This ability to use context
+is learned during training.
+
+The training tasks come from a synthetic-data generator. It follows a configured recipe.
+In CorrPFN, this recipe includes informed and generic tasks, MLP and tree generators,
+composition perturbations, and corrosion rules.
+
+The recipe defines which \textbf{mechanisms} can be sampled and how often. This
+distribution over mechanisms is the \textbf{prior}, written \(p(\theta)\).
+
+A mechanism is one particular way of generating targets from inputs, including its noise
+assumptions. For example, it could contain a particular random MLP and a selected
+corrosion rule. The MLP’s particular weights matter. “Use an MLP” alone does not specify
+the complete relationship.
+
+The symbol \textbf{\(\theta\) represents the mechanism itself}. It is not a separate step
+between the prior and the mechanism:
+
+\[
+\boxed{
+\text{Prior}
+\;\longrightarrow\;
+\text{sampled mechanism }\theta
+\;\longrightarrow\;
+\text{synthetic dataset }D
+}
+\]
+
+In sampling notation,
+
+\[
+\theta\sim p(\theta),
+\qquad
+D\sim p(D\mid\theta).
+\]
+
+The first expression selects the mechanism. The second generates observations under that
+mechanism. The resulting dataset \(D\) contains input rows and their synthetic targets. A
+training batch groups several such datasets.
+
+One prior can therefore produce many mechanisms and many datasets. We do not define a new
+prior for each table.
+
+\textbf{Random generation does not remove prior probabilities. The sampling rules define
+them.} In the selected CorrPFN configuration,
+
+\[
+P(\text{informed})=0.75,
+\qquad
+P(\text{generic})=0.25.
+\]
+
+These settings give informed mechanisms three times as much starting probability as
+generic mechanisms, taken collectively. They express our assumption that informed
+relationships deserve more emphasis for the tasks we want to solve.
+
+This is a modeling choice. It is not a measured frequency of mechanisms occurring in
+nature. Corrosion knowledge and development results help us choose the recipe.
+
+Within the informed branch,
+
+\[
+P(\text{MLP}\mid\text{informed})=0.50.
+\]
+
+Therefore,
+
+\[
+P(\text{informed and MLP})
+=
+0.75\times0.50
+=
+0.375.
+\]
+
+This probability belongs to the whole category of informed MLP mechanisms. Further random
+choices select a particular mechanism within that category. For continuously sampled
+settings, \(p(\theta)\) describes a probability density.
+
+For training, each synthetic dataset is divided into context and query rows. Write the
+labeled context as
+
+\[
+D_{\mathrm{ctx}}
+=
+(X_{\mathrm{ctx}},y_{\mathrm{ctx}}).
+\]
+
+Here, \(X_{\mathrm{ctx}}\) contains the context inputs. The corresponding targets are
+\(y_{\mathrm{ctx}}\).
+
+For one query row, \(x^\ast\) denotes its inputs and \(y^\ast\) its target. The
+transformer receives the context inputs, context targets, and query inputs. It does
+\textbf{not} receive the query target.
+
+For compact notation, call all this visible information \(O\):
+
+\[
+O=(D_{\mathrm{ctx}},x^\ast).
+\]
+
+The synthetic generator also supplies \(y^\ast\). The training procedure uses this
+\textbf{hidden query target} to score the prediction. The context targets provide
+examples. The query targets provide the prediction errors used for learning.
+
+We train \textbf{one shared transformer across these tasks}. Its learned weights are
+denoted by \(\phi\). Errors from different tasks update these same weights. We do not
+train a separate prediction model for each synthetic dataset.
+
+The transformer is not told which mechanism \(\theta\) produced the task. It must use the
+context to make its prediction.
+
+Bayesian reasoning describes how we could predict by explicitly considering the possible
+mechanisms.
+
+For each mechanism, the \textbf{likelihood} measures how plausibly it could produce the
+visible information:
+
+\[
+L(\theta)=p(O\mid\theta).
+\]
+
+This includes the supplied inputs and observed context targets. It excludes the hidden
+query target.
+
+A mechanism receives greater support when it explains the observations well, accounting
+for its noise assumptions. This is not similarity between a saved synthetic table and the
+current context. It is an assessment of the observations under a possible mechanism.
+
+The \textbf{posterior} combines this evidence with the prior:
+
+\[
+p(\theta\mid O)
+=
+\frac{p(O\mid\theta)\,p(\theta)}{p(O)}.
+\]
+
+The prior supplies the starting weight. The likelihood supplies evidence from the
+observations. The denominator normalizes the updated weights.
+
+This explains why the 75\% informed probability matters. Before seeing the context, the
+informed branch has more support overall. If both branches explain the visible information
+equally well, it retains that advantage. If the generic branch explains the observations
+much better, the evidence can reverse the preference.
+
+The prior therefore influences the prediction without fixing the final weights in advance.
+\textbf{A 75\% informed-task probability does not force every prediction to contain a 75\%
+informed contribution.}
+
+Each mechanism already defines how targets arise from inputs. It can therefore predict the
+query target. No additional model needs to be trained after assessing the mechanisms.
+
+Bayesian prediction combines their predictive distributions using the posterior weights:
+
+\[
+p(y^\ast\mid O)
+=
+\int
+p(y^\ast\mid O,\theta)\,
+p(\theta\mid O)\,d\theta.
+\]
+
+The first factor is the prediction under one mechanism. The second is that mechanism’s
+posterior weight. The integral combines their contributions across possible mechanisms.
+
+Mechanisms supported more strongly by the observations contribute more. Several mechanisms
+may explain the context but disagree about the query. Combining their distributions
+retains this uncertainty.
+
+\textbf{TabICL learns to approximate the resulting predictive distribution directly:}
+
+\[
+q_\phi(y^\ast\mid O)
+\approx
+p(y^\ast\mid O).
+\]
+
+Here, \(q_\phi\) is the distribution produced by the trained transformer. The distribution
+on the right is the Bayesian prediction implied by the generator and visible information.
+
+The implementation does not explicitly calculate the likelihoods and posterior weights
+above. Instead, it trains on synthetic query targets. In CorrPFN, CRPS scores the
+predicted distribution against each hidden query target. These scores drive updates to the
+transformer weights \(\phi\).
+
+The training targets are therefore the synthetic query values \(y^\ast\). They are not
+calculated likelihoods or posterior weights.
+
+The generator’s sampling probabilities influence what the transformer learns. With 75\%
+informed sampling, informed tasks occur more frequently during training. This gives their
+relationships greater representation in the training experience.
+
+The context provides the other part of the learning problem. Across tasks, the transformer
+encounters different visible examples and corresponding query targets. Distributional
+training rewards it for predicting those query targets appropriately. Under ideal learning
+conditions, it targets the same conditional distribution as the Bayesian calculation. In
+practice, the result is an approximation.
+
+When we supply real corrosion data, the transformer’s weights stay fixed. Its training has
+already shaped which relationships it expects. The measured context shows what
+relationship seems to apply to the current task. Both influence the predictive
+distribution produced for each query.
+
+\subsection*{2.9. Which implementation and training scope this project uses}
+
+\begin{notes}
+
+    \item CorrPFN and the local generic baseline use the same configured transformer
+    architecture, including V2 architectural components. Both are trained from scratch.
+
+    \item The generic MLP/tree generators and Stage 1 training framework derive from
+    TabICLv1. The project adds the corrosion-informed prior and the continuous-target
+    training path for EPIT.
+
+    \item Pretrained TabICL V2 is a separate comparison model. It uses the authors’ released
+    pretrained weights.
+
+    \item Our local training uses Stage 1, with synthetic tables containing 1,024 rows.
+    Later stages extend the model’s ability to use larger labeled contexts.
+
+    \item Earlier attempts to extend training did not improve the training loss in the
+    implementations tested at that time. That finding applies to those experiments and does
+    not rule out improvements with newer implementations.
+
+\end{notes}
+
+\section*{How TabICL Learns from Synthetic Tables}
+
+\subsubsection*{Text for presentation}
+
+\begin{notes}
+
+    \item An SCM transforms random starting variables into related variables.
+
+\end{notes}
+
+\subsubsection*{Explanation for you}
+
+SCM means structural causal model. Mathematical functions, such as neural networks or trees,
+generate new variables from earlier ones. These variables remain connected through their
+dependencies.
+
+\subsubsection*{Text for presentation}
+
+\begin{notes}
+
+    \item Select generated columns as features and another as the target.
+
+\end{notes}
+
+\subsubsection*{Explanation for you}
+
+These columns form a synthetic dataset. Each row is one sample, with feature values and a
+generated target.
+
+\subsubsection*{Text for presentation}
+
+\begin{notes}
+
+    \item Provide context rows with targets and query rows without targets.
+
+\end{notes}
+
+\subsubsection*{Explanation for you}
+
+The context demonstrates the relationship the model should use to predict the hidden query
+targets.
+
+\subsubsection*{Text for presentation}
+
+\begin{notes}
+
+    \item Represent each cell using its column, then combine features within each row.
+
+\end{notes}
+
+\subsubsection*{Explanation for you}
+
+TabICL converts each cell into a vector using information from its column. Attention within
+the row lets the features interact, producing a representation of the whole row.
+
+\subsubsection*{Text for presentation}
+
+\begin{notes}
+
+    \item Query rows use attention to gather information from labeled context rows.
+
+\end{notes}
+
+\subsubsection*{Explanation for you}
+
+Attention assigns learned weights to information from the context. This lets each query
+combine useful information from the measured examples to predict its target.
+
+\subsubsection*{Text for presentation}
+
+\begin{notes}
+
+    \item Compare predictions with generated targets and update the model’s parameters.
+
+\end{notes}
+
+\subsubsection*{Explanation for you}
+
+The training procedure knows the hidden targets and calculates the prediction error. Updates
+improve the representations, attention, and prediction output. Repeating this across tasks
+with different relationships teaches TabICL how to learn from context.
+
+We looked at the real corrosion dataset to decide what our synthetic training examples
+should look like.
+
+\begin{steps}
+
+    \item[1.] We focused on Fe alloys and Ni–Cr–Mo alloys. For these families, we collected
+    the alloy compositions and experimental conditions reported in the dataset.
+
+    \item[2.] We used the recorded compositions as starting recipes. Each recipe is simply a
+    list of element percentages. We had 298 different Fe-alloy compositions and 17 Ni–Cr–Mo
+    compositions.
+
+    \item[3.] To create a synthetic row, we randomly chose one recipe and varied its element
+    amounts. For example, a chromium amount of 16 wt.\% might become 16.8 before rescaling.
+    We then adjusted all amounts proportionally so the complete composition added up to 100
+    wt.\%. Elements absent from the original recipe remained absent.
+
+    \item[4.] We gave that alloy experimental conditions. We randomly selected a recorded
+    combination of temperature, chloride concentration, pH, and test method. Those four
+    values stayed together, but they could now be paired with a different alloy.
+
+    \item[5.] Repeating this produced an artificial table with our 21 input columns. Each
+    row described an alloy composition under particular test conditions. At this point, we
+    had created the inputs; we still needed a target for each row.
+
+    \item[6.] We generated the targets from those inputs. A random neural network or tree
+    produced one response, and a corrosion-inspired formula produced another. We combined
+    them into the synthetic target used for training.
+
+\end{steps}
+
+The central idea is: use recorded alloys and conditions to construct the inputs, then
+generate artificial relationships between those inputs and the target.
+
+The goal was to make the synthetic relationships more relevant to corrosion by including
+knowledge from the literature. A random SCM can generate useful mathematical relationships,
+but it has no built-in reason to associate increasing chloride with decreasing pitting
+resistance: the relationship could point either way. We added corrosion rules to give part
+of the generated response a physically motivated direction.
+
+The motivation includes the role of Cr-rich passive films, contributions from Mo, and
+chloride-induced film damage, supported by passive-film measurements and direct observations
+of chloride attack. The precise equations and thresholds below are our modeling choices for
+representing such tendencies.
+
+For example, consider the rule that separates the environmental effects.
+
+It uses a PREN-inspired material contribution because PREN provides a familiar way to
+summarize composition-related pitting resistance. We extend this idea by explicitly
+including the experimental conditions:
+
+    \[
+    y_{\mathrm{rule}} = aP-bC-cH-dI-eA.
+    \]
+
+Each letter represents a score calculated from the row’s inputs:
+
+\begin{notes}
+
+    \item Material protection \(P\): start from
+
+    \[
+    \mathrm{Cr}+3.25(\mathrm{Mo}+0.55\,\mathrm{W}),
+    \]
+
+using element amounts in wt.\%. More Cr, Mo, or W increases this quantity. We standardize it
+and apply a smooth transformation that levels off at high values. This is PREN-inspired;
+nitrogen is absent because it is outside our retained inputs.
+
+    \item Chloride aggressiveness \(C\): take the logarithm of chloride concentration,
+    standardize it, and pass it through a smooth increasing curve between zero and one. The
+    logarithm represents changes across orders of magnitude. Higher chloride produces a
+    larger penalty.
+
+    \item High-temperature contribution \(H\): convert temperature into a score that rises
+    smoothly from near zero to near one, with its midpoint at \(50\,^\circ\mathrm{C}\).
+    Higher temperature therefore increases this penalty.
+
+    \item Temperature–chloride interaction \(I\): multiply the temperature and chloride
+    scores. This adds a penalty that becomes strongest when both are high.
+
+    \item Acidic-pH contribution \(A\): calculate a score that increases smoothly as pH
+    decreases, with its midpoint at pH 6.5. More acidic conditions therefore increase this
+    penalty.
+
+\end{notes}
+
+We standardize each completed contribution before combining them: subtract its mean and
+divide by its standard deviation. This puts them on comparable scales. During calibration,
+these statistics come from the fitting rows; during synthetic generation, they come from the
+generated table.
+
+The weights \(a,b,c,d,e\) determine how strongly each contribution affects the response.
+Material protection raises it; the environmental contributions lower it. The weights are
+fitted from development measurements, as described below.
+
+We proposed seven versions, each adding a particular relationship.
+
+\begingroup
+\setlength{\extrarowheight}{2pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.30\textwidth}>{\raggedright\arraybackslash}p{\dimexpr0.70\textwidth-2\tabcolsep\relax}@{}}
+\hline
+\textbf{Rule} & \textbf{Relationship it contributes} \\[0.45em]
+\hline
+Linear PREN-inspired & Cr, Mo, and W increase the material-resistance score. Environmental aggressiveness and material-dependent chloride effects lower the response. \\[0.45em]
+Cr–Mo/W synergy & Adds a joint Cr–Mo/W contribution: the benefit depends on their combination. It also includes an additional penalty when temperature and chloride are both elevated. \\[0.45em]
+Threshold and saturation & Makes the chromium contribution rise most strongly around 12 wt.\% and then level off. Additional Mo/W gives progressively smaller increases. This introduces a nonlinear composition response. \\[0.45em]
+Separate environmental effects & Gives chloride, high temperature, temperature–chloride interaction, and acidic pH their own weights, allowing their relative importance to be fitted separately. \\[0.45em]
+Coupled breakdown & Combines environmental attack and material resistance inside one smooth transition. A stronger material score shifts that transition toward more aggressive conditions. \\[0.45em]
+Fe/Ni chromium threshold & Uses different chromium transition points: 12 wt.\% for Fe alloys and 15 wt.\% for Ni–Cr–Mo alloys. This allows the same chromium amount to contribute differently in the two families. \\[0.45em]
+Method-aware & Extends the synergy rule with a method-dependent shift, allowing the reported response to vary with the experimental procedure. \\[0.45em]
+\hline
+\end{longtable}
+\endgroup
+
+For example, the temperature penalty is motivated by measurements showing decreasing pitting
+potential with increasing temperature in tested austenitic stainless steels.
+Temperature-dependence study
+
+These rules express candidate tendencies. Their chosen thresholds and pH dependence are
+assumptions we evaluated against our data.
+
+We fitted their relative weights using real measurements.
+
+We used the 452 Fe-alloy and Ni–Cr–Mo rows in the development partition. For each formula,
+we adjusted its weights to make its scores match the ranking of measured EPIT values:
+measurements with higher EPIT should generally receive higher rule scores.
+
+The mathematical terms and internal thresholds stayed fixed. The fitted weights were
+nonnegative and summed to one, preserving the intended directions. Fitting also discouraged
+large departures from predefined starting weights.
+
+We evaluated each rule on rows excluded from its fit.
+
+For each of the five development folds, we fitted the rule and its preprocessing on the
+other four folds, then calculated its scores on the excluded fold. We measured agreement
+with the observed EPIT ordering using Spearman correlation, then averaged the five
+correlations.
+
+A score of 1 means perfect agreement in ordering; 0 means no rank correlation. The recorded
+results were:
+
+\begingroup
+\setlength{\extrarowheight}{2pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.55\textwidth}>{\raggedright\arraybackslash}p{\dimexpr0.45\textwidth-2\tabcolsep\relax}@{}}
+\hline
+\textbf{Rule} & \textbf{Mean validation Spearman} \\[0.45em]
+\hline
+Linear PREN-inspired & 0.5174 \\[0.45em]
+Cr–Mo/W synergy & 0.5583 \\[0.45em]
+Threshold and saturation & 0.5181 \\[0.45em]
+Separate environmental effects & 0.5850 \\[0.45em]
+Coupled breakdown & 0.5525 \\[0.45em]
+Fe/Ni chromium threshold & 0.5252 \\[0.45em]
+Method-aware & 0.5999 \\[0.45em]
+\hline
+\end{longtable}
+\endgroup
+
+The method-aware rule gave the strongest ordering agreement. These scores assess the
+formulas directly; transformer performance is evaluated later.
+
+We used both the fitted weights and the validation scores during synthetic generation.
+
+After validation, we refitted each rule on all 452 eligible development rows to obtain its
+final weights. We retained all seven rules and sampled them in proportion to their
+validation scores: approximately 15.6\% for the method-aware rule and 13.4\% for linear
+PREN, for example.
+
+For each informed task, one selected rule generates a response across the synthetic table.
+We standardize that response and the SCM response separately, combine them, and standardize
+again. This adds a corrosion-informed contribution while retaining variation from the random
+generator; it does not enforce the expected physical direction in every combined task.
+
+For the method-aware rule, the fitted importance of the method contribution transfers to
+generation, while fresh method-specific shifts are sampled for synthetic tasks.
+
+Once the alloy inputs and corrosion rules were defined, we still had to decide what mixture
+of synthetic tasks the model should practise on. Four settings control this.
+
+\begin{steps}
+
+    \item[1.] The proportion of corrosion-informed tasks, \(\rho\).
+
+This determines whether a generated task follows our corrosion construction or the generic
+SCM generator.
+
+Increasing \(\rho\) gives the model more practice with alloy compositions, test conditions,
+and corrosion-related responses. Decreasing it gives more practice with general mathematical
+relationships.
+
+The selected setting was \(\rho=0.75\): an informed task is chosen with 75\% probability and
+a generic task with 25\% probability.
+
+    \item[2.] The amount of composition variation, \(\tau\).
+
+Within an informed task, we start from recorded alloy compositions and randomly multiply
+their positive element amounts by factors around one. This creates variations around the
+recorded recipes.
+
+A small \(\tau\) keeps those factors close to one. A larger \(\tau\) allows stronger
+changes. Elements absent from the starting composition remain absent, and the complete
+composition is rescaled to 100 wt.\% afterward.
+
+The selected setting was \(\tau\approx0.103\). It controls the spread of the random
+multipliers; it is not an amount added to every element’s weight percentage.
+
+    \item[3.] The balance between neural-network and tree generators.
+
+Once the physical inputs are constructed, a random MLP or tree generates the SCM part of the
+response.
+
+An MLP creates relationships through successive neural-network transformations. A tree
+creates relationships through branching decisions based on input values. Changing their
+sampling probabilities changes the kinds of relationships the model encounters.
+
+The selected setting used equal probabilities for MLPs and trees within informed tasks. The
+generic branch retained its existing 70\% MLP and 30\% tree mixture.
+
+    \item[4.] The strength of the corrosion-rule contribution, \(\lambda\).
+
+Each informed task has two responses calculated from its inputs: one from the random SCM and
+one from a selected corrosion rule. After standardizing them separately, we combine them:
+
+    \[
+    y_{\mathrm{combined}} = (1-\lambda)y_{\mathrm{SCM}} + \lambda y_{\mathrm{rule}}.
+    \]
+
+At \(\lambda=0\), the target comes entirely from the SCM. At \(\lambda=1\), it comes
+entirely from the corrosion rule. Intermediate values retain random relationships while
+adding the chosen corrosion tendencies. The combined response is then standardized again.
+
+The selected setting was \(\lambda\approx0.205\): approximately 80\% SCM weight and 20\%
+corrosion-rule weight.
+
+\end{steps}
+
+The distinction between the two mixture settings is useful: \(\rho\) controls how often an
+informed task is generated; \(\lambda\) controls the target inside that informed task. The
+term weights fitted earlier control the contributions within the selected corrosion rule.
+
+We used Optuna to select these four settings by comparing short transformer-training runs on
+the development folds, with the calibrated rules kept fixed.
+
+The best completed configuration at selection was Trial 56:
+
+\begingroup
+\setlength{\extrarowheight}{2pt}
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{0.45\textwidth}>{\raggedright\arraybackslash}p{\dimexpr0.55\textwidth-2\tabcolsep\relax}@{}}
+\hline
+\textbf{Setting} & \textbf{Selected value} \\[0.45em]
+\hline
+Informed-task proportion \(\rho\) & 0.75 — 75\% informed, 25\% generic \\[0.45em]
+Composition perturbation strength \(\tau\) & 0.1028 \\[0.45em]
+MLP probability within informed tasks & 0.50 — equal MLP/tree probabilities \\[0.45em]
+Corrosion-rule mixture weight \(\lambda\) & 0.2048 — 20.48\% rule weight, 79.52\% SCM weight \\[0.45em]
+\hline
+\end{longtable}
+\endgroup
+
+After 1,000 training steps, this configuration achieved a mean development-fold Spearman
+correlation of 0.6903, the criterion used to select it.
+
+It used the 21 original input columns, with Magpie descriptors disabled.
+
+\end{document}
+

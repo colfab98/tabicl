@@ -33,7 +33,7 @@ def build_plan(args):
         '--informed-target-mix-policy','fixed','--final-run-name',args.run_name,
         '--checkpoint-root',str(checkpoint_dir.parent),'--output-dir',str(output_dir),
         '--device',args.device,'--max-steps',str(args.max_steps),
-        '--scheduler-total-steps',str(args.max_steps),'--nproc-per-node',str(args.nproc_per_node),
+        '--scheduler-total-steps',str(args.scheduler_total_steps),'--nproc-per-node',str(args.nproc_per_node),
         '--dataloader-num-workers',str(args.workers),'--dry-run'])
     captured=io.StringIO()
     with redirect_stdout(captured):
@@ -60,7 +60,8 @@ def build_plan(args):
     return {'command':command,'checkpoint_dir':str(checkpoint_dir),'output_dir':str(output_dir),
             'recipe_identity':sampler.identity,'informed_proportion':sampler.ratio,
             'initialization':'from scratch','automatic_evaluation':False,
-            'max_steps':args.max_steps,'device':args.device,'all_data_recipe':True}
+            'max_steps':args.max_steps,'scheduler_total_steps':args.scheduler_total_steps,
+            'device':args.device,'all_data_recipe':True}
 
 
 def main(argv=None):
@@ -70,12 +71,14 @@ def main(argv=None):
     parser.add_argument('--device',choices=['cpu','cuda'],default='cuda')
     parser.add_argument('--nproc-per-node',type=int,default=1)
     parser.add_argument('--max-steps',type=int,default=10000)
+    parser.add_argument('--scheduler-total-steps',type=int,default=10000,
+                        help='LR schedule horizon, independent of --max-steps.')
     parser.add_argument('--workers',type=int,default=4)
     parser.add_argument('--dry-run',action='store_true')
     args=parser.parse_args(argv)
     if not args.run_name or Path(args.run_name).name!=args.run_name or args.run_name in ('.','..'):
         parser.error('--run-name must be a single directory name.')
-    if args.max_steps<1 or args.nproc_per_node<1 or args.workers<0:
+    if args.max_steps<1 or args.scheduler_total_steps<1 or args.nproc_per_node<1 or args.workers<0:
         parser.error('Steps/processes must be positive; workers must be nonnegative.')
     if args.device=='cpu' and args.nproc_per_node!=1:
         parser.error('CPU training uses one process.')

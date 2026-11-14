@@ -42,6 +42,15 @@ whole synthetic tables in groups. The new allocator carries fractional groups
 across indexed batches so it approaches that proportion without permanently
 rounding it to 25% or 50%. It does not mix unrelated generic and informed rows
 inside one context/query table. Generic generation itself is unchanged.
+Allocation is calculated over the global batch before splitting it across GPUs;
+changing GPU count preserves the global tables and their order.
+
+The selected-pair launcher accepts `--scheduler-total-steps` (default 10000)
+independently of `--max-steps`. Shorter runs follow the same learning-rate
+schedule up to their stopping step.
+
+Submit final training with `sbatch scripts/epit_pipeline/train_selected_pairs.sbatch`.
+This job requests one GPU and a 47-hour wall-time limit.
 
 Parent indices, selected pair indices and formula names are returned by
 `SelectedPairSampler.sample` for inspection. File hashes and formula code hashes

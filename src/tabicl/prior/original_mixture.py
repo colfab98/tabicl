@@ -105,6 +105,9 @@ DataLoader workers use batch indices, so prefetching does not change samples.
             raise ValueError("Cannot resume historical paired streams as original mixtures.")
         self._next_batch = state["next_batch"]
 
+    def _global_group_counts(self, step):
+        return tuple(count * self.world_size for count in self.group_counts)
+
     def get_batch(self, batch_size=None):
         if batch_size is not None and batch_size != self.batch_size:
             raise ValueError("Changing batch size requires a new run.")
@@ -115,8 +118,8 @@ DataLoader workers use batch indices, so prefetching does not change samples.
         global_size = self.batch_size * self.world_size
         batch_seed = keyed_seed(self.seed, step, 11)
         groups = []
-        for source, count in enumerate(self.group_counts):
-            count *= self.world_size
+        group_counts = self._global_group_counts(step)
+        for source, count in enumerate(group_counts):
             if not count:
                 continue
             prior = self.priors[source]
@@ -132,7 +135,7 @@ DataLoader workers use batch indices, so prefetching does not change samples.
                     group_rows.append((*[part[i] for part in batch[:5]], source, i))
                 groups.append(group_rows)
         # At 0% retain the original generic ordering exactly.
-        if all(self.group_counts):
+        if all(group_counts):
             np.random.default_rng(keyed_seed(self.seed, step, 12)).shuffle(groups)
         rows = [row for group in groups for row in group]
         rows = rows[self.rank * self.batch_size:(self.rank + 1) * self.batch_size]
