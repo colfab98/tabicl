@@ -34,4 +34,4 @@ if [[ "${DRY_RUN:-false}" == "true" ]]; then OPTIONS+=(--dry-run); fi
 
 # The Python entry point selects reviewed data, fixed final queries and all
 # checkpoints, and rejects incomplete evaluations or missing required plots.
-python -m scripts.soccol_pipeline.evaluate_checkpoint_comparison "${OPTIONS[@]}"
+python -m scripts.soccol_pipeline.evaluate_checkpoint_comparison "${OPTIONS[@]}" "$@"

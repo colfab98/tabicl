@@ -658,3 +658,39 @@ Checkpoint intervals are strict in the EPIT and Soccol comparison wrappers:
 `--include-latest-checkpoint` explicitly to include each run's latest checkpoint
 outside that interval. Recovery uses the saved interval by default; pass
 `--checkpoint-step-interval 0` to retain every complete saved checkpoint.
+
+### Selected-pair S2 continuation
+
+The separate launcher uses the existing selected-pair recipe: 30.26% informed
+tables and 69.74% generic tables. It starts from the same generic 10k weights as
+the earlier S2 runs, with the same architecture, seed 43, batch size 512,
+micro-batch size 1, and 2,000-step S2 learning-rate schedule (2e-5 to 5e-6).
+The optimizer is fresh; step zero is saved, followed by every 100th step.
+
+```bash
+sbatch scripts/epit_pipeline/finetune_selected_pairs.sbatch
+```
+
+Add `--dry-run` to inspect the command. Old launchers and existing runs are
+unchanged. Checkpoints go to
+`checkpoints/epit_finetuning/generic10k_selected_pairs_s2/`; logs and the terminal
+checkpoint record go under
+`corrosion_datasets/analysis/epit_pipeline/selected_pair_finetuning/`.
+
+The saved generic S2 control currently ends at 1,000 additional steps. Compare
+matching steps, including step zero, on CPU with the existing five-fold protocol:
+
+```bash
+PYTHONPATH=src:. .venv/bin/python -m scripts.epit_pipeline.evaluate_finetuning \
+  --finetune-run checkpoints/epit_finetuning/generic10k_selected_pairs_s2 \
+  --control-run checkpoints/epit_finetuning/generic10k_generic_s2 \
+  --checkpoint all --max-checkpoint-step 1000 \
+  --exploratory-cv-folds 5 --device cpu \
+  --output-dir corrosion_datasets/analysis/epit_pipeline/selected_pairs_s2_cv5
+```
+
+This is exploratory: formula fitting and pair selection used all real rows.
+The evaluator requires explicit CV for this recipe and does not present it as
+a held-out final-test estimate. It checks parent weights, S2 settings and generic
+generator/model identity against the historical control. Historical dispatcher
+and group-allocation source hashes can differ and remain recorded in metadata.

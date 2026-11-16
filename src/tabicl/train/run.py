@@ -114,7 +114,8 @@ class Trainer:
             paired_batch_size(
                 self.config.batch_size, int(os.environ["WORLD_SIZE"]) if self.ddp else 1,
                 self.config.batch_size_per_gp, self.config.micro_batch_size,
-                1.0 if getattr(self.config, "epit_selected_pair_dir", None) else {"mix_scm": 0.0, "informed_scm": 1.0}.get(
+                1.0 if (getattr(self.config, "epit_selected_pair_dir", None) or
+                        getattr(self.config, "soccol_selected_pair_dir", None)) else {"mix_scm": 0.0, "informed_scm": 1.0}.get(
                     self.config.prior_type, self.config.informed_prior_ratio),
             )
 
@@ -281,6 +282,10 @@ class Trainer:
         original_mix = getattr(self.config, "original_prior_mix", False)
         epit_v5 = getattr(self.config, "epit_target_version", "v4") == "v5"
         selected_pairs = getattr(self.config, "epit_selected_pair_dir", None)
+        soccol_selected_pairs = getattr(self.config, "soccol_selected_pair_dir", None)
+        if selected_pairs and soccol_selected_pairs:
+            raise ValueError("Choose only one selected-pair dataset.")
+        selected_pairs = selected_pairs or soccol_selected_pairs
         from tabicl.prior.target_mixing import resolve_mix_policy
         variable_target_mix = resolve_mix_policy(
             getattr(self.config, "informed_target_mix_policy", None), epit_v5=epit_v5,
@@ -516,7 +521,10 @@ class Trainer:
                 stream_args = dict(seed=self.config.prior_stream_seed, rank=self.ddp_rank,
                                    world_size=self.ddp_world_size) if paired else {}
                 if selected_pairs:
-                    from tabicl.prior.epit_selected_pairs import SelectedPairPriorMixture
+                    if soccol_selected_pairs:
+                        from tabicl.prior.soccol_selected_pairs import SelectedPairPriorMixture
+                    else:
+                        from tabicl.prior.epit_selected_pairs import SelectedPairPriorMixture
                     dataset_class = SelectedPairPriorMixture
                     stream_args['selected_pair_dir'] = selected_pairs
                 dataset = dataset_class(

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from copy import deepcopy
 import json
 from pathlib import Path
 
@@ -66,22 +67,48 @@ def validate_stages(options):
                 or stage["split_lock_sha256"] != frozen.lock_sha256):
             raise ValueError("Fine-tuning and evaluation must use the same frozen split.")
         stages[label] = stage
-    if stages["epit_finetuned"]["effective_trial_params"]["informed_prior_ratio"] != 1:
+    selected = "selected_pair_finetuning" in stages["epit_finetuned"]
+    if selected:
+        from scripts.epit_pipeline.finetune_selected_pairs import validate_selected_stage
+        validate_selected_stage(stages["epit_finetuned"])
+        if options.exploratory_cv_folds != 5:
+            raise ValueError("All-data selected-pair S2 requires explicit --exploratory-cv-folds 5; not a final-test estimate.")
+    elif stages["epit_finetuned"]["effective_trial_params"]["informed_prior_ratio"] != 1:
         raise ValueError("The informed branch must use 100% informed data.")
     if "generic_continuation" in stages:
         control = stages["generic_continuation"]
         informed = stages["epit_finetuned"]
         if control["effective_trial_params"]["informed_prior_ratio"] != 0:
             raise ValueError("The control must continue on 0% informed data.")
-        if control["overrides"]["finetuning"] != informed["overrides"]["finetuning"]:
+        identities = [deepcopy(stage["overrides"]["finetuning"]) for stage in (control, informed)]
+        if selected:
+            # Historical control predates selected-pair/Soccol dispatch. Keep
+            # both source hashes in results, but compare the scientific recipe.
+            for identity in identities:
+                identity["implementation_sha256"].pop("run.py")
+            streams = [deepcopy(control["manual_pipeline_identity"]["fixed_prior"]["paired_prior_streams"]),
+                       deepcopy(informed["generic_stream_identity"])]
+            for stream in streams:
+                # This refactor only extracts global group counts; the 0%
+                # generic branch and generator are unchanged.
+                stream["implementation_sha256"].pop("original_mixture.py")
+            if streams[0] != streams[1]:
+                raise ValueError("Control and informed stages differ in generic generation or model code.")
+        if identities[0] != identities[1]:
             raise ValueError("Control and informed stages must share the parent, schedule, and sampling seed.")
         for field in ("nproc_per_node", "save_perm_every"):
             if control[field] != informed[field]:
                 raise ValueError(f"Control and informed stages differ in {field}.")
         configs = [vars(training_config(stage["train_command"])) for stage in (control, informed)]
+        if selected and (configs[0]["epit_selected_pair_dir"] or configs[0]["soccol_selected_pair_dir"]):
+            raise ValueError("The generic control must not use selected pairs.")
         for config in configs:
             for field in ("checkpoint_dir", "informed_prior_ratio"):
                 config.pop(field)
+            if selected:
+                for field in ("epit_selected_pair_dir", "epit_target_version", "pitting_coefficient_variation",
+                              "informed_target_mix_policy", "informed_target_mix_weight"):
+                    config.pop(field)
         if configs[0] != configs[1]:
             raise ValueError("Control and informed training settings differ beyond the prior share.")
     return stages

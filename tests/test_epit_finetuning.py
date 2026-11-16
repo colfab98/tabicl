@@ -117,11 +117,21 @@ def test_s2_lr_curve_starts_nonzero_and_ends_at_declared_floor():
 def stop_workers(trainer):
     iterator = trainer.dataloader._iterator
     if iterator is not None and hasattr(iterator, "_shutdown_workers"):
+        # Drain outstanding tensor transfers without scheduling more work.
+        # Abrupt teardown during nested-tensor IPC can abort spawned workers.
+        put_index = iterator._try_put_index
+        iterator._try_put_index = lambda: None
+        try:
+            while iterator._tasks_outstanding:
+                next(iterator)
+        finally:
+            iterator._try_put_index = put_index
         iterator._shutdown_workers()
 
 
 @pytest.mark.parametrize("workers", [0, 2])
-def test_real_weights_step_zero_and_exact_resume(tmp_path, workers):
+@pytest.mark.parametrize("selected_pairs", [False, True])
+def test_real_weights_step_zero_and_exact_resume(tmp_path, workers, selected_pairs):
     config = small_training_config(tmp_path / "parent", "epit")
     config.original_prior_mix = True
     config.col_missing_value_embedding = False
@@ -139,6 +149,15 @@ def test_real_weights_step_zero_and_exact_resume(tmp_path, workers):
     stage.informed_prior_ratio = 1.
     stage.epit_target_version = "v5"
     stage.informed_target_mix_policy = "uniform_per_table"
+    if selected_pairs:
+        from scripts.epit_pipeline.finetune_selected_pairs import DEFAULT_RECIPE
+        stage.epit_selected_pair_dir = str(DEFAULT_RECIPE)
+        stage.epit_target_version = "v4"
+        stage.informed_target_mix_policy = "fixed"
+        stage.informed_target_mix_weight = 1.
+        stage.pitting_coefficient_variation = 0.
+        stage.pitting_composition_perturb_strength = .3
+        stage.batch_size = 8  # Both streams contribute on each tiny training step.
     stage.lr = 2e-5
     stage.scheduler = "polynomial_decay_warmup"
     stage.poly_decay_lr_end, stage.poly_decay_power = 5e-6, 2.

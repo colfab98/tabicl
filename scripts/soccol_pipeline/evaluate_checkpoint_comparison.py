@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from copy import copy
 import json
 import shlex
 import subprocess
@@ -14,6 +15,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.epit_pipeline.artifact_hashes import load_frozen_final_model
+from scripts.epit_pipeline.evaluate_checkpoint_comparison import select_available_models
 from scripts.eval_corrosion_datasets import slugify
 from scripts.soccol_pipeline.data import SPLIT_MANIFEST, reviewed_final_split_metadata
 from tabicl.prior.soccol_reviewed_schema import (
@@ -51,6 +53,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--random-state", type=int, default=42)
     parser.add_argument("--catboost-thread-count", type=int, default=8)
     parser.add_argument("--checkpoint-step-interval", type=int, default=500)
+    parser.add_argument("--checkpoint", default="all")
+    parser.add_argument("--min-checkpoint-step", type=int, default=0)
+    parser.add_argument("--max-checkpoint-step", type=int)
     source = parser.add_mutually_exclusive_group()
     source.add_argument("--candidate-run", type=Path, help="Explicit run for checkpoint trends; otherwise read the frozen final-model manifest.")
     source.add_argument("--final-model-manifest", type=Path)
@@ -68,6 +73,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.error("--final-model-manifest is for reviewed models; use --candidate-run for a legacy run.")
     if args.n_estimators <= 0 or args.checkpoint_step_interval < 0 or args.catboost_thread_count == 0:
         parser.error("Estimators must be positive, checkpoint interval nonnegative, and CatBoost threads nonzero.")
+    if args.max_checkpoint_step is not None:
+        if args.checkpoint != "all":
+            parser.error("--max-checkpoint-step requires --checkpoint all.")
+        if args.max_checkpoint_step < 0 or args.max_checkpoint_step < args.min_checkpoint_step:
+            parser.error("--max-checkpoint-step must be nonnegative and >= --min-checkpoint-step.")
     if args.ratio_runs is not None:
         if args.legacy_data or args.candidate_label is not None:
             parser.error("--ratio-runs uses reviewed data and fixed ratio labels; omit --legacy-data and --candidate-label.")
@@ -109,10 +119,18 @@ def candidate_run(args: argparse.Namespace) -> Path:
 
 
 def candidate_models(args: argparse.Namespace) -> list[tuple[str, Path]]:
+    if getattr(args, '_selected_model_runs', None) is not None:
+        return [(label, path) for label, path in args._selected_model_runs if label != 'generic_baseline']
     if args.ratio_runs is not None:
         return list(zip(("soccol_25pct", "soccol_50pct", "soccol_75pct", "soccol_100pct"),
                         (path.expanduser().resolve() for path in args.ratio_runs), strict=True))
     return [(args.candidate_label, candidate_run(args))]
+
+
+def model_runs(args):
+    if getattr(args, '_selected_model_runs', None) is not None:
+        return args._selected_model_runs
+    return [*candidate_models(args), ('generic_baseline', args.generic_run.expanduser().resolve())]
 
 
 def output_directory(args: argparse.Namespace) -> Path:
@@ -129,12 +147,12 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
     output = output_directory(args)
     models = candidate_models(args)
     model_arguments = []
-    for label, path in [*models, ("generic_baseline", args.generic_run.expanduser().resolve())]:
+    for label, path in model_runs(args):
         model_arguments.extend(["--run", str(path), "--local-model-label", label])
     command = [
         sys.executable, str(REPO_ROOT / "scripts/eval_corrosion_datasets.py"),
         *model_arguments,
-        "--checkpoint", "all", "--min-checkpoint-step", "0",
+        "--checkpoint", args.checkpoint, "--min-checkpoint-step", str(args.min_checkpoint_step),
         "--checkpoint-step-interval", str(args.checkpoint_step_interval),
         "--include-latest-checkpoint" if args.include_latest_checkpoint else "--no-include-latest-checkpoint",
         "--task", SOCCOL_TASK_ID, "--target-mode", "primary", "--target-binning", "continuous",
@@ -147,6 +165,8 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
         "--catboost-learning-rate", "0.03", "--catboost-l2-leaf-reg", "3.0",
         "--catboost-thread-count", str(args.catboost_thread_count),
     ]
+    if args.max_checkpoint_step is not None:
+        command.extend(["--max-checkpoint-step", str(args.max_checkpoint_step)])
     if args.exploratory_cv_folds is not None:
         command.remove("--epit-final-test")
         command.extend(["--exploratory-cv-folds", "5"])
@@ -209,12 +229,16 @@ def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: i
     if set(payload.get("missing_aware_models", [])) != (labels if args.legacy_model_inputs else set()):
         raise RuntimeError("Comparison changed Soccol missing-value handling.")
     rows = payload.get("rows", [])
-    if {row.get("model") for row in rows} != labels | {"generic_baseline", "pretrained_tabicl_v2", "catboost"}:
+    if {row.get("model") for row in rows} != {label for label, _ in model_runs(args)} | {"pretrained_tabicl_v2", "catboost"}:
         raise RuntimeError("Comparison did not produce all expected models.")
     strategy = "epit_pipeline_final_test" + (f"_context_fold_{context_fold}" if context_fold is not None else "")
     if cv_fold is not None:
         strategy = f"soccol_pipeline_exploratory_cv_fold_{cv_fold}"
     for row in rows:
+        if args.max_checkpoint_step is not None and (
+            row.get("checkpoint_step") is None or int(row["checkpoint_step"]) > args.max_checkpoint_step
+        ):
+            raise RuntimeError("Comparison exceeded the requested maximum checkpoint step.")
         if (row.get("task_id") != SOCCOL_TASK_ID or row.get("split_strategy") != strategy
                 or row.get("n_train") != len(context) or row.get("n_test") != len(expected["query_task_row_indices"]) or row.get("n_features") != 58):
             raise RuntimeError("Comparison used the wrong dataset, schema or split.")
@@ -232,9 +256,15 @@ def run(args: argparse.Namespace) -> Path:
                 raise FileNotFoundError(f"{label}: no checkpoint files found in {path}")
     if output.exists() and (not output.is_dir() or any(output.iterdir())):
         raise FileExistsError(f"Comparison output is not empty: {output}")
+    args = copy(args)
+    args._selected_model_runs, skipped = select_available_models(args, runs=model_runs(args))
+    command = evaluation_command(args)
     subprocess.run(command, cwd=REPO_ROOT, check=True)
-    validate_results(args, json.loads((output / "results.json").read_text()))
-    for filename in REQUIRED_PLOTS:
+    payload = json.loads((output / "results.json").read_text())
+    payload['skipped_models'] = skipped
+    (output / 'results.json').write_text(json.dumps(payload, indent=2) + '\n')
+    validate_results(args, payload)
+    for filename in REQUIRED_PLOTS if args.checkpoint == "all" else ():
         path = output / "plots" / filename
         if not path.is_file() or path.stat().st_size == 0:
             raise RuntimeError(f"Required plot missing: {path}")

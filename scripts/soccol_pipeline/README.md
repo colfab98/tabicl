@@ -1,5 +1,11 @@
 # Soccol pitting-potential pipeline
 
+The exploratory **selected-pair** experiment now has its own
+[preparation, training and five-fold CV commands](SELECTED_PAIR_SAMPLING.md).
+It follows the new EPIT procedure: refit on all composition-accepted rows,
+retain sample/formula pairs that beat generic CV predictions, and train with
+formula-only informed targets. The existing workflows below retain their settings.
+
 Current searches use **v8** with the [same original TabICL policy as EPIT v14](../epit_pipeline/README.md#current-experiment-v14).
 The reviewed feature profile remains v3; formula and data artifacts were retained.
 

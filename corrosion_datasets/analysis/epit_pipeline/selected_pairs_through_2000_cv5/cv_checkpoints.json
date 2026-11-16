@@ -1,0 +1,203 @@
+{
+  "version": 1,
+  "checkpoints": [
+    {
+      "name": "step-100",
+      "step": 100,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-100.ckpt",
+          "size": 344603291,
+          "mtime_ns": 1794782680777482276
+        }
+      ]
+    },
+    {
+      "name": "step-200",
+      "step": 200,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-200.ckpt",
+          "size": 344603291,
+          "mtime_ns": 1794782681352472145
+        }
+      ]
+    },
+    {
+      "name": "step-300",
+      "step": 300,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-300.ckpt",
+          "size": 344603291,
+          "mtime_ns": 1794782681934461891
+        }
+      ]
+    },
+    {
+      "name": "step-400",
+      "step": 400,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-400.ckpt",
+          "size": 344603291,
+          "mtime_ns": 1794782682657449152
+        }
+      ]
+    },
+    {
+      "name": "step-500",
+      "step": 500,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-500.ckpt",
+          "size": 344603291,
+          "mtime_ns": 1794829527747298408
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-500.ckpt",
+          "size": 344476381,
+          "mtime_ns": 1784186810955037306
+        }
+      ]
+    },
+    {
+      "name": "step-700",
+      "step": 700,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-700.ckpt",
+          "size": 344603291,
+          "mtime_ns": 1794817507348403011
+        }
+      ]
+    },
+    {
+      "name": "step-800",
+      "step": 800,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-800.ckpt",
+          "size": 344603291,
+          "mtime_ns": 1794817507948392402
+        }
+      ]
+    },
+    {
+      "name": "step-900",
+      "step": 900,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-900.ckpt",
+          "size": 344603291,
+          "mtime_ns": 1794829528328289040
+        }
+      ]
+    },
+    {
+      "name": "step-1000",
+      "step": 1000,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-1000.ckpt",
+          "size": 344604865,
+          "mtime_ns": 1794829528910279657
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-1000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186806755102980
+        }
+      ]
+    },
+    {
+      "name": "step-1100",
+      "step": 1100,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-1100.ckpt",
+          "size": 344604865,
+          "mtime_ns": 1794829529679267259
+        }
+      ]
+    },
+    {
+      "name": "step-1200",
+      "step": 1200,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-1200.ckpt",
+          "size": 344604865,
+          "mtime_ns": 1794829530263257843
+        }
+      ]
+    },
+    {
+      "name": "step-1300",
+      "step": 1300,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-1300.ckpt",
+          "size": 344604865,
+          "mtime_ns": 1794829530825248782
+        }
+      ]
+    },
+    {
+      "name": "step-1400",
+      "step": 1400,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-1400.ckpt",
+          "size": 344604865,
+          "mtime_ns": 1794829531527237464
+        }
+      ]
+    },
+    {
+      "name": "step-1500",
+      "step": 1500,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_40gb_full/step-1500.ckpt",
+          "size": 344604865,
+          "mtime_ns": 1794829532111228048
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-1500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186807918084795
+        }
+      ]
+    },
+    {
+      "name": "step-2000",
+      "step": 2000,
+      "models": [
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-2000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186808477076054
+        }
+      ]
+    }
+  ]
+}

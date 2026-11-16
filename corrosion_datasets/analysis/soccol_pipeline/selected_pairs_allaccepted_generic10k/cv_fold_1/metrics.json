@@ -1,0 +1,9 @@
+{
+  "prediction_sha256": "53c5542257d052c50f99b4cc758ec616a9c320919a4457fca6fadc4298fe0a02",
+  "metrics": {
+    "test_mae": 154.9313136450823,
+    "test_rmse": 217.83920241022727,
+    "test_r2": 0.4168892900505534,
+    "test_spearman": 0.6501051096537641
+  }
+}

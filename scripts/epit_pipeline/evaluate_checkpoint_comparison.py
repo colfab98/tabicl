@@ -98,10 +98,10 @@ def model_runs(args: argparse.Namespace) -> list[tuple[str, Path]]:
     return [*candidate_models(args), ("generic_baseline", args.generic_run.expanduser().resolve())]
 
 
-def select_available_models(args: argparse.Namespace) -> tuple[list[tuple[str, Path]], list[dict[str, str]]]:
+def select_available_models(args: argparse.Namespace, *, runs=None) -> tuple[list[tuple[str, Path]], list[dict[str, str]]]:
     """Select once, so checkpoints arriving during evaluation cannot change labels."""
     available, skipped = [], []
-    for label, directory in model_runs(args):
+    for label, directory in model_runs(args) if runs is None else runs:
         reason = None
         if not directory.is_dir():
             reason = "checkpoint directory not found"

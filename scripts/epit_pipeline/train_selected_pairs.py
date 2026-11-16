@@ -17,16 +17,16 @@ ROOT=Path(__file__).resolve().parents[2]
 DEFAULT_NAME='epit_selected_pairs_all760_generic10k_v1'
 
 
-def build_plan(args):
-    sampler=SelectedPairSampler(args.recipe_dir)
-    checkpoint_dir=ROOT/'checkpoints/epit_selected_pairs'/args.run_name
-    output_dir=ROOT/'corrosion_datasets/analysis/epit_pipeline/selected_pair_training'/args.run_name
+def build_plan(args, *, pipeline='epit', sampler_class=None, template_parser=None):
+    sampler=(sampler_class or SelectedPairSampler)(args.recipe_dir)
+    checkpoint_dir=ROOT/f'checkpoints/{pipeline}_selected_pairs'/args.run_name
+    output_dir=ROOT/f'corrosion_datasets/analysis/{pipeline}_pipeline/selected_pair_training'/args.run_name
     for path in (checkpoint_dir,output_dir):
         if path.exists() and any(path.iterdir()):
             raise FileExistsError(f'Run already exists: {path}. Choose a new --run-name.')
     # Reuse the established architecture, optimizer and batch settings, but call
     # only its planning path. Never enter its checkpoint selection/evaluation.
-    template=train_final.parse_args([
+    template=(template_parser or train_final.parse_args)([
         '--manual-hyperparameters','--override-mlp-prob','0.70',
         '--override-informed-prior-ratio','1','--override-informed-target-mix-weight','1',
         '--override-pitting-composition-perturb-strength','0.30',
@@ -49,7 +49,7 @@ def build_plan(args):
     train_final.replace_option(command,'--pitting_coefficient_variation','0')
     train_final.replace_option(command,'--informed_prior_ratio',repr(sampler.ratio))
     train_final.replace_option(command,'--wandb_name',args.run_name)
-    command.extend(['--epit_selected_pair_dir',str(sampler.path),
+    command.extend([f'--{pipeline}_selected_pair_dir',str(sampler.path),
                     '--epit_target_version','v4','--informed_target_mix_policy','fixed'])
     start=command.index(str(ROOT/'src/tabicl/train/run.py'))+1
     parsed=build_parser().parse_args(command[start:])
@@ -64,10 +64,10 @@ def build_plan(args):
             'device':args.device,'all_data_recipe':True}
 
 
-def main(argv=None):
+def main(argv=None, *, pipeline='epit', default_name=DEFAULT_NAME, default_recipe=None, plan_builder=None):
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--recipe-dir',type=Path,default=ROOT/'corrosion_datasets/analysis/epit_pipeline/selected_pairs_all760_generic10k')
-    parser.add_argument('--run-name',default=DEFAULT_NAME)
+    parser.add_argument('--recipe-dir',type=Path,default=default_recipe or ROOT/'corrosion_datasets/analysis/epit_pipeline/selected_pairs_all760_generic10k')
+    parser.add_argument('--run-name',default=default_name)
     parser.add_argument('--device',choices=['cpu','cuda'],default='cuda')
     parser.add_argument('--nproc-per-node',type=int,default=1)
     parser.add_argument('--max-steps',type=int,default=10000)
@@ -82,7 +82,7 @@ def main(argv=None):
         parser.error('Steps/processes must be positive; workers must be nonnegative.')
     if args.device=='cpu' and args.nproc_per_node!=1:
         parser.error('CPU training uses one process.')
-    plan=build_plan(args)
+    plan=(plan_builder or build_plan)(args)
     print(f"Training from scratch: {args.max_steps} steps on {args.device}; {plan['informed_proportion']:.2%} informed.",flush=True)
     print('Checkpoints:',plan['checkpoint_dir'],flush=True)
     print('Log:',str(Path(plan['output_dir'])/'train.log'),flush=True)

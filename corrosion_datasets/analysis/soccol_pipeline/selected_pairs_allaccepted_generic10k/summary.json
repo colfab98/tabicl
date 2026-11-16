@@ -1,0 +1,11 @@
+{
+  "samples": 3745,
+  "generic_cv_samples": 3755,
+  "excluded_compositions": 282,
+  "formulas": 10,
+  "tested_pairs": 37450,
+  "retained_pairs": 10897,
+  "informed_proportion": 0.2909746328437917,
+  "selection": "strictly lower absolute error than generic; ties discarded",
+  "scope": "all-accepted-data recipe construction, not independent formula evaluation"
+}

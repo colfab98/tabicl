@@ -68,6 +68,34 @@ style: |
   section.result-plot { padding: 30px 48px 48px; }
   section.result-plot h1 { font-size: 40px; margin-bottom: 16px; }
   section.result-plot > p { text-align: center; margin: 0; }
+  section.selected-approach { padding: 42px 68px 46px; font-size: 25px; }
+  section.selected-approach h1 { font-size: 42px; margin-bottom: 20px; }
+  section.selected-approach .eyebrow { color: #60737c; font-size: 15px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 12px; }
+  section.selected-approach .lead { font-size: 26px; line-height: 1.35; margin-bottom: 20px; }
+  section.selected-approach table { font-size: 24px; line-height: 1.3; }
+  section.selected-approach th, section.selected-approach td { padding: 12px 18px; }
+  section.selected-approach .caption { color: #60737c; font-size: 18px; margin: 10px 0 12px; }
+  section.selected-approach .takeaway { background: #eaf2f4; border-left: 5px solid #155568; padding: 18px 22px; font-size: 25px; line-height: 1.35; margin: 22px 0 0; }
+  section.ranking-example th:nth-child(3), section.ranking-example td:nth-child(3) { background: #fff0d9; color: #805016; font-weight: 700; }
+  section.selected-approach .comparison { display: flex; gap: 36px; align-items: baseline; margin-top: 18px; font-size: 24px; }
+  section.selected-approach .comparison strong { font-size: 36px; }
+  section.selected-approach .comparison .larger-error { color: #805016; }
+  section.selected-approach .keep { color: #246347; font-weight: 700; }
+  section.selected-approach .discard { color: #805016; font-weight: 700; }
+  section.selected-approach .selection-rule { padding: 16px 22px; background: #eaf2f4; color: #155568; font-size: 28px; font-weight: 700; margin-bottom: 16px; }
+  section.selected-approach .selection-stats { display: flex; gap: 54px; border-top: 1px solid #d8e3e7; padding-top: 14px; margin-top: 10px; }
+  section.selected-approach .selection-stats strong { display: block; font-size: 34px; line-height: 1.15; }
+  section.selected-approach .selection-stats span { font-size: 20px; color: #60737c; }
+  section.selected-approach .training-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin: 4px 0 26px; }
+  section.selected-approach .training-steps > div { border-top: 3px solid #155568; padding-top: 14px; }
+  section.selected-approach .training-steps .step-number { color: #60737c; font-size: 17px; margin-bottom: 10px; }
+  section.selected-approach .training-steps h2 { font-size: 26px; margin-bottom: 12px; }
+  section.selected-approach .training-steps p { font-size: 22px; line-height: 1.4; margin: 0; }
+  section.selected-approach .training-mixture { display: flex; height: 66px; margin: 0 0 12px; font-size: 22px; font-weight: 700; }
+  section.selected-approach .training-mixture > div { display: flex; align-items: center; justify-content: center; }
+  section.selected-approach .training-mixture .informed { width: 30.26%; background: #155568; color: white; }
+  section.selected-approach .training-mixture .generic { width: 69.74%; background: #e3eaee; color: #233641; }
+  section.selected-approach .caveat { font-size: 19px; line-height: 1.4; color: #60737c; margin: 16px 0 0; }
   section.cover { justify-content: center; }
   section.cover h1 { font-size: 66px; line-height: 1.12; max-width: 1050px; margin-bottom: 42px; }
   section.cover p { font-size: 27px; color: #60737c; }
@@ -606,3 +634,115 @@ the MPEA source also contains corrosion potential and corrosion current targets.
 ![height:550px](results_soccol_mae.svg)
 
 <!-- Mean over five CV folds; lower is better. Source: ../soccol_four_ratios_cv5_updated/plots/trend_mean_test_mae.svg -->
+
+---
+
+<!-- _class: selected-approach ranking-example -->
+
+<p class="eyebrow">New approach · Why change?</p>
+
+# A good ranking can hide large errors
+
+<p class="lead">The previous approach sampled formulas according to their <strong>Spearman scores</strong>. A good ranking can still hide large errors on individual samples.</p>
+
+| Epit (mV) | Sample A | Sample B | Sample C |
+| :--- | ---: | ---: | ---: |
+| Measured Epit | 100 | 200 | 300 |
+| Formula | 110 | 280 | 290 |
+| Generic model | 120 | 210 | 330 |
+
+<p class="caption">Illustrative example. Both predictions rank the samples perfectly: Spearman = 1.</p>
+
+<div class="comparison"><span>Error on sample B:</span><span>Formula <strong class="larger-error">80 mV</strong></span><span>Generic <strong>10 mV</strong></span></div>
+
+<p class="takeaway">Which formulas help on <strong>which samples</strong>?</p>
+
+<!--
+Illustrative numbers, not experimental results. Both prediction vectors are
+strictly increasing, so each has Spearman correlation 1 with the measured
+vector. Formula absolute errors are 10, 80, 10 mV; generic errors are 20, 10,
+30 mV. The formula is better on A and C, worse on B, and worse in average MAE.
+Spearman remains a valid ranking metric. The limitation is using an aggregate
+ranking score to select formulas without considering their local usefulness.
+The visible slide omits fitting and fold details to focus on the difference
+between an overall ranking score and sample-specific prediction error.
+The previous generator sampled one formula per synthetic table using normalized
+development scores, without conditioning formula choice on the parent sample.
+Sources: src/tabicl/prior/epit_target_v5.py; src/tabicl/prior/dataset.py.
+-->
+
+---
+
+<!-- _class: selected-approach -->
+
+<p class="eyebrow">New approach · Choose useful pairs</p>
+
+# Keep a formula where it beats generic
+
+<p class="lead">Apply every formula to every real sample. Compare each prediction with the measured Epit and the generic model's prediction.</p>
+
+<div class="selection-rule">Keep the sample–formula pair if its error is smaller.</div>
+
+<p class="caption">Real example: the same PREN-N formula on two different samples.</p>
+
+| Real sample | Formula error (mV) | Generic error (mV) | Retain pair? |
+| :--- | ---: | ---: | :--- |
+| 1 | 52 | 70 | <span class="keep">Keep</span> |
+| 2 | 37 | 24 | <span class="discard">Discard</span> |
+
+<p class="caption">Absolute errors, rounded. A sample can keep more than one formula.</p>
+
+<div class="selection-stats"><div><strong>7,600</strong><span>pairs compared</span></div><div><strong>2,300</strong><span>pairs retained</span></div><div><strong>424</strong><span>samples represented</span></div></div>
+
+<!--
+Source: corrosion_datasets/analysis/epit_pipeline/selected_pairs_all760_generic10k/all_pairs.csv
+Rows: formula=pren_n_linear, task_row_index=0 and 1 (source No. 1 and 2).
+Exact formula/generic absolute errors: 51.945828/69.728058 mV and
+36.705864/23.636322 mV. These are the new all-row fitted formula predictions,
+not predictions from the earlier development-only recipe.
+Generic reference: checkpoints/tabicl_s1_regression_baseline/step-10000.ckpt.
+Each sample is a query once in five-fold CV, excluded from its own generic
+context. All ten formulas and their mV calibrations are fitted on all 760 rows.
+Selection is strictly lower absolute error; ties are discarded.
+Source for counts: selected_pairs_all760_generic10k/summary.json.
+These counts describe recipe construction, not independent formula accuracy.
+-->
+
+---
+
+<!-- _class: selected-approach -->
+
+<p class="eyebrow">New approach · Generate training data</p>
+
+# Train around the useful pairs
+
+<div class="training-steps">
+<div><div class="step-number">01</div><h2>Choose a pair</h2><p>Draw a real sample and its successful formula from the retained pairs.</p></div>
+<div><div class="step-number">02</div><h2>Vary the composition</h2><p>Make small composition changes. Keep the sample's test conditions.</p></div>
+<div><div class="step-number">03</div><h2>Generate the target</h2><p>Apply that formula to the new composition.<br><strong>100% formula target.</strong></p></div>
+</div>
+
+<div class="training-mixture"><div class="informed">30% informed</div><div class="generic">70% generic</div></div>
+<p class="caption">Approximate shares of training tables. Same model and training settings.</p>
+
+<p class="takeaway"><strong>The aim:</strong> focus informed training on examples where formulas can add value.</p>
+
+<p class="caveat">Success on a real sample may not transfer to its variations. Improvement still needs to be tested on separate data: all source labels helped select these pairs.</p>
+
+<!--
+Sources: src/tabicl/prior/epit_selected_pairs.py;
+scripts/epit_pipeline/train_selected_pairs.py; main5.tex.
+The ratio is 2300/7600, a starting design choice rather than an optimized value.
+It controls whole synthetic tables, with global group rounding carried across
+batches. Formula-only target mixing is a separate setting from this source ratio.
+Each informed row draws its own retained pair; formula identities can differ
+within one table. Pair-uniform sampling weights each parent in proportion to
+the number of its retained formulas. Composition perturbation uses sigma=0.30
+in log space and closure to 100 wt.%; conditions stay with the same parent.
+Formula scores use saved fitting states and mV calibrations; completed targets
+receive one shared standardization per table. The generic generator is retained.
+The all-row fit and pair selection mean the historical outer partition is no
+longer untouched by recipe construction. This does not authorize substituting
+development folds for the frozen outer query set in final-model evaluation.
+The proposed benefit is a hypothesis, not a measured improvement.
+-->
