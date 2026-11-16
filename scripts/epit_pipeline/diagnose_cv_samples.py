@@ -41,7 +41,8 @@ def parse_args(argv=None):
     p.add_argument('--results-dir', type=Path, default=DEFAULT_RESULTS)
     p.add_argument('--output-dir', type=Path, default=DEFAULT_OUTPUT)
     p.add_argument('--split-manifest', type=Path, default=comparison.DEFAULT_SPLIT_MANIFEST)
-    p.add_argument('--models', nargs='+', choices=['epit_25pct','epit_50pct','epit_75pct','epit_100pct'], default=['epit_100pct'])
+    p.add_argument('--models', nargs='+', choices=['epit_25pct','epit_50pct','epit_75pct','epit_100pct',
+                                                  'epit_selected_pairs'], default=['epit_100pct'])
     p.add_argument('--steps', nargs='+', type=int, help='Default: all steps shared by requested models and generic.')
     p.add_argument('--device', default='cpu')
     p.add_argument('--metric-atol', type=float, default=1e-5)

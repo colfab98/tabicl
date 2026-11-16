@@ -97,6 +97,15 @@ def test_bad_pairings_fail(change):
         analysis.pair_predictions(frame)
 
 
+def test_cached_target_roundtrip_accepts_only_numerical_noise():
+    frame=fake_predictions()
+    frame.loc[1,'observed_mV']+=1e-13
+    assert len(analysis.pair_predictions(frame))==12*2
+    frame.loc[1,'observed_mV']+=1e-5
+    with pytest.raises(ValueError,match='Observed targets differ'):
+        analysis.pair_predictions(frame)
+
+
 def test_metric_reproduction_rejects_drift():
     args=SimpleNamespace(metric_atol=1e-5,metric_rtol=1e-5)
     saved={m:1. for m in export.METRICS}

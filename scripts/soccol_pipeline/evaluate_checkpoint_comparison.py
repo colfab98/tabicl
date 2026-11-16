@@ -54,6 +54,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--catboost-thread-count", type=int, default=8)
     parser.add_argument("--checkpoint-step-interval", type=int, default=500)
     parser.add_argument("--checkpoint", default="all")
+    parser.add_argument("--checkpoint-scope", choices=["all", "common"], default="all",
+                        help="Evaluate/plot all available steps per run, or only steps shared by every run.")
     parser.add_argument("--min-checkpoint-step", type=int, default=0)
     parser.add_argument("--max-checkpoint-step", type=int)
     source = parser.add_mutually_exclusive_group()
@@ -67,6 +69,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--dry-run", action="store_true", help="Print the evaluation command without loading models or writing results.")
     args = parser.parse_args(argv)
+    if args.checkpoint_scope == "common" and args.checkpoint != "all":
+        parser.error("--checkpoint-scope common requires --checkpoint all.")
     if args.exploratory_cv_folds is not None and (args.context_folds is not None or args.legacy_data):
         parser.error("--exploratory-cv-folds cannot be combined with --context-folds or --legacy-data.")
     if args.legacy_data and args.final_model_manifest is not None:
@@ -153,6 +157,7 @@ def evaluation_command(args: argparse.Namespace) -> list[str]:
         sys.executable, str(REPO_ROOT / "scripts/eval_corrosion_datasets.py"),
         *model_arguments,
         "--checkpoint", args.checkpoint, "--min-checkpoint-step", str(args.min_checkpoint_step),
+        "--checkpoint-scope", args.checkpoint_scope,
         "--checkpoint-step-interval", str(args.checkpoint_step_interval),
         "--include-latest-checkpoint" if args.include_latest_checkpoint else "--no-include-latest-checkpoint",
         "--task", SOCCOL_TASK_ID, "--target-mode", "primary", "--target-binning", "continuous",

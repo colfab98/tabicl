@@ -659,6 +659,16 @@ Checkpoint intervals are strict in the EPIT and Soccol comparison wrappers:
 outside that interval. Recovery uses the saved interval by default; pass
 `--checkpoint-step-interval 0` to retain every complete saved checkpoint.
 
+EPIT, Soccol and S2 comparison wrappers also accept `--checkpoint-scope` with
+`--checkpoint all`. `all` (the default) evaluates every model at its own available
+steps and plots every resulting point; `common` evaluates and plots only steps
+present in every requested local model, including the generic control. Fixed
+pretrained/CatBoost baselines do not restrict the step set. Use
+`--checkpoint-step-interval 0` to include every saved step; bounds still apply.
+For `common`, a missing requested model or an empty intersection is an error.
+The selected step/model inventory is frozen once for all five CV folds. Even a
+single common checkpoint is plotted. Use a fresh output directory for each run.
+
 ### Selected-pair S2 continuation
 
 The separate launcher uses the existing selected-pair recipe: 30.26% informed
@@ -694,3 +704,36 @@ The evaluator requires explicit CV for this recipe and does not present it as
 a held-out final-test estimate. It checks parent weights, S2 settings and generic
 generator/model identity against the historical control. Historical dispatcher
 and group-allocation source hashes can differ and remain recorded in metadata.
+
+For a third S2 branch using 100% informed tables from the same retained pairs:
+
+```bash
+sbatch scripts/epit_pipeline/finetune_selected_pairs.sbatch --informed-only
+```
+
+This defaults to the distinct run name `generic10k_selected_pairs100_s2` and
+retains the same generic 10k parent, fresh optimizer, seed, 2,000-step schedule,
+and checkpoint cadence. The default launcher still uses 30.26% informed.
+The all-informed option changes table allocation only, not the selected pairs,
+formulas, perturbation, features or target generation. Its sampler identity is
+distinct, so a resume cannot silently change the mixture. The original
+selected-pair sampler source and identities remain unchanged.
+
+To evaluate all three S2 branches together on CPU:
+
+```bash
+PYTHONPATH=src:. .venv/bin/python -m scripts.epit_pipeline.evaluate_finetuning \
+  --finetune-run checkpoints/epit_finetuning/generic10k_selected_pairs_s2 \
+  --informed-only-run checkpoints/epit_finetuning/generic10k_selected_pairs100_s2 \
+  --control-run checkpoints/epit_finetuning/generic10k_generic_s2 \
+  --checkpoint all --checkpoint-scope all --checkpoint-step-interval 0 \
+  --exploratory-cv-folds 5 --device cpu \
+  --output-dir corrosion_datasets/analysis/epit_pipeline/selected_pairs_s2_three_way_cv5
+```
+
+Change `--checkpoint-scope all` to `--checkpoint-scope common` to restrict the
+comparison to steps saved in all three runs; use a separate output directory.
+With `all`, each curve continues for as many saved checkpoints as that model has. The third
+branch is labeled `epit_finetuned_100pct`; the existing mixture keeps the label
+`epit_finetuned`. The comparison checks that both selected-pair branches use
+the same recipe and that all three share the S2 parent and training settings.

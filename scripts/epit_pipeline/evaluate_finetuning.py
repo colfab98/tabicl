@@ -14,11 +14,15 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--finetune-run", type=Path, required=True)
     parser.add_argument("--control-run", type=Path)
+    parser.add_argument("--informed-only-run", type=Path,
+                        help="Also compare the 100% selected-pair S2 ablation.")
     parser.add_argument("--split-manifest", type=Path, default=comparison.DEFAULT_SPLIT_MANIFEST)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--n-estimators", type=int, default=8)
     parser.add_argument("--checkpoint", default="all")
+    parser.add_argument("--checkpoint-scope", choices=["all", "common"], default="all",
+                        help="Evaluate/plot all available steps per stage, or only steps shared by every stage.")
     parser.add_argument("--max-checkpoint-step", type=int)
     parser.add_argument("--checkpoint-step-interval", type=int, default=100)
     parser.add_argument("--exploratory-cv-folds", type=int, choices=[5],
@@ -33,6 +37,7 @@ def comparison_args(args):
             "--split-manifest", str(args.split_manifest), "--output-dir", str(args.output_dir),
             "--device", args.device, "--n-estimators", str(args.n_estimators),
             "--checkpoint", args.checkpoint, "--min-checkpoint-step", "0",
+            "--checkpoint-scope", args.checkpoint_scope,
             "--checkpoint-step-interval", str(args.checkpoint_step_interval)]
     if args.max_checkpoint_step is not None:
         argv.extend(["--max-checkpoint-step", str(args.max_checkpoint_step)])
@@ -49,6 +54,13 @@ def comparison_args(args):
         if args.control_run.resolve() == args.finetune_run.resolve():
             raise ValueError("Control and informed stages must use distinct run directories.")
         options._selected_model_runs.append(("generic_continuation", args.control_run.resolve()))
+    if args.informed_only_run is not None:
+        if args.control_run is None:
+            raise ValueError("The three-stage comparison requires --control-run.")
+        directory = args.informed_only_run.resolve()
+        if directory in {path for _, path in options._selected_model_runs}:
+            raise ValueError("Each fine-tuning stage must use a distinct run directory.")
+        options._selected_model_runs.append(("epit_finetuned_100pct", directory))
     return options
 
 
@@ -67,17 +79,28 @@ def validate_stages(options):
                 or stage["split_lock_sha256"] != frozen.lock_sha256):
             raise ValueError("Fine-tuning and evaluation must use the same frozen split.")
         stages[label] = stage
-    selected = "selected_pair_finetuning" in stages["epit_finetuned"]
+    for label, stage in stages.items():
+        if label != "generic_continuation":
+            validate_informed_stage(stage, stages.get("generic_continuation"), options)
+    if "epit_finetuned_100pct" in stages:
+        mixed, full = (stages[label].get("selected_pair_finetuning", {})
+                       for label in ("epit_finetuned", "epit_finetuned_100pct"))
+        if (not full.get("informed_only") or mixed.get("informed_only", False)
+                or mixed.get("recipe_identity") != full.get("recipe_identity")):
+            raise ValueError("Mixed and 100% stages must use the same retained-pair recipe and distinct mixtures.")
+    return stages
+
+
+def validate_informed_stage(informed, control, options):
+    selected = "selected_pair_finetuning" in informed
     if selected:
         from scripts.epit_pipeline.finetune_selected_pairs import validate_selected_stage
-        validate_selected_stage(stages["epit_finetuned"])
+        validate_selected_stage(informed)
         if options.exploratory_cv_folds != 5:
             raise ValueError("All-data selected-pair S2 requires explicit --exploratory-cv-folds 5; not a final-test estimate.")
-    elif stages["epit_finetuned"]["effective_trial_params"]["informed_prior_ratio"] != 1:
+    elif informed["effective_trial_params"]["informed_prior_ratio"] != 1:
         raise ValueError("The informed branch must use 100% informed data.")
-    if "generic_continuation" in stages:
-        control = stages["generic_continuation"]
-        informed = stages["epit_finetuned"]
+    if control is not None:
         if control["effective_trial_params"]["informed_prior_ratio"] != 0:
             raise ValueError("The control must continue on 0% informed data.")
         identities = [deepcopy(stage["overrides"]["finetuning"]) for stage in (control, informed)]
@@ -100,18 +123,19 @@ def validate_stages(options):
             if control[field] != informed[field]:
                 raise ValueError(f"Control and informed stages differ in {field}.")
         configs = [vars(training_config(stage["train_command"])) for stage in (control, informed)]
-        if selected and (configs[0]["epit_selected_pair_dir"] or configs[0]["soccol_selected_pair_dir"]):
+        if selected and (configs[0]["epit_selected_pair_dir"] or configs[0]["soccol_selected_pair_dir"]
+                         or configs[0]["epit_selected_pair_informed_only"]):
             raise ValueError("The generic control must not use selected pairs.")
         for config in configs:
             for field in ("checkpoint_dir", "informed_prior_ratio"):
                 config.pop(field)
             if selected:
                 for field in ("epit_selected_pair_dir", "epit_target_version", "pitting_coefficient_variation",
-                              "informed_target_mix_policy", "informed_target_mix_weight"):
+                              "informed_target_mix_policy", "informed_target_mix_weight",
+                              "epit_selected_pair_informed_only"):
                     config.pop(field)
         if configs[0] != configs[1]:
             raise ValueError("Control and informed training settings differ beyond the prior share.")
-    return stages
 
 
 def run(args):

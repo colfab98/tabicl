@@ -321,6 +321,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=1000,
         help="Minimum step to include when --checkpoint all is used.",
     )
+    parser.add_argument("--checkpoint-scope", choices=["all", "common"], default="all",
+                        help="With --checkpoint all, evaluate/plot each run's available steps (all), "
+                             "or only steps saved by every requested run (common).")
     parser.add_argument(
         "--max-checkpoint-step",
         type=int,
@@ -759,6 +762,8 @@ def validate_args(args: argparse.Namespace) -> None:
             raise ValueError("--context-folds must be greater than 1.")
     if args.checkpoint_step_interval < 0:
         raise ValueError("--checkpoint-step-interval must be >= 0.")
+    if args.checkpoint_scope == "common" and args.checkpoint != "all":
+        raise ValueError("--checkpoint-scope common requires --checkpoint all.")
     if args.max_checkpoint_step is not None:
         if args.checkpoint != "all":
             raise ValueError("--max-checkpoint-step requires --checkpoint all.")
@@ -904,8 +909,19 @@ def select_available_checkpoint_steps(
     step_interval: int,
     include_latest: bool = True,
     max_step: int | None = None,
+    scope: str = "all",
 ) -> list[int]:
     """Select saved steps and per-run endpoints within the requested bounds."""
+    if scope not in {"all", "common"}:
+        raise ValueError(f"Unknown checkpoint scope: {scope}")
+    if scope == "common":
+        shared = set.intersection(*(set(checkpoints) for checkpoints in by_run.values())) if by_run else set()
+        eligible = {step for step in shared
+                    if step >= min_step and (max_step is None or step <= max_step)}
+        selected = {step for step in eligible if step_interval == 0 or step % step_interval == 0}
+        if include_latest and eligible:
+            selected.add(max(eligible))
+        return sorted(selected)
     selected: set[int] = set()
     for checkpoints in by_run.values():
         eligible = [step for step in checkpoints
@@ -922,7 +938,8 @@ def select_available_checkpoint_steps(
 def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEvalSpec]:
     if getattr(args, "cv_checkpoint_manifest", None) is not None:
         from scripts.epit_pipeline.exploratory_cv import load_checkpoint_snapshot
-        return load_checkpoint_snapshot(args.cv_checkpoint_manifest, sys.modules[__name__])
+        return load_checkpoint_snapshot(args.cv_checkpoint_manifest, sys.modules[__name__],
+                                        expected_scope=args.checkpoint_scope)
     if args.checkpoint != "all":
         runs = expand_runs(args)
         local_ckpt_paths = list(args.local_ckpt_path or [])
@@ -968,6 +985,7 @@ def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEv
         step_interval=args.checkpoint_step_interval,
         include_latest=args.include_latest_common_checkpoint,
         max_step=args.max_checkpoint_step,
+        scope=args.checkpoint_scope,
     )
     if not selected_steps:
         run_list = ", ".join(runs)
@@ -979,7 +997,8 @@ def resolve_checkpoint_eval_specs(args: argparse.Namespace) -> list[CheckpointEv
         upper_bound = f" through {args.max_checkpoint_step}" if args.max_checkpoint_step is not None else " onward"
         raise FileNotFoundError(
             f"No step-*.ckpt checkpoints found across runs from "
-            f"step {args.min_checkpoint_step}{upper_bound} with {interval_note}: {run_list}"
+            f"step {args.min_checkpoint_step}{upper_bound} with {interval_note} "
+            f"(scope={args.checkpoint_scope}): {run_list}"
         )
 
     specs: list[CheckpointEvalSpec] = []
@@ -3757,13 +3776,17 @@ def save_metric_trend_svg(summary: pd.DataFrame, metric: str, output_path: Path)
     plot_df["checkpoint_step"] = pd.to_numeric(plot_df["checkpoint_step"], errors="coerce")
     plot_df[metric_col] = pd.to_numeric(plot_df[metric_col], errors="coerce")
     plot_df = plot_df.dropna(subset=["checkpoint_step", metric_col])
-    if plot_df["checkpoint_step"].nunique() < 2:
+    if plot_df.empty:
         return False
 
     models = ordered_unique([str(model) for model in plot_df["model"].tolist()])
     x_values = sorted(float(value) for value in plot_df["checkpoint_step"].unique())
     y_values = plot_df[metric_col].astype(float).tolist()
     x_min, x_max = min(x_values), max(x_values)
+    if x_min == x_max:
+        # A common-only sweep may legitimately contain a single checkpoint.
+        x_pad = max(abs(x_min) * .02, 1.)
+        x_min, x_max = max(0., x_min-x_pad), x_max+x_pad
     y_min, y_max = min(y_values), max(y_values)
     y_pad = max((y_max - y_min) * 0.08, 0.01)
     y_min -= y_pad
@@ -4323,6 +4346,7 @@ def run_epit_final_context_fold_eval(args: argparse.Namespace) -> None:
     payload = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "epit_final_context_fold_eval": True,
+        "checkpoint_scope": args.checkpoint_scope,
         "context_folds": folds,
         "context_fold_outputs": fold_outputs,
         "query_partition": "frozen_outer_final_test",
@@ -4450,6 +4474,7 @@ def run_repeated_split_eval(args: argparse.Namespace) -> None:
     payload = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "repeated_split_eval": True,
+        "checkpoint_scope": args.checkpoint_scope,
         "split_seeds": seeds,
         "seed_outputs": seed_outputs,
         "runs": expand_runs(args),
@@ -5028,6 +5053,7 @@ def main() -> None:
         "min_checkpoint_step": args.min_checkpoint_step,
         "max_checkpoint_step": args.max_checkpoint_step,
         "checkpoint_step_interval": args.checkpoint_step_interval,
+        "checkpoint_scope": args.checkpoint_scope,
         "include_latest_common_checkpoint": args.include_latest_common_checkpoint,
         "target_mode": args.target_mode,
         "target_binning": args.target_binning,

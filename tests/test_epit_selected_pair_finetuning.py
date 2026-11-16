@@ -10,10 +10,10 @@ from tests.test_epit_finetuning import legacy_parent, stage_args, dry_plan
 from tests.test_epit_reviewed_comparisons import mock_models
 
 
-def new_plan(tmp_path, parent):
+def new_plan(tmp_path, parent, *extra):
     return selected.build_plan(selected.parse_args([
         "--finetune-from", str(parent), "--checkpoint-root", str(tmp_path / "checkpoints"),
-        "--output-dir", str(tmp_path / "output"),
+        "--output-dir", str(tmp_path / "output"), *extra,
     ]))["training"]
 
 
@@ -32,6 +32,16 @@ def test_selected_recipe_matches_scratch_and_s2_control(tmp_path, legacy_parent,
     assert informed["selected_pair_finetuning"]["recipe_identity"] == scratch["recipe_identity"]
     assert b["informed_prior_ratio"] == pytest.approx(2300 / 7600)
     assert not (tmp_path / "checkpoints").exists()
+
+
+def test_informed_only_changes_only_allocation_and_run_directory(tmp_path, legacy_parent):
+    mixed, full = [new_plan(tmp_path, legacy_parent, *extra) for extra in ([], ['--informed-only'])]
+    configs = [vars(finetune.training_config(s['train_command'])) for s in (mixed, full)]
+    assert {k for k in configs[0] if configs[0][k] != configs[1][k]} == {
+        'checkpoint_dir', 'informed_prior_ratio', 'epit_selected_pair_informed_only'}
+    assert configs[1]['informed_prior_ratio'] == 1.
+    assert mixed['selected_pair_finetuning']['recipe_identity'] == full['selected_pair_finetuning']['recipe_identity']
+    assert mixed['overrides']['finetuning'] == full['overrides']['finetuning']
 
 
 def test_launcher_records_actual_recipe_and_refuses_overwrite(tmp_path, legacy_parent, monkeypatch):
@@ -83,21 +93,48 @@ def eval_args(tmp_path, directories, cv=True):
     ])
 
 
-def test_selected_s2_cv_uses_same_folds_and_preserves_step_zero(tmp_path, legacy_parent, capsys, mock_models):
+@pytest.mark.parametrize('include_full', [False, True])
+@pytest.mark.parametrize('scope', ['all', 'common'])
+def test_selected_s2_cv_uses_same_folds_and_preserves_step_zero(tmp_path, legacy_parent, capsys, mock_models, include_full, scope):
     directories = stage_directories(tmp_path, legacy_parent, capsys)
     args = eval_args(tmp_path, directories)
+    args.checkpoint_scope = scope
+    (directories[0]/'step-200.ckpt').write_bytes(b'mock')
+    labels = ['epit_finetuned', 'generic_continuation']
+    if include_full:
+        full = new_plan(tmp_path, legacy_parent, '--informed-only')
+        directory = Path(full['checkpoint_dir'])
+        directory.mkdir(parents=True)
+        (directory/'finetuning.json').write_text(json.dumps(full))
+        for step in (0, 100, 300):
+            (directory/f'step-{step}.ckpt').write_bytes(b'mock')
+        args.informed_only_run = directory
+        labels.append('epit_finetuned_100pct')
     output = evaluate_finetuning.run(args)
     payload = json.loads((output / "results.json").read_text())
     assert not payload["primary_comparison_complete"]  # No 2000-step control yet.
     assert payload["exploratory_cv"]
+    assert payload['checkpoint_scope'] == scope
     from scripts.epit_pipeline.exploratory_cv import fold_membership
     memberships = [fold_membership(args.split_manifest, fold) for fold in range(1, 6)]
     for _, context, queries in mock_models:
         assert {"context_task_row_indices": context, "query_task_row_indices": queries} in memberships
-    for label in ("epit_finetuned", "generic_continuation"):
-        for step in (0, 100):
+    for label in labels:
+        steps = {0, 100}
+        if scope == 'all' and label != 'generic_continuation':
+            steps.add(300 if label == 'epit_finetuned_100pct' else 200)
+        assert {row['checkpoint_step'] for row in payload['rows'] if row['model'] == label} == steps
+        for step in steps:
             assert {row["cv_fold"] for row in payload["rows"]
                     if row["model"] == label and row["checkpoint_step"] == step} == set(range(1, 6))
+    import xml.etree.ElementTree as ET
+    svg = ET.parse(output/'plots/trend_mean_test_mae.svg')
+    assert len(svg.findall('.//{http://www.w3.org/2000/svg}circle')) == len(payload['summary'])
+    if include_full:
+        full['selected_pair_finetuning']['recipe_identity']['artifacts']['retained_pairs.csv'] = 'different'
+        (directory/'finetuning.json').write_text(json.dumps(full))
+        with pytest.raises(ValueError, match='same retained-pair recipe'):
+            evaluate_finetuning.validate_stages(evaluate_finetuning.comparison_args(args))
 
 
 @pytest.mark.parametrize("change", ["lr", "seed", "parent", "ratio", "target", "final_test"])

@@ -88,6 +88,8 @@ def build_parser():
                         help="Use original generic batching with context-imputed, shuffled informed tables")
     parser.add_argument("--epit_selected_pair_dir", type=str, default=None,
                         help="Opt-in all-data sample/formula recipe; derives informed ratio from retained pairs")
+    parser.add_argument("--epit_selected_pair_informed_only", type=str2bool, default=False,
+                        help="Opt-in EPIT ablation: use retained-pair tables for 100% of training")
     parser.add_argument("--soccol_selected_pair_dir", type=str, default=None,
                         help="Opt-in Soccol sample/formula recipe; same selected-pair policy as EPIT")
     parser.add_argument("--prior_stream_seed", type=int, default=42,

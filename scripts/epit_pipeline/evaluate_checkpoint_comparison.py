@@ -57,6 +57,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--split-manifest", type=Path, default=DEFAULT_SPLIT_MANIFEST)
     parser.add_argument("--dry-run", action="store_true", help="Print the evaluation command without loading models or writing results.")
     args = parser.parse_args(argv)
+    if args.checkpoint_scope == "common" and args.checkpoint != "all":
+        parser.error("--checkpoint-scope common requires --checkpoint all.")
     if args.exploratory_cv_folds is not None and (args.context_folds is not None or args.legacy_data):
         parser.error("--exploratory-cv-folds cannot be combined with --context-folds or --legacy-data.")
     if args.legacy_data and args.final_model_manifest is not None:
@@ -129,6 +131,9 @@ def select_available_models(args: argparse.Namespace, *, runs=None) -> tuple[lis
         else:
             skipped.append({"model": label, "run_dir": str(directory), "reason": reason})
             print(f"Skipping {label}: {reason} ({directory})", flush=True)
+    if getattr(args, "checkpoint_scope", "all") == "common" and skipped:
+        raise FileNotFoundError("Common checkpoint comparison requires every requested model: "
+                                + "; ".join(f"{row['model']}: {row['reason']}" for row in skipped))
     if not available:
         raise FileNotFoundError("No local models have checkpoints available for the requested comparison.")
     return available, skipped

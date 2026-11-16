@@ -111,3 +111,52 @@ def test_recovery_applies_strict_interval():
     assert {r['checkpoint_step'] for r in kept} == {500, 1000}
     assert len(dropped) == 3
     assert all(r['reason'] == 'outside_checkpoint_interval' for r in dropped)
+
+
+@pytest.mark.parametrize('comparison', [epit, soccol], ids=['epit', 'soccol'])
+@pytest.mark.parametrize('scope', ['all', 'common'])
+def test_scope_controls_cv_rows_and_every_plotted_point(tmp_path, monkeypatch, comparison, scope):
+    import xml.etree.ElementTree as ET
+    candidate, generic = tmp_path/'candidate', tmp_path/'generic'
+    for directory, steps in ((candidate, [100, 500]), (generic, [500, 1000])):
+        directory.mkdir()
+        for step in steps:
+            (directory/f'step-{step}.ckpt').write_bytes(b'mock')
+    def evaluate(**kwargs):
+        task, split = kwargs['task'], kwargs['task_split']
+        return {'model': kwargs['model_label'], 'model_kind': kwargs['model_kind'],
+                'task_id': task.task_id, 'target_binning': 'continuous',
+                'n_samples': len(task.y), 'n_features': len(task.X.columns),
+                'n_train': len(split.train_index), 'n_test': len(split.test_index),
+                'split_strategy': split.split_strategy,
+                **{metric: .3 for metric in ('test_mae', 'test_rmse', 'test_spearman',
+                    'test_pearson', 'test_r2', 'test_nmae_iqr', 'test_nrmse_iqr')}}
+    def invoke(command, **kwargs):
+        with monkeypatch.context() as local:
+            local.setattr(sys, 'argv', command[1:])
+            ev.main()
+    monkeypatch.setattr(ev, 'evaluate_estimator', evaluate)
+    monkeypatch.setattr(comparison.subprocess, 'run', invoke)
+    args = comparison.parse_args(['--candidate-run', str(candidate), '--generic-run', str(generic),
+        '--exploratory-cv-folds', '5', '--checkpoint-step-interval', '0', '--checkpoint-scope', scope,
+        '--output-dir', str(tmp_path/'results')])
+    output = comparison.run(args)
+    payload = json.loads((output/'results.json').read_text())
+    assert payload['checkpoint_scope'] == scope
+    for label, steps in [(args.candidate_label, {100, 500}), ('generic_baseline', {500, 1000})]:
+        expected = steps if scope == 'all' else {500}
+        assert {row['checkpoint_step'] for row in payload['rows'] if row['model'] == label} == expected
+        for step in expected:
+            assert {row['cv_fold'] for row in payload['rows']
+                    if row['model'] == label and row['checkpoint_step'] == step} == set(range(1, 6))
+    svg = ET.parse(output/'plots/trend_mean_test_mae.svg')
+    assert len(svg.findall('.//{http://www.w3.org/2000/svg}circle')) == len(payload['summary'])
+    manifest = output/'cv_checkpoints.json'
+    from scripts.epit_pipeline.exploratory_cv import load_checkpoint_snapshot
+    with pytest.raises(ValueError, match='different checkpoint scope'):
+        load_checkpoint_snapshot(manifest, ev, expected_scope='common' if scope=='all' else 'all')
+    # A missing requested model must not silently narrow "common" to one run.
+    if scope == 'common':
+        args.generic_run = tmp_path/'missing'
+        with pytest.raises(FileNotFoundError, match='every requested model'):
+            epit.select_available_models(args, runs=comparison.model_runs(args))

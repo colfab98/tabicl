@@ -104,3 +104,28 @@ def test_gpu_partition_preserves_global_tables_and_resume(sampler):
         resumed=make_prior(**kwargs,rank=rank,world_size=2)
         resumed.load_sampling_state_dict(states[rank])
         assert_batch_equal(expected[rank],resumed.get_batch())
+
+
+def test_informed_only_preserves_shared_tables_and_skips_generic(sampler):
+    from tabicl.prior.epit_selected_pairs_informed_only import InformedOnlySelectedPairPrior
+    torch.set_num_threads(1)
+    kwargs=dict(selected_pair_dir=RECIPE,seed=43,
+                hp={'pitting_coefficient_variation':0.,'pitting_composition_perturb_strength':.3})
+    mixed=make_prior(dataset_cls=SelectedPairPriorMixture,**kwargs)
+    full=make_prior(dataset_cls=InformedOnlySelectedPairPrior,**kwargs)
+    def forbidden(*args,**kwargs):
+        raise AssertionError('100% informed must not generate generic tables')
+    full.priors[0].get_batch=forbidden
+    for _ in range(3):
+        a,b=mixed.get_batch(),full.get_batch()
+        assert b[5].eq(1).all()
+        lookup={key:i for i,key in enumerate(full.last_batch_ids)}
+        for i,key in enumerate(mixed.last_batch_ids):
+            if key[0]==1:
+                j=lookup[key]
+                assert_batch_equal(tuple(t[i] for t in a[:5]),tuple(t[j] for t in b[:5]))
+    assert full.sampling_config()!=mixed.sampling_config()
+    state=full.sampling_state_dict()
+    restored=make_prior(dataset_cls=InformedOnlySelectedPairPrior,**kwargs)
+    restored.load_sampling_state_dict(state)
+    assert_batch_equal(full.get_batch(),restored.get_batch())

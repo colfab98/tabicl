@@ -27,6 +27,7 @@ def main():
         raise ValueError('Saved results do not identify a supported CV dataset.')
     # Match the saved scoring/plot configuration; no models or checkpoints are loaded.
     argv = ['--checkpoint', first.get('checkpoint', 'all'),
+            '--checkpoint-scope', first.get('checkpoint_scope', 'all'),
             '--target-binning', first.get('target_binning', 'continuous'),
             '--regression-output', first.get('regression_output', 'median'),
             '--epit-split-manifest', str(options.split_manifest or SPLIT_MANIFEST)]

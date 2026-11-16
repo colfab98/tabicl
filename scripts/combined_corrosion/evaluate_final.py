@@ -48,6 +48,8 @@ def add_evaluation_arguments(
     if include_combined_data:
         parser.add_argument("--combined-data-dir", type=Path, default=DEFAULT_DATA_DIR)
     parser.add_argument("--checkpoint", default="all")
+    parser.add_argument("--checkpoint-scope", choices=["all", "common"], default="all",
+                        help="Evaluate/plot all available steps per run, or only steps shared by every run.")
     parser.add_argument("--min-checkpoint-step", type=int, default=0)
     parser.add_argument("--max-checkpoint-step", type=int, default=None,
                         help="Evaluate saved checkpoints up to this step, inclusive; requires --checkpoint all.")
@@ -102,6 +104,7 @@ def comparison_command(
         "--native-tabicl-baselines",
         "--checkpoint",
         str(args.checkpoint),
+        "--checkpoint-scope", args.checkpoint_scope,
         "--min-checkpoint-step",
         str(args.min_checkpoint_step),
         "--checkpoint-step-interval",

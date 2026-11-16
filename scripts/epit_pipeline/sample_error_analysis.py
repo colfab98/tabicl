@@ -12,7 +12,10 @@ def pair_predictions(predictions):
         raise ValueError('Duplicate model/sample predictions.')
     if predictions.duplicated(['model','checkpoint_step','task_row_index']).any():
         raise ValueError('A sample appears in multiple query folds at the same checkpoint.')
-    if predictions.groupby('task_row_index').observed_mV.nunique().gt(1).any():
+    targets=predictions.groupby('task_row_index').observed_mV.agg(['min','max'])
+    # Cached CSVs can round-trip a target a few floating-point ulps away from
+    # freshly extracted values. Use the same tolerance as the paired check.
+    if not np.allclose(targets['min'],targets['max'],rtol=0,atol=1e-10):
         raise ValueError('Observed targets differ across models or checkpoints.')
     required=['observed_mV','prediction_mV']
     if not np.isfinite(predictions[required].to_numpy()).all():

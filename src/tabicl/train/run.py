@@ -283,6 +283,10 @@ class Trainer:
         epit_v5 = getattr(self.config, "epit_target_version", "v4") == "v5"
         selected_pairs = getattr(self.config, "epit_selected_pair_dir", None)
         soccol_selected_pairs = getattr(self.config, "soccol_selected_pair_dir", None)
+        selected_informed_only = getattr(self.config, "epit_selected_pair_informed_only", False)
+        if selected_informed_only and (not selected_pairs or soccol_selected_pairs
+                                       or self.config.informed_prior_ratio != 1.):
+            raise ValueError("Informed-only EPIT requires --epit_selected_pair_dir and informed_prior_ratio=1.")
         if selected_pairs and soccol_selected_pairs:
             raise ValueError("Choose only one selected-pair dataset.")
         selected_pairs = selected_pairs or soccol_selected_pairs
@@ -526,6 +530,9 @@ class Trainer:
                     else:
                         from tabicl.prior.epit_selected_pairs import SelectedPairPriorMixture
                     dataset_class = SelectedPairPriorMixture
+                    if selected_informed_only:
+                        from tabicl.prior.epit_selected_pairs_informed_only import InformedOnlySelectedPairPrior
+                        dataset_class = InformedOnlySelectedPairPrior
                     stream_args['selected_pair_dir'] = selected_pairs
                 dataset = dataset_class(
                     batch_size=self.config.batch_size,

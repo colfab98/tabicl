@@ -130,7 +130,7 @@ def stop_workers(trainer):
 
 
 @pytest.mark.parametrize("workers", [0, 2])
-@pytest.mark.parametrize("selected_pairs", [False, True])
+@pytest.mark.parametrize("selected_pairs", [False, True, "informed_only"])
 def test_real_weights_step_zero_and_exact_resume(tmp_path, workers, selected_pairs):
     config = small_training_config(tmp_path / "parent", "epit")
     config.original_prior_mix = True
@@ -158,6 +158,7 @@ def test_real_weights_step_zero_and_exact_resume(tmp_path, workers, selected_pai
         stage.pitting_coefficient_variation = 0.
         stage.pitting_composition_perturb_strength = .3
         stage.batch_size = 8  # Both streams contribute on each tiny training step.
+        stage.epit_selected_pair_informed_only = selected_pairs == "informed_only"
     stage.lr = 2e-5
     stage.scheduler = "polynomial_decay_warmup"
     stage.poly_decay_lr_end, stage.poly_decay_power = 5e-6, 2.

@@ -36,6 +36,7 @@ def comparison_args(tmp_path, steps_by_model, *extra):
      {1000: {"early", "late"}, 1400: {"early"}}),
     (["--max-checkpoint-step", "1600", "--checkpoint-step-interval", "1000",
       "--no-include-latest-checkpoint"], {1000: {"early", "late"}}),
+    (["--checkpoint-scope", "common"], {1000: {"early", "late"}}),
 ])
 def test_checkpoint_union_respects_filters_and_each_runs_endpoint(tmp_path, extra, expected):
     args = ev.parse_args(comparison_args(
@@ -60,6 +61,21 @@ def test_disjoint_runs_are_evaluated_but_explicit_missing_steps_fail(tmp_path):
         ev.resolve_checkpoint_eval_specs(ev.parse_args(argv + ["--min-checkpoint-step", "1500"]))
     with pytest.raises(FileNotFoundError, match="through 400"):
         ev.resolve_checkpoint_eval_specs(ev.parse_args(argv + ["--max-checkpoint-step", "400"]))
+    with pytest.raises(FileNotFoundError, match="scope=common"):
+        ev.resolve_checkpoint_eval_specs(ev.parse_args(argv + ["--checkpoint-scope", "common"]))
+
+
+def test_common_endpoint_and_filters_never_add_unshared_steps(tmp_path):
+    argv = comparison_args(tmp_path, {'a': [100, 500, 750, 900], 'b': [500, 750, 1000]},
+                           '--checkpoint-scope', 'common', '--checkpoint-step-interval', '500')
+    def steps(*extra):
+        return [s.checkpoint_step for s in ev.resolve_checkpoint_eval_specs(ev.parse_args(argv+list(extra)))]
+    assert steps() == [500, 750]
+    assert steps('--no-include-latest-checkpoint') == [500]
+    assert steps('--max-checkpoint-step', '700') == [500]
+    assert steps('--min-checkpoint-step', '600') == [750]
+    with pytest.raises(ValueError, match='checkpoint-scope'):
+        ev.validate_args(ev.parse_args(argv+['--checkpoint', 'latest']))
 
 
 @pytest.mark.parametrize("extra", [

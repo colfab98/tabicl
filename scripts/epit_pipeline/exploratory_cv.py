@@ -67,7 +67,7 @@ def child_arguments(argv):
     return result
 
 
-def save_checkpoint_snapshot(specs, path):
+def save_checkpoint_snapshot(specs, path, *, scope="all"):
     records = []
     for spec in specs:
         models = []
@@ -77,13 +77,15 @@ def save_checkpoint_snapshot(specs, path):
             models.append({"label": model.label, "path": str(checkpoint),
                            "size": stat.st_size, "mtime_ns": stat.st_mtime_ns})
         records.append({"name": spec.checkpoint_name, "step": spec.checkpoint_step, "models": models})
-    path.write_text(json.dumps({"version": 1, "checkpoints": records}, indent=2) + "\n")
+    path.write_text(json.dumps({"version": 1, "checkpoint_scope": scope, "checkpoints": records}, indent=2) + "\n")
 
 
-def load_checkpoint_snapshot(path, ev):
+def load_checkpoint_snapshot(path, ev, *, expected_scope=None):
     payload = json.loads(Path(path).read_text())
     if payload.get("version") != 1 or not payload.get("checkpoints"):
         raise ValueError("Invalid CV checkpoint snapshot.")
+    if expected_scope is not None and payload.get("checkpoint_scope", "all") != expected_scope:
+        raise ValueError("CV checkpoint snapshot uses a different checkpoint scope.")
     specs = []
     for record in payload["checkpoints"]:
         models = []
@@ -135,7 +137,7 @@ def run_cv(args, ev, *, recover=False, membership_fn=fold_membership,
     base = child_arguments(sys.argv[1:])
     snapshot_path = output_json.parent / "cv_checkpoints.json"
     if not recover:
-        save_checkpoint_snapshot(ev.resolve_checkpoint_eval_specs(args), snapshot_path)
+        save_checkpoint_snapshot(ev.resolve_checkpoint_eval_specs(args), snapshot_path, scope=args.checkpoint_scope)
         base.extend(["--cv-checkpoint-manifest", str(snapshot_path)])
     rows, errors, outputs = [], [], []
     saved_settings = None
@@ -159,6 +161,7 @@ def run_cv(args, ev, *, recover=False, membership_fn=fold_membership,
         settings = {key: payload.get(key) for key in (
             "target_binning", "regression_output", "regression_uncertainty", "n_estimators",
             "random_state", "tabicl_feat_shuffle_method", "catboost_settings", "missing_aware_models",
+            "checkpoint_scope",
         )}
         if saved_settings is not None and settings != saved_settings:
             raise RuntimeError("CV folds have different evaluation settings; cannot average.")
@@ -198,6 +201,7 @@ def run_cv(args, ev, *, recover=False, membership_fn=fold_membership,
             summary, plot_dir, list(args.plot_metric or ev.default_plot_metrics_for_args(args)))
     payload = {
         "exploratory_cv": True, "cv_seed": CV_SEED, "cv_folds": FOLDS,
+        "checkpoint_scope": args.checkpoint_scope,
         "cv_fold_outputs": outputs, "fold_membership": memberships,
         "original_final_test_fold": 1,
         "recovered_from_saved_folds": recover,

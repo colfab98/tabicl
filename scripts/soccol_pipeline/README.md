@@ -482,3 +482,12 @@ Checkpoint intervals are strict in the EPIT and Soccol comparison wrappers:
 `--include-latest-checkpoint` explicitly to include each run's latest checkpoint
 outside that interval. Recovery uses the saved interval by default; pass
 `--checkpoint-step-interval 0` to retain every complete saved checkpoint.
+
+With `--checkpoint all`, use `--checkpoint-scope all` (default) to evaluate and
+plot each model's available checkpoints, or `--checkpoint-scope common` to use
+only steps saved by every requested local model, including generic. Use
+`--checkpoint-step-interval 0` for every saved step; min/max bounds still apply.
+Fixed pretrained/CatBoost baselines do not restrict the common steps. Missing
+models or an empty intersection fail in `common` mode. Checkpoint selection is
+frozen before the five CV folds; plots also support a single common checkpoint.
+Choose a fresh output directory for each evaluation.
