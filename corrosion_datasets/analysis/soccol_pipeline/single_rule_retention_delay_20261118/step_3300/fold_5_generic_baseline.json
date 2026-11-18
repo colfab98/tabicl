@@ -1,0 +1,17 @@
+{
+  "identity": {
+    "checkpoint_sha256": "9ff6ef8a977b165219fdcb793a84f983b48809045396695cafc67a78a44a1bd2",
+    "source_sha256": "d3374c1435a34d71c6119e7239235dbc9f76288b2a3f3df9372b87851f2af90c",
+    "split_sha256": "bc06162ebb2009a92949522ac5e3d5d256837ddd65a08b2d347c5adf8355cdbb",
+    "step": 3000
+  },
+  "csv_sha256": "30e705071154681c711aa275453bad521068914850354669f2c6b31022f0f405",
+  "metrics": {
+    "test_mae": 109.26110475413307,
+    "test_rmse": 154.02690268652776,
+    "test_spearman": 0.873505590172627,
+    "test_pearson": 0.8526578426070819,
+    "test_r2": 0.6950772069876379
+  },
+  "reused_verified_export": "/home/fcolanto/projects/tabicl/corrosion_datasets/analysis/selected_pair_retention_diagnostic_20261117/soccol_3000/fold_5_generic_baseline.csv"
+}

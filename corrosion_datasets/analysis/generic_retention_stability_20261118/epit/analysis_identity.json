@@ -1,0 +1,19 @@
+{
+  "scope": "Exploratory sensitivity of all-data recipe construction; not independent model evaluation",
+  "steps": [
+    8000,
+    8500,
+    9000,
+    9500,
+    10000
+  ],
+  "prediction_sha256": {
+    "epit/step_8000/predictions.csv": "aba94be1e15504f5126543f0e7cf819f35ec9adb5fccd870cca62ba019b94c42",
+    "epit/step_8500/predictions.csv": "8da72a0e612ace1238d271b41cd72ffe37bda3de77cc43299246d88463d1b809",
+    "epit/step_9000/predictions.csv": "d0ffaacd93617d484dc88fab33782fd1131af55f0b6c8c6433fc278233ccb5e6",
+    "epit/step_9500/predictions.csv": "d1c9ba54b07f7e31c1803e9174615bb800f881535980da91ea81a15c79ed6a0b",
+    "epit/step_10000/predictions.csv": "b6c9c94a06bdcc3e53376fed729d92b00e3fd1210043f2b0804c02fca79b03f0"
+  },
+  "all_pairs_sha256": "ef81b99129a37567e81fbf39a158edc5f1488362afd869f8d3dc37e57413ef2d",
+  "analysis_script_sha256": "4e69950a70ffe90230f599d2a266f886837af1cbde63c43f8f9b36b0fa5872e7"
+}

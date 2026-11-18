@@ -234,7 +234,11 @@ def validate_results(args: argparse.Namespace, payload: dict, *, context_fold: i
     if set(payload.get("missing_aware_models", [])) != (labels if args.legacy_model_inputs else set()):
         raise RuntimeError("Comparison changed Soccol missing-value handling.")
     rows = payload.get("rows", [])
-    if {row.get("model") for row in rows} != {label for label, _ in model_runs(args)} | {"pretrained_tabicl_v2", "catboost"}:
+    expected_models = {label for label, _ in model_runs(args)} | {"pretrained_tabicl_v2", "catboost"}
+    actual_models = {row.get("model") for row in rows}
+    skipped_models = {item["model"] for key in ("skipped_checkpoints", "excluded_model_checkpoints")
+                      for item in payload.get(key, [])}
+    if actual_models - expected_models or expected_models - actual_models - skipped_models:
         raise RuntimeError("Comparison did not produce all expected models.")
     strategy = "epit_pipeline_final_test" + (f"_context_fold_{context_fold}" if context_fold is not None else "")
     if cv_fold is not None:

@@ -73,9 +73,13 @@ def save_checkpoint_snapshot(specs, path, *, scope="all"):
         models = []
         for model in spec.local_specs:
             checkpoint = model.checkpoint_path.resolve()
-            stat = checkpoint.stat()
+            try:
+                stat = checkpoint.stat()
+            except FileNotFoundError:
+                stat = None
             models.append({"label": model.label, "path": str(checkpoint),
-                           "size": stat.st_size, "mtime_ns": stat.st_mtime_ns})
+                           "size": stat.st_size if stat else None,
+                           "mtime_ns": stat.st_mtime_ns if stat else None})
         records.append({"name": spec.checkpoint_name, "step": spec.checkpoint_step, "models": models})
     path.write_text(json.dumps({"version": 1, "checkpoint_scope": scope, "checkpoints": records}, indent=2) + "\n")
 
@@ -91,13 +95,35 @@ def load_checkpoint_snapshot(path, ev, *, expected_scope=None):
         models = []
         for model in record["models"]:
             checkpoint = Path(model["path"])
-            stat = checkpoint.stat()
-            if (stat.st_size, stat.st_mtime_ns) != (model["size"], model["mtime_ns"]):
+            try:
+                stat = checkpoint.stat()
+            except FileNotFoundError:
+                stat = None
+            # Keep missing specs so the evaluator records an explicit skip.
+            if stat is not None and (stat.st_size, stat.st_mtime_ns) != (model["size"], model["mtime_ns"]):
                 raise RuntimeError(f"CV checkpoint changed since evaluation started: {checkpoint}")
             models.append(ev.LocalModelSpec(label=model["label"], checkpoint_path=checkpoint))
         specs.append(ev.CheckpointEvalSpec(checkpoint_name=record["name"],
                      checkpoint_step=record["step"], local_specs=tuple(models)))
     return specs
+
+
+def exclude_deleted_checkpoint_rows(rows, skipped, *, scope):
+    """Never average a checkpoint that disappeared during one of its folds."""
+    missing = {(item["checkpoint_name"], item["model"]) for item in skipped}
+    missing_steps = {name for name, _ in missing}
+    kept, groups = [], {}
+    for row in rows:
+        name, model = row.get("checkpoint_name"), row["model"]
+        exclude = name in missing_steps if scope == "common" else (name, model) in missing
+        if exclude:
+            groups.setdefault((name, model, row["task_id"]), []).append(row)
+        else:
+            kept.append(row)
+    dropped = [{"checkpoint_name": name, "model": model, "task_id": task,
+                "reason": "checkpoint_deleted", "folds": sorted({r["cv_fold"] for r in group if "cv_fold" in r})}
+               for (name, model, task), group in groups.items()]
+    return kept, dropped
 
 
 def complete_rows_only(rows, *, step_interval=0):
@@ -128,25 +154,26 @@ def complete_rows_only(rows, *, step_interval=0):
 
 def run_cv(args, ev, *, recover=False, membership_fn=fold_membership,
            membership_key="epit_reviewed_split", dataset_label="EPIT",
-           split_strategy="epit_pipeline_exploratory_cv"):
+           split_strategy="epit_pipeline_exploratory_cv", argv=None, worker_script=None,
+           interpretation="Exploratory: development query rows influenced informed prior training."):
     # Validate the split before launching any models.
     memberships = {fold: membership_fn(args.epit_split_manifest, fold) for fold in FOLDS}
     output_json, output_csv, output_wide, output_summary, plot_dir = ev.repeated_split_output_paths(args)
     for path in (output_json, output_csv, output_wide, output_summary):
         path.parent.mkdir(parents=True, exist_ok=True)
-    base = child_arguments(sys.argv[1:])
+    base = child_arguments(sys.argv[1:] if argv is None else argv)
     snapshot_path = output_json.parent / "cv_checkpoints.json"
     if not recover:
         save_checkpoint_snapshot(ev.resolve_checkpoint_eval_specs(args), snapshot_path, scope=args.checkpoint_scope)
         base.extend(["--cv-checkpoint-manifest", str(snapshot_path)])
-    rows, errors, outputs = [], [], []
+    rows, errors, outputs, skipped = [], [], [], []
     saved_settings = None
     for fold in FOLDS:
         directory = output_json.parent / f"cv_fold_{fold}"
         directory.mkdir(parents=True, exist_ok=True)
         paths = {"json": directory / "results.json", "rows_csv": directory / "rows.csv",
                  "wide_csv": directory / "wide.csv", "summary_csv": directory / "summary.csv"}
-        command = [sys.executable, str(Path(ev.__file__).resolve()), *base,
+        command = [sys.executable, str(Path(worker_script or ev.__file__).resolve()), *base,
                    "--epit-exploratory-cv-fold", str(fold),
                    "--output-plot-dir", str(directory / "plots")]
         if not args.checkpoint_plots:
@@ -170,13 +197,15 @@ def run_cv(args, ev, *, recover=False, membership_fn=fold_membership,
             raise RuntimeError(f"CV fold {fold} changed row membership.")
         rows.extend({**row, "cv_fold": fold} for row in payload.get("rows", []))
         errors.extend({**row, "cv_fold": fold} for row in payload.get("errors", []))
+        skipped.extend({**row, "cv_fold": fold} for row in payload.get("skipped_checkpoints", []))
         outputs.append({"cv_fold": fold, **{key: str(path) for key, path in paths.items()}})
 
-    dropped = []
+    rows, dropped = exclude_deleted_checkpoint_rows(rows, skipped, scope=args.checkpoint_scope)
     if recover:
         if errors:
             raise RuntimeError("Saved folds contain model errors; refusing to hide them during recovery.")
-        rows, dropped = complete_rows_only(rows, step_interval=args.checkpoint_step_interval)
+        rows, incomplete = complete_rows_only(rows, step_interval=args.checkpoint_step_interval)
+        dropped.extend(incomplete)
         for item in dropped:
             print(f"Excluded {item['model']}@{item['checkpoint_name']}: "
                   f"{item.get('reason', 'incomplete_folds')}; present in folds {item['folds']}")
@@ -206,9 +235,10 @@ def run_cv(args, ev, *, recover=False, membership_fn=fold_membership,
         "original_final_test_fold": 1,
         "recovered_from_saved_folds": recover,
         "excluded_model_checkpoints": dropped,
+        "skipped_checkpoints": skipped,
         "excluded_incomplete_model_checkpoints": [item for item in dropped if "reason" not in item],
         "checkpoint_snapshot": str(snapshot_path) if snapshot_path.is_file() else None,
-        "interpretation": "Exploratory: development query rows influenced informed prior training.",
+        "interpretation": interpretation,
         "metrics_averaged_across_cv_folds": True,
         "predictions_averaged_across_cv_folds": False,
         "rows": rows, "errors": errors, "summary": summary.to_dict(orient="records"),

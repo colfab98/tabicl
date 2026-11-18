@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "checkpoint_scope": "all",
+  "checkpoints": [
+    {
+      "name": "step-500",
+      "step": 500,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_single_rule_all760_generic10k_v1/step-500.ckpt",
+          "size": 344604315,
+          "mtime_ns": 1794935034860297817
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-500.ckpt",
+          "size": 344476381,
+          "mtime_ns": 1784186810955037306
+        }
+      ]
+    },
+    {
+      "name": "step-1000",
+      "step": 1000,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_single_rule_all760_generic10k_v1/step-1000.ckpt",
+          "size": 344605889,
+          "mtime_ns": 1794946330392682573
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-1000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186806755102980
+        }
+      ]
+    },
+    {
+      "name": "step-1500",
+      "step": 1500,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_single_rule_all760_generic10k_v1/step-1500.ckpt",
+          "size": 344605889,
+          "mtime_ns": 1794957828675047605
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-1500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186807918084795
+        }
+      ]
+    },
+    {
+      "name": "step-2000",
+      "step": 2000,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_single_rule_all760_generic10k_v1/step-2000.ckpt",
+          "size": 344605889,
+          "mtime_ns": 1794969112662645632
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-2000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186808477076054
+        }
+      ]
+    },
+    {
+      "name": "step-2500",
+      "step": 2500,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_single_rule_all760_generic10k_v1/step-2500.ckpt",
+          "size": 344605889,
+          "mtime_ns": 1794980408232133550
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-2500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186808891069580
+        }
+      ]
+    },
+    {
+      "name": "step-2700",
+      "step": 2700,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_single_rule_all760_generic10k_v1/step-2700.ckpt",
+          "size": 344605889,
+          "mtime_ns": 1794984931197791338
+        }
+      ]
+    },
+    {
+      "name": "step-2800",
+      "step": 2800,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_single_rule_all760_generic10k_v1/step-2800.ckpt",
+          "size": 344605889,
+          "mtime_ns": 1794987191171065718
+        }
+      ]
+    },
+    {
+      "name": "step-2900",
+      "step": 2900,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_single_rule_all760_generic10k_v1/step-2900.ckpt",
+          "size": 344605889,
+          "mtime_ns": 1794989469913982593
+        }
+      ]
+    },
+    {
+      "name": "step-3000",
+      "step": 3000,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_single_rule_all760_generic10k_v1/step-3000.ckpt",
+          "size": 344605889,
+          "mtime_ns": 1794991800938156742
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-3000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186809304063122
+        }
+      ]
+    },
+    {
+      "name": "step-3100",
+      "step": 3100,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_single_rule_all760_generic10k_v1/step-3100.ckpt",
+          "size": 344605889,
+          "mtime_ns": 1794994062963494005
+        }
+      ]
+    },
+    {
+      "name": "step-3200",
+      "step": 3200,
+      "models": [
+        {
+          "label": "epit_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_selected_pairs/epit_selected_pairs_single_rule_all760_generic10k_v1/step-3200.ckpt",
+          "size": 344605889,
+          "mtime_ns": 1794996318355798103
+        }
+      ]
+    },
+    {
+      "name": "step-3500",
+      "step": 3500,
+      "models": [
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-3500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1784186809719056633
+        }
+      ]
+    }
+  ]
+}

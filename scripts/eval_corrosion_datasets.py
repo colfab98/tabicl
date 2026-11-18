@@ -4539,8 +4539,9 @@ def run_repeated_split_eval(args: argparse.Namespace) -> None:
         print(f"Completed with {len(all_errors)} task/model errors; see JSON for details.")
 
 
-def main() -> None:
-    args = parse_args()
+def main(argv=None, *, task_factory=None, result_metadata=None) -> None:
+    """Run the shared evaluator; dataset adapters may supply tasks and provenance."""
+    args = parse_args(argv)
     validate_args(args)
     if (args.exploratory_cv_folds is not None or args.epit_exploratory_cv_fold is not None) and str(REPO_ROOT) not in sys.path:
         sys.path.insert(0, str(REPO_ROOT))
@@ -4566,7 +4567,7 @@ def main() -> None:
         if is_regression_eval
         else "tabicl-classifier-v2-20260212.ckpt"
     )
-    tasks = make_tasks(args)
+    tasks = (task_factory or make_tasks)(args)
     if args.epit_split_manifest is not None:
         if args.epit_exploratory_cv_fold is not None:
             if args.soccol_reviewed_data:
@@ -4643,6 +4644,7 @@ def main() -> None:
 
     rows: list[dict[str, Any]] = []
     errors: list[dict[str, Any]] = []
+    skipped_checkpoints: list[dict[str, Any]] = []
     reuse_static_baselines = args.checkpoint == "all" and (
         args.compare_pretrained_tabicl
         or args.compare_catboost
@@ -4889,7 +4891,13 @@ def main() -> None:
                 f"mode={task.target_binning}{'' if is_regression_eval else f', bins={task.target_bins}'}{quality}"
             )
             for job in jobs:
+                local_checkpoint = next(
+                    (spec.checkpoint_path for spec in checkpoint_eval.local_specs
+                     if spec.label == job["model_label"]), None
+                )
                 try:
+                    if local_checkpoint is not None and not local_checkpoint.is_file():
+                        raise FileNotFoundError(2, "Checkpoint deleted during evaluation", str(local_checkpoint))
                     row = evaluate_estimator(
                         model_label=job["model_label"],
                         model_kind=job["model_kind"],
@@ -4926,6 +4934,25 @@ def main() -> None:
                     if args.print_json_lines:
                         print(json.dumps(row, sort_keys=True))
                 except Exception as exc:
+                    missing_checkpoint = (
+                        local_checkpoint is not None and not local_checkpoint.exists()
+                        and (
+                            isinstance(exc, FileNotFoundError)
+                            and exc.filename is not None
+                            and Path(exc.filename).resolve() == local_checkpoint.resolve()
+                            or isinstance(exc, ValueError)
+                            and str(exc).startswith(f"Checkpoint not found at '{local_checkpoint}'")
+                        )
+                    )
+                    if missing_checkpoint:
+                        skipped_checkpoints.append({
+                            "model": job["model_label"], "task_id": task.task_id,
+                            "checkpoint_name": checkpoint_eval.checkpoint_name,
+                            "checkpoint_step": checkpoint_eval.checkpoint_step,
+                            "path": str(local_checkpoint), "reason": "checkpoint_deleted",
+                        })
+                        print(f"  {job['model_label']:<24} SKIPPED deleted checkpoint: {local_checkpoint}")
+                        continue
                     error = {
                         "model": job["model_label"],
                         "model_kind": job["model_kind"],
@@ -5006,6 +5033,10 @@ def main() -> None:
     if args.save_task_tables:
         task_table_paths = save_model_input_tables(tasks, output_json.parent / "task_tables")
 
+    from scripts.epit_pipeline.exploratory_cv import exclude_deleted_checkpoint_rows
+    rows, excluded_checkpoints = exclude_deleted_checkpoint_rows(
+        rows, skipped_checkpoints, scope=args.checkpoint_scope
+    )
     summary_df = print_summary(
         rows,
         errors,
@@ -5026,6 +5057,8 @@ def main() -> None:
 
     payload = {
         "created_at": datetime.now().isoformat(timespec="seconds"),
+        "skipped_checkpoints": skipped_checkpoints,
+        "excluded_model_checkpoints": excluded_checkpoints,
         "local_checkpoint": (
             str(first_local_specs[0].checkpoint_path)
             if len(checkpoint_specs) == 1 and len(first_local_specs) == 1
@@ -5139,6 +5172,10 @@ def main() -> None:
         payload["missing_aware_models"] = sorted({slugify(label) for label in args.missing_aware_model})
     if args.soccol_reviewed_data and args.epit_validation_fold is not None:
         payload["soccol_development_split"] = _reviewed_soccol_development_provenance(tasks, args.epit_validation_fold)
+    if result_metadata is not None:
+        if set(result_metadata) & set(payload):
+            raise ValueError("Dataset metadata must not overwrite evaluation results.")
+        payload.update(result_metadata)
     output_json.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     pd.DataFrame(rows).to_csv(output_csv, index=False)
     wide_df.to_csv(output_wide_csv, index=False)

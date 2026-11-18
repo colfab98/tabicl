@@ -1,0 +1,5 @@
+dataset,n_parents,variable,spearman_with_informed_minus_generic_error
+epit,195,local_delta_mae,0.1601960269666213
+epit,195,local_improvement,0.08450253206724
+soccol,236,local_delta_mae,-0.03935493613519321
+soccol,236,local_improvement,0.22427441422181527

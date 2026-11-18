@@ -12,6 +12,84 @@ from scripts.soccol_pipeline import evaluate_checkpoint_comparison as soccol
 
 
 @pytest.mark.parametrize('comparison', [epit, soccol], ids=['epit', 'soccol'])
+@pytest.mark.parametrize('scope', ['all', 'common'])
+@pytest.mark.parametrize('deletion', ['between_folds', 'during_load', 'loader_value_error', 'unrelated_error'])
+def test_deleted_checkpoint_is_skipped_without_partial_cv(tmp_path, monkeypatch, comparison, scope, deletion):
+    import xml.etree.ElementTree as ET
+
+    candidate, generic = tmp_path / 'candidate', tmp_path / 'generic'
+    for directory in (candidate, generic):
+        directory.mkdir()
+        for step in (100, 500):
+            (directory / f'step-{step}.ckpt').write_bytes(b'mock')
+    disappearing = candidate / 'step-100.ckpt'
+    label = comparison.parse_args([]).candidate_label
+    calls = {}
+
+    def evaluate(**kwargs):
+        task, split = kwargs['task'], kwargs['task_split']
+        fold = int(split.split_strategy.rsplit('_', 1)[1])
+        key = (fold, kwargs['model_label'])
+        calls[key] = calls.get(key, 0) + 1
+        if fold == 2 and kwargs['model_label'] == label and calls[key] == 1 and disappearing.exists():
+            disappearing.unlink()
+            if deletion == 'during_load':
+                raise FileNotFoundError(2, 'No such file', str(disappearing))
+            if deletion == 'unrelated_error':
+                raise ValueError('Invalid prediction shape')
+            raise ValueError(f"Checkpoint not found at '{disappearing}' and automatic download is disabled.")
+        return {'model': kwargs['model_label'], 'model_kind': kwargs['model_kind'],
+                'task_id': task.task_id, 'target_binning': 'continuous',
+                'n_samples': len(task.y), 'n_features': len(task.X.columns),
+                'n_train': len(split.train_index), 'n_test': len(split.test_index),
+                'split_strategy': split.split_strategy,
+                **{metric: float(fold) for metric in ('test_mae', 'test_rmse', 'test_spearman',
+                    'test_pearson', 'test_r2', 'test_nmae_iqr', 'test_nrmse_iqr')}}
+
+    def invoke(command, **kwargs):
+        with monkeypatch.context() as local:
+            local.setattr(sys, 'argv', command[1:])
+            ev.main()
+        if deletion == 'between_folds' and '--epit-exploratory-cv-fold' in command:
+            if command[command.index('--epit-exploratory-cv-fold') + 1] == '1':
+                disappearing.unlink()
+
+    monkeypatch.setattr(ev, 'evaluate_estimator', evaluate)
+    monkeypatch.setattr(comparison.subprocess, 'run', invoke)
+    args = comparison.parse_args(['--candidate-run', str(candidate), '--generic-run', str(generic),
+        '--exploratory-cv-folds', '5', '--checkpoint-step-interval', '0', '--checkpoint-scope', scope,
+        '--output-dir', str(tmp_path / 'results')])
+    if deletion == 'unrelated_error':
+        with pytest.raises(RuntimeError, match='requires every model to complete'):
+            comparison.run(args)
+        saved = json.loads((tmp_path / 'results/cv_fold_2/results.json').read_text())
+        assert 'Invalid prediction shape' in saved['errors'][0]['error']
+        return
+    output = comparison.run(args)
+    payload = json.loads((output / 'results.json').read_text())
+    assert not payload['errors']
+    assert {r['cv_fold'] for r in payload['skipped_checkpoints']} == {2, 3, 4, 5}
+    assert all(r['n_cv_folds'] == 5 and r['mean_test_mae'] == pytest.approx(3)
+               for r in payload['summary'])
+    assert {r['checkpoint_step'] for r in payload['rows'] if r['model'] == label} == {500}
+    assert {r['checkpoint_step'] for r in payload['rows'] if r['model'] == 'generic_baseline'} == (
+        {100, 500} if scope == 'all' else {500})
+    svg = ET.parse(output / 'plots/trend_mean_test_mae.svg')
+    assert len(svg.findall('.//{http://www.w3.org/2000/svg}circle')) == len(payload['summary'])
+
+
+def test_snapshot_still_rejects_changed_checkpoints(tmp_path):
+    from scripts.epit_pipeline.exploratory_cv import load_checkpoint_snapshot, save_checkpoint_snapshot
+    checkpoint, snapshot = tmp_path / 'step-100.ckpt', tmp_path / 'snapshot.json'
+    checkpoint.write_bytes(b'original')
+    specs = [ev.CheckpointEvalSpec('step-100', 100, (ev.LocalModelSpec('model', checkpoint),))]
+    save_checkpoint_snapshot(specs, snapshot)
+    checkpoint.write_bytes(b'changed contents')
+    with pytest.raises(RuntimeError, match='changed since evaluation started'):
+        load_checkpoint_snapshot(snapshot, ev)
+
+
+@pytest.mark.parametrize('comparison', [epit, soccol], ids=['epit', 'soccol'])
 def test_new_checkpoints_do_not_change_folds_and_saved_results_recover(tmp_path, monkeypatch, comparison):
     candidate, generic = tmp_path / 'candidate', tmp_path / 'generic'
     for directory, steps in ((candidate, (500, 1200)), (generic, (500, 1500))):

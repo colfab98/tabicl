@@ -1,0 +1,7 @@
+dataset,radius,parents,source_studies
+epit,0.15,72,13
+epit,0.3,195,23
+epit,0.6,244,24
+soccol,0.15,95,16
+soccol,0.3,236,30
+soccol,0.6,389,33

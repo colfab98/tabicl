@@ -1,0 +1,18 @@
+{
+  "source_results": "corrosion_datasets/analysis/soccol_pipeline/selected_pairs_single_rule_through_3500_cv5",
+  "steps": [
+    500,
+    1000,
+    1500,
+    2000,
+    2500,
+    3000,
+    3300
+  ],
+  "informed_ratio": 0.2909746328437917,
+  "retained_definition": "parent appears in at least one retained sample/formula pair",
+  "mae_aggregation": "all query samples pooled once; five disjoint folds",
+  "spearman_aggregation": "unweighted mean of five within-fold subgroup correlations",
+  "delay_reference": "linear interpolation of generic metrics at cumulative generic-table exposure",
+  "interpretation": "Exploratory. Exposure matching does not match LR position or exact generic table identities."
+}

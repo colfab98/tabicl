@@ -1,0 +1,6 @@
+{
+  "evaluation_step": 3000,
+  "evaluation_predictions": "corrosion_datasets/analysis/soccol_pipeline/single_rule_retention_delay_20261118/step_3000/samples.csv",
+  "evaluation_sha256": "69fefc0fb4afd2c7ebd77ca1e6bcde37872ac2bb122da35fd03955bb4dc00831",
+  "scope": "Associations only; same exploratory sample predictions used previously. No new model evaluation or training."
+}

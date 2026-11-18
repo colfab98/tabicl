@@ -1,0 +1,16 @@
+{
+  "identity": {
+    "checkpoint_sha256": "fb922bbcddf7f3c3cb9b314c666a0f22b88d131f7064814f03d9eed46940b17b",
+    "source_sha256": "9e2b7c3db08fae5ae89e6cdbca9b85c74204bb9e0787163d3233e9ebec40549f",
+    "split_sha256": "bc06162ebb2009a92949522ac5e3d5d256837ddd65a08b2d347c5adf8355cdbb",
+    "step": 3000
+  },
+  "csv_sha256": "afe38796e27297c8e56fcc2335ac02b78081a502170c67227cf6dffc542ed97a",
+  "metrics": {
+    "test_mae": 105.85007800778922,
+    "test_rmse": 160.44310198434226,
+    "test_spearman": 0.878897413603161,
+    "test_pearson": 0.8489274367515568,
+    "test_r2": 0.6501735356408895
+  }
+}
