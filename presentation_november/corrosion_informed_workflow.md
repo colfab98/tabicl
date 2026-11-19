@@ -163,11 +163,10 @@ $$
 
 - **Quick predictions on a new dataset**
   - No dataset-specific training is needed.
-  - Provide labeled context and query features; a forward pass produces predictions.
+  - Predictions require only a forward pass—no backpropagation or model weight updates.
 
 - **Broad application**
   - Use the same pretrained model across different tabular datasets and tasks.
-  - Change the context data to apply it to a new task.
 
 ---
 
@@ -489,9 +488,6 @@ The mixing distribution settings are fixed; alpha varies by table.
 - Train for **10,000 steps** at each informed-data ratio:
   - **25% · 50% · 75% · 100%** informed; the remainder is generic.
 - Evaluate using **5-fold cross-validation** on the original dataset.
-  - Use four folds as **labeled context** and predict targets for the remaining fold.
-  - Repeat for all five folds and average the scores.
-- Use the **same five folds** for every model comparison.
 
 <p class="source">*Currently fitted on development data; planned: the entire dataset.</p>
 
@@ -549,7 +545,6 @@ Corrosion knowledge is embedded into the prior by:
 
 - Extend the approach to **other corrosion tasks**.
 - Explore shared **learning rates, architectures, and SCM settings**.
-- Represent missing features explicitly with a **missingness vector or embedding**.
 
 ---
 
@@ -679,7 +674,7 @@ Sources: src/tabicl/prior/epit_target_v5.py; src/tabicl/prior/dataset.py.
 
 # Keep a formula where it beats generic
 
-<p class="lead">Apply every formula to every real sample. Compare each prediction with the measured Epit and the generic model's prediction.</p>
+<p class="lead">Apply every formula to every real sample. Compare the formula prediction with the generic model's prediction.</p>
 
 <div class="selection-rule">Keep the sample–formula pair if its error is smaller.</div>
 
@@ -745,4 +740,72 @@ The all-row fit and pair selection mean the historical outer partition is no
 longer untouched by recipe construction. This does not authorize substituting
 development folds for the frozen outer query set in final-model evaluation.
 The proposed benefit is a hypothesis, not a measured improvement.
+-->
+
+---
+
+<!-- _class: result-plot -->
+
+# Results: Epit — Spearman
+
+![height:550px](results_epit_single_rule_8000_spearman.svg)
+
+<!--
+Current implementation: one formula per informed table, sampled from its retained parents.
+Source: corrosion_datasets/analysis/epit_pipeline/selected_pairs_single_rule_through_8000_cv5/summary.csv
+Metric: mean_test_spearman; all plotted rows have n_cv_folds=5 and n_errors=0.
+Informed model: epit_selected_pairs. No informed step-8000 result is present.
+All-row coefficient fitting and pair selection used source labels: these CV means
+are exploratory, not independent frozen final-test performance.
+-->
+
+---
+
+<!-- _class: result-plot -->
+
+# Results: Epit — MAE
+
+![height:550px](results_epit_single_rule_8000_mae.svg)
+
+<!--
+Current implementation: one formula per informed table, sampled from its retained parents.
+Source: corrosion_datasets/analysis/epit_pipeline/selected_pairs_single_rule_through_8000_cv5/summary.csv
+Metric: mean_test_mae; all plotted rows have n_cv_folds=5 and n_errors=0.
+Informed model: epit_selected_pairs. No informed step-8000 result is present.
+All-row coefficient fitting and pair selection used source labels: these CV means
+are exploratory, not independent frozen final-test performance.
+-->
+
+---
+
+<!-- _class: result-plot -->
+
+# Results: Soccol — Spearman
+
+![height:550px](results_soccol_single_rule_8000_spearman.svg)
+
+<!--
+Current implementation: one formula per informed table, sampled from its retained parents.
+Source: corrosion_datasets/analysis/soccol_pipeline/selected_pairs_single_rule_through_8000_cv5/summary.csv
+Metric: mean_test_spearman; all plotted rows have n_cv_folds=5 and n_errors=0.
+Informed model: soccol_selected_pairs. No informed step-8000 result is present.
+All-row coefficient fitting and pair selection used source labels: these CV means
+are exploratory, not independent frozen final-test performance.
+-->
+
+---
+
+<!-- _class: result-plot -->
+
+# Results: Soccol — MAE
+
+![height:550px](results_soccol_single_rule_8000_mae.svg)
+
+<!--
+Current implementation: one formula per informed table, sampled from its retained parents.
+Source: corrosion_datasets/analysis/soccol_pipeline/selected_pairs_single_rule_through_8000_cv5/summary.csv
+Metric: mean_test_mae; all plotted rows have n_cv_folds=5 and n_errors=0.
+Informed model: soccol_selected_pairs. No informed step-8000 result is present.
+All-row coefficient fitting and pair selection used source labels: these CV means
+are exploratory, not independent frozen final-test performance.
 -->

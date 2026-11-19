@@ -1,0 +1,859 @@
+{
+  "d3c3a779670dd79a": {
+    "source": "D. Izquierdo, C. Alonso, C. Andrade, M. Castellote, Potentiostatic determination of chloride threshold values for rebar depassivation Experimental and statistical study, Electrochimica Acta 49 (2004) 2731-2739.",
+    "doi": "10.1016/j.electacta.2004.01.034",
+    "evidence_url": "https://doi.org/10.1016/j.electacta.2004.01.034",
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "withheld_applied_potential_target_unverified": 35
+    },
+    "resolved_dois": [
+      "10.1016/j.electacta.2004.01.034"
+    ],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "eafa2dde84af9ec5": {
+    "source": "W. J. Tomlinson, M. Wedgbury, Pitting and repassivation of iron in simulated concrete solutions of pH 9.0-14.3 containing 1 M chloride, Surface and Coatings Technology 29 (1986) 357-364.",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 10
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "d062f45fbe92c5f1": {
+    "source": "Y. Wang, Y. Zuo, Y. Tang, Inhibition effect and mechanism of sodium oleate on passivation and pitting corrosion of steel in simulated concrete pore solution, Construction and Building Materials 167 (2018) 197-204.",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 12
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "7114974d936c04a4": {
+    "source": "Xin Zhou, H. Yang, F. Wang, Investigation on the inhibition behavior of a pentaerythritol glycoside for carbon steel in 3.5% NaCl saturated Ca(OH)2 solution, Corrosion Science 54 (2012) 193-200.",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 5
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "51400c611e411f0a": {
+    "source": "Z. Ai, J. Jiang, W. Sun, D. Song, H. Ma, J. Zhangd, D. Wang, Passive behaviour of alloy corrosion-resistant steel Cr10Mo1 insimulating concrete pore solutions with different pH, Appled Surface Science 389 (2016) 1126-1136.",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 6
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "baa098171c6db0b2": {
+    "source": "M.H. Moayed, Z. Abbaspour, M.H. Sadegian, Study of pitting corrosion inhibition of mild steel by nitrite in concrete pore solution by polarization and zero resistance ammetery (ZRA), IJE Transactions B: Applications 22 (2009) 369-380.",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 7
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "0db5c2f191b4b5ff": {
+    "source": "G. Liu, Y. Zhang, M. Wu, R. Huang, Study of depassivation of carbon steel in simulated concrete pore solution using different equivalent circuits, Construction and Building Materials 157 (2017) 357-362.",
+    "doi": "10.1016/j.conbuildmat.2017.09.104",
+    "evidence_url": "https://doi.org/10.1016/j.conbuildmat.2017.09.104",
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "withheld_pitting_target_unverified": 6
+    },
+    "resolved_dois": [
+      "10.1016/j.conbuildmat.2017.09.104"
+    ],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "a39533cbcee8d846": {
+    "source": "W. Chen, R. Du, C. Ye, Y. Zhu, C. Lin, Study on the corrosion behavior of reinforcing steel in simulated concrete pore solutions using in situ Raman spectroscopy assisted by electrochemical techniques, Electrochimica Acta 55 (2010) 5677-5682.",
+    "doi": "10.1016/j.electacta.2010.05.003",
+    "evidence_url": "https://doi.org/10.1016/j.electacta.2010.05.003",
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "withheld_pitting_target_unverified": 2
+    },
+    "resolved_dois": [
+      "10.1016/j.electacta.2010.05.003"
+    ],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "dedf91135dc914a9": {
+    "source": "Y. Tang, G. Zhang, Y. Zuo, The inhibition effects of several inhibitors on rebar in acidified concrete pore solution, Construction and Building Materials 28 (2012) 327-332.",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 14
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "b29a23a7161013fd": {
+    "source": "J.K. Singh, D.D.N. Singh, The nature of rusts and corrosion characteristics of low alloy and plain carbon steels in three kinds of concrete pore solution with salinity and different pH, Corrosion Science 56 (2012) 129-142.",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 2
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "effc2f1735774149": {
+    "source": "Corrosion inhibition efficiency of triethanolammonium dodecylbenzene sulfonate on Q235 carbon steel in simulated concrete pore solution",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 1
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "9e990b6a0ee1c3f0": {
+    "source": "Electrochemical Comparative Study of Q235 steel and 304 SS in Simulated Concrete Pore Solutions and the Effect of Chloride Ions on their corrosion behavior",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 4
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "d3e1ae8391503a62": {
+    "source": "Corrosion resistance of carbon steel in alkaline concrete pore solutions containing phytate and chloride ions",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 4
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "2a1c0eaa19dd91e8": {
+    "source": "Understanding the intrinsic effect of fly ash on passivity and chloride-induced corrosion of carbon steel and stainless steel in cement extract solutions",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 2
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "e53469d074a7b495": {
+    "source": "Electrochemical responses of carbon steel in ordinary Portland cement blended with calcium sulfoaluminate cement",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 2
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "afaf2bc07ecc03ee": {
+    "source": "Corrosion inhibition efficiency of compound nitrite with D-sodium gluconate on carbon steel in simulated concrete pore solution",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 5
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "741c2c69d2f97e24": {
+    "source": "Corrosion inhibition effect of zeolitic imidazolate framework in chloride-contaminated cement pore solution under elevated temperatures",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 6
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "886f23cbb6545a83": {
+    "source": "Enhanced inhibition performance of NO2- intercalated MgAl-LDH modified with nano-SiO2 on steel corrosion in simulated concrete pore solution",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 3
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "37d7dc994f0d35e2": {
+    "source": "Effect of chloride salt types on corrosion resistance of reinforcing steel in cement mortar mixed with DNA primer inhibitor",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 4
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "ce82706353433bc3": {
+    "source": "Corrosion Propagation Behavior of low\u2212Cr steel Rebars in Simulated Concrete Environment",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 2
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "7603dff8310ef0e6": {
+    "source": "Natural passivation behavior and its influence on chloride-induced corrosion resistance of stainless steel in simulated concrete pore solution",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 8
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "7e036bc039982dfd": {
+    "source": "Chloride-induced corrosion patterns of reinforcements in simulated pore solutions of calcium sulfoaluminate cement concrete: An analytical study",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 18
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "dd9924e588087a2b": {
+    "source": "Electrochemical behavior of steel bars in magnesium phosphate cement",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 1
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "8c9c773501723e4b": {
+    "source": "A novel high-efficient MOFs-based corrosion inhibitor for the reinforcing steel in cement extract",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 8
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "a045e1fe4da76282": {
+    "source": "Revealing excellent passivation performance of a novel Cr-alloyed steel rebar in carbonized concrete environment",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 4
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "f9354639a811c7b1": {
+    "source": "Exploring the corrosion inhibition mechanism of Serine (Ser) and Cysteine (Cys) in alkaline concrete pore solution simulating carbonated environment",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 14
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "f454d46a640d3a4b": {
+    "source": "Effect of nucleation seeding and triisopropanolamine on the compressive strength, chloride binding capacity and microstructure of cement paste",
+    "doi": "10.1016/j.jobe.2022.104382",
+    "evidence_url": "https://doi.org/10.1016/j.jobe.2022.104382",
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "withheld_source_target_mismatch": 3
+    },
+    "resolved_dois": [
+      "10.1016/j.jobe.2022.104382"
+    ],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "81dbcf71b4521990": {
+    "source": "The effect of nickel on corrosion behaviour of high-strength low alloy steel rebar in simulated concrete pore solution",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 1
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "617cf840258d0320": {
+    "source": "Anti-corrosion behaviors of corn-based polyols on low carbon steel rebar",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 6
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "4081ed005578b425": {
+    "source": "Potassium methyl silicate (CH5SiO3Na) assisted activation and modification of alkali-activated-slag-based drying powder coating for protecting cement concrete",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 3
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "8dd3c5e75f112c59": {
+    "source": "Effect of alternating temperature on passivation characteristics of carbon steel in chloride-free saturated Ca(OH)2 solution",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "withheld_chloride_free_breakdown_target_unverified": 4
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "32801ee7d32cab85": {
+    "source": "Corrosion inhibition effect of sodium tri-polyphosphate on reinforcing steel in simulated concrete pore solution with different pHs",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 6
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "7c71f6ac53f33c11": {
+    "source": "The use of TEA\u00b7H3PO4 and TEA\u00b7C18H30O3S as eco-friendly corrosion inhibitors in cementitious materials: An experimental and theoretical study",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 4
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "6c8a55d57bed3c53": {
+    "source": "Chloride threshold determination of hybrid inhibitor immersed in simulated concrete pore solution",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 3
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "2f4b7567a66b6914": {
+    "source": "Graphene Oxide as a Corrosion Inhibitor for Steel Reinforcement in Cement Extract Containing Chlorides",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 3
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "4e0ef04d5479b9bf": {
+    "source": "Evaluating the chemical stability and performance of zinc phosphate-coated steel fibers in concrete corrosion simulations",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 2
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "f23aac362a2ce35c": {
+    "source": "On the novel approach of sacrificial cathodic protection of mild steel in simulated concrete pore solution and concrete mortar by high phosphorus pig iron anodes",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 4
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "3fc1b7cc8be592ec": {
+    "source": "Passivation of mild steel embedded in low-heat Portland cement: A comparative study with ordinary Portland cement",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 3
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "7c655626ddc1ded5": {
+    "source": "Durability, mechanical properties and rebar corrosion of slag-based cement concrete modified with graphene oxide",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 1
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "93e850da207653fb": {
+    "source": "Influence of sulfate salt type on passive film of steel in simulated concrete pore solution",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 5
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "fe34d03d595da022": {
+    "source": "Investigation of corrosion mechanism of ribbed mild steel bars coated with magnesium potassium phosphate cement paste",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 5
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "c8914e5ea78b51d9": {
+    "source": "Chloride-induced depassivation and corrosion of mild steel in magnesium potassium phosphate cement",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 3
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "df8ece11371f95a0": {
+    "source": "Improved corrosion resistance of a new 6% Cr steel in simulated concrete pore solution contaminated by chlorides",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 10,
+      "withheld_non_numeric_or_censored_target": 3
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "49a94e3a5e4a7f31": {
+    "source": "Beneficial and detrimental impacts of molybdate on corrosion resistance of steels in alkaline concrete pore solution with high chloride contamination",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "withheld_non_numeric_or_censored_target": 3
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "eea876e809bb799e": {
+    "source": "Effects of stray current and silicate ions on electrochemical behavior of a high-strength prestressing steel in simulated concrete pore solutions",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 4
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "e00975e81c89f52f": {
+    "source": "Role of encapsulated corrosion inhibitor on the anti-corrosion performance of reinforcing steel in lightweight concrete",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 3
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "c91a050d68ebf7ed": {
+    "source": "Experimental and numerical investigations on macrocell corrosion of partially carbonated reinforced concrete with supplementary cementitious materials",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 2
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "867d1877d7fafbca": {
+    "source": "Assessment of the MICP potential and corrosion inhibition of steel bars by biofilm forming bacteria in corrosive environment",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 1
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "9d041d3f08cb0cff": {
+    "source": "Hydration, carbonation, strength development and corrosion resistance of reactive MgO cement-based composites",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 1
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "02c2d57dcd62cddf": {
+    "source": "Corrosion performance of hot-dip galvanized zinc-aluminum coated steel rebars in comparison to the conventional pure zinc coated rebars in concrete environment",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 3
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "7c71a1035eb35942": {
+    "source": "The effect of electro-migrating 3-Aminopropyltriethoxysilane on the improvement of the reinforced concrete durability.",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 8
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "fe64e0987c7e483b": {
+    "source": "Enhancement mechanisms of Cr and RE on the corrosion resistance of HRB400 rebar in chloride-containing concrete pore solution",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 12
+    },
+    "resolved_dois": [
+      "10.1038/s41529-026-00746-3"
+    ],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {
+      "doi": "10.1038/s41529-026-00746-3",
+      "evidence_url": "https://www.nature.com/articles/s41529-026-00746-3.pdf",
+      "evidence_file": "raw/source_review_v2/zhu_2026_cr_re.pdf",
+      "composition_evidence": "Table 3, printed page 12: the 0.018 wt.% column is Ce/La, not individual Ce. Do not attribute all rare-earth mass to Ce or hide it in Fe.",
+      "known_omissions_by_row": {
+        "Carbon_steel_2:2303": [
+          "Ce",
+          "La"
+        ],
+        "Carbon_steel_2:2306": [
+          "Ce",
+          "La"
+        ],
+        "Carbon_steel_2:2309": [
+          "Ce",
+          "La"
+        ],
+        "Carbon_steel_2:2312": [
+          "Ce",
+          "La"
+        ]
+      },
+      "target_issue": "source_Epass_header_vs_Epit_text_unresolved",
+      "target_evidence": "Table 1, printed page 3, labels the values Epass (mV SCE); results text on page 2 describes pitting potentials. All 12 workbook targets match Table 1 numerically. The 3.5 wt.% discussion notes loss of the sharp passivation jump. Withhold all 12 from eligible candidates pending resolution of the endpoint definition.",
+      "reference_evidence": "Electrochemical measurements, printed page 11, explicitly specify saturated calomel electrode.",
+      "environment_evidence": "Methods report 25 +/- 1 C, pH approximately 12.5 and NaCl wt.%; no density-based conversion to chloride molarity is made."
+    }
+  },
+  "ebeabf144e0cf3fe": {
+    "source": "Chloride-induced macro-cell corrosion behavior of a novel alloyed-steel rebar and its inhibition strategy",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 1
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "6652a3f89b10d1ba": {
+    "source": "F. Lollini, E. Redaelli, L. Bertolini, Investigation on the effect of supplementary cementitious materials on the critical chloride threshold of steel in concrete, Materials and Structures 49 (2016) 4147-4165.",
+    "doi": "10.1617/s11527-015-0778-0",
+    "evidence_url": "https://doi.org/10.1617/s11527-015-0778-0",
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "withheld_threshold_target_and_placeholder_composition": 11
+    },
+    "resolved_dois": [
+      "10.1617/s11527-015-0778-0"
+    ],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "3fac009db26abe7c": {
+    "source": "H Luo, H. Sub, C. Dong, X. Li, Passivation and electrochemical behavior of 316L stainless steel in chlorinated simulated concrete pore solution, Applied Surface Science 400 (2017) 38-48.",
+    "doi": "10.1016/j.apsusc.2016.12.180",
+    "evidence_url": "https://doi.org/10.1016/j.apsusc.2016.12.180",
+    "overlap_review": "known_overlap",
+    "row_decisions": {
+      "excluded_known_soccol_source_overlap": 4
+    },
+    "resolved_dois": [
+      "10.1016/j.apsusc.2016.12.180"
+    ],
+    "matches": [
+      {
+        "dataset": "Soccol",
+        "reference": "2017Luo 134 Luo, H., Su, H., Dong, C. & Li, X. Appl. surface science 400 (2017): p. 38\u201348 10.1016/j.apsusc.2016.12.180",
+        "matching_dois": [
+          "10.1016/j.apsusc.2016.12.180"
+        ],
+        "method": "doi"
+      }
+    ],
+    "known_training_source_overlap": true,
+    "source_review": {}
+  },
+  "c6ecae5a5c443916": {
+    "source": "Electrochemical and XPS analytical investigation of the accelerative effect of bicarbonate/carbonate ions on AISI 304 in alkaline environment",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 20
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "5bc8ea9dc7cee379": {
+    "source": "Effect of a Hybrid Pumice\u2013Portland Cement Extract on Corrosion Activity of Stainless Steel SS304 and Carbon Mild Steel A36",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 2
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "3f6dcb094569ed37": {
+    "source": "Corrosion and tensile behavior of 316L stainless steel concrete reinforcement in harsh environments containing a corrosion inhibitor.",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "withheld_misaligned_composition_columns": 5
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "ab26006f03110566": {
+    "source": "Effect of NH4 + on the pitting corrosion behavior of 316 stainless steel in the chloride environment",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 2
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "89ede02700164f1e": {
+    "source": "Influence of phosphate ions on pit initiation and growth on the stainless steel \u2013 316L in chloride contaminated simulated coal gasification wastewater (CGW) environment",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "withheld_unresolved_composition_total": 2
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "d59b5043d8254422": {
+    "source": "Bipolar electrochemistry for high throughput screening of localised corrosion in stainless steel rebars",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 3
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  },
+  "5a49e8f5b444b0b1": {
+    "source": "Electrochemical Evaluation on Corrosion Behavior of SAF 2507 Duplex Stainless Steels in Blended Concrete with Metakaolin and ultrafine Slag Admixtures",
+    "doi": null,
+    "evidence_url": null,
+    "overlap_review": "no_match_in_limited_screen_not_verified_independent",
+    "row_decisions": {
+      "included_workbook_reported": 15
+    },
+    "resolved_dois": [],
+    "matches": [],
+    "known_training_source_overlap": false,
+    "source_review": {}
+  }
+}

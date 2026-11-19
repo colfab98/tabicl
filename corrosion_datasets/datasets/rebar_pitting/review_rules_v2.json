@@ -1,0 +1,46 @@
+{
+  "schema_version": "rebar_review_rules_v2",
+  "composition_unit": "wt.%",
+  "composition_total_acceptance": [
+    99,
+    101
+  ],
+  "unexplained_minimum": 90,
+  "supported_Fe_balance_rows": {
+    "Carbon_steel_2:2299": "Raw workbook identifies HRB400 carbon steel and reports C, Si, Mn, P, S and Cr additions. Fe is the supported base element; calculated balance is approximate, not measured."
+  },
+  "sources": {
+    "fe64e0987c7e483b": {
+      "doi": "10.1038/s41529-026-00746-3",
+      "evidence_url": "https://www.nature.com/articles/s41529-026-00746-3.pdf",
+      "evidence_file": "raw/source_review_v2/zhu_2026_cr_re.pdf",
+      "composition_evidence": "Table 3, printed page 12: the 0.018 wt.% column is Ce/La, not individual Ce. Do not attribute all rare-earth mass to Ce or hide it in Fe.",
+      "known_omissions_by_row": {
+        "Carbon_steel_2:2303": [
+          "Ce",
+          "La"
+        ],
+        "Carbon_steel_2:2306": [
+          "Ce",
+          "La"
+        ],
+        "Carbon_steel_2:2309": [
+          "Ce",
+          "La"
+        ],
+        "Carbon_steel_2:2312": [
+          "Ce",
+          "La"
+        ]
+      },
+      "target_issue": "source_Epass_header_vs_Epit_text_unresolved",
+      "target_evidence": "Table 1, printed page 3, labels the values Epass (mV SCE); results text on page 2 describes pitting potentials. All 12 workbook targets match Table 1 numerically. The 3.5 wt.% discussion notes loss of the sharp passivation jump. Withhold all 12 from eligible candidates pending resolution of the endpoint definition.",
+      "reference_evidence": "Electrochemical measurements, printed page 11, explicitly specify saturated calomel electrode.",
+      "environment_evidence": "Methods report 25 +/- 1 C, pH approximately 12.5 and NaCl wt.%; no density-based conversion to chloride molarity is made."
+    }
+  },
+  "evidence_files": [
+    "raw/source_review_v2/zhu_2026_cr_re.pdf",
+    "raw/rebar_usage.docx"
+  ]
+}

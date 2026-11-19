@@ -183,3 +183,7 @@ smoke_test_run/
 /standalone/epit_pysr/runtime/*.tar.gz
 /standalone/epit_pysr/runtime/julia/
 /standalone/epit_pysr/runtime/julia_depot/
+
+# Rebar evaluation CSVs must travel with their frozen manifest and audits.
+!/corrosion_datasets/datasets/rebar_pitting/processed/splits_v1/*.csv
+!/corrosion_datasets/datasets/rebar_pitting/processed/rebar_reviewed_v2/*.csv

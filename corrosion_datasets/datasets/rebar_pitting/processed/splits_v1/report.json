@@ -1,0 +1,33 @@
+{
+  "status": "provisional_workbook_reported_not_fully_source_verified",
+  "numeric_target_candidates": 351,
+  "included": 278,
+  "features": 54,
+  "publications": 52,
+  "fold_sizes": [
+    56,
+    56,
+    56,
+    55,
+    55
+  ],
+  "decisions": {
+    "included_workbook_reported": 278,
+    "withheld_applied_potential_target_unverified": 35,
+    "withheld_threshold_target_and_placeholder_composition": 11,
+    "withheld_pitting_target_unverified": 8,
+    "withheld_non_numeric_or_censored_target": 6,
+    "withheld_misaligned_composition_columns": 5,
+    "withheld_chloride_free_breakdown_target_unverified": 4,
+    "excluded_known_soccol_source_overlap": 4,
+    "withheld_source_target_mismatch": 3,
+    "withheld_unresolved_composition_total": 2,
+    "withheld_missing_reference": 1
+  },
+  "limitations": [
+    "Original-paper row verification and training-source overlap screening are incomplete.",
+    "Workbook zeros may include author assumptions; no additional zero filling is applied.",
+    "Unreported inhibitors, exposure and preparation conditions may remain unobserved.",
+    "CV is publication-grouped, unlike the existing EPIT/Soccol row-based exploratory folds."
+  ]
+}

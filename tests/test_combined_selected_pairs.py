@@ -203,7 +203,7 @@ def test_launcher_resume_validates_original_plan(tmp_path,monkeypatch):
         launcher.build_plan(args)
 
 
-@pytest.mark.parametrize('ds', ['mpea', 'epit', 'soccol'])
+@pytest.mark.parametrize('ds', ['mpea', 'epit', 'soccol', 'rebar'])
 def test_evaluation_delegates_native_inputs_and_cv_without_changing_checkpoint_scope(tmp_path, ds):
     from scripts.combined_corrosion.evaluate_selected_pairs import commands
     result=commands(['--dataset',ds,'--candidate-run','candidate','--output-dir',str(tmp_path),
@@ -212,7 +212,7 @@ def test_evaluation_delegates_native_inputs_and_cv_without_changing_checkpoint_s
     assert len(result)==1
     command=result[0]
     assert command[2]==f'scripts.{ds}_pipeline.evaluate_checkpoint_comparison'
-    assert command[command.index('--output-dir')+1]==str(tmp_path/ds)
+    assert command[command.index('--output-dir')+1]==str(tmp_path.with_name(f'{tmp_path.name}_{ds}'))
     assert command[command.index('--checkpoint-scope')+1]=='common'
     assert command[command.index('--exploratory-cv-folds')+1]=='5'
     assert '--legacy-model-inputs' not in command
