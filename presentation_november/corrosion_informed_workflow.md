@@ -809,3 +809,117 @@ Informed model: soccol_selected_pairs. No informed step-8000 result is present.
 All-row coefficient fitting and pair selection used source labels: these CV means
 are exploratory, not independent frozen final-test performance.
 -->
+
+---
+
+# Combined model: evaluation on MPEA
+
+- **One model trained with both informed priors: Epit + Soccol.**
+- Training tables: approximately **15% Epit + 15% Soccol + 70% generic**.
+- Evaluate on **MPEA**, using MPEA samples as labeled context and queries in **5-fold cross-validation**.
+
+<p class="small">Exploratory checkpoint comparison. Available results: combined model through step 2,400; generic model through step 3,500.</p>
+
+<!--
+Training mixture: 15.1315789% EPIT, 14.5487316% Soccol, 70.3196894% generic.
+Source: scripts/combined_corrosion/SELECTED_PAIRS.md.
+Both informed generators use one rule per table; MPEA is not an informed training source.
+The following plots evaluate the combined model, whereas the preceding EPIT and
+Soccol plots evaluate the individual specialist models on their own datasets.
+Local evaluation artifacts were copied directly into corrosion_datasets/analysis/combined_corrosion/.
+Original source directory recorded in results.json:
+selected_pairs_single_rule_through_3500_cv5_mpea.
+Only fold 1 preserves the frozen MPEA outer final-query partition. Five-fold
+means are exploratory and must not be presented as frozen final-test scores.
+-->
+
+---
+
+<!-- _class: result-plot -->
+
+# Combined model on MPEA — Spearman
+
+![height:550px](results_combined_mpea_3500_spearman.svg)
+
+<!--
+Mean over five exploratory CV folds; higher is better.
+Source: corrosion_datasets/analysis/combined_corrosion/plots/trend_mean_test_spearman.svg
+Summary: corrosion_datasets/analysis/combined_corrosion/summary.csv
+Candidate: combined_selected_pairs. Task: mpea_corrosion__pitting_potential_mv_sce.
+Combined-model results end at step 2400; generic results end at step 3500.
+All plotted summary rows have n_cv_folds=5 and n_errors=0.
+Original evaluation plots copied unchanged to preserve the existing slide format.
+-->
+
+---
+
+<!-- _class: result-plot -->
+
+# Combined model on MPEA — MAE
+
+![height:550px](results_combined_mpea_3500_mae.svg)
+
+<!--
+Mean over five exploratory CV folds; lower is better.
+Source: corrosion_datasets/analysis/combined_corrosion/plots/trend_mean_test_mae.svg
+Summary: corrosion_datasets/analysis/combined_corrosion/summary.csv
+Candidate: combined_selected_pairs. Task: mpea_corrosion__pitting_potential_mv_sce.
+Combined-model results end at step 2400; generic results end at step 3500.
+All plotted summary rows have n_cv_folds=5 and n_errors=0.
+Original evaluation plots copied unchanged to preserve the existing slide format.
+-->
+
+---
+
+# Combined model: evaluation on rebar
+
+- **The same combined model: Epit + Soccol + generic.**
+- Evaluate on **rebar**, using rebar samples as labeled context and queries in **5-fold cross-validation**.
+- **278 samples** in the current evaluation export.
+
+<p class="small">Exploratory results on provisional data: composition completeness and source overlap remain under review.<br>Combined model through step 2,500; generic model through step 3,500.</p>
+
+<!--
+Rebar is evaluation-only, not an informed training source.
+The 278-row export has unresolved composition and input-information limitations;
+these results must not be presented as a verified independent transfer benchmark.
+Five-fold means are exploratory, not frozen outer final-test scores.
+-->
+
+---
+
+<!-- _class: result-plot -->
+
+# Combined model on rebar — Spearman
+
+![height:550px](results_combined_rebar_3500_spearman.svg)
+
+<!--
+Mean over five exploratory CV folds; higher is better.
+Source: corrosion_datasets/analysis/combined_corrosion/selected_pairs_single_rule_through_3500_cv5_rebar/plots/trend_mean_test_spearman.svg
+Summary: corrosion_datasets/analysis/combined_corrosion/selected_pairs_single_rule_through_3500_cv5_rebar/summary.csv
+Candidate: combined_selected_pairs. Task: rebar_pitting__pitting_potential_mv_sce.
+Combined-model results end at step 2500; generic results end at step 3500.
+All plotted summary rows have n_cv_folds=5 and n_errors=0.
+Provisional dataset; see the preceding slide for interpretation limits.
+Original evaluation plots copied unchanged to preserve the existing slide format.
+-->
+
+---
+
+<!-- _class: result-plot -->
+
+# Combined model on rebar — MAE
+
+![height:550px](results_combined_rebar_3500_mae.svg)
+
+<!--
+Mean over five exploratory CV folds; lower is better.
+Source: corrosion_datasets/analysis/combined_corrosion/selected_pairs_single_rule_through_3500_cv5_rebar/plots/trend_mean_test_mae.svg
+Summary: corrosion_datasets/analysis/combined_corrosion/selected_pairs_single_rule_through_3500_cv5_rebar/summary.csv
+Candidate: combined_selected_pairs. Task: rebar_pitting__pitting_potential_mv_sce.
+Combined-model results end at step 2500; generic results end at step 3500.
+All plotted summary rows have n_cv_folds=5 and n_errors=0.
+Provisional dataset; see the preceding slide for interpretation limits.
+Original evaluation plots copied unchanged to preserve the existing slide format.
+-->
