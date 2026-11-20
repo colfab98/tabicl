@@ -1,0 +1,264 @@
+{
+  "version": 1,
+  "checkpoint_scope": "all",
+  "checkpoints": [
+    {
+      "name": "step-500",
+      "step": 500,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-500.ckpt",
+          "size": 344695643,
+          "mtime_ns": 1795031927035846034
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-500.ckpt",
+          "size": 344476381,
+          "mtime_ns": 1778074895677953263
+        }
+      ]
+    },
+    {
+      "name": "step-1000",
+      "step": 1000,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-1000.ckpt",
+          "size": 344697217,
+          "mtime_ns": 1795047686995858662
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-1000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1778081378495314538
+        }
+      ]
+    },
+    {
+      "name": "step-1500",
+      "step": 1500,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-1500.ckpt",
+          "size": 344697217,
+          "mtime_ns": 1795063453017717516
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-1500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1778087838554407142
+        }
+      ]
+    },
+    {
+      "name": "step-2000",
+      "step": 2000,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-2000.ckpt",
+          "size": 344697217,
+          "mtime_ns": 1795079281925549207
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-2000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1778094314132096955
+        }
+      ]
+    },
+    {
+      "name": "step-2500",
+      "step": 2500,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-2500.ckpt",
+          "size": 344697217,
+          "mtime_ns": 1795095109689352621
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-2500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1778100777030652313
+        }
+      ]
+    },
+    {
+      "name": "step-3000",
+      "step": 3000,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-3000.ckpt",
+          "size": 344697217,
+          "mtime_ns": 1795110931863916488
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-3000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1778107271344813165
+        }
+      ]
+    },
+    {
+      "name": "step-3500",
+      "step": 3500,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-3500.ckpt",
+          "size": 344697217,
+          "mtime_ns": 1795126675696821704
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-3500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1778113727783477578
+        }
+      ]
+    },
+    {
+      "name": "step-4000",
+      "step": 4000,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-4000.ckpt",
+          "size": 344697217,
+          "mtime_ns": 1795142461842851907
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-4000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1778120185044206568
+        }
+      ]
+    },
+    {
+      "name": "step-4300",
+      "step": 4300,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-4300.ckpt",
+          "size": 344697217,
+          "mtime_ns": 1795151932229689437
+        }
+      ]
+    },
+    {
+      "name": "step-4400",
+      "step": 4400,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-4400.ckpt",
+          "size": 344697217,
+          "mtime_ns": 1795155098110985720
+        }
+      ]
+    },
+    {
+      "name": "step-4500",
+      "step": 4500,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-4500.ckpt",
+          "size": 344697217,
+          "mtime_ns": 1795158261090813439
+        },
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-4500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1778126650170907244
+        }
+      ]
+    },
+    {
+      "name": "step-4600",
+      "step": 4600,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-4600.ckpt",
+          "size": 344697217,
+          "mtime_ns": 1795161426299673029
+        }
+      ]
+    },
+    {
+      "name": "step-4700",
+      "step": 4700,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-4700.ckpt",
+          "size": 344697217,
+          "mtime_ns": 1795164553506610786
+        }
+      ]
+    },
+    {
+      "name": "step-4800",
+      "step": 4800,
+      "models": [
+        {
+          "label": "combined_selected_pairs",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/combined_selected_pairs/combined_selected_pairs_single_rule_v1/step-4800.ckpt",
+          "size": 344697217,
+          "mtime_ns": 1795167688085428182
+        }
+      ]
+    },
+    {
+      "name": "step-5000",
+      "step": 5000,
+      "models": [
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-5000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1778133133786756854
+        }
+      ]
+    },
+    {
+      "name": "step-5500",
+      "step": 5500,
+      "models": [
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-5500.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1778139602287368314
+        }
+      ]
+    },
+    {
+      "name": "step-6000",
+      "step": 6000,
+      "models": [
+        {
+          "label": "generic_baseline",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/tabicl_s1_regression_baseline/step-6000.ckpt",
+          "size": 344477948,
+          "mtime_ns": 1778146072687711945
+        }
+      ]
+    }
+  ]
+}

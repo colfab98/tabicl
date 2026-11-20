@@ -73,10 +73,15 @@ def load_stage(directory, *, generic=False):
     path = directory/'single_rule_finetuning.json'
     if path.is_file():
         stage = json.loads(path.read_text())
-        config = vars(training.validate_plan(stage))
+        if stage.get('schema_version') == 'single_rule_finetuning_early_v1':
+            from scripts.combined_corrosion.finetune_single_rule_early import reference_plan
+            reference = reference_plan(stage)
+        else:
+            reference = stage
+        config = vars(training.validate_plan(reference))
         if (stage['prior'] == 'generic') != generic:
             raise ValueError('Expected a generic control and an informed candidate.')
-        identity, stream = stage['finetuning'], stage['generic_stream_identity']
+        identity, stream = reference['finetuning'], reference['generic_stream_identity']
     elif generic:
         stage = json.loads((directory/'finetuning.json').read_text())
         config = vars(finetune.training_config(stage['train_command']))
@@ -140,6 +145,9 @@ def run(args):
         payload.update(finetuning_stages=stages,
             checkpoint_step_semantics='additional S2 updates; step 0 is generic pretraining step 10000',
             primary_comparison_step=2000)
+        if 'early_checkpoint_diagnostic' in stages['informed']:
+            payload.update(primary_comparison_step=None,
+                early_checkpoint_diagnostic=stages['informed']['early_checkpoint_diagnostic'])
         path.write_text(json.dumps(payload, indent=2)+'\n')
     return output
 

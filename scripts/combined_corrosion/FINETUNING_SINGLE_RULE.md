@@ -97,3 +97,50 @@ evaluation with `--control-run`:
 ```bash
 sbatch scripts/combined_corrosion/finetune_single_rule.sbatch --prior generic
 ```
+
+## Early-checkpoint diagnostic
+
+These separate runs replay the first 100 updates from the same generic 10k
+parent and save steps **0, 10, 20, ..., 100**. They retain the original
+**2,000-step learning-rate schedule**, seeds, batch size and single-rule priors;
+only the stopping point and checkpoint frequency change. Existing runs are
+unaffected. The generic-only control supplies matching early checkpoints.
+
+```bash
+sbatch --job-name=epit_s2_early scripts/combined_corrosion/finetune_single_rule_early.sbatch --prior epit
+sbatch --job-name=soccol_s2_early scripts/combined_corrosion/finetune_single_rule_early.sbatch --prior soccol
+sbatch --job-name=combined_s2_early scripts/combined_corrosion/finetune_single_rule_early.sbatch --prior combined
+sbatch --job-name=generic_s2_early scripts/combined_corrosion/finetune_single_rule_early.sbatch --prior generic
+```
+
+Default checkpoint directories:
+
+```text
+checkpoints/epit_finetuning/generic10k_epit_single_rule100_s2_early100_v1
+checkpoints/soccol_finetuning/generic10k_soccol_single_rule100_s2_early100_v1
+checkpoints/combined_finetuning/generic10k_combined_single_rule100_s2_early100_v1
+checkpoints/combined_finetuning/generic10k_generic_single_rule_control_s2_early100_v1
+```
+
+The same `--resume` and `--dry-run` options apply. To validate locally without
+submitting a job, use `PYTHONPATH=src:. .venv/bin/python -m
+scripts.combined_corrosion.finetune_single_rule_early --prior epit --dry-run`.
+The endpoint is a diagnostic, not an automatically selected final model.
+
+Use the existing exploratory evaluator with the early candidate and control.
+The interval must be zero to include every saved checkpoint:
+
+```bash
+PYTHONPATH=src:. .venv/bin/python -m scripts.combined_corrosion.evaluate_finetuning_single_rule \
+  --prior epit --dataset epit \
+  --finetune-run checkpoints/epit_finetuning/generic10k_epit_single_rule100_s2_early100_v1 \
+  --control-run checkpoints/combined_finetuning/generic10k_generic_single_rule_control_s2_early100_v1 \
+  --checkpoint all --checkpoint-scope common --checkpoint-step-interval 0 \
+  --max-checkpoint-step 100 --exploratory-cv-folds 5 --device cpu \
+  --output-dir corrosion_datasets/analysis/epit_pipeline/single_rule_s2_early100_cv5
+```
+
+For Soccol, change `--prior`, `--dataset`, `--finetune-run` and the output prefix
+to Soccol. For combined, use `--prior combined`, its checkpoint directory and
+`--dataset mpea` or `--dataset rebar`. The same generic early control serves all
+four comparisons; output folders retain their dataset suffix.

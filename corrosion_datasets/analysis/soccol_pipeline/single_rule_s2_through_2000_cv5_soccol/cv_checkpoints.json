@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "checkpoint_scope": "all",
+  "checkpoints": [
+    {
+      "name": "step-0",
+      "step": 0,
+      "models": [
+        {
+          "label": "soccol_single_rule_s2",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_finetuning/generic10k_soccol_single_rule100_s2/step-0.ckpt",
+          "size": 114940265,
+          "mtime_ns": 1795142309492586519
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_finetuning/generic10k_generic_s2/step-0.ckpt",
+          "size": 114859433,
+          "mtime_ns": 1794175737153620417
+        }
+      ]
+    },
+    {
+      "name": "step-100",
+      "step": 100,
+      "models": [
+        {
+          "label": "soccol_single_rule_s2",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_finetuning/generic10k_soccol_single_rule100_s2/step-100.ckpt",
+          "size": 344669275,
+          "mtime_ns": 1795145314963005331
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_finetuning/generic10k_generic_s2/step-100.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794175737773610325
+        }
+      ]
+    },
+    {
+      "name": "step-200",
+      "step": 200,
+      "models": [
+        {
+          "label": "soccol_single_rule_s2",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_finetuning/generic10k_soccol_single_rule100_s2/step-200.ckpt",
+          "size": 344669275,
+          "mtime_ns": 1795148339386869050
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_finetuning/generic10k_generic_s2/step-200.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794175738348600965
+        }
+      ]
+    },
+    {
+      "name": "step-300",
+      "step": 300,
+      "models": [
+        {
+          "label": "soccol_single_rule_s2",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_finetuning/generic10k_soccol_single_rule100_s2/step-300.ckpt",
+          "size": 344669275,
+          "mtime_ns": 1795151351675690933
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_finetuning/generic10k_generic_s2/step-300.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794175739077589099
+        }
+      ]
+    },
+    {
+      "name": "step-400",
+      "step": 400,
+      "models": [
+        {
+          "label": "soccol_single_rule_s2",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_finetuning/generic10k_soccol_single_rule100_s2/step-400.ckpt",
+          "size": 344669275,
+          "mtime_ns": 1795154379954229326
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_finetuning/generic10k_generic_s2/step-400.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794175739686579186
+        }
+      ]
+    },
+    {
+      "name": "step-500",
+      "step": 500,
+      "models": [
+        {
+          "label": "soccol_single_rule_s2",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_finetuning/generic10k_soccol_single_rule100_s2/step-500.ckpt",
+          "size": 344669275,
+          "mtime_ns": 1795157412103747059
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_finetuning/generic10k_generic_s2/step-500.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794175740291569338
+        }
+      ]
+    },
+    {
+      "name": "step-600",
+      "step": 600,
+      "models": [
+        {
+          "label": "soccol_single_rule_s2",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_finetuning/generic10k_soccol_single_rule100_s2/step-600.ckpt",
+          "size": 344669275,
+          "mtime_ns": 1795160457258015620
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_finetuning/generic10k_generic_s2/step-600.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794175740983558074
+        }
+      ]
+    },
+    {
+      "name": "step-700",
+      "step": 700,
+      "models": [
+        {
+          "label": "soccol_single_rule_s2",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_finetuning/generic10k_soccol_single_rule100_s2/step-700.ckpt",
+          "size": 344669275,
+          "mtime_ns": 1795163480166850605
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_finetuning/generic10k_generic_s2/step-700.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794175741558548714
+        }
+      ]
+    },
+    {
+      "name": "step-800",
+      "step": 800,
+      "models": [
+        {
+          "label": "soccol_single_rule_s2",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/soccol_finetuning/generic10k_soccol_single_rule100_s2/step-800.ckpt",
+          "size": 344669275,
+          "mtime_ns": 1795166529604144882
+        },
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_finetuning/generic10k_generic_s2/step-800.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794175742131539387
+        }
+      ]
+    },
+    {
+      "name": "step-900",
+      "step": 900,
+      "models": [
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_finetuning/generic10k_generic_s2/step-900.ckpt",
+          "size": 344588443,
+          "mtime_ns": 1794175742702530093
+        }
+      ]
+    },
+    {
+      "name": "step-1000",
+      "step": 1000,
+      "models": [
+        {
+          "label": "generic_continuation",
+          "path": "/home/fcolanto/projects/tabicl/checkpoints/epit_finetuning/generic10k_generic_s2/step-1000.ckpt",
+          "size": 344590017,
+          "mtime_ns": 1794175743405518649
+        }
+      ]
+    }
+  ]
+}
